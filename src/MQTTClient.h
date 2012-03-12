@@ -16,23 +16,11 @@
  * 
  * @brief An MQTT client library in C.
  *
- * An MQTT client application connects to MQTT-capable servers such as WebSphere
- * MQ Telemetry channels and the WebSphere MQ Telemetry daemon for devices. 
+ * An MQTT client application connects to MQTT-capable servers. 
  * A typical client is responsible for collecting information from a telemetry 
  * device and publishing the information to the server. It can also subscribe 
  * to topics, receive messages, and use this information to control the 
- * telemetry device.
- * 
- * MQTT clients implement the published MQTT v3 protocol. You can write your own
- * API to the MQTT protocol using the programming language and platform of your 
- * choice. This can be time-consuming and error-prone.
- * 
- * To simplify writing MQTT client applications, WebSphere MQ Telemetry provides
- * C and Java client libraries that encapsulate the MQTT v3 protocol for a 
- * number of platforms. If you incorporate these libraries in your MQTT 
- * applications, a fully functional MQTT client can be written in a few lines of
- * code. The information presented here documents the API provided by the IBM
- * MQTT Client library for C.
+ * telemetry device. MQTT clients implement the published MQTT v3 protocol. 
  * 
  * <b>Using the client</b><br>
  * Applications that use the client library typically use a similar structure:

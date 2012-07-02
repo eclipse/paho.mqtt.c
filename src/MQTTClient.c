@@ -8,6 +8,8 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - bug 384016 - segv setting will message
+ *    Ian Craggs - bug 384053 - stop MQTTClient_receive on socket error
  *******************************************************************************/
 
 #include <stdlib.h>
@@ -1357,6 +1359,15 @@ int MQTTClient_receive(MQTTClient handle, char** topicName, int* topicLen, MQTTC
 	{
 		int sock = 0;
 		MQTTClient_cycle(&sock, (timeout > elapsed) ? timeout - elapsed : 0L, &rc);
+
+	
+		if (rc == SOCKET_ERROR)
+		{
+			if (ListFindItem(handles, &sock, clientSockCompare) && 	/* find client corresponding to socket */
+			  (MQTTClient)(handles->current->content) == handle)
+				break; /* there was an error on the socket we are interested in */
+		}
+
 		elapsed = MQTTClient_elapsed(start);
 	}
 	while (elapsed < timeout && m->c->messageQueue->count == 0);

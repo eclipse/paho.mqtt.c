@@ -29,15 +29,15 @@
 
 #define URI_TCP "tcp://"
 
-char* MQTTClient_Level = "MQTTClientV3_Level ##MICROBROKER_LEVEL_TAG##";
-char* MQTTClient_Version = "MQTTClientV3_Version ##MICROBROKER_VERSION_TAG##";
-
 #define BUILD_TIMESTAMP __DATE__ " " __TIME__ /* __TIMESTAMP__ */
+#define CLIENT_VERSION "1.0.0.6" /* __VERSION__ */
+
 char* client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
+char* client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
 
 static ClientStates ClientState =
 {
-	"1.0.0.5", /* version */
+	CLIENT_VERSION, /* version */
 	NULL /* client list */
 };
 
@@ -724,6 +724,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 
 	if (options->will && options->will->struct_version == 0)
 	{
+		m->c->will = malloc(sizeof(willMessages));
 		m->c->will->msg = options->will->message;
 		m->c->will->qos = options->will->qos;
 		m->c->will->retained = options->will->retained;
@@ -810,6 +811,11 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 	}
 
 exit:
+	if (m->c->will)
+	{
+		free(m->c->will);
+		m->c->will = NULL;
+	}
 	Thread_unlock_mutex(mqttclient_mutex);
 	FUNC_EXIT_RC(rc);
 	return rc;

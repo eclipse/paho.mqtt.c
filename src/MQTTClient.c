@@ -9,7 +9,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs - bug 384016 - segv setting will message
- *    Ian Craggs - bug 384053 - stop MQTTClient_receive on socket error
+ *    Ian Craggs - bug 384053 - v1.0.0.7 - stop MQTTClient_receive on socket error 
  *******************************************************************************/
 
 #include <stdlib.h>
@@ -32,7 +32,7 @@
 #define URI_TCP "tcp://"
 
 #define BUILD_TIMESTAMP __DATE__ " " __TIME__ /* __TIMESTAMP__ */
-#define CLIENT_VERSION "1.0.0.6" /* __VERSION__ */
+#define CLIENT_VERSION "1.0.0.7" /* __VERSION__ */
 
 char* client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;

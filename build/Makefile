@@ -58,8 +58,6 @@ ${MQTTLIB_390}: ${SOURCE_FILES} ${HEADERS}
 
 else
   CC 	   = gcc
-  ARM_GLIBC_PREFIX = arm-linux-
-  ARM_UCLIBC_PREFIX = ~/x-tools/arm-unknown-linux-uclibcgnueabi/bin/arm-unknown-linux-uclibcgnueabi-
 
   CCFLAGS_SO = -fPIC -Os -Wall
   CCFLAGS_EXE = -I ${MQTTCLIENT_DIR}
@@ -67,25 +65,13 @@ else
   LDFLAGS_EXE = -lpthread
 
   MQTTLIB_IA32 = linux_ia32/lib${MQTTLIB}.so
-  MQTTLIB_ARM_GLIBC = linux_ARM_glibc/lib${MQTTLIB}.so
-  MQTTLIB_ARM_UCLIBC = linux_ARM_uclibc/lib${MQTTLIB}.so
 
-all: ${MQTTLIB_IA32} ${MQTTLIB_ARM_GLIBC} ${MQTTLIB_ARM_UCLIBC}
+all: ${MQTTLIB_IA32}
 
 ${MQTTLIB_IA32}: ${SOURCE_FILES} ${HEADERS}
 	-mkdir linux_ia32
 	${CC} -m32 ${CCFLAGS_SO} ${LDFLAGS} -o $@ ${SOURCE_FILES}
 	strip $@
-	
-${MQTTLIB_ARM_GLIBC}: ${SOURCE_FILES} ${HEADERS}
-	-mkdir linux_ARM_glibc
-	${ARM_GLIBC_PREFIX}gcc ${CCFLAGS_SO} ${LDFLAGS} -o $@ ${SOURCE_FILES}
-	${ARM_GLIBC_PREFIX}strip $@
-
-${MQTTLIB_ARM_UCLIBC}: ${SOURCE_FILES} ${HEADERS}
-	-mkdir linux_ARM_uclibc
-	${ARM_UCLIBC_PREFIX}gcc ${CCFLAGS_SO} ${LDFLAGS} -o $@ ${SOURCE_FILES}
-	${ARM_UCLIBC_PREFIX}strip $@
 endif
 
 endif

@@ -13,7 +13,7 @@
 
 /**
  * @mainpage MQTT Client library for C
- * &copy; Copyright IBM Corp. 2009, 2013
+ * &copy; Copyright IBM Corp. 2009, 2013 and made available under the EPL v1.0
  * 
  * @brief An MQTT client library in C.
  *

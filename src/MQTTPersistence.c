@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2012 IBM Corp.
+ * Copyright (c) 2009, 2013 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,6 +8,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - async client updates
  *******************************************************************************/
 
 /**
@@ -165,17 +166,23 @@ int MQTTPersistence_clear(Clients *c)
 int MQTTPersistence_restore(Clients *c)
 {
 	int rc = 0;
-	char **msgkeys, *buffer;
+	char **msgkeys = NULL,
+		 *buffer = NULL;
 	int nkeys, buflen;
 	int i = 0;
+	int msgs_sent = 0;
+	int msgs_rcvd = 0;
 
 	FUNC_ENTRY;
-	if ( c->persistence != NULL &&
-		(rc = c->persistence->pkeys(c->phandle, &msgkeys, &nkeys)) == 0 )
+	if (c->persistence && (rc = c->persistence->pkeys(c->phandle, &msgkeys, &nkeys)) == 0)
 	{
-		while( rc == 0 && i < nkeys)
+		while (rc == 0 && i < nkeys)
 		{
-			if ( (rc = c->persistence->pget(c->phandle, msgkeys[i], &buffer, &buflen)) == 0 )
+			if (strncmp(msgkeys[i], PERSISTENCE_COMMAND_KEY, strlen(PERSISTENCE_COMMAND_KEY)) == 0)
+				;
+			else if (strncmp(msgkeys[i], PERSISTENCE_QUEUE_KEY, strlen(PERSISTENCE_QUEUE_KEY)) == 0)
+				;
+			else if ((rc = c->persistence->pget(c->phandle, msgkeys[i], &buffer, &buflen)) == 0)
 			{
 				MQTTPacket* pack = MQTTPersistence_restorePacket(buffer, buflen);
 				if ( pack != NULL )
@@ -190,6 +197,7 @@ int MQTTPersistence_restore(Clients *c)
 						ListAppend(c->inboundMsgs, msg, msg->len);
 						publish->topic = NULL;
 						MQTTPacket_freePublish(publish);
+						msgs_rcvd++;
 					}
 					else if ( strstr(msgkeys[i],PERSISTENCE_PUBLISH_SENT) != NULL )
 					{
@@ -208,6 +216,7 @@ int MQTTPersistence_restore(Clients *c)
 						publish->topic = NULL;
 						MQTTPacket_freePublish(publish);
 						free(key);
+						msgs_sent++;
 					}
 					else if ( strstr(msgkeys[i],PERSISTENCE_PUBREL) != NULL )
 					{
@@ -224,16 +233,20 @@ int MQTTPersistence_restore(Clients *c)
 				else  /* pack == NULL -> bad persisted record */
 					rc = c->persistence->premove(c->phandle, msgkeys[i]);
 			}
-			if ( buffer != NULL )
+			if (buffer)
+			{
 				free(buffer);
-			if ( msgkeys[i] != NULL )
+				buffer = NULL;
+			}
+			if (msgkeys[i])
 				free(msgkeys[i]);
 			i++;
 		}
-		if ( msgkeys != NULL )
+		if (msgkeys)
 			free(msgkeys);
 	}
-
+	Log(TRACE_MINIMUM, -1, "%d sent messages and %d received messages restored for client %s\n", 
+		msgs_sent, msgs_rcvd, c->clientID);
 	MQTTPersistence_wrapMsgID(c);
 
 	FUNC_EXIT_RC(rc);

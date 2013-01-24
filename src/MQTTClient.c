@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2012 IBM Corp.
+ * Copyright (c) 2009, 2013 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,6 +10,7 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs - bug 384016 - segv setting will message
  *    Ian Craggs - bug 384053 - v1.0.0.7 - stop MQTTClient_receive on socket error 
+ *    Ian Craggs, Allan Stockdill-Mander - add ability to connect with SSL
  *******************************************************************************/
 
 #include <stdlib.h>
@@ -29,10 +30,14 @@
 #include "StackTrace.h"
 #include "Heap.h"
 
+#if defined(OPENSSL)
+#include <openssl/ssl.h>
+#endif
+
 #define URI_TCP "tcp://"
 
 #define BUILD_TIMESTAMP __DATE__ " " __TIME__ /* __TIMESTAMP__ */
-#define CLIENT_VERSION "1.0.0.7" /* __VERSION__ */
+#define CLIENT_VERSION  "1.0.0.8"
 
 char* client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
@@ -50,6 +55,8 @@ MQTTProtocol state;
 #if defined(WIN32)
 static mutex_type mqttclient_mutex = NULL;
 extern mutex_type stack_mutex;
+extern mutex_type heap_mutex;
+extern mutex_type log_mutex;
 BOOL APIENTRY DllMain(HANDLE hModule,
                       DWORD  ul_reason_for_call,
                       LPVOID lpReserved)
@@ -62,6 +69,8 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 			{
 				mqttclient_mutex = CreateMutex(NULL, 0, NULL);
 				stack_mutex = CreateMutex(NULL, 0, NULL);
+				heap_mutex = CreateMutex(NULL, 0, NULL);
+				log_mutex = CreateMutex(NULL, 0, NULL);
 			}
 		case DLL_THREAD_ATTACH:
 			Log(TRACE_MAX, -1, "DLL thread attach");
@@ -104,6 +113,9 @@ typedef struct
 typedef struct
 {
 	char* serverURI;
+#if defined(OPENSSL)
+	int ssl;
+#endif
 	Clients* c;
 	MQTTClient_connectionLost* cl;
 	MQTTClient_messageArrived* ma;
@@ -118,7 +130,6 @@ typedef struct
 	MQTTPacket* pack;
 
 } MQTTClients;
-
 
 void MQTTClient_sleep(long milliseconds)
 {
@@ -210,10 +221,13 @@ int MQTTClient_create(MQTTClient* handle, char* serverURI, char* clientId,
 		#if defined(HEAP_H)
 			Heap_initialize();
 		#endif
-		Log_initialize();
+		Log_initialize(NULL);
 		bstate->clients = ListInitialize();
 		Socket_outInitialize();
 		handles = ListInitialize();
+#if defined(OPENSSL)
+		SSLSocket_initialize();
+#endif
 		initialized = 1;
 	}
 	m = malloc(sizeof(MQTTClients));
@@ -221,6 +235,13 @@ int MQTTClient_create(MQTTClient* handle, char* serverURI, char* clientId,
 	memset(m, '\0', sizeof(MQTTClients));
 	if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
 		serverURI += strlen(URI_TCP);
+#if defined(OPENSSL)
+	else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
+	{
+		serverURI += strlen(URI_SSL);
+		m->ssl = 1;
+	}
+#endif
 	m->serverURI = malloc(strlen(serverURI)+1);
 	strcpy(m->serverURI, serverURI);
 	ListAppend(handles, m, sizeof(MQTTClients));
@@ -304,7 +325,7 @@ void MQTTClient_destroy(MQTTClient* handle)
 
 	if (m->c)
 	{
-		int saved_socket = m->c->socket;
+		int saved_socket = m->c->net.socket;
 		char* saved_clientid = malloc(strlen(m->c->clientID)+1);
 		strcpy(saved_clientid, m->c->clientID);
 #if !defined(NO_PERSISTENCE)
@@ -332,11 +353,6 @@ exit:
 }
 
 
-#if defined(HEAP_H)
-#undef malloc
-#undef realloc
-#undef free
-#endif
 void MQTTClient_freeMessage(MQTTClient_message** message)
 {
 	FUNC_ENTRY;
@@ -354,13 +370,6 @@ void MQTTClient_free(void* memory)
 	FUNC_EXIT;
 }
 
-#if defined(HEAP_H)
-#define malloc(x) mymalloc(__FILE__, __LINE__, x)
-#define realloc(a, b) myrealloc(__FILE__, __LINE__, a, b)
-#define free(x) myfree(__FILE__, __LINE__, x)
-#endif
-
-
 
 int MQTTClient_deliverMessage(int rc, MQTTClients* m, char** topicName, int* topicLen, MQTTClient_message** message)
 {
@@ -373,9 +382,6 @@ int MQTTClient_deliverMessage(int rc, MQTTClients* m, char** topicName, int* top
 	if (strlen(*topicName) != *topicLen)
 		rc = MQTTCLIENT_TOPICNAME_TRUNCATED;
 	ListRemove(m->c->messageQueue, m->c->messageQueue->first->content);
-	Heap_unlink(__FILE__, __LINE__, (*message)->payload);
-	Heap_unlink(__FILE__, __LINE__, *message);
-	Heap_unlink(__FILE__, __LINE__, *topicName);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -390,7 +396,7 @@ int MQTTClient_deliverMessage(int rc, MQTTClients* m, char** topicName, int* top
 int clientSockCompare(void* a, void* b)
 {
 	MQTTClients* m = (MQTTClients*)a;
-	return m->c->socket == *(int*)b;
+	return m->c->net.socket == *(int*)b;
 }
 
 
@@ -457,8 +463,6 @@ thread_return_type WINAPI MQTTClient_run(void* n)
 			{
 				qEntry* qe = (qEntry*)(m->c->messageQueue->first->content);
 				int topicLen = qe->topicLen;
-				void* payload_ptr = qe->msg->payload; /* saved so we can unlink it after a successful messageArrived call,
-														because it is held in a structure which might be freed */
 
 				if (strlen(qe->topicName) == topicLen)
 					topicLen = 0;
@@ -473,12 +477,7 @@ thread_return_type WINAPI MQTTClient_run(void* n)
 				 * so we must be careful how we use it.
 				 */
 				if (rc)
-				{
-					Heap_unlink(__FILE__, __LINE__, qe->topicName);
-					Heap_unlink(__FILE__, __LINE__, payload_ptr);
-					Heap_unlink(__FILE__, __LINE__, qe->msg);
 					ListRemove(m->c->messageQueue, qe);
-				}
 				else
 					Log(TRACE_MIN, -1, "False returned from messageArrived for client %s, message remains on queue",
 						m->c->clientID);
@@ -509,11 +508,31 @@ thread_return_type WINAPI MQTTClient_run(void* n)
 				int error;
 				socklen_t len = sizeof(error);
 
-				if ((m->rc = getsockopt(m->c->socket, SOL_SOCKET, SO_ERROR, (char*)&error, &len)) == 0)
+				if ((m->rc = getsockopt(m->c->net.socket, SOL_SOCKET, SO_ERROR, (char*)&error, &len)) == 0)
 					m->rc = error;
 				Log(TRACE_MIN, -1, "Posting connect semaphore for client %s rc %d", m->c->clientID, m->rc);
 				Thread_post_sem(m->connect_sem);
 			}
+#if defined(OPENSSL)
+			else if (m->c->connect_state == 2 && !Thread_check_sem(m->connect_sem))
+			{			
+				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket);
+				if (rc == 1)
+				{
+					if (!m->c->cleansession && m->c->session == NULL)
+						m->c->session = SSL_get1_session(m->c->net.ssl);
+					m->rc = rc;
+					Log(TRACE_MIN, -1, "Posting connect semaphore for SSL client %s rc %d", m->c->clientID, m->rc);
+					Thread_post_sem(m->connect_sem);
+				}
+				else if (rc == SSL_FATAL)
+				{
+					m->rc = rc;
+					//tostop = 1;
+					break;
+				}
+			}
+#endif
 		}
 	}
 	run_id = 0;
@@ -594,16 +613,23 @@ void MQTTProtocol_closeSession(Clients* client, int sendwill)
 {
 	FUNC_ENTRY;
 	client->good = 0;
-	if (client->socket > 0)
+	if (client->net.socket > 0)
 	{
 		if (client->connected || client->connect_state)
 		{
-			MQTTPacket_send_disconnect(client->socket, client->clientID);
+			MQTTPacket_send_disconnect(&client->net, client->clientID);
 			client->connected = 0;
 			client->connect_state = 0;
 		}
-		Socket_close(client->socket);
-		client->socket = 0;
+#if defined(OPENSSL)
+		if (client->net.ssl)
+			SSLSocket_close(client->net.ssl);
+#endif
+		Socket_close(client->net.socket);
+		client->net.socket = 0;
+#if defined(OPENSSL)
+		client->net.ssl = NULL;
+#endif
 	}
 
 	if (client->cleansession)
@@ -685,7 +711,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 		goto exit;
 	}
 
-	if (strncmp(options->struct_id, "MQTC", 4) != 0 || options->struct_version != 0)
+	if (strncmp(options->struct_id, "MQTC", 4) != 0 || (options->struct_version != 0 && options->struct_version != 1))
 	{
 		rc = MQTTCLIENT_BAD_STRUCTURE;
 		goto exit;
@@ -699,6 +725,17 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 			goto exit;
 		}
 	}
+	
+#if defined(OPENSSL)
+	if (options->struct_version != 0 && options->ssl) /* check validity of SSL options structure */
+	{
+		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version != 0)
+		{
+			rc = MQTTCLIENT_BAD_STRUCTURE;
+			goto exit;
+		}
+	}
+#endif
 
 	if ((options->username && !UTF8_validateString(options->username)) ||
 		(options->password && !UTF8_validateString(options->password)))
@@ -726,20 +763,30 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 
 	if (options->will && options->will->struct_version == 0)
 	{
-		m->c->will = malloc(sizeof(willMessages));
+	    m->c->will = malloc(sizeof(willMessages));
 		m->c->will->msg = options->will->message;
 		m->c->will->qos = options->will->qos;
 		m->c->will->retained = options->will->retained;
 		m->c->will->topic = options->will->topicName;
 	}
+	
+#if defined(OPENSSL)
+	if (options->struct_version != 0 && options->ssl)
+		m->c->sslopts = options->ssl;
+#endif
 
 	m->c->username = options->username;
 	m->c->password = options->password;
 	m->c->retryInterval = options->retryInterval;
-	m->c->connectOptionsVersion = options->struct_version;
 
 	Log(TRACE_MIN, -1, "Connecting to serverURI %s", m->serverURI);
+#if defined(OPENSSL)
+	rc = MQTTProtocol_connect(m->serverURI, m->c, m->ssl);
+#else
 	rc = MQTTProtocol_connect(m->serverURI, m->c);
+#endif
+	if (rc == SOCKET_ERROR)
+		goto exit;
 
 	if (m->c->connect_state == 0)
 	{
@@ -747,7 +794,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 		goto exit;
 	}
 
-	if (m->c->connect_state == 1)
+	if (m->c->connect_state == 1) /* TCP connect started - wait for completion */
 	{
 		Thread_unlock_mutex(mqttclient_mutex);
 		MQTTClient_waitfor(handle, CONNECT, &rc, millisecsTimeout - MQTTClient_elapsed(start));
@@ -757,16 +804,67 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 			rc = SOCKET_ERROR;
 			goto exit;
 		}
-
-		m->c->connect_state = 2; /* TCP connect completed, in which case send the MQTT connect packet */
+		
+#if defined(OPENSSL)
+		if (m->ssl)
+		{
+			if ((m->c->net.ssl = SSLSocket_setSocketForSSL(m->c->net.socket, m->c->sslopts)) != NULL) 
+			{
+				if (m->c->session != NULL)
+					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)
+						Log(TRACE_MIN, -1, "Failed to set SSL session with stored data, non critical");
+				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket);
+				if (rc == -1)
+					m->c->connect_state = 2;
+            	else if (rc == SSL_FATAL)
+				{
+					rc = SOCKET_ERROR;
+               		goto exit;
+				}
+            	else if (rc == 1 && !m->c->cleansession && m->c->session == NULL)
+					m->c->session = SSL_get1_session(m->c->net.ssl);
+			}
+			else
+			{
+				rc = SOCKET_ERROR;
+				goto exit;
+			}
+		}
+		else
+		{
+#endif
+			m->c->connect_state = 3; /* TCP connect completed, in which case send the MQTT connect packet */
+			if (MQTTPacket_send_connect(m->c) == SOCKET_ERROR)
+			{
+				rc = SOCKET_ERROR;
+				goto exit;
+			}
+#if defined(OPENSSL)
+		}
+#endif
+	}
+	
+#if defined(OPENSSL)
+	if (m->c->connect_state == 2) /* SSL connect sent - wait for completion */
+	{
+		Thread_unlock_mutex(mqttclient_mutex);
+		MQTTClient_waitfor(handle, CONNECT, &rc, millisecsTimeout - MQTTClient_elapsed(start));
+		Thread_lock_mutex(mqttclient_mutex);
+		if (rc != 1)
+		{
+			rc = SOCKET_ERROR;
+			goto exit;
+		}
+		m->c->connect_state = 3; /* TCP connect completed, in which case send the MQTT connect packet */
 		if (MQTTPacket_send_connect(m->c) == SOCKET_ERROR)
 		{
 			rc = SOCKET_ERROR;
 			goto exit;
 		}
 	}
+#endif
 
-	if (m->c->connect_state == 2)
+	if (m->c->connect_state == 3) /* MQTT connect sent - wait for CONNACK */
 	{
 		MQTTPacket* pack = NULL;
 
@@ -778,11 +876,12 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 		else
 		{
 			Connack* connack = (Connack*)pack;
+			Log(LOG_PROTOCOL, 1, NULL, m->c->net.socket, m->c->clientID, connack->rc);
 			if ((rc = connack->rc) == MQTTCLIENT_SUCCESS)
 			{
 				m->c->connected = 1;
 				m->c->good = 1;
-				m->c->connect_state = 3;
+				m->c->connect_state = 0; //3;
 				time(&(m->c->lastContact));
 				if (m->c->cleansession)
 					rc = MQTTClient_cleanSession(m->c);
@@ -813,11 +912,11 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 	}
 
 exit:
-	if (m->c->will)
-	{
-		free(m->c->will);
-		m->c->will = NULL;
-	}
+    if (m->c->will)
+    {
+      free(m->c->will);
+      m->c->will = NULL;
+    }
 	Thread_unlock_mutex(mqttclient_mutex);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -935,6 +1034,12 @@ int MQTTClient_subscribeMany(MQTTClient handle, int count, char** topic, int* qo
 			rc = MQTTCLIENT_BAD_UTF8_STRING;
 			goto exit;
 		}
+		
+		if(qos[i] < 0 || qos[i] > 2)
+		{
+			rc = MQTTCLIENT_BAD_QOS;
+			goto exit;
+		}
 	}
 
 	for (i = 0; i < count; i++)
@@ -955,7 +1060,7 @@ int MQTTClient_subscribeMany(MQTTClient handle, int count, char** topic, int* qo
 		Thread_lock_mutex(mqttclient_mutex);
 		if (pack != NULL)
 		{
-			rc = MQTTProtocol_handleSubacks(pack, m->c->socket);
+			rc = MQTTProtocol_handleSubacks(pack, m->c->net.socket);
 			m->pack = NULL;
 		}
 		else
@@ -1033,7 +1138,7 @@ int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char** topic)
 		Thread_lock_mutex(mqttclient_mutex);
 		if (pack != NULL)
 		{
-			rc = MQTTProtocol_handleUnsubacks(pack, m->c->socket);
+			rc = MQTTProtocol_handleUnsubacks(pack, m->c->net.socket);
 			m->pack = NULL;
 		}
 		else
@@ -1122,7 +1227,7 @@ int MQTTClient_publish(MQTTClient handle, char* topicName, int payloadlen, void*
 	 */
 	if (rc == TCPSOCKET_INTERRUPTED)
 	{
-		while (m->c->connected == 1 && SocketBuffer_getWrite(m->c->socket))
+		while (m->c->connected == 1 && SocketBuffer_getWrite(m->c->net.socket))
 		{
 			Thread_unlock_mutex(mqttclient_mutex);
 			MQTTClient_yield();
@@ -1210,18 +1315,28 @@ MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
 		tp.tv_usec = (timeout % 1000) * 1000; /* this field is microseconds! */
 	}
 
-	/* 0 from getReadySocket indicates no work to do, -1 == error, but can happen normally */
-	*sock = Socket_getReadySocket(0, &tp);
+#if defined(OPENSSL)
+	if ((*sock = SSLSocket_getPendingRead()) == -1)
+	{
+		/* 0 from getReadySocket indicates no work to do, -1 == error, but can happen normally */
+#endif
+		*sock = Socket_getReadySocket(0, &tp);
+#if defined(OPENSSL)
+	}
+#endif
 	Thread_lock_mutex(mqttclient_mutex);
 	if (*sock > 0)
 	{
 		MQTTClients* m = NULL;
 		if (ListFindItem(handles, sock, clientSockCompare) != NULL)
 			m = (MQTTClient)(handles->current->content);
-		if (m != NULL && m->c->connect_state == 1)
-			*rc = 0;  /* waiting for connect state to clear */
-		else
-			pack = MQTTPacket_Factory(*sock, rc);
+		if (m != NULL)
+		{
+			if (m->c->connect_state == 1 || m->c->connect_state == 2)
+				*rc = 0;  /* waiting for connect state to clear */
+			else
+				pack = MQTTPacket_Factory(&m->c->net, rc);
+		}
 		if (pack)
 		{
 			int freed = 1;
@@ -1257,7 +1372,7 @@ MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
 	}
 	MQTTClient_retry();
 	Thread_unlock_mutex(mqttclient_mutex);
-	FUNC_EXIT;
+	FUNC_EXIT_RC(*rc);
 	return pack;
 }
 
@@ -1299,7 +1414,7 @@ MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long
 		{
 			int sock = -1;
 			pack = MQTTClient_cycle(&sock, 100L, rc);
-			if (sock == m->c->socket)
+			if (sock == m->c->net.socket)
 			{
 				if (pack && (pack->header.bits.type == packet_type))
 					break;
@@ -1308,10 +1423,22 @@ MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long
 					int error;
 					socklen_t len = sizeof(error);
 
-					if ((*rc = getsockopt(m->c->socket, SOL_SOCKET, SO_ERROR, (char*)&error, &len)) == 0)
+					if ((*rc = getsockopt(m->c->net.socket, SOL_SOCKET, SO_ERROR, (char*)&error, &len)) == 0)
 					  *rc = error;
 					break;
 				}
+#if defined(OPENSSL)
+				else if (m->c->connect_state == 2)
+				{
+                    *rc = SSLSocket_connect(m->c->net.ssl, sock);
+					if (*rc == 1 || *rc == SSL_FATAL) 
+					{
+						if (*rc == 1 && !m->c->cleansession && m->c->session == NULL)
+							m->c->session = SSL_get1_session(m->c->net.ssl);
+						break;
+					}
+				}
+#endif
 			}
 			else if (MQTTClient_elapsed(start) > timeout)
 			{
@@ -1359,15 +1486,13 @@ int MQTTClient_receive(MQTTClient handle, char** topicName, int* topicLen, MQTTC
 	{
 		int sock = 0;
 		MQTTClient_cycle(&sock, (timeout > elapsed) ? timeout - elapsed : 0L, &rc);
-
-	
+		
 		if (rc == SOCKET_ERROR)
 		{
 			if (ListFindItem(handles, &sock, clientSockCompare) && 	/* find client corresponding to socket */
 			  (MQTTClient)(handles->current->content) == handle)
 				break; /* there was an error on the socket we are interested in */
 		}
-
 		elapsed = MQTTClient_elapsed(start);
 	}
 	while (elapsed < timeout && m->c->messageQueue->count == 0);
@@ -1493,7 +1618,7 @@ int MQTTClient_getPendingDeliveryTokens(MQTTClient handle, MQTTClient_deliveryTo
 		int count = 0;
 
 		*tokens = malloc(sizeof(MQTTClient_deliveryToken) * (m->c->outboundMsgs->count + 1));
-		Heap_unlink(__FILE__, __LINE__, *tokens);
+		/*Heap_unlink(__FILE__, __LINE__, *tokens);*/
 		while (ListNextElement(m->c->outboundMsgs, &current))
 		{
 			Messages* m = (Messages*)(current->content);
@@ -1506,4 +1631,36 @@ exit:
 	Thread_unlock_mutex(mqttclient_mutex);
 	FUNC_EXIT_RC(rc);
 	return rc;
+}
+
+MQTTClient_nameValue* MQTTClient_getVersionInfo()
+{
+	#define MAX_INFO_STRINGS 7
+	static MQTTClient_nameValue libinfo[MAX_INFO_STRINGS + 1];
+	int i = 0;
+
+	libinfo[i].name = "version";
+	libinfo[i++].value = CLIENT_VERSION;
+
+	libinfo[i].name = "build level";
+	libinfo[i++].value = BUILD_TIMESTAMP;
+#if defined(OPENSSL)
+	libinfo[i].name = "OpenSSL version";
+	libinfo[i++].value = SSLeay_version(SSLEAY_VERSION);
+
+	libinfo[i].name = "OpenSSL flags";
+	libinfo[i++].value = SSLeay_version(SSLEAY_CFLAGS);
+
+	libinfo[i].name = "OpenSSL build timestamp";
+	libinfo[i++].value = SSLeay_version(SSLEAY_BUILT_ON);
+
+	libinfo[i].name = "OpenSSL platform";
+	libinfo[i++].value = SSLeay_version(SSLEAY_PLATFORM);
+
+	libinfo[i].name = "OpenSSL directory";
+	libinfo[i++].value = SSLeay_version(SSLEAY_DIR);
+#endif
+	libinfo[i].name = NULL;
+	libinfo[i].value = NULL;
+	return libinfo;
 }

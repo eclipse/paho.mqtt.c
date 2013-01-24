@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2012 IBM Corp.
+ * Copyright (c) 2009, 2013 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,6 +8,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *******************************************************************************/
 
 #if !defined(SOCKETBUFFER_H)
@@ -17,6 +18,10 @@
 #include "winsock2.h"
 #else
 #include <sys/socket.h>
+#endif
+
+#if defined(OPENSSL)
+#include <openssl/ssl.h>
 #endif
 
 #if defined(WIN32)
@@ -38,6 +43,9 @@ typedef struct
 typedef struct
 {
 	int socket, total, count;
+#if defined(OPENSSL)
+	SSL* ssl;
+#endif
 	unsigned long bytes;
 	iobuf iovecs[5];
 } pending_writes;
@@ -46,7 +54,7 @@ typedef struct
 #if !defined(SOCKET_ERROR)
 	#define SOCKET_ERROR -1
 #endif
-#define SOCKETBUFFER_INTERRUPTED -2 /* must be the same value as TCPSOCKET_INTERRUPTED */
+#define SOCKETBUFFER_INTERRUPTED -22 /* must be the same value as TCPSOCKET_INTERRUPTED */
 
 void SocketBuffer_initialize(void);
 void SocketBuffer_terminate(void);
@@ -57,7 +65,11 @@ void SocketBuffer_interrupted(int socket, int actual_len);
 char* SocketBuffer_complete(int socket);
 void SocketBuffer_queueChar(int socket, char c);
 
+#if defined(OPENSSL)
+void SocketBuffer_pendingWrite(int socket, SSL* ssl, int count, iobuf* iovecs, int total, int bytes);
+#else
 void SocketBuffer_pendingWrite(int socket, int count, iobuf* iovecs, int total, int bytes);
+#endif
 pending_writes* SocketBuffer_getWrite(int socket);
 int SocketBuffer_writeComplete(int socket);
 pending_writes* SocketBuffer_updateWrite(int socket, char* topic, char* payload);

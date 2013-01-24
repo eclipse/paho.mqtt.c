@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2012 IBM Corp.
+ * Copyright (c) 2009, 2013 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,19 +8,22 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - use tree data structure instead of list
  *******************************************************************************/
+
 
 #if !defined(HEAP_H)
 #define HEAP_H
 
-#include <stdio.h>
+#if defined(HIGH_PERFORMANCE)
+#define NO_HEAP_TRACKING 1
+#endif
 
+#include <stdio.h>
 #include <memory.h>
 #include <stdlib.h>
 
-#define HEAP_TRACKING 1
-#if HEAP_TRACKING
-
+#if !defined(NO_HEAP_TRACKING)
 /**
  * redefines malloc to use "mymalloc" so that heap allocation can be tracked
  * @param x the size of the item to be allocated
@@ -44,23 +47,27 @@
 
 #endif
 
+/**
+ * Information about the state of the heap.
+ */
+typedef struct
+{
+	int current_size;	/**< current size of the heap in bytes */
+	int max_size;		/**< max size the heap has reached in bytes */
+} heap_info;
+
+
 void* mymalloc(char*, int, size_t size);
 void* myrealloc(char*, int, void* p, size_t size);
 void myfree(char*, int, void* p);
-void* Heap_findItem(void* p);
-void Heap_unlink(char*, int, void* p);
 
-typedef struct
-{
-	int current_size;
-	int max_size;
-} heap_info;
-
-void HeapScan();
+void Heap_scan(FILE* file);
 int Heap_initialize(void);
 void Heap_terminate(void);
 heap_info* Heap_get_info(void);
 int HeapDump(FILE* file);
 int HeapDumpString(FILE* file, char* str);
+void* Heap_findItem(void* p);
+void Heap_unlink(char* file, int line, void* p);
 
 #endif

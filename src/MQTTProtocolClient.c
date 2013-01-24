@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2012 IBM Corp.
+ * Copyright (c) 2009, 2013 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,6 +8,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *******************************************************************************/
 
 /**
@@ -80,7 +81,7 @@ void MQTTProtocol_storeQoS0(Clients* pubclient, Publish* publish)
 	pw = malloc(sizeof(pending_write));
 	Log(TRACE_MIN, 12, NULL);
 	pw->p = MQTTProtocol_storePublication(publish, &len);
-	pw->socket = pubclient->socket;
+	pw->socket = pubclient->net.socket;
 	ListAppend(&(state.pending_writes), pw, sizeof(pending_write)+len);
 	/* we don't copy QoS 0 messages unless we have to, so now we have to tell the socket buffer where
 	the saved copy is */
@@ -103,7 +104,7 @@ int MQTTProtocol_startPublishCommon(Clients* pubclient, Publish* publish, int qo
 	int rc = TCPSOCKET_COMPLETE;
 
 	FUNC_ENTRY;
-	rc = MQTTPacket_send_publish(publish, 0, qos, retained, pubclient->socket, pubclient->clientID);
+	rc = MQTTPacket_send_publish(publish, 0, qos, retained, &pubclient->net, pubclient->clientID);
 	if (qos == 0 && rc == TCPSOCKET_INTERRUPTED)
 		MQTTProtocol_storeQoS0(pubclient, publish);
 	FUNC_EXIT_RC(rc);
@@ -253,7 +254,7 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 	else if (publish->header.bits.qos == 1)
 	{
 		/* send puback before processing the publications because a lot of return publications could fill up the socket buffer */
-		rc = MQTTPacket_send_puback(publish->msgId, sock, client->clientID);
+		rc = MQTTPacket_send_puback(publish->msgId, &client->net, client->clientID);
 		/* if we get a socket error from sending the puback, should we ignore the publication? */
 		Protocol_processPublication(publish, client);
 	}
@@ -277,7 +278,7 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 			ListRemove(client->inboundMsgs, msg);
 		} else
 			ListAppend(client->inboundMsgs, m, sizeof(Messages) + len);
-		rc = MQTTPacket_send_pubrec(publish->msgId, sock, client->clientID);
+		rc = MQTTPacket_send_pubrec(publish->msgId, &client->net, client->clientID);
 		publish->topic = NULL;
 	}
 	MQTTPacket_freePublish(publish);
@@ -363,7 +364,7 @@ int MQTTProtocol_handlePubrecs(void* pack, int sock)
 		}
 		else
 		{
-			rc = MQTTPacket_send_pubrel(pubrec->msgId, 0, sock, client->clientID);
+			rc = MQTTPacket_send_pubrel(pubrec->msgId, 0, &client->net, client->clientID);
 			m->nextMessageType = PUBCOMP;
 			time(&(m->lastTouch));
 		}
@@ -397,7 +398,7 @@ int MQTTProtocol_handlePubrels(void* pack, int sock)
 			Log(TRACE_MIN, 3, NULL, "PUBREL", client->clientID, pubrel->msgId);
 		else
 			/* Apparently this is "normal" behaviour, so we don't need to issue a warning */
-			rc = MQTTPacket_send_pubcomp(pubrel->msgId, sock, client->clientID);
+			rc = MQTTPacket_send_pubcomp(pubrel->msgId, &client->net, client->clientID);
 	}
 	else
 	{
@@ -411,7 +412,7 @@ int MQTTProtocol_handlePubrels(void* pack, int sock)
 			Publish publish;
 
 			/* send pubcomp before processing the publications because a lot of return publications could fill up the socket buffer */
-			rc = MQTTPacket_send_pubcomp(pubrel->msgId, sock, client->clientID);
+			rc = MQTTPacket_send_pubcomp(pubrel->msgId, &client->net, client->clientID);
 			publish.header.bits.qos = m->qos;
 			publish.header.bits.retain = m->retain;
 			publish.msgId = m->msgid;
@@ -497,10 +498,10 @@ void MQTTProtocol_keepalive(time_t now)
 	{
 		Clients* client =	(Clients*)(current->content);
 		ListNextElement(bstate->clients, &current);
-		if (client->connected && client->keepAliveInterval > 0
+		if (client->connected && client->keepAliveInterval > 0 && Socket_noPendingWrites(client->net.socket)
 				&& (difftime(now, client->lastContact) >= client->keepAliveInterval))
 		{
-			MQTTPacket_send_pingreq(client->socket, client->clientID);
+			MQTTPacket_send_pingreq(&client->net, client->clientID);
 			client->lastContact = now;
 			client->ping_outstanding = 1;
 		}
@@ -533,17 +534,17 @@ void MQTTProtocol_retries(time_t now, Clients* client)
 				Publish publish;
 				int rc;
 
-				Log(TRACE_MIN, 7, NULL, "PUBLISH", client->clientID, client->socket, m->msgid);
+				Log(TRACE_MIN, 7, NULL, "PUBLISH", client->clientID, client->net.socket, m->msgid);
 				publish.msgId = m->msgid;
 				publish.topic = m->publish->topic;
 				publish.payload = m->publish->payload;
 				publish.payloadlen = m->publish->payloadlen;
-				rc = MQTTPacket_send_publish(&publish, 1, m->qos, m->retain, client->socket, client->clientID);
+				rc = MQTTPacket_send_publish(&publish, 1, m->qos, m->retain, &client->net, client->clientID);
 				if (rc == SOCKET_ERROR)
 				{
 					client->good = 0;
-					Log(TRACE_MIN, 8, NULL, client->clientID, client->socket,
-												Socket_getpeer(client->socket));
+					Log(TRACE_MIN, 8, NULL, client->clientID, client->net.socket,
+												Socket_getpeer(client->net.socket));
 					MQTTProtocol_closeSession(client, 1);
 					client = NULL;
 				}
@@ -556,12 +557,12 @@ void MQTTProtocol_retries(time_t now, Clients* client)
 			}
 			else if (m->qos && m->nextMessageType == PUBCOMP)
 			{
-				Log(TRACE_MIN, 7, NULL, "PUBREL", client->clientID, client->socket, m->msgid);
-				if (MQTTPacket_send_pubrel(m->msgid, 1, client->socket, client->clientID) != TCPSOCKET_COMPLETE)
+				Log(TRACE_MIN, 7, NULL, "PUBREL", client->clientID, client->net.socket, m->msgid);
+				if (MQTTPacket_send_pubrel(m->msgid, 1, &client->net, client->clientID) != TCPSOCKET_COMPLETE)
 				{
 					client->good = 0;
-					Log(TRACE_MIN, 8, NULL, client->clientID, client->socket,
-							Socket_getpeer(client->socket));
+					Log(TRACE_MIN, 8, NULL, client->clientID, client->net.socket,
+							Socket_getpeer(client->net.socket));
 					MQTTProtocol_closeSession(client, 1);
 					client = NULL;
 				}
@@ -599,7 +600,7 @@ void MQTTProtocol_retry(time_t now, int doRetry)
 			MQTTProtocol_closeSession(client, 1);
 			continue;
 		}
-		if (Socket_noPendingWrites(client->socket) == 0)
+		if (Socket_noPendingWrites(client->net.socket) == 0)
 			continue;
 		if (doRetry)
 			MQTTProtocol_retries(now, client);
@@ -620,13 +621,16 @@ void MQTTProtocol_freeClient(Clients* client)
 	MQTTProtocol_freeMessageList(client->inboundMsgs);
 	ListFree(client->messageQueue);
 	free(client->clientID);
-	/*if (client->will != NULL)
+	if (client->will)
 	{
-		willMessages* w = client->will;
-		free(w->msg);
-		free(w->topic);
+		free(client->will->msg);
+		free(client->will->topic);
 		free(client->will);
-	}*/
+	}
+#if defined(OPENSSL)
+	if (client->sslopts)
+		free(client->sslopts);
+#endif
 	/* don't free the client structure itself... this is done elsewhere */
 	FUNC_EXIT;
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2012 IBM Corp.
+ * Copyright (c) 2009, 2013 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -7,7 +7,8 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Contributors:
- *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - initial implementation
+ *    Ian Craggs, Allan Stockdill-Mander - async client updates
  *******************************************************************************/
 
 #if !defined(THREAD_H)
@@ -33,6 +34,11 @@
 	typedef struct { pthread_cond_t cond; pthread_mutex_t mutex; } cond_type_struct;
 	typedef cond_type_struct *cond_type;
 	typedef sem_t *sem_type;
+
+	cond_type Thread_create_cond();
+	int Thread_signal_cond(cond_type);
+	int Thread_wait_cond_timeout(cond_type condvar, int timeout);
+	int Thread_destroy_cond(cond_type);
 #endif
 
 thread_type Thread_start(thread_fn, void*);
@@ -46,6 +52,7 @@ thread_id_type Thread_getid();
 
 sem_type Thread_create_sem();
 int Thread_wait_sem(sem_type sem);
+int Thread_wait_sem_timeout(sem_type sem, int timeout);
 int Thread_check_sem(sem_type sem);
 int Thread_post_sem(sem_type sem);
 int Thread_destroy_sem(sem_type sem);

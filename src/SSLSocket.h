@@ -1,0 +1,43 @@
+/*******************************************************************************
+ * Copyright (c) 2009, 2013 IBM Corp.
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Ian Craggs, Allan Stockdill-Mander - initial implementation 
+ *******************************************************************************/
+
+#include "MQTTClient.h"
+
+#if !defined(SSLSOCKET_H)
+#define SSLSOCKET_H
+
+#if defined(WIN32)
+	#define ssl_mutex_type HANDLE
+#else
+	#include <pthread.h>
+	#include <semaphore.h>
+	#define ssl_mutex_type pthread_mutex_t
+#endif
+
+#include <openssl/ssl.h>
+#include "SocketBuffer.h"
+
+#define URI_SSL "ssl://"
+
+int SSLSocket_initialize();
+SSL* SSLSocket_setSocketForSSL(int socket, MQTTClient_SSLOptions* opts);
+int SSLSocket_getch(SSL* ssl, int socket, char* c);
+char *SSLSocket_getdata(SSL* ssl, int socket, int bytes, int* actual_len);
+
+int SSLSocket_close(SSL* ssl);
+int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, int buf0len, int count, char** buffers, int* buflens);
+int SSLSocket_connect(SSL* ssl, int socket);
+
+int SSLSocket_getPendingRead();
+int SSLSocket_continueWrite(pending_writes* pw);
+
+#endif

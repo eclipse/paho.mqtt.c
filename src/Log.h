@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2012 IBM Corp.
+ * Copyright (c) 2009, 2013 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,6 +8,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - updates for the async client
  *******************************************************************************/
 
 #if !defined(LOG_H)
@@ -27,7 +28,7 @@ map LOG_LEVELS
 }
 BE*/
 
-enum {
+enum LOG_LEVELS {
 	TRACE_MAXIMUM = 1,
 	TRACE_MEDIUM,
 	TRACE_MINIMUM,
@@ -60,10 +61,20 @@ extern trace_settings_type trace_settings;
 #define TRACE_MIN TRACE_MINIMUM
 #define TRACE_MED TRACE_MEDIUM
 
-int Log_initialize();
+typedef struct
+{
+	const char* name;
+	const char* value;
+} Log_nameValue;
+
+int Log_initialize(Log_nameValue*);
 void Log_terminate();
 
 void Log(int, int, char *, ...);
 void Log_stackTrace(int, int, int, int, const char*, int, int*);
+
+typedef void Log_traceCallback(enum LOG_LEVELS level, char* message);
+void Log_setTraceCallback(Log_traceCallback* callback);
+void Log_setTraceLevel(enum LOG_LEVELS level);
 
 #endif

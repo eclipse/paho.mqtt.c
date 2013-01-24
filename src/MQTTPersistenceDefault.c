@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2012 IBM Corp.
+ * Copyright (c) 2009, 2013 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,6 +8,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - async client updates
  *******************************************************************************/
 
 /**
@@ -395,7 +396,10 @@ int containskeyUnix(char *dirname, char *key)
 	{
 		while((dir_entry = readdir(dp)) != NULL && notFound)
 		{
-			lstat(dir_entry->d_name, &stat_info);
+			char* filename = malloc(strlen(dirname) + strlen(dir_entry->d_name) + 2);
+			sprintf(filename, "%s/%s", dirname, dir_entry->d_name);
+			lstat(filename, &stat_info);
+			free(filename);
 			if(S_ISREG(stat_info.st_mode))
 			{
 				filekey = malloc(strlen(dir_entry->d_name) + 1);

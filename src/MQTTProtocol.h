@@ -9,6 +9,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
+
 #if !defined(MQTTPROTOCOL_H)
 #define MQTTPROTOCOL_H
 

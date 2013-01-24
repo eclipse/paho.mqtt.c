@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2012 IBM Corp.
+ * Copyright (c) 2009, 2013 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,6 +8,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - updates for the async client
  *******************************************************************************/
 
 /**
@@ -253,9 +254,9 @@ int ListRemove(List* aList, void* content)
  * @param aList the list from which the item is to be removed
  * @return 1=item removed, 0=item not removed
  */
-int ListRemoveHead(List* aList)
+void* ListDetachHead(List* aList)
 {
-	int rc = 0;
+	void *content = NULL;
 	if (aList->count > 0)
 	{
 		ListElement* first = aList->first;
@@ -263,14 +264,26 @@ int ListRemoveHead(List* aList)
 			aList->current = first->next;
 		if (aList->last == first) /* i.e. no of items in list == 1 */
 			aList->last = NULL;
-		free(first->content);
+		content = first->content;
 		aList->first = aList->first->next;
 		if (aList->first)
 			aList->first->prev = NULL;
 		free(first);
 		--(aList->count);
 	}
-	return rc;
+	return content;
+}
+
+
+/**
+ * Removes and frees an the first item in a list.
+ * @param aList the list from which the item is to be removed
+ * @return 1=item removed, 0=item not removed
+ */
+int ListRemoveHead(List* aList)
+{
+	free(ListDetachHead(aList));
+	return 0;
 }
 
 

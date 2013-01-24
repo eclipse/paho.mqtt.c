@@ -8,6 +8,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *******************************************************************************/
 
 /**
@@ -296,7 +297,11 @@ void SocketBuffer_queueChar(int socket, char c)
  * @param total total data length to be written
  * @param bytes actual data length that was written
  */
+#if defined(OPENSSL)
+void SocketBuffer_pendingWrite(int socket, SSL* ssl, int count, iobuf* iovecs, int total, int bytes)
+#else
 void SocketBuffer_pendingWrite(int socket, int count, iobuf* iovecs, int total, int bytes)
+#endif
 {
 	int i = 0;
 	pending_writes* pw = NULL;
@@ -305,6 +310,9 @@ void SocketBuffer_pendingWrite(int socket, int count, iobuf* iovecs, int total, 
 	/* store the buffers until the whole packet is written */
 	pw = malloc(sizeof(pending_writes));
 	pw->socket = socket;
+#if defined(OPENSSL)
+	pw->ssl = ssl;
+#endif
 	pw->bytes = bytes;
 	pw->total = total;
 	pw->count = count;

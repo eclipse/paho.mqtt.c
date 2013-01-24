@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2012 IBM Corp.
+ * Copyright (c) 2009, 2013 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,12 +8,20 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - add SSL support
  *******************************************************************************/
 
 #if !defined(CLIENTS_H)
 #define CLIENTS_H
 
 #include <time.h>
+#if defined(OPENSSL)
+#if defined(WIN32)
+#include "winsock2.h"
+#endif
+#include <openssl/ssl.h>
+#endif
+#include "MQTTClient.h"
 #include "LinkedList.h"
 #include "MQTTClientPersistence.h"
 /*BE
@@ -116,6 +124,7 @@ def CLIENTS
 	at 4 n8 bits 7:6 dec "connect_state"
 	at 8
 	n32 dec "socket"
+	n32 ptr "SSL"
 	n32 dec "msgID"
 	n32 dec "keepAliveInterval"
 	n32 dec "maxInflightMessages"
@@ -132,6 +141,15 @@ defList(CLIENTS)
 
 BE*/
 
+typedef struct
+{
+	int socket;
+#if defined(OPENSSL)
+	SSL* ssl;
+	SSL_CTX* ctx;
+#endif
+} networkHandles;
+
 /**
  * Data related to one client
  */
@@ -144,8 +162,8 @@ typedef struct
 	unsigned int connected : 1;		/**< whether it is currently connected */
 	unsigned int good : 1; 			/**< if we have an error on the socket we turn this off */
 	unsigned int ping_outstanding : 1;
-	unsigned int connect_state : 2;
-	int socket;
+	int connect_state : 4;
+	networkHandles net;
 	int msgID;
 	int keepAliveInterval;
 	int retryInterval;
@@ -155,9 +173,13 @@ typedef struct
 	List* inboundMsgs;
 	List* outboundMsgs;				/**< in flight */
 	List* messageQueue;
+	unsigned int qentry_seqno;
 	void* phandle;  /* the persistence handle */
 	MQTTClient_persistence* persistence; /* a persistence implementation */
-	int connectOptionsVersion;
+#if defined(OPENSSL)
+	MQTTClient_SSLOptions *sslopts;
+	SSL_SESSION* session;    /***< SSL session pointer for fast handhake */
+#endif
 } Clients;
 
 int clientIDCompare(void* a, void* b);

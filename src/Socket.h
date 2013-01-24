@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2012 IBM Corp.
+ * Copyright (c) 2009, 2013 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -7,7 +7,8 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Contributors:
- *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - initial implementation and documentation
+ *    Ian Craggs - async client updates
  *******************************************************************************/
 
 #if !defined(SOCKET_H)
@@ -50,7 +51,8 @@
 	#define SOCKET_ERROR -1
 #endif
 /** must be the same as SOCKETBUFFER_INTERRUPTED */
-#define TCPSOCKET_INTERRUPTED -2
+#define TCPSOCKET_INTERRUPTED -22
+#define SSL_FATAL -3
 
 #if !defined(INET6_ADDRSTRLEN)
 #define INET6_ADDRSTRLEN 46 /** only needed for gcc/cygwin on windows */
@@ -110,5 +112,11 @@ int Socket_new(char* addr, int port, int* socket);
 
 int Socket_noPendingWrites(int socket);
 char* Socket_getpeer(int sock);
+
+void Socket_addPendingWrite(int socket);
+void Socket_clearPendingWrite(int socket);
+
+typedef void Socket_writeComplete(int socket);
+void Socket_setWriteCompleteCallback(Socket_writeComplete*);
 
 #endif /* SOCKET_H */

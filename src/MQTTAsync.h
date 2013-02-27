@@ -1,3 +1,4 @@
+// Version: %Z% %W% %I% %E% %U%
 /*******************************************************************************
  * Copyright (c) 2009, 2013 IBM Corp.
  *
@@ -15,7 +16,7 @@
 
 /**
  * @mainpage Asynchronous MQTT client library for C
- * &copy; Copyright IBM Corp. 2009, 2013 and made available under the EPL v1.0
+ * &copy; Copyright IBM Corp. 2009, 2013
  * 
  * @brief An Asynchronous MQTT client library for C.
  *
@@ -400,7 +401,7 @@ DLLExport int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_
  * This function creates an MQTT client ready for connection to the 
  * specified server and using the specified persistent storage (see 
  * MQTTAsync_persistence). See also MQTTAsync_destroy().
- * @param handle A pointer to an ::MQTTClient handle. The handle is
+ * @param handle A pointer to an ::MQTTAsync handle. The handle is
  * populated with a valid client reference following a successful return from
  * this function.  
  * @param serverURI A null-terminated string specifying the server to
@@ -428,14 +429,14 @@ DLLExport int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_
  * ::MQTTCLIENT_PERSISTENCE_USER: Use an application-specific persistence
  * implementation. Using this type of persistence gives control of the 
  * persistence mechanism to the application. The application has to implement
- * the MQTTAsync_persistence interface.
+ * the MQTTClient_persistence interface.
  * @param persistence_context If the application uses 
- * ::MQTTASYNC_PERSISTENCE_NONE persistence, this argument is unused and should
- * be set to NULL. For ::MQTTASYNC_PERSISTENCE_DEFAULT persistence, it
+ * ::MQTTCLIENT_PERSISTENCE_NONE persistence, this argument is unused and should
+ * be set to NULL. For ::MQTTCLIENT_PERSISTENCE_DEFAULT persistence, it
  * should be set to the location of the persistence directory (if set 
  * to NULL, the persistence directory used is the working directory).
- * Applications that use ::MQTTASYNC_PERSISTENCE_USER persistence set this
- * argument to point to a valid MQTTAsync_persistence structure.
+ * Applications that use ::MQTTCLIENT_PERSISTENCE_USER persistence set this
+ * argument to point to a valid MQTTClient_persistence structure.
  * @return ::MQTTASYNC_SUCCESS if the client is successfully created, otherwise
  * an error code is returned.
  */
@@ -1022,7 +1023,7 @@ DLLExport MQTTAsync_nameValue* MQTTAsync_getVersionInfo();
   
  
   * @page publish Publication example
-  * @code
+@code
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
@@ -1157,7 +1158,7 @@ int main(int argc, char* argv[])
   
   * @endcode
   * @page subscribe Subscription example
-  * @code
+@code
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"

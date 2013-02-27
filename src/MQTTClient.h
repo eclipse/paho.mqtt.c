@@ -1,3 +1,4 @@
+// Version: %Z% %W% %I% %E% %U%
 /*******************************************************************************
  * Copyright (c) 2009, 2013 IBM Corp.
  *
@@ -13,9 +14,15 @@
 
 /**
  * @mainpage MQTT Client library for C
- * &copy; Copyright IBM Corp. 2009, 2013 and made available under the EPL v1.0
+ * &copy; Copyright IBM Corp. 2009, 2013
  * 
  * @brief An MQTT client library in C.
+ *
+ * These pages describe the original more synchronous API which might be 
+ * considered easier to use.  Some of the calls will block.  For the new
+ * totally asynchronous API where no calls block, which is especially suitable
+ * for use in windowed environments, see the
+ * <a href="MQTTAsync/html/index.html">MQTT C Client Asynchronous API Documentation</a>.
  *
  * An MQTT client application connects to MQTT-capable servers.
  * A typical client is responsible for collecting information from a telemetry 
@@ -209,7 +216,7 @@ typedef struct
 	int msgid;
 } MQTTClient_message;
 
-#define MQTTClient_message_initializer { "MQTM", 0, 0, NULL, 0, 0, 0, 0 }
+#define MQTTClient_message_initializer { {'M', 'Q', 'T', 'M'}, 0, 0, NULL, 0, 0, 0, 0 }
 
 /**
  * This is a callback function. The client application
@@ -536,7 +543,7 @@ typedef struct
 	MQTTClient_SSLOptions* ssl;
 } MQTTClient_connectOptions;
 
-#define MQTTClient_connectOptions_initializer { "MQTC", 1, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL }
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 1, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL }
 
 /**
   * MQTTClient_libraryInfo is used to store details relating to the currently used
@@ -556,7 +563,7 @@ typedef struct
   * no trace information will be returned.
   * @return an array of strings describing the library.  The last entry is a NULL pointer.
   */
-DLLExport MQTTClient_nameValue* MQTTClient_getVersionInfo();
+DLLExport MQTTClient_nameValue* MQTTClient_getVersionInfo(void);
 
 /**
   * This function attempts to connect a previously-created client (see
@@ -936,7 +943,7 @@ DLLExport void MQTTClient_destroy(MQTTClient* handle);
   * and acknowledgement sequence is used than for QoS1 to ensure no duplication
   * of messages occurs.
   * @page pubsync Synchronous publication example
-  * @code
+@code
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
@@ -985,7 +992,7 @@ int main(int argc, char* argv[])
   * @endcode
   *
   * @page pubasync Asynchronous publication example
-  * @code
+@code{.c}
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
@@ -1069,7 +1076,7 @@ int main(int argc, char* argv[])
   
   * @endcode
   * @page subasync Asynchronous subscription example
-  * @code
+@code
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"

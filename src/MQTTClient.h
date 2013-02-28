@@ -395,7 +395,7 @@ typedef struct
 	int qos;
 } MQTTClient_willOptions;
 
-#define MQTTClient_willOptions_initializer { "MQTW", 0, NULL, NULL, 0, 0 }
+#define MQTTClient_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 0, NULL, NULL, 0, 0 }
 
 /**
 * MQTTClient_sslProperties defines the settings to establish an SSL/TLS connection using the 
@@ -446,7 +446,7 @@ typedef struct
   
 } MQTTClient_SSLOptions;
 
-#define MQTTClient_SSLOptions_initializer { "MQTS", 0, NULL, NULL, NULL, NULL, NULL, 1 }
+#define MQTTClient_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 0, NULL, NULL, NULL, NULL, NULL, 1 }
 
 /**
  * MQTTClient_connectOptions defines several settings that control the way the

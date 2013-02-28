@@ -212,7 +212,7 @@ typedef struct
 	int msgid;
 } MQTTAsync_message;
 
-#define MQTTAsync_message_initializer { "MQTM", 0, 0, NULL, 0, 0, 0, 0 }
+#define MQTTAsync_message_initializer { {'M', 'Q', 'T', 'M'}, 0, 0, NULL, 0, 0, 0, 0 }
 
 /**
  * This is a callback function. The client application
@@ -362,7 +362,7 @@ typedef struct
 	MQTTAsync_token token;   /* output */
 } MQTTAsync_responseOptions;
 
-#define MQTTAsync_responseOptions_initializer { "MQTR", 0, NULL, NULL, 0, 0 }
+#define MQTTAsync_responseOptions_initializer { {'M', 'Q', 'T', 'R'}, 0, NULL, NULL, 0, 0 }
 
 
 /**
@@ -476,7 +476,7 @@ typedef struct
 	int qos;
 } MQTTAsync_willOptions;
 
-#define MQTTAsync_willOptions_initializer { "MQTW", 0, NULL, NULL, 0, 0 }
+#define MQTTAsync_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 0, NULL, NULL, 0, 0 }
 
 /**
 * MQTTAsync_sslProperties defines the settings to establish an SSL/TLS connection using the 
@@ -527,7 +527,7 @@ typedef struct
   
 } MQTTAsync_SSLOptions;
 
-#define MQTTAsync_SSLOptions_initializer { "MQTS", 0, NULL, NULL, NULL, NULL, NULL, 1 }
+#define MQTTAsync_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 0, NULL, NULL, NULL, NULL, NULL, 1 }
 
 /**
  * MQTTAsync_connectOptions defines several settings that control the way the
@@ -629,7 +629,7 @@ typedef struct
 } MQTTAsync_connectOptions;
 
 
-#define MQTTAsync_connectOptions_initializer { "MQTC", 1, 60, 1, 10, NULL, NULL, NULL, 30, 20, NULL, NULL }
+#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 1, 60, 1, 10, NULL, NULL, NULL, 30, 20, NULL, NULL }
 
 /**
   * This function attempts to connect a previously-created client (see
@@ -685,7 +685,7 @@ typedef struct
 	void* context;         
 } MQTTAsync_disconnectOptions;
 
-#define MQTTAsync_disconnectOptions_initializer { "MQTD", 0, 0, NULL, NULL, NULL }
+#define MQTTAsync_disconnectOptions_initializer { {'M', 'Q', 'T', 'D'}, 0, 0, NULL, NULL, NULL }
 
 
 /**

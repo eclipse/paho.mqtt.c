@@ -31,7 +31,7 @@
 #define URI_TCP "tcp://"
 
 #define BUILD_TIMESTAMP "##MQTTCLIENT_BUILD_TAG##"
-#define CLIENT_VERSION  "0.9.0.0"
+#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##"
 
 char* client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
@@ -248,6 +248,7 @@ typedef struct
 
 void MQTTAsync_freeCommand(MQTTAsync_queuedCommand *command);
 void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command);
+int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, int topicLen, MQTTAsync_message* mm);
 #if !defined(NO_PERSISTENCE)
 int MQTTAsync_restoreCommands(MQTTAsyncs* client);
 int MQTTAsync_unpersistQueueEntry(Clients*, qEntry*);
@@ -802,6 +803,8 @@ void MQTTAsync_writeComplete(int socket)
 	if ((found = ListFindItem(handles, &socket, clientSockCompare)) != NULL)
 	{
 		MQTTAsyncs* m = (MQTTAsyncs*)(found->content);
+		
+		time(&(m->c->net.lastContact));
 				
 		/* see if there is a pending write flagged */
 		if (m->pending_write)
@@ -845,14 +848,24 @@ void MQTTAsync_processCommand()
 	int rc = 0;
 	MQTTAsync_queuedCommand* command = NULL;
 	ListElement* cur_command = NULL;
+	List* ignored_clients = NULL;
 	
 	FUNC_ENTRY;
 	Thread_lock_mutex(mqttcommand_mutex);
+	
+	/* only the first command in the list must be processed for any particular client, so if we skip
+	   a command for a client, we must skip all following commands for that client.  Use a list of 
+	   ignored clients to keep track
+	*/
+	ignored_clients = ListInitialize();
 	
 	/* don't try a command until there isn't a pending write for that client, and we are not connecting */
 	while (ListNextElement(commands, &cur_command))
 	{
 		MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)(cur_command->content);
+		
+		if (ListFind(ignored_clients, cmd->client))
+			continue;
 		
 		if (cmd->command.type == CONNECT || (cmd->client->c->connected && 
 			cmd->client->c->connect_state == 0 && Socket_noPendingWrites(cmd->client->c->net.socket)))
@@ -860,7 +873,10 @@ void MQTTAsync_processCommand()
 			command = cmd;
 			break;
 		}
+		else
+			ListAppend(ignored_clients, cmd->client, sizeof(cmd->client));
 	}
+	ListFreeNoContent(ignored_clients);
 	if (command)
 	{
 		ListDetach(commands, command);
@@ -1102,15 +1118,15 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 	sendThread_state = RUNNING;
 	Thread_unlock_mutex(mqttasync_mutex);
 	while (!tostop)
-	{	
-		/* int rc; */		
-	
+	{
+		/*int rc;*/
+		
 		while (commands->count > 0)
 			MQTTAsync_processCommand();
 #if !defined(WIN32)
-		/*rc = */Thread_wait_cond_timeout(send_cond, 1);
+		/*rc =*/ Thread_wait_cond_timeout(send_cond, 1);
 #else
-		/*rc = */Thread_wait_sem_timeout(send_sem, 1);
+		/*rc =*/ Thread_wait_sem_timeout(send_sem, 1);
 #endif
 			
 		MQTTAsync_checkTimeouts();
@@ -1255,12 +1271,12 @@ int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack)
 	if (m->c->connect_state == 3) /* MQTT connect sent - wait for CONNACK */
 	{
 		Connack* connack = (Connack*)pack;
+		Log(LOG_PROTOCOL, 1, NULL, m->c->net.socket, m->c->clientID, connack->rc);
 		if ((rc = connack->rc) == MQTTCLIENT_SUCCESS)
 		{
 			m->c->connected = 1;
 			m->c->good = 1;
 			m->c->connect_state = 0;
-			time(&(m->c->lastContact));
 			if (m->c->cleansession)
 				rc = MQTTAsync_cleanSession(m->c);
 			if (m->c->outboundMsgs->count > 0)
@@ -1271,7 +1287,7 @@ int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack)
 					Messages* m = (Messages*)(outcurrent->content);
 					m->lastTouch = 0;
 				}
-				MQTTProtocol_retry(m->c->lastContact, 1);
+				MQTTProtocol_retry(m->c->net.lastContact, 1);
 				if (m->c->connected != 1)
 					rc = MQTTCLIENT_DISCONNECTED;
 			}
@@ -1336,19 +1352,10 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 					topicLen = 0;
 
 				if (m->ma)
-				{
-					Log(TRACE_MIN, -1, "Calling messageArrived for client %s, queue depth %d",
-						m->c->clientID, m->c->messageQueue->count);
-					Thread_unlock_mutex(mqttasync_mutex);
-					rc = (*(m->ma))(m->context, qe->topicName, topicLen, qe->msg);
-					Thread_lock_mutex(mqttasync_mutex);
-					/* if 0 (false) is returned by the callback then it failed, so we don't remove the message from
-				 	* the queue, and it will be retried later.  If 1 is returned then the message data may have been freed,
-				 	* so we must be careful how we use it.
-				 	*/
-				}
+					rc = MQTTAsync_deliverMessage(m, qe->topicName, topicLen, qe->msg);
 				else 
 					rc = 1;
+					
 				if (rc)
 				{
 					ListRemove(m->c->messageQueue, qe);
@@ -1411,9 +1418,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 							 	else if (sub->qoss->count > 1)
 							 	{
 							 		ListElement* cur_qos = NULL;
-							 		int* element = array;
-							 		 			 		
-							 		array = data.alt.qosList = malloc(sub->qoss->count * sizeof(int));
+							 		int* element = array = data.alt.qosList = malloc(sub->qoss->count * sizeof(int));
 							 		while (ListNextElement(sub->qoss, &cur_qos))
 							 			*element++ = *(int*)(cur_qos->content);
 							 	} 
@@ -2287,10 +2292,22 @@ int MQTTAsync_connecting(MQTTAsyncs* m)
 #if defined(OPENSSL)
 		if (m->ssl)
 		{
-			m->c->net.ssl = SSLSocket_setSocketForSSL(m->c->net.socket, m->c->sslopts);
-			rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket);
-			if (rc == -1)
-				m->c->connect_state = 2;
+			if ((m->c->net.ssl = SSLSocket_setSocketForSSL(m->c->net.socket, m->c->sslopts)) != NULL)
+			{
+				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket);
+				if (rc == -1)
+					m->c->connect_state = 2;
+				else if (rc == SSL_FATAL)
+				{
+					rc = SOCKET_ERROR;
+					goto exit;
+				}
+			}
+			else
+			{
+				rc = SOCKET_ERROR;
+				goto exit;
+			}
 		}
 		else
 		{

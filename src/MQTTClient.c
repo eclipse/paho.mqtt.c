@@ -36,8 +36,8 @@
 
 #define URI_TCP "tcp://"
 
-#define BUILD_TIMESTAMP __DATE__ " " __TIME__ /* __TIMESTAMP__ */
-#define CLIENT_VERSION  "1.0.0.8"
+#define BUILD_TIMESTAMP "##MQTTCLIENT_BUILD_TAG##"
+#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##"
 
 char* client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
@@ -101,6 +101,7 @@ MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc);
 int MQTTClient_cleanSession(Clients* client);
 void MQTTClient_stop();
 int MQTTClient_disconnect_internal(MQTTClient handle, int timeout);
+void MQTTClient_writeComplete(int socket);
 
 typedef struct
 {
@@ -224,6 +225,7 @@ int MQTTClient_create(MQTTClient* handle, char* serverURI, char* clientId,
 		Log_initialize(NULL);
 		bstate->clients = ListInitialize();
 		Socket_outInitialize();
+		Socket_setWriteCompleteCallback(MQTTClient_writeComplete);
 		handles = ListInitialize();
 #if defined(OPENSSL)
 		SSLSocket_initialize();
@@ -881,8 +883,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 			{
 				m->c->connected = 1;
 				m->c->good = 1;
-				m->c->connect_state = 0; //3;
-				time(&(m->c->lastContact));
+				m->c->connect_state = 0;
 				if (m->c->cleansession)
 					rc = MQTTClient_cleanSession(m->c);
 				if (m->c->outboundMsgs->count > 0)
@@ -894,7 +895,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 						Messages* m = (Messages*)(outcurrent->content);
 						m->lastTouch = 0;
 					}
-					MQTTProtocol_retry(m->c->lastContact, 1);
+					MQTTProtocol_retry(m->c->net.lastContact, 1);
 					if (m->c->connected != 1)
 						rc = MQTTCLIENT_DISCONNECTED;
 				}
@@ -904,14 +905,14 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 		}
 	}
 
-	if (rc == SOCKET_ERROR || rc == MQTTCLIENT_PERSISTENCE_ERROR)
+exit:
+	if (rc != MQTTCLIENT_SUCCESS)
 	{
 		Thread_unlock_mutex(mqttclient_mutex);
 		MQTTClient_disconnect(handle, 0); /* not "internal" because we don't want to call connection lost */
 		Thread_lock_mutex(mqttclient_mutex);
 	}
 
-exit:
     if (m->c->will)
     {
       free(m->c->will);
@@ -938,21 +939,24 @@ int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal)
 		rc = MQTTCLIENT_FAILURE;
 		goto exit;
 	}
-	if (m->c->connected == 0)
+	if (m->c->connected == 0 && m->c->connect_state == 0)
 	{
 		rc = MQTTCLIENT_DISCONNECTED;
 		goto exit;
 	}
 	was_connected = m->c->connected; /* should be 1 */
-	start = MQTTClient_start_clock();
-	m->c->connect_state = -2; /* indicate disconnecting */
-	while (m->c->inboundMsgs->count > 0 || m->c->outboundMsgs->count > 0)
-	{	/* wait for all inflight message flows to finish, up to timeout */
-		if (MQTTClient_elapsed(start) >= timeout)
-			break;
-		Thread_unlock_mutex(mqttclient_mutex);
-		MQTTClient_yield();
-		Thread_lock_mutex(mqttclient_mutex);
+	if (m->c->connected != 0)
+	{
+		start = MQTTClient_start_clock();
+		m->c->connect_state = -2; /* indicate disconnecting */
+		while (m->c->inboundMsgs->count > 0 || m->c->outboundMsgs->count > 0)
+		{ /* wait for all inflight message flows to finish, up to timeout */
+			if (MQTTClient_elapsed(start) >= timeout)
+				break;
+			Thread_unlock_mutex(mqttclient_mutex);
+			MQTTClient_yield();
+			Thread_lock_mutex(mqttclient_mutex);
+		}
 	}
 
 	MQTTProtocol_closeSession(m->c, 0);
@@ -1663,4 +1667,52 @@ MQTTClient_nameValue* MQTTClient_getVersionInfo()
 	libinfo[i].name = NULL;
 	libinfo[i].value = NULL;
 	return libinfo;
+}
+
+
+/**
+ * See if any pending writes have been completed, and cleanup if so.
+ * Cleaning up means removing any publication data that was stored because the write did
+ * not originally complete.
+ */
+void MQTTProtocol_checkPendingWrites()
+{
+	FUNC_ENTRY;
+	if (state.pending_writes.count > 0)
+	{
+		ListElement* le = state.pending_writes.first;
+		while (le)
+		{
+			if (Socket_noPendingWrites(((pending_write*)(le->content))->socket))
+			{
+				MQTTProtocol_removePublication(((pending_write*)(le->content))->p);
+				state.pending_writes.current = le;
+				ListRemove(&(state.pending_writes), le->content); /* does NextElement itself */
+				le = state.pending_writes.current;
+			}
+			else
+				ListNextElement(&(state.pending_writes), &le);
+		}
+	}
+	FUNC_EXIT;
+}
+
+
+void MQTTClient_writeComplete(int socket)				
+{
+	ListElement* found = NULL;
+	
+	FUNC_ENTRY;
+	/* a partial write is now complete for a socket - this will be on a publish*/
+	
+	MQTTProtocol_checkPendingWrites();
+	
+	/* find the client using this socket */
+	if ((found = ListFindItem(handles, &socket, clientSockCompare)) != NULL)
+	{
+		MQTTClients* m = (MQTTClients*)(found->content);
+		
+		time(&(m->c->net.lastContact));			
+	}
+	FUNC_EXIT;
 }

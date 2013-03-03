@@ -128,7 +128,7 @@ int MQTTPacket_send_pingreq(networkHandles* net, char* clientID)
 	header.byte = 0;
 	header.bits.type = PINGREQ;
 	rc = MQTTPacket_send(net, header, NULL, 0);
-	Log(LOG_PROTOCOL, 20, NULL, socket, clientID, rc);
+	Log(LOG_PROTOCOL, 20, NULL, net->socket, clientID, rc);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

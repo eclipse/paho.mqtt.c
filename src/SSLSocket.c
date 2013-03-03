@@ -18,17 +18,18 @@
 
 #if defined(OPENSSL)
 
-
-#include <openssl/err.h>
-
-#include "Socket.h"
-#include "SSLSocket.h"
 #include "SocketBuffer.h"
-
+#include "MQTTClient.h"
+#include "SSLSocket.h"
 #include "Log.h"
 #include "StackTrace.h"
+#include "Socket.h"
 
 #include "Heap.h"
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/crypto.h>
 
 extern Sockets s;
 

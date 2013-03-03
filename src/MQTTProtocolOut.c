@@ -92,7 +92,6 @@ int MQTTProtocol_connect(char* ip_address, Clients* aClient)
 
 	FUNC_ENTRY;
 	aClient->good = 1;
-	time(&(aClient->lastContact));
 
 	addr = MQTTProtocol_addressPort(ip_address, &port);
 	rc = Socket_new(addr, port, &(aClient->net.socket));

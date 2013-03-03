@@ -188,6 +188,9 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, int buflen
 	else
 #endif
 		rc = Socket_putdatas(net->socket, buf, buf0len, 1, &buffer, &buflen);
+		
+	if (rc == TCPSOCKET_COMPLETE)
+		time(&(net->lastContact));
 	
 	if (rc != TCPSOCKET_INTERRUPTED)
 	  free(buf);
@@ -232,6 +235,10 @@ int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffe
 	else
 #endif
 		rc = Socket_putdatas(net->socket, buf, buf0len, count, buffers, buflens);
+		
+	if (rc == TCPSOCKET_COMPLETE)
+		time(&(net->lastContact));
+	
 	if (rc != TCPSOCKET_INTERRUPTED)
 	  free(buf);
 	FUNC_EXIT_RC(rc);
@@ -533,6 +540,7 @@ int MQTTPacket_send_ack(int type, int msgid, int dup, networkHandles *net)
  * Send an MQTT PUBACK packet down a socket.
  * @param msgid the MQTT message id to use
  * @param socket the open socket to send the data to
+ * @param clientID the string client identifier, only used for tracing
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
 int MQTTPacket_send_puback(int msgid, networkHandles* net, char* clientID)
@@ -565,6 +573,7 @@ void MQTTPacket_freeSuback(Suback* pack)
  * Send an MQTT PUBREC packet down a socket.
  * @param msgid the MQTT message id to use
  * @param socket the open socket to send the data to
+ * @param clientID the string client identifier, only used for tracing
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
 int MQTTPacket_send_pubrec(int msgid, networkHandles* net, char* clientID)
@@ -582,8 +591,9 @@ int MQTTPacket_send_pubrec(int msgid, networkHandles* net, char* clientID)
 /**
  * Send an MQTT PUBREL packet down a socket.
  * @param msgid the MQTT message id to use
- * @param dup the MQTT DUP flag
+ * @param dup boolean - whether to set the MQTT DUP flag
  * @param socket the open socket to send the data to
+ * @param clientID the string client identifier, only used for tracing
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
 int MQTTPacket_send_pubrel(int msgid, int dup, networkHandles* net, char* clientID)
@@ -602,6 +612,7 @@ int MQTTPacket_send_pubrel(int msgid, int dup, networkHandles* net, char* client
  * Send an MQTT PUBCOMP packet down a socket.
  * @param msgid the MQTT message id to use
  * @param socket the open socket to send the data to
+ * @param clientID the string client identifier, only used for tracing
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
 int MQTTPacket_send_pubcomp(int msgid, networkHandles* net, char* clientID)
@@ -643,6 +654,7 @@ void* MQTTPacket_ack(unsigned char aHeader, char* data, int datalen)
  * @param qos the value to use for the MQTT QoS setting
  * @param retained boolean - whether to set the MQTT retained flag
  * @param socket the open socket to send the data to
+ * @param clientID the string client identifier, only used for tracing
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
 int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, networkHandles* net, char* clientID)

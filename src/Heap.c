@@ -25,6 +25,7 @@
 #include "Log.h"
 #include "StackTrace.h"
 #include "Thread.h"
+char* Broker_recordFFDC(char* symptoms);
 
 #include <memory.h>
 #include <stdlib.h>
@@ -430,6 +431,12 @@ void Log(int log_level, int msgno, char* format, ...)
 	printf("Log %s", format);
 }
 
+char* Broker_recordFFDC(char* symptoms)
+{
+	printf("recordFFDC");
+	return "";
+}
+
 #define malloc(x) mymalloc(__FILE__, __LINE__, x)
 #define realloc(a, b) myrealloc(__FILE__, __LINE__, a, b)
 #define free(x) myfree(__FILE__, __LINE__, x)
@@ -449,7 +456,7 @@ int main(int argc, char *argv[])
 	h = realloc(h, 255);
 	h = realloc(h, 2225);
 	h = realloc(h, 22225);
-	printf("freeing h\n");
+    printf("freeing h\n");
 	free(h);
 	Heap_terminate();
 	printf("Finishing\n");

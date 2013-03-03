@@ -497,12 +497,13 @@ void MQTTProtocol_keepalive(time_t now)
 	while (current)
 	{
 		Clients* client =	(Clients*)(current->content);
-		ListNextElement(bstate->clients, &current);
-		if (client->connected && client->keepAliveInterval > 0 && Socket_noPendingWrites(client->net.socket)
-				&& (difftime(now, client->lastContact) >= client->keepAliveInterval))
+		ListNextElement(bstate->clients, &current); 
+		if (client->connected && client->keepAliveInterval > 0 && client->ping_outstanding == 0 &&
+		        Socket_noPendingWrites(client->net.socket) &&
+				(difftime(now, client->net.lastContact) >= client->keepAliveInterval))
 		{
 			MQTTPacket_send_pingreq(&client->net, client->clientID);
-			client->lastContact = now;
+			client->net.lastContact = now;
 			client->ping_outstanding = 1;
 		}
 	}

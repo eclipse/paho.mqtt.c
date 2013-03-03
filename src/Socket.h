@@ -20,15 +20,6 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #define MAXHOSTNAMELEN 256
-
-/* undefine TCP constants which are defined (differently) in <openssl/err.h> */
-#undef EAGAIN 
-#undef EINTR 
-#undef EINPROGRESS
-#undef EWOULDBLOCK 
-#undef ENOTCONN
-#undef ECONNRESET
-
 #define EAGAIN WSAEWOULDBLOCK
 #define EINTR WSAEINTR
 #define EINPROGRESS WSAEINPROGRESS

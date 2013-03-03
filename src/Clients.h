@@ -144,6 +144,7 @@ BE*/
 typedef struct
 {
 	int socket;
+	time_t lastContact;
 #if defined(OPENSSL)
 	SSL* ssl;
 	SSL_CTX* ctx;
@@ -168,7 +169,6 @@ typedef struct
 	int keepAliveInterval;
 	int retryInterval;
 	int maxInflightMessages;
-	time_t lastContact;
 	willMessages* will;
 	List* inboundMsgs;
 	List* outboundMsgs;				/**< in flight */

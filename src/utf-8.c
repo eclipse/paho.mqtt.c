@@ -10,6 +10,13 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
+
+/*
+  See page 104 of the Unicode Standard 5.0 for the list of well formed
+  UTF-8 byte sequences.
+
+*/
+
 #include <stdlib.h>
 #include <string.h>
 

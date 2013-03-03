@@ -1,3 +1,4 @@
+// Version: %Z% %W% %I% %E% %U%
 /*******************************************************************************
  * Copyright (c) 2009, 2013 IBM Corp.
  *
@@ -1087,7 +1088,7 @@ void onSend(void* context, MQTTAsync_successData* response)
 
 void onConnectFailure(void* context, MQTTAsync_failureData* response)
 {
-	printf("Connect failed, rc %d\n", response->code);
+	printf("Connect failed, rc %d\n", response ? response->code : 0);
 	finished = 1;
 }
 
@@ -1232,14 +1233,14 @@ void onSubscribe(void* context, MQTTAsync_successData* response)
 
 void onSubscribeFailure(void* context, MQTTAsync_failureData* response)
 {
-	printf("Subscribe failed, rc %d\n", response->code);
+	printf("Subscribe failed, rc %d\n", response ? response->code : 0);
 	finished = 1;
 }
 
 
 void onConnectFailure(void* context, MQTTAsync_failureData* response)
 {
-	printf("Connect failed, rc %d\n", response->code);
+	printf("Connect failed, rc %d\n", response ? response->code : 0);
 	finished = 1;
 }
 

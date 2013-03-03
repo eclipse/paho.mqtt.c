@@ -1339,7 +1339,11 @@ MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
 			if (m->c->connect_state == 1 || m->c->connect_state == 2)
 				*rc = 0;  /* waiting for connect state to clear */
 			else
+			{
 				pack = MQTTPacket_Factory(&m->c->net, rc);
+				if (*rc == TCPSOCKET_INTERRUPTED)
+					*rc = 0;
+			}
 		}
 		if (pack)
 		{

@@ -49,6 +49,17 @@ The Paho C client comprises four shared libraries:
 
 Detailed API documentation is available by building the Doxygen docs in the  ``doc`` directory. A [snapshot is also available online](http://www.eclipse.org/paho/files/mqttdoc/Cclient/index.html).
 
+Samples are available in the Doxygen docs and also in ``src/samples`` for reference.
+
+Note that using the C headers from a C++ program requires the following declaration as part of the C++ code:
+
+```
+    extern "C" {
+    #include "MQTTClient.h"
+    #include "MQTTClientPersistence.h"
+    }
+```
+
 ## Runtime tracing
 
 A number of environment variables control runtime tracing of the C library. 

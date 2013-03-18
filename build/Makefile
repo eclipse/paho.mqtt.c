@@ -1,7 +1,11 @@
 # Build output is produced in the current directory.
+
 # MQTTCLIENT_DIR must point to the base directory containing the MQTT client source code.
 # Example:  make -f makefile MQTTCLIENT_DIR=V3Client/MQTTClient
+
 # Note: this makefile requires gnu make which you may need to obtain if compiling on AIX or Solaris
+# Note: on OS X you should install XCode and the associated command-line tools
+
 ifndef MQTTCLIENT_DIR
   MQTTCLIENT_DIR = $(CURDIR)
 endif
@@ -15,7 +19,7 @@ SAMPLES_DIR = ${SSL_DIR}/../com.ibm.mq.mqxr.listener/SDK/clients/c/samples/
 endif
 
 MQTTLIB = mqttv3c
-VPATH   = ${MQTTCLIENT_DIR}  
+VPATH   = ${MQTTCLIENT_DIR}
 ALL_SOURCE_FILES = $(wildcard $(MQTTCLIENT_DIR)/*.c)
 SOURCE_FILES = $(filter-out $(MQTTCLIENT_DIR)/MQTTAsync.c $(MQTTCLIENT_DIR)/MQTTVersion.c $(MQTTCLIENT_DIR)/SSLSocket.c, $(ALL_SOURCE_FILES))
 ALL_HEADERS = $(MQTTCLIENT_DIR)/*.h
@@ -32,13 +36,13 @@ MQTTLIB_AS = mqttv3as
 SOURCE_FILES_AS = $(filter-out $(MQTTCLIENT_DIR)/MQTTClient.c $(MQTTCLIENT_DIR)/MQTTVersion.c, $(ALL_SOURCE_FILES))
 
 # In most cases the targets will be built for the native platform. However, to allow for cross compiling,
-# a target platform variable can be set to override the platform choice. If this variable is set to 
-# a recognised string (currently just 'Arm') the appropriate values of OSTYPE and MACHINETYPE are set.  
+# a target platform variable can be set to override the platform choice. If this variable is set to
+# a recognised string (currently just 'Arm') the appropriate values of OSTYPE and MACHINETYPE are set.
 ifeq ($(TARGET_PLATFORM),Arm)
 	OSTYPE = Linux
 	MACHINETYPE = Arm
 else
-	ifeq ($(OS),Windows_NT)   
+	ifeq ($(OS),Windows_NT)
 		OSTYPE = $(OS)
 	else
 		OSTYPE = $(shell uname -s)
@@ -67,12 +71,12 @@ ifeq ($(MACHINETYPE),x86_64)
 ifdef BUILD_SAMPLES
 all: linux_ia64 ${MQTTLIB_IA64} ${MQTTLIB_IA64_A} ${MQTTLIB_IA64_S} ${MQTTLIB_IA64_AS} samples
 else
-all: linux_ia64 ${MQTTLIB_IA64} ${MQTTLIB_IA64_A} ${MQTTLIB_IA64_S} ${MQTTLIB_IA64_AS} 
+all: linux_ia64 ${MQTTLIB_IA64} ${MQTTLIB_IA64_A} ${MQTTLIB_IA64_S} ${MQTTLIB_IA64_AS}
 endif
 
 linux_ia64:
 	-mkdir linux_ia64
-	
+
 samples:
 	-mkdir ${SAMPLES_DIR}/linux_ia64
 	${CC} -m64 -I ${MQTTCLIENT_DIR} -L ${MQTTCLIENT_DIR}/linux_ia64 -o ${SAMPLES_DIR}/linux_ia64/MQTTV3Sample ${SAMPLES_DIR}/MQTTV3Sample.c -lmqttv3c -lpthread
@@ -83,20 +87,20 @@ samples:
 ${MQTTLIB_IA64}: ${SOURCE_FILES} ${HEADERS}
 	${CC} -m64 ${CCFLAGS_SO} ${LDFLAGS} -o $@ ${SOURCE_FILES}
 	strip $@
-	
+
 ${MQTTLIB_IA64_S}: ${SOURCE_FILES_S} ${HEADERS}
 	${CC} -m64 ${CCFLAGS_SO} ${LDFLAGS_S} -o $@ ${SOURCE_FILES_S} -DOPENSSL
 	strip $@
 
 ${MQTTLIB_IA64_A}: ${SOURCE_FILES_A} ${HEADERS_A}
-	${CC} -m64 ${CCFLAGS_SO} ${LDFLAGS_A} -o $@ ${SOURCE_FILES_A} 
+	${CC} -m64 ${CCFLAGS_SO} ${LDFLAGS_A} -o $@ ${SOURCE_FILES_A}
 	strip $@
 
 ${MQTTLIB_IA64_AS}: ${SOURCE_FILES_AS} ${HEADERS_A}
 	${CC} -m64 ${CCFLAGS_SO} ${LDFLAGS_AS} -o $@ ${SOURCE_FILES_AS} -DOPENSSL
 	strip $@
-	
-else 
+
+else
 ifeq ($(MACHINETYPE),ppc64)
 	CC = gcc
 
@@ -113,7 +117,7 @@ ifeq ($(MACHINETYPE),ppc64)
 	MQTTLIB_PPC64_A = linux_ppc64/lib${MQTTLIB_A}.so
 	MQTTLIB_PPC64_AS = linux_ppc64/lib${MQTTLIB_AS}.so
 
-all: linux_ppc64 ${MQTTLIB_PPC64} ${MQTTLIB_PPC64_A} #${MQTTLIB_PPC64_S} ${MQTTLIB_PPC64_AS} 
+all: linux_ppc64 ${MQTTLIB_PPC64} ${MQTTLIB_PPC64_A} #${MQTTLIB_PPC64_S} ${MQTTLIB_PPC64_AS}
 
 linux_ppc64:
 	-mkdir linux_ppc64
@@ -121,20 +125,20 @@ linux_ppc64:
 ${MQTTLIB_PPC64}: ${SOURCE_FILES} ${HEADERS}
 	${CC} -m64 ${CCFLAGS_SO} ${LDFLAGS} -o $@ ${SOURCE_FILES}
 	strip $@
-	
+
 ${MQTTLIB_PPC64_S}: ${SOURCE_FILES_S} ${HEADERS}
 	${CC} -m64 ${CCFLAGS_SO} ${LDFLAGS_S} -o $@ ${SOURCE_FILES_S} -DOPENSSL
 	strip $@
 
 ${MQTTLIB_PPC64_A}: ${SOURCE_FILES_A} ${HEADERS_A}
-	${CC} -m64 ${CCFLAGS_SO} ${LDFLAGS_A} -o $@ ${SOURCE_FILES_A} 
+	${CC} -m64 ${CCFLAGS_SO} ${LDFLAGS_A} -o $@ ${SOURCE_FILES_A}
 	strip $@
 
 ${MQTTLIB_PPC64_AS}: ${SOURCE_FILES_AS} ${HEADERS_A}
 	${CC} -m64 ${CCFLAGS_SO} ${LDFLAGS_AS} -o $@ ${SOURCE_FILES_AS} -DOPENSSL
 	strip $@
-	
-else 
+
+else
 ifeq ($(MACHINETYPE),s390x)
   CC 	   = gcc
 
@@ -144,7 +148,7 @@ ifeq ($(MACHINETYPE),s390x)
   LDFLAGS_EXE = -lpthread
 
   MQTTLIB_390 = linux_s390x/lib${MQTTLIB}.so
-  
+
   all: ${MQTTLIB_390}
 
 ${MQTTLIB_390}: ${SOURCE_FILES} ${HEADERS}
@@ -232,7 +236,7 @@ linux_ia32:
 ${MQTTLIB_IA32}: ${SOURCE_FILES} ${HEADERS}
 	${CC} -m32 ${CCFLAGS_SO} ${LDFLAGS} -o $@ ${SOURCE_FILES}
 	strip $@
-	
+
 ${MQTTLIB_IA32_S}: ${SOURCE_FILES_S} ${HEADERS}
 	${CC} -m32 ${CCFLAGS_SO} ${LDFLAGS_S} -o $@ ${SOURCE_FILES_S} -DOPENSSL
 	strip $@
@@ -254,6 +258,59 @@ endif
 
 endif
 
+ifeq ($(OSTYPE),Darwin)
+
+ifeq ($(MACHINETYPE),x86_64)
+	CC = gcc
+
+	CCFLAGS_SO = -fPIC -Os -Wall -I ${SSL_DIR}/include
+	CCFLAGS_EXE = -I ${MQTTCLIENT_DIR}
+	LDFLAGS = -shared -Wl,-install_name,lib${MQTTLIB}.so
+	LDFLAGS_S = -shared -Wl,-install_name,lib${MQTTLIB_S}.so -ldl -Wl,-all_load -L${SSL_DIR}/lib -lcrypto -lssl
+	LDFLAGS_A = -shared -Wl,-install_name,lib${MQTTLIB_A}.so
+	LDFLAGS_AS = -shared -Wl,-install_name,lib${MQTTLIB_AS}.so -ldl -Wl,-all_load -L${SSL_DIR}/lib -lcrypto -lssl
+	LDFLAGS_EXE = -lpthread
+
+	MQTTLIB_IA64 = darwin_ia64/lib${MQTTLIB}.so
+	MQTTLIB_IA64_S = darwin_ia64/lib${MQTTLIB_S}.so
+	MQTTLIB_IA64_A = darwin_ia64/lib${MQTTLIB_A}.so
+	MQTTLIB_IA64_AS = darwin_ia64/lib${MQTTLIB_AS}.so
+
+ifdef BUILD_SAMPLES
+all: darwin_ia64 ${MQTTLIB_IA64} ${MQTTLIB_IA64_A} ${MQTTLIB_IA64_S} ${MQTTLIB_IA64_AS} samples
+else
+all: darwin_ia64 ${MQTTLIB_IA64} ${MQTTLIB_IA64_A} ${MQTTLIB_IA64_S} ${MQTTLIB_IA64_AS}
+endif
+
+darwin_ia64:
+	-mkdir darwin_ia64
+
+samples:
+	-mkdir ${SAMPLES_DIR}/darwin_ia64
+	${CC} -m64 -I ${MQTTCLIENT_DIR} -L ${MQTTCLIENT_DIR}/darwin_ia64 -o ${SAMPLES_DIR}/darwin_ia64/MQTTV3Sample ${SAMPLES_DIR}/MQTTV3Sample.c -lmqttv3c -lpthread
+	${CC} -m64 -I ${MQTTCLIENT_DIR} -L ${MQTTCLIENT_DIR}/darwin_ia64 -o ${SAMPLES_DIR}/darwin_ia64/MQTTV3SSample ${SAMPLES_DIR}/MQTTV3SSample.c -lmqttv3cs -lpthread
+	${CC} -m64 -I ${MQTTCLIENT_DIR} -L ${MQTTCLIENT_DIR}/darwin_ia64 -o ${SAMPLES_DIR}/darwin_ia64/MQTTV3ASample ${SAMPLES_DIR}/MQTTV3ASample.c -lmqttv3a -lpthread
+	${CC} -m64 -I ${MQTTCLIENT_DIR} -L ${MQTTCLIENT_DIR}/darwin_ia64 -o ${SAMPLES_DIR}/darwin_ia64/MQTTV3ASSample ${SAMPLES_DIR}/MQTTV3ASSample.c -lmqttv3as -lpthread
+
+${MQTTLIB_IA64}: ${SOURCE_FILES} ${HEADERS}
+	${CC} -m64 ${CCFLAGS_SO} ${LDFLAGS} -o $@ ${SOURCE_FILES}
+	strip -x $@
+
+${MQTTLIB_IA64_S}: ${SOURCE_FILES_S} ${HEADERS}
+	${CC} -m64 ${CCFLAGS_SO} ${LDFLAGS_S} -o $@ ${SOURCE_FILES_S} -DOPENSSL
+	strip -x $@
+
+${MQTTLIB_IA64_A}: ${SOURCE_FILES_A} ${HEADERS_A}
+	${CC} -m64 ${CCFLAGS_SO} ${LDFLAGS_A} -o $@ ${SOURCE_FILES_A}
+	strip -x $@
+
+${MQTTLIB_IA64_AS}: ${SOURCE_FILES_AS} ${HEADERS_A}
+	${CC} -m64 ${CCFLAGS_SO} ${LDFLAGS_AS} -o $@ ${SOURCE_FILES_AS} -DOPENSSL
+	strip -x $@
+
+endif
+
+endif
 
 ifeq ($(OSTYPE),AIX)
 # applications must be linked with -I. -L. -lmqttv3c -Wl,-brtl -pthread
@@ -279,16 +336,16 @@ ifeq ($(OSTYPE),Windows_NT)
 
   # compiler flags
   CPPFLAGS = /D "WIN32" /D "_UNICODE" /D "UNICODE" /D "_CRT_SECURE_NO_WARNINGS"
-  CFLAGS = /nologo /c /O2 /W3 /Fd /MD /TC   
+  CFLAGS = /nologo /c /O2 /W3 /Fd /MD /TC
   CPPFLAGS_S = /D "OPENSSL" /I ${SSL_DIR}/include
 
   # linker flags
-  LINKFLAGS = /nologo /machine:x86 /manifest 
+  LINKFLAGS = /nologo /machine:x86 /manifest
   WINLIBS = kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ws2_32.lib
   WINLIBS_S = crypt32.lib ssleay32.lib libeay32.lib
   SSLLIBPATH = /LIBPATH:${SSL_DIR}/output/lib
   # Flags to link C libraries
-  LIBLINKFLAGS = /dll   
+  LIBLINKFLAGS = /dll
   IMP = /implib:$(@:.dll=.lib)
   LIBPDB = /pdb:$(@:.dll=.pdb)
   LIBMAP = /map:$(@:.dll=.map)
@@ -298,7 +355,7 @@ ifeq ($(OSTYPE),Windows_NT)
   MAINLINKFLAGS = /subsystem:console
   EXEPDB = /pdb:$(@:.exe=.pdb)
   EXEMAP = /map:$(@:.exe=.map)
-  MAINLDFLAGS = $(LINKFLAGS) $(WINLIBS) $(MAINLINKFLAGS) $(EXEPDB) $(EXEMAP) 
+  MAINLDFLAGS = $(LINKFLAGS) $(WINLIBS) $(MAINLINKFLAGS) $(EXEPDB) $(EXEMAP)
 
   MQTTLDLIB = windows_ia32/$(MQTTLIB).lib
   MQTTDLL   = windows_ia32/$(MQTTLIB).dll
@@ -349,11 +406,11 @@ $(MQTTDLL_AS): ${SOURCE_FILES}  ${HEADERS}
 	$(LD) $(LIBLDFLAGS_S) *.obj /out:$(MQTTDLL_AS)
 	mt -manifest windows_ia32/mqttv3as.dll.manifest -outputresource:$(MQTTDLL_AS)\;2
 
-endif  
+endif
 
 #########################################################################################################
-# The following was how the C Clients were built using cygwin GNU make and has been left here as a reference 
-# This has been converted to use ming GNU make (which uses the native format of file names) 
+# The following was how the C Clients were built using cygwin GNU make and has been left here as a reference
+# This has been converted to use ming GNU make (which uses the native format of file names)
 #
 #$(MQTTDLL): $(shell cygpath -au ${SOURCE_FILES})  $(shell cygpath -au ${HEADERS})
 #	-mkdir windows_ia32
@@ -362,4 +419,4 @@ endif
 #	mt -manifest windows_ia32/mqttv3c.dll.manifest -outputresource:$(MQTTDLL)\;2
 #
 #endif
-#########################################################################################################  
+#########################################################################################################

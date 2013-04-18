@@ -106,7 +106,7 @@ int MQTTProtocol_connect(char* ip_address, Clients* aClient)
 #if defined(OPENSSL)
 		if (ssl)
 		{
-			if((aClient->net.ssl = SSLSocket_setSocketForSSL(aClient->net.socket, aClient->sslopts)) != NULL)
+			if (SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts) != 1)
 			{
 				rc = SSLSocket_connect(aClient->net.ssl, aClient->net.socket);
 				if (rc == -1)

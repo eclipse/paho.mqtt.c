@@ -29,15 +29,17 @@
 
 #include <openssl/ssl.h>
 #include "SocketBuffer.h"
+#include "Clients.h"
 
 #define URI_SSL "ssl://"
 
 int SSLSocket_initialize();
-SSL* SSLSocket_setSocketForSSL(int socket, MQTTClient_SSLOptions* opts);
+void SSLSocket_terminate();
+int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts);
 int SSLSocket_getch(SSL* ssl, int socket, char* c);
 char *SSLSocket_getdata(SSL* ssl, int socket, int bytes, int* actual_len);
 
-int SSLSocket_close(SSL* ssl);
+int SSLSocket_close(networkHandles* net);
 int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, int buf0len, int count, char** buffers, int* buflens);
 int SSLSocket_connect(SSL* ssl, int socket);
 

@@ -392,6 +392,9 @@ void MQTTAsync_terminate(void)
 		ListFree(commands);
 		handles = NULL;
 		Socket_outTerminate();
+#if defined(OPENSSL)
+		SSLSocket_terminate();
+#endif
 		#if defined(HEAP_H)
 			Heap_terminate();
 		#endif
@@ -1567,8 +1570,7 @@ void MQTTProtocol_closeSession(Clients* client, int sendwill)
 		if (client->connected || client->connect_state)
 			MQTTPacket_send_disconnect(&client->net, client->clientID);
 #if defined(OPENSSL)
-		if (client->net.ssl)
-			SSLSocket_close(client->net.ssl);
+		SSLSocket_close(&client->net);
 #endif
 		Socket_close(client->net.socket);
 		client->net.socket = 0;
@@ -2298,8 +2300,11 @@ int MQTTAsync_connecting(MQTTAsyncs* m)
 #if defined(OPENSSL)
 		if (m->ssl)
 		{
-			if ((m->c->net.ssl = SSLSocket_setSocketForSSL(m->c->net.socket, m->c->sslopts)) != NULL)
+			if (SSLSocket_setSocketForSSL(&m->c->net, m->c->sslopts) != MQTTASYNC_SUCCESS)
 			{
+				if (m->c->session != NULL)
+					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)
+						Log(TRACE_MIN, -1, "Failed to set SSL session with stored data, non critical");
 				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket);
 				if (rc == -1)
 					m->c->connect_state = 2;
@@ -2308,6 +2313,8 @@ int MQTTAsync_connecting(MQTTAsyncs* m)
 					rc = SOCKET_ERROR;
 					goto exit;
 				}
+				else if (rc == 1 && !m->c->cleansession && m->c->session == NULL)
+					m->c->session = SSL_get1_session(m->c->net.ssl);
 			}
 			else
 			{
@@ -2400,6 +2407,13 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 				*rc = MQTTAsync_connecting(m);
 			else
 				pack = MQTTPacket_Factory(&m->c->net, rc);
+			if ((m->c->connect_state == 3) && (*rc == SOCKET_ERROR))
+			{
+				Log( TRACE_MINIMUM, -1, "CONNECT sent but MQTTPacket_Factory has returned SOCKET_ERROR, calling connect.onFailure");
+				MQTTProtocol_closeSession(m->c, 0);
+				if (m->connect.onFailure)
+					(*(m->connect.onFailure))(m->connect.context, NULL);
+			}
 		}
 		if (pack)
 		{

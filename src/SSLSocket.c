@@ -302,6 +302,7 @@ int SSLSocket_initialize()
 	int rc = 0;
 	/*int prc;*/
 	int i;
+	int lockMemSize;
 	
 	FUNC_ENTRY;
 
@@ -317,12 +318,17 @@ int SSLSocket_initialize()
 	
 	OpenSSL_add_all_algorithms();
 	
-	sslLocks = calloc(CRYPTO_num_locks(), sizeof(ssl_mutex_type));
+	lockMemSize = CRYPTO_num_locks() * sizeof(ssl_mutex_type);
+
+	sslLocks = malloc(lockMemSize);
 	if (!sslLocks)
 	{
 		rc = -1;
 		goto exit;
 	}
+	else
+		memset(sslLocks, 0, lockMemSize);
+
 	for (i = 0; i < CRYPTO_num_locks(); i++)
 	{
 		/* prc = */SSL_create_mutex(&sslLocks[i]);
@@ -338,24 +344,31 @@ exit:
 	return rc;
 }
 
-SSL_CTX* SSLSocket_createContext(int socket, MQTTClient_SSLOptions* opts) 
+void SSLSocket_terminate()
+{
+	FUNC_ENTRY;
+	free(sslLocks);
+	FUNC_EXIT;
+}
+
+int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 {
 	int rc = 1;
-	SSL_CTX* ctx = NULL;
 	char* ciphers = NULL;
 	
 	FUNC_ENTRY;
-	if ((ctx = SSL_CTX_new(SSLv23_client_method())) == NULL)	/* SSLv23 for compatibility with SSLv2, SSLv3 and TLSv1 */
-	{
-		SSLSocket_error("SSL_CTX_new", NULL, socket, rc);
-		goto exit;
-	}		
+	if (net->ctx == NULL)
+		if ((net->ctx = SSL_CTX_new(SSLv23_client_method())) == NULL)	/* SSLv23 for compatibility with SSLv2, SSLv3 and TLSv1 */
+		{
+			SSLSocket_error("SSL_CTX_new", NULL, net->socket, rc);
+			goto exit;
+		}
 	
 	if (opts->keyStore)
 	{
-		if ((rc = SSL_CTX_use_certificate_chain_file(ctx, opts->keyStore)) != 1)
+		if ((rc = SSL_CTX_use_certificate_chain_file(net->ctx, opts->keyStore)) != 1)
 		{
-			SSLSocket_error("SSL_CTX_use_certificate_chain_file", NULL, socket, rc);
+			SSLSocket_error("SSL_CTX_use_certificate_chain_file", NULL, net->socket, rc);
 			goto free_ctx; /*If we can't load the certificate (chain) file then loading the privatekey won't work either as it needs a matching cert already loaded */
 		}	
 			
@@ -364,29 +377,29 @@ SSL_CTX* SSLSocket_createContext(int socket, MQTTClient_SSLOptions* opts)
 
         if (opts->privateKeyPassword != NULL)
         {
-            SSL_CTX_set_default_passwd_cb(ctx, pem_passwd_cb);
-            SSL_CTX_set_default_passwd_cb_userdata(ctx, (void*)opts->privateKeyPassword);
+            SSL_CTX_set_default_passwd_cb(net->ctx, pem_passwd_cb);
+            SSL_CTX_set_default_passwd_cb_userdata(net->ctx, (void*)opts->privateKeyPassword);
         }
 		
 		/* support for ASN.1 == DER format? DER can contain only one certificate? */
-		if ((rc = SSL_CTX_use_PrivateKey_file(ctx, opts->privateKey, SSL_FILETYPE_PEM)) != 1)
+		if ((rc = SSL_CTX_use_PrivateKey_file(net->ctx, opts->privateKey, SSL_FILETYPE_PEM)) != 1)
 		{
-			SSLSocket_error("SSL_CTX_use_PrivateKey_file", NULL, socket, rc);
+			SSLSocket_error("SSL_CTX_use_PrivateKey_file", NULL, net->socket, rc);
 			goto free_ctx;
 		}  
 	}
 
 	if (opts->trustStore)
 	{
-		if ((rc = SSL_CTX_load_verify_locations(ctx, opts->trustStore, NULL)) != 1)
+		if ((rc = SSL_CTX_load_verify_locations(net->ctx, opts->trustStore, NULL)) != 1)
 		{
-			SSLSocket_error("SSL_CTX_load_verify_locations", NULL, socket, rc);
+			SSLSocket_error("SSL_CTX_load_verify_locations", NULL, net->socket, rc);
 			goto free_ctx;
 		}                               
 	}
-	else if ((rc = SSL_CTX_set_default_verify_paths(ctx)) != 1)
+	else if ((rc = SSL_CTX_set_default_verify_paths(net->ctx)) != 1)
 	{
-		SSLSocket_error("SSL_CTX_set_default_verify_paths", NULL, socket, rc);
+		SSLSocket_error("SSL_CTX_set_default_verify_paths", NULL, net->socket, rc);
 		goto free_ctx;
 	}
 
@@ -395,56 +408,54 @@ SSL_CTX* SSLSocket_createContext(int socket, MQTTClient_SSLOptions* opts)
     else
         ciphers = opts->enabledCipherSuites;
 
-	if ((rc = SSL_CTX_set_cipher_list(ctx, ciphers)) != 1)
+	if ((rc = SSL_CTX_set_cipher_list(net->ctx, ciphers)) != 1)
 	{
-		SSLSocket_error("SSL_CTX_set_cipher_list", NULL, socket, rc);
+		SSLSocket_error("SSL_CTX_set_cipher_list", NULL, net->socket, rc);
 		goto free_ctx;
 	}       
 	
-	SSL_CTX_set_mode(ctx, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
+	SSL_CTX_set_mode(net->ctx, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 
 	goto exit;
 free_ctx:
-	SSL_CTX_free(ctx);
-	ctx = NULL;
+	SSL_CTX_free(net->ctx);
+	net->ctx = NULL;
 	
 exit:
-	FUNC_EXIT;
-	return ctx;	
+	FUNC_EXIT_RC(rc);
+	return rc;
 }
 
 
-SSL* SSLSocket_setSocketForSSL(int socket, MQTTClient_SSLOptions* opts) 
+int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts)
 {
 	int rc = 1;
-	SSL_CTX* ctx = NULL;
-	SSL* ssl = NULL;
 	
 	FUNC_ENTRY;
 	
-	if ((ctx = SSLSocket_createContext(socket, opts)) != NULL)     
+	if (net->ctx != NULL || (rc = SSLSocket_createContext(net, opts)) == 1)
 	{
     	int i;
-    	SSL_CTX_set_info_callback(ctx, SSL_CTX_info_callback);
+    	SSL_CTX_set_info_callback(net->ctx, SSL_CTX_info_callback);
    		if (opts->enableServerCertAuth) 
-			SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
+			SSL_CTX_set_verify(net->ctx, SSL_VERIFY_PEER, NULL);
 	
-		ssl = SSL_new(ctx);
+		net->ssl = SSL_new(net->ctx);
 
     	/* Log all ciphers available to the SSL sessions (loaded in ctx) */
     	for (i = 0; ;i++)
     	{
-        	const char* cipher = SSL_get_cipher_list(ssl, i);
+        	const char* cipher = SSL_get_cipher_list(net->ssl, i);
         	if (cipher == NULL) break;
         	Log(TRACE_MIN, 1, "SSL cipher available: %d:%s", i, cipher);
     	}
 	
-		if ((rc = SSL_set_fd(ssl, socket)) != 1)
-			SSLSocket_error("SSL_set_fd", ssl, socket, rc);   
+		if ((rc = SSL_set_fd(net->ssl, net->socket)) != 1)
+			SSLSocket_error("SSL_set_fd", net->ssl, net->socket, rc);
 	}
 		
 	FUNC_EXIT_RC(rc);
-	return ssl;              
+	return rc;
 }
 
 
@@ -565,10 +576,28 @@ exit:
 	return buf;
 }
 
-
-int SSLSocket_close(SSL* ssl)
+void SSLSocket_destroyContext(networkHandles* net)
 {
-	return SSL_shutdown(ssl);
+	FUNC_ENTRY;
+	if (net->ctx)
+		SSL_CTX_free(net->ctx);
+	net->ctx = NULL;
+	FUNC_EXIT;
+}
+
+
+int SSLSocket_close(networkHandles* net)
+{
+	int rc = 1;
+	FUNC_ENTRY;
+	if (net->ssl) {
+		rc = SSL_shutdown(net->ssl);
+		SSL_free(net->ssl);
+		net->ssl = NULL;
+	}
+	SSLSocket_destroyContext(net);
+	FUNC_EXIT_RC(rc);
+	return rc;
 }
 
 

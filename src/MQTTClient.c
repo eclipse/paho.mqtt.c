@@ -289,6 +289,9 @@ void MQTTClient_terminate(void)
 		ListFree(handles);
 		handles = NULL;
 		Socket_outTerminate();
+#if defined(OPENSSL)
+		SSLSocket_terminate();
+#endif
 		#if defined(HEAP_H)
 			Heap_terminate();
 		#endif
@@ -347,6 +350,10 @@ void MQTTClient_destroy(MQTTClient* handle)
 	}
 	if (m->serverURI)
 		free(m->serverURI);
+	Thread_destroy_sem(m->connect_sem);
+	Thread_destroy_sem(m->connack_sem);
+	Thread_destroy_sem(m->suback_sem);
+	Thread_destroy_sem(m->unsuback_sem);
 	if (!ListRemove(handles, m))
 		Log(LOG_ERROR, -1, "free error");
 	*handle = NULL;
@@ -628,8 +635,7 @@ void MQTTProtocol_closeSession(Clients* client, int sendwill)
 			client->connect_state = 0;
 		}
 #if defined(OPENSSL)
-		if (client->net.ssl)
-			SSLSocket_close(client->net.ssl);
+		SSLSocket_close(&client->net);
 #endif
 		Socket_close(client->net.socket);
 		client->net.socket = 0;
@@ -814,7 +820,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 #if defined(OPENSSL)
 		if (m->ssl)
 		{
-			if ((m->c->net.ssl = SSLSocket_setSocketForSSL(m->c->net.socket, m->c->sslopts)) != NULL) 
+			if (SSLSocket_setSocketForSSL(&m->c->net, m->c->sslopts) != MQTTCLIENT_SUCCESS)
 			{
 				if (m->c->session != NULL)
 					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)

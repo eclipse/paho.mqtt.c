@@ -45,14 +45,14 @@ PROJECT_BRIEF          =
 # exceed 55 pixels and the maximum width should not exceed 200 pixels.
 # Doxygen will copy the logo to the output directory.
 
-PROJECT_LOGO           =
+PROJECT_LOGO           = "../doc/pahologo.png"
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.
 # If a relative path is entered, it will be relative to the location
 # where doxygen was started. If left blank the current directory will be used.
 
-OUTPUT_DIRECTORY       = ""MQTTClient_internal/"
+OUTPUT_DIRECTORY       = "MQTTClient_internal/"
 
 # If the CREATE_SUBDIRS tag is set to YES, then doxygen will create
 # 4096 sub-directories (in 2 levels) under the output directory of each output
@@ -1255,7 +1255,7 @@ MATHJAX_EXTENSIONS     =
 # typically be disabled. For large projects the javascript based search engine
 # can be slow, then enabling SERVER_BASED_SEARCH may provide a better solution.
 
-SEARCHENGINE           = NO
+SEARCHENGINE           = YES
 
 # When the SERVER_BASED_SEARCH tag is enabled the search engine will be
 # implemented using a PHP enabled web server instead of at the web client

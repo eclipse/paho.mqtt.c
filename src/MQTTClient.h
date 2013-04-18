@@ -83,7 +83,7 @@
   #define DLLExport __declspec(dllexport)
 #else
   #define DLLImport extern
-  #define DLLExport
+  #define DLLExport __attribute__ ((visibility ("default")))
 #endif
 
 #include <stdio.h>

@@ -37,7 +37,7 @@ SAMPLES_DIR = ${SSL_DIR}/../com.ibm.mq.mqxr.listener/SDK/clients/c/samples/
 endif
 
 MQTTLIB = mqttv3c
-VPATH   = ${MQTTCLIENT_DIR}
+VPATH   = ${MQTTCLIENT_DIR}  
 ALL_SOURCE_FILES = $(wildcard $(MQTTCLIENT_DIR)/*.c)
 SOURCE_FILES = $(filter-out $(MQTTCLIENT_DIR)/MQTTAsync.c $(MQTTCLIENT_DIR)/MQTTVersion.c $(MQTTCLIENT_DIR)/SSLSocket.c, $(ALL_SOURCE_FILES))
 ALL_HEADERS = $(MQTTCLIENT_DIR)/*.h
@@ -73,7 +73,7 @@ ifeq ($(OSTYPE),Linux)
 ifeq ($(MACHINETYPE),x86_64)
 	CC = gcc
 
-	CCFLAGS_SO = -fPIC -Os -Wall -I ${SSL_DIR}/include
+	CCFLAGS_SO = -fPIC -Os -Wall -I ${SSL_DIR}/include -fvisibility=hidden
 	CCFLAGS_EXE = -I ${MQTTCLIENT_DIR}
 	LDFLAGS = -shared -Wl,-soname,lib${MQTTLIB}.so
 	LDFLAGS_S = -shared -Wl,-soname,lib${MQTTLIB_S}.so -ldl -Wl,-whole-archive -L${SSL_DIR}/output/lib -lcrypto -lssl -Wl,-no-whole-archive
@@ -122,7 +122,7 @@ else
 ifeq ($(MACHINETYPE),ppc64)
 	CC = gcc
 
-	CCFLAGS_SO = -fPIC -Os -Wall -I ${SSL_DIR}/include
+	CCFLAGS_SO = -fPIC -Os -Wall -I ${SSL_DIR}/include -fvisibility=hidden
 	CCFLAGS_EXE = -I ${MQTTCLIENT_DIR}
 	LDFLAGS = -shared -Wl,-soname,lib${MQTTLIB}.so
 	LDFLAGS_S = -shared -Wl,-soname,lib${MQTTLIB_S}.so -ldl -Wl,-whole-archive -L${SSL_DIR}/output/lib -lcrypto -lssl -Wl,-no-whole-archive
@@ -160,7 +160,7 @@ else
 ifeq ($(MACHINETYPE),s390x)
   CC 	   = gcc
 
-  CCFLAGS_SO = -fPIC -Os -Wall -DREVERSED
+  CCFLAGS_SO = -fPIC -Os -Wall -DREVERSED -fvisibility=hidden
   CCFLAGS_EXE = -I ${MQTTCLIENT_DIR}
   LDFLAGS = -shared -Wl,-soname,lib${MQTTLIB}.so
   LDFLAGS_EXE = -lpthread
@@ -195,7 +195,7 @@ ifeq ($(MACHINETYPE),Arm)
 		ARM_UCLIBC_STRIP = $(subst -gcc,-strip,${ARM_UCLIBC_CC})
 	endif
 
-	CCFLAGS_SO = -fPIC -Os -Wall
+	CCFLAGS_SO = -fPIC -Os -Wall -fvisibility=hidden
 	CCFLAGS_EXE = -I ${MQTTCLIENT_DIR}
 	LDFLAGS = -shared -Wl,-soname,lib${MQTTLIB}.so
 	LDFLAGS_EXE = -lpthread
@@ -222,7 +222,7 @@ else
 
 	CC = gcc
 
-	CCFLAGS_SO = -fPIC -Os -Wall -I ${SSL_DIR}/include
+	CCFLAGS_SO = -fPIC -Os -Wall -I ${SSL_DIR}/include -fvisibility=hidden
 	CCFLAGS_EXE = -I ${MQTTCLIENT_DIR}
 	LDFLAGS = -shared -Wl,-soname,lib${MQTTLIB}.so
 	LDFLAGS_S = -shared -Wl,-soname,lib${MQTTLIB_S}.so -ldl -Wl,-whole-archive -L${SSL_DIR}/output/lib -lcrypto -lssl -Wl,-no-whole-archive

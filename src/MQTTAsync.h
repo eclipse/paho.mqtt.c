@@ -79,7 +79,7 @@
   #define DLLExport __declspec(dllexport)
 #else
   #define DLLImport extern
-  #define DLLExport
+  #define DLLExport  __attribute__ ((visibility ("default")))
 #endif
 
 #include <stdio.h>
@@ -135,7 +135,7 @@
 /**
  * Return code: A qos parameter is not 0, 1 or 2
  */
-#define MQTTCLIENT_BAD_QOS -9
+#define MQTTASYNC_BAD_QOS -9
 
 /**
  * A handle representing an MQTT client. A valid client handle is available

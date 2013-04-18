@@ -426,7 +426,7 @@ int MQTTProtocol_handlePubrels(void* pack, int sock)
 			publish.payloadlen = m->publish->payloadlen;
 			Protocol_processPublication(&publish, client);
 			#if !defined(NO_PERSISTENCE)
-				rc = MQTTPersistence_remove(client, PERSISTENCE_PUBLISH_RECEIVED, m->qos, pubrel->msgId);
+				rc += MQTTPersistence_remove(client, PERSISTENCE_PUBLISH_RECEIVED, m->qos, pubrel->msgId);
 			#endif
 			ListRemove(&(state.publications), m->publish);
 			ListRemove(client->inboundMsgs, m);

@@ -855,6 +855,7 @@ void MQTTAsync_processCommand()
 	List* ignored_clients = NULL;
 	
 	FUNC_ENTRY;
+	Thread_lock_mutex(mqttasync_mutex);
 	Thread_lock_mutex(mqttcommand_mutex);
 	
 	/* only the first command in the list must be processed for any particular client, so if we skip
@@ -894,7 +895,6 @@ void MQTTAsync_processCommand()
 	if (!command)
 		goto exit; /* nothing to do */
 	
-	Thread_lock_mutex(mqttasync_mutex);
 	if (command->command.type == CONNECT)
 	{
 		if (command->client->c->connect_state != 0 || command->client->c->connected)
@@ -1022,7 +1022,7 @@ void MQTTAsync_processCommand()
 			MQTTAsync_disconnect(command->client, &opts); /* not "internal" because we don't want to call connection lost */
 		}
 		else
-			MQTTAsync_disconnect_internal(command->client->c, 0);
+			MQTTAsync_disconnect_internal(command->client, 0);
 		if (command->command.onFailure)
 		{
 			Log(TRACE_MIN, -1, "Calling command failure for client %s", command->client->c->clientID);
@@ -1039,9 +1039,9 @@ void MQTTAsync_processCommand()
 		command->command.token = command->client->c->msgID;
 		ListAppend(command->client->responses, command, sizeof(command));
 	}
-	
-	Thread_unlock_mutex(mqttasync_mutex);
+
 exit:
+	Thread_unlock_mutex(mqttasync_mutex);
 	FUNC_EXIT;
 }
 
@@ -1908,19 +1908,21 @@ int MQTTAsync_connect(MQTTAsync handle, MQTTAsync_connectOptions* options)
 	m->connect.onFailure = options->onFailure;
 	m->connect.context = options->context;
 	
-	Thread_lock_mutex(mqttasync_mutex);
 	tostop = 0;
 	if (sendThread_state != STARTING && sendThread_state != RUNNING)
 	{
+		Thread_lock_mutex(mqttasync_mutex);
 		sendThread_state = STARTING;
 		Thread_start(MQTTAsync_sendThread, NULL);
+		Thread_unlock_mutex(mqttasync_mutex);
 	}
 	if (receiveThread_state != STARTING && receiveThread_state != RUNNING)
 	{
+		Thread_lock_mutex(mqttasync_mutex);
 		receiveThread_state = STARTING;
 		Thread_start(MQTTAsync_receiveThread, handle);
+		Thread_unlock_mutex(mqttasync_mutex);
 	}
-	Thread_unlock_mutex(mqttasync_mutex);
 
 	m->c->keepAliveInterval = options->keepAliveInterval;
 	m->c->cleansession = options->cleansession;

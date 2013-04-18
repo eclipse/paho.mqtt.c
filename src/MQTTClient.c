@@ -1442,17 +1442,33 @@ MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long
 #if defined(OPENSSL)
 				else if (m->c->connect_state == 2)
 				{
-                    *rc = SSLSocket_connect(m->c->net.ssl, sock);
-					if (*rc == 1 || *rc == SSL_FATAL) 
+					*rc = SSLSocket_connect(m->c->net.ssl, sock);
+					if (*rc == SSL_FATAL)
+						break;
+					else if (*rc == 1) /* rc == 1 means SSL connect has finished and succeeded */
 					{
-						if (*rc == 1 && !m->c->cleansession && m->c->session == NULL)
+						if (!m->c->cleansession && m->c->session == NULL)
 							m->c->session = SSL_get1_session(m->c->net.ssl);
 						break;
 					}
 				}
 #endif
+				else if (m->c->connect_state == 3)
+				{
+					int error;
+					socklen_t len = sizeof(error);
+
+					if (getsockopt(m->c->net.socket, SOL_SOCKET, SO_ERROR, &error, &len) == 0)
+					{
+						if (error)
+						{
+							*rc = error;
+							break;
+						}
+					}
+				}
 			}
-			else if (MQTTClient_elapsed(start) > timeout)
+			if (MQTTClient_elapsed(start) > timeout)
 			{
 				pack = NULL;
 				break;

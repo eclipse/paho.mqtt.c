@@ -502,13 +502,22 @@ void MQTTProtocol_keepalive(time_t now)
 	{
 		Clients* client =	(Clients*)(current->content);
 		ListNextElement(bstate->clients, &current); 
-		if (client->connected && client->keepAliveInterval > 0 && client->ping_outstanding == 0 &&
-		        Socket_noPendingWrites(client->net.socket) &&
-				(difftime(now, client->net.lastContact) >= client->keepAliveInterval))
+		if (client->connected && client->keepAliveInterval > 0 && (difftime(now, client->net.lastContact) >= client->keepAliveInterval))
 		{
-			MQTTPacket_send_pingreq(&client->net, client->clientID);
-			client->net.lastContact = now;
-			client->ping_outstanding = 1;
+			if (client->ping_outstanding == 0)
+			{
+				if (Socket_noPendingWrites(client->net.socket))
+				{
+					MQTTPacket_send_pingreq(&client->net, client->clientID);
+					client->net.lastContact = now;
+					client->ping_outstanding = 1;
+				}
+			}
+			else
+			{
+				Log(TRACE_MIN, -1, "PINGRESP not received in keepalive interval for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
+				MQTTProtocol_closeSession(client, 1);
+			}
 		}
 	}
 	FUNC_EXIT;

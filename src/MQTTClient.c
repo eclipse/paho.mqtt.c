@@ -530,19 +530,13 @@ thread_return_type WINAPI MQTTClient_run(void* n)
 			else if (m->c->connect_state == 2 && !Thread_check_sem(m->connect_sem))
 			{			
 				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket);
-				if (rc == 1)
+				if (rc == 1 || rc == SSL_FATAL)
 				{
-					if (!m->c->cleansession && m->c->session == NULL)
+					if (rc == 1 && !m->c->cleansession && m->c->session == NULL)
 						m->c->session = SSL_get1_session(m->c->net.ssl);
 					m->rc = rc;
 					Log(TRACE_MIN, -1, "Posting connect semaphore for SSL client %s rc %d", m->c->clientID, m->rc);
 					Thread_post_sem(m->connect_sem);
-				}
-				else if (rc == SSL_FATAL)
-				{
-					m->rc = rc;
-					//tostop = 1;
-					break;
 				}
 			}
 #endif
@@ -626,6 +620,7 @@ void MQTTProtocol_closeSession(Clients* client, int sendwill)
 {
 	FUNC_ENTRY;
 	client->good = 0;
+	client->ping_outstanding = 0;
 	if (client->net.socket > 0)
 	{
 		if (client->connected || client->connect_state)

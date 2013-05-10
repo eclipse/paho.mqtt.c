@@ -1300,7 +1300,7 @@ int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack)
 			}
 		}
 		else
-			MQTTAsync_disconnect_internal(m, 0);
+			MQTTProtocol_closeSession(m->c, 0);
 		free(connack);
 		m->pack = NULL;
 	}

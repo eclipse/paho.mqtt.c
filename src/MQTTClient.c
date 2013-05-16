@@ -543,7 +543,7 @@ thread_return_type WINAPI MQTTClient_run(void* n)
 		}
 	}
 	run_id = 0;
-	running = 0;
+	running = tostop = 0;
 	Thread_unlock_mutex(mqttclient_mutex);
 	FUNC_EXIT;
 	return 0;
@@ -555,7 +555,7 @@ void MQTTClient_stop()
 	int rc = 0;
 
 	FUNC_ENTRY;
-	if (running == 1 && tostop == 0 && Thread_getid() != run_id)
+	if (running == 1 && tostop == 0)
 	{
 		int conn_count = 0;
 		ListElement* current = NULL;
@@ -576,15 +576,17 @@ void MQTTClient_stop()
 		{
 			int count = 0;
 			tostop = 1;
-			while (running && ++count < 100)
+			if (Thread_getid() != run_id)
 			{
-				Thread_unlock_mutex(mqttclient_mutex);
-				Log(TRACE_MIN, -1, "sleeping");
-				MQTTClient_sleep(100L);
-				Thread_lock_mutex(mqttclient_mutex);
+				while (running && ++count < 100)
+				{
+					Thread_unlock_mutex(mqttclient_mutex);
+					Log(TRACE_MIN, -1, "sleeping");
+					MQTTClient_sleep(100L);
+					Thread_lock_mutex(mqttclient_mutex);
+				}
 			}
 			rc = 1;
-			tostop = 0;
 		}
 	}
 	FUNC_EXIT_RC(rc);

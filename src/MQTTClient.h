@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
+ *    Ian Craggs - multiple server connection support
  *******************************************************************************/
 
 /**
@@ -544,9 +545,22 @@ typedef struct
     * application does not make use of SSL, set this pointer to NULL.
     */
 	MQTTClient_SSLOptions* ssl;
+	/**
+	  * The number of entries in the serverURIs array.
+	  */
+	int serverURIcount;
+	/**
+	  * An array of null-terminated strings specifying the servers to
+      * which the client will connect. Each string takes the form <i>protocol://host:port</i>.
+      * <i>protocol</i> must be <i>tcp</i> or <i>ssl</i>. For <i>host</i>, you can 
+      * specify either an IP address or a domain name. For instance, to connect to
+      * a server running on the local machines with the default MQTT port, specify
+      * <i>tcp://localhost:1883</i>.
+      */    
+	char** serverURIs;
 } MQTTClient_connectOptions;
 
-#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 1, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL }
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 2, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL }
 
 /**
   * MQTTClient_libraryInfo is used to store details relating to the currently used

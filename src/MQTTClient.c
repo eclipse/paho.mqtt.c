@@ -15,6 +15,7 @@
  *    Ian Craggs - bug 384016 - segv setting will message
  *    Ian Craggs - bug 384053 - v1.0.0.7 - stop MQTTClient_receive on socket error 
  *    Ian Craggs, Allan Stockdill-Mander - add ability to connect with SSL
+ *    Ian Craggs - multiple server connection support
  *******************************************************************************/
 
 #include <stdlib.h>
@@ -704,55 +705,14 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 }
 
 
-int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
+int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options, char* serverURI)
 {
 	MQTTClients* m = handle;
-	int rc = SOCKET_ERROR;
 	START_TIME_TYPE start;
 	long millisecsTimeout = 30000L;
+	int rc = SOCKET_ERROR;
 
 	FUNC_ENTRY;
-	Thread_lock_mutex(mqttclient_mutex);
-
-	if (options == NULL)
-	{
-		rc = MQTTCLIENT_NULL_PARAMETER;
-		goto exit;
-	}
-
-	if (strncmp(options->struct_id, "MQTC", 4) != 0 || (options->struct_version != 0 && options->struct_version != 1))
-	{
-		rc = MQTTCLIENT_BAD_STRUCTURE;
-		goto exit;
-	}
-
-	if (options->will) /* check validity of will options structure */
-	{
-		if (strncmp(options->will->struct_id, "MQTW", 4) != 0 || options->will->struct_version != 0)
-		{
-			rc = MQTTCLIENT_BAD_STRUCTURE;
-			goto exit;
-		}
-	}
-	
-#if defined(OPENSSL)
-	if (options->struct_version != 0 && options->ssl) /* check validity of SSL options structure */
-	{
-		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version != 0)
-		{
-			rc = MQTTCLIENT_BAD_STRUCTURE;
-			goto exit;
-		}
-	}
-#endif
-
-	if ((options->username && !UTF8_validateString(options->username)) ||
-		(options->password && !UTF8_validateString(options->password)))
-	{
-		rc = MQTTCLIENT_BAD_UTF8_STRING;
-		goto exit;
-	}
-
 	millisecsTimeout = options->connectTimeout * 1000;
 	start = MQTTClient_start_clock();
 	if (m->ma && !running)
@@ -788,11 +748,11 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 	m->c->password = options->password;
 	m->c->retryInterval = options->retryInterval;
 
-	Log(TRACE_MIN, -1, "Connecting to serverURI %s", m->serverURI);
+	Log(TRACE_MIN, -1, "Connecting to serverURI %s", serverURI);
 #if defined(OPENSSL)
-	rc = MQTTProtocol_connect(m->serverURI, m->c, m->ssl);
+	rc = MQTTProtocol_connect(serverURI, m->c, m->ssl);
 #else
-	rc = MQTTProtocol_connect(m->serverURI, m->c);
+	rc = MQTTProtocol_connect(serverURI, m->c);
 #endif
 	if (rc == SOCKET_ERROR)
 		goto exit;
@@ -919,11 +879,88 @@ exit:
 		MQTTClient_disconnect(handle, 0); /* not "internal" because we don't want to call connection lost */
 		Thread_lock_mutex(mqttclient_mutex);
 	}
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
 
+
+int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
+{
+	MQTTClients* m = handle;
+	int rc = SOCKET_ERROR;
+
+	FUNC_ENTRY;
+	Thread_lock_mutex(mqttclient_mutex);
+
+	if (options == NULL)
+	{
+		rc = MQTTCLIENT_NULL_PARAMETER;
+		goto exit;
+	}
+
+	if (strncmp(options->struct_id, "MQTC", 4) != 0 || 
+		(options->struct_version != 0 && options->struct_version != 1 && options->struct_version != 2))
+	{
+		rc = MQTTCLIENT_BAD_STRUCTURE;
+		goto exit;
+	}
+
+	if (options->will) /* check validity of will options structure */
+	{
+		if (strncmp(options->will->struct_id, "MQTW", 4) != 0 || options->will->struct_version != 0)
+		{
+			rc = MQTTCLIENT_BAD_STRUCTURE;
+			goto exit;
+		}
+	}
+	
+#if defined(OPENSSL)
+	if (options->struct_version != 0 && options->ssl) /* check validity of SSL options structure */
+	{
+		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version != 0)
+		{
+			rc = MQTTCLIENT_BAD_STRUCTURE;
+			goto exit;
+		}
+	}
+#endif
+
+	if ((options->username && !UTF8_validateString(options->username)) ||
+		(options->password && !UTF8_validateString(options->password)))
+	{
+		rc = MQTTCLIENT_BAD_UTF8_STRING;
+		goto exit;
+	}
+
+	if (options->struct_version < 2 || options->serverURIcount == 0)
+		rc = MQTTClient_connectURI(handle, options, m->serverURI);
+	else
+	{
+		int i;
+		
+		for (i = 0; i < options->serverURIcount; ++i)
+		{
+			char* serverURI = options->serverURIs[i];
+			
+			if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
+				serverURI += strlen(URI_TCP);
+#if defined(OPENSSL)
+			else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
+			{
+				serverURI += strlen(URI_SSL);
+				m->ssl = 1;
+			}
+#endif
+			if ((rc = MQTTClient_connectURI(handle, options, serverURI)) == MQTTCLIENT_SUCCESS)
+				break;
+		}	
+	}
+
+exit:
     if (m->c->will)
     {
-      free(m->c->will);
-      m->c->will = NULL;
+		free(m->c->will);
+		m->c->will = NULL;
     }
 	Thread_unlock_mutex(mqttclient_mutex);
 	FUNC_EXIT_RC(rc);
@@ -1439,7 +1476,7 @@ MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long
 					socklen_t len = sizeof(error);
 
 					if ((*rc = getsockopt(m->c->net.socket, SOL_SOCKET, SO_ERROR, (char*)&error, &len)) == 0)
-					  *rc = error;
+						*rc = error;
 					break;
 				}
 #if defined(OPENSSL)

@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation 
  *    Ian Craggs, Allan Stockdill-Mander - SSL connections
+ *    Ian Craggs - multiple server connection support
  *******************************************************************************/
 
 /********************************************************************/
@@ -541,7 +542,10 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0 or 1.  0 signifies no SSL options */
+	/** The version number of this structure.  Must be 0, 1 or 2.  
+	  * 0 signifies no SSL options and no serverURIs
+	  * 1 signifies no serverURIs 
+	  */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
       * that should pass without communication between the client and the server
@@ -607,32 +611,45 @@ typedef struct
 	 */
 	int retryInterval;
 	/** 
-    * This is a pointer to an MQTTAsync_SSLOptions structure. If your 
-    * application does not make use of SSL, set this pointer to NULL.
-    */
+      * This is a pointer to an MQTTAsync_SSLOptions structure. If your 
+      * application does not make use of SSL, set this pointer to NULL.
+      */
 	MQTTAsync_SSLOptions* ssl;
 	/** 
-    * A pointer to a callback function to be called if the connect successfully
-    * completes.  Can be set to NULL, in which case no indication of successful
-    * completion will be received.
-    */
+      * A pointer to a callback function to be called if the connect successfully
+      * completes.  Can be set to NULL, in which case no indication of successful
+      * completion will be received.
+      */
 	MQTTAsync_onSuccess* onSuccess;
 	/** 
-    * A pointer to a callback function to be called if the connect fails.
-    * Can be set to NULL, in which case no indication of unsuccessful
-    * completion will be received.
-    */
+      * A pointer to a callback function to be called if the connect fails.
+      * Can be set to NULL, in which case no indication of unsuccessful
+      * completion will be received.
+      */
 	MQTTAsync_onFailure* onFailure;
 	/**
-	* A pointer to any application-specific context. The
-    * the <i>context</i> pointer is passed to success or failure callback functions to
-    * provide access to the context information in the callback.
-    */
-	void* context;        
+	  * A pointer to any application-specific context. The
+      * the <i>context</i> pointer is passed to success or failure callback functions to
+      * provide access to the context information in the callback.
+      */
+	void* context;
+	/**
+	  * The number of entries in the serverURIs array.
+	  */
+	int serverURIcount;
+	/**
+	  * An array of null-terminated strings specifying the servers to
+      * which the client will connect. Each string takes the form <i>protocol://host:port</i>.
+      * <i>protocol</i> must be <i>tcp</i> or <i>ssl</i>. For <i>host</i>, you can 
+      * specify either an IP address or a domain name. For instance, to connect to
+      * a server running on the local machines with the default MQTT port, specify
+      * <i>tcp://localhost:1883</i>.
+      */    
+	char** serverURIs;
 } MQTTAsync_connectOptions;
 
 
-#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 1, 60, 1, 10, NULL, NULL, NULL, 30, 20, NULL, NULL }
+#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 2, 60, 1, 10, NULL, NULL, NULL, 30, 20, NULL, NULL, 0, NULL}
 
 /**
   * This function attempts to connect a previously-created client (see

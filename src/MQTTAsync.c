@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial implementation and documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL support
+ *    Ian Craggs - multiple server connection support
  *******************************************************************************/
 
 #include <stdlib.h>
@@ -114,6 +115,7 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc);
 int MQTTAsync_cleanSession(Clients* client);
 void MQTTAsync_stop();
 int MQTTAsync_disconnect_internal(MQTTAsync handle, int timeout);
+void MQTTAsync_closeOnly(Clients* client);
 void MQTTProtocol_closeSession(Clients* client, int sendwill);
 void MQTTAsync_writeComplete(int socket);
 
@@ -214,6 +216,9 @@ typedef struct
 		struct
 		{
 			int timeout;
+			int serverURIcount;
+			char** serverURIs;
+			int currentURI;
 		} conn;
 	} details;
 } MQTTAsync_command;
@@ -758,6 +763,20 @@ void MQTTProtocol_checkPendingWrites()
 }
 
 
+void MQTTAsync_freeConnect(MQTTAsync_command command)
+{
+	if (command.type == CONNECT)
+	{
+		int i;
+		
+		for (i = 0; i < command.details.conn.serverURIcount; ++i)
+			free(command.details.conn.serverURIs[i]);
+		if (command.details.conn.serverURIs)
+			free(command.details.conn.serverURIs); 
+	}
+}
+
+
 void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command)
 {
 	if (command->command.type == SUBSCRIBE)
@@ -904,11 +923,28 @@ void MQTTAsync_processCommand()
 			rc = 0;
 		else
 		{
-			Log(TRACE_MIN, -1, "Connecting to serverURI %s", command->client->serverURI);
+			char* serverURI = command->client->serverURI;
+			
+			if (command->command.details.conn.serverURIcount > 0)
+			{
+				serverURI = command->command.details.conn.serverURIs[command->command.details.conn.currentURI++];
+					
+				if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
+					serverURI += strlen(URI_TCP);
 #if defined(OPENSSL)
-			rc = MQTTProtocol_connect(command->client->serverURI, command->client->c, command->client->ssl);
+				else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
+				{
+					serverURI += strlen(URI_SSL);
+					command->client->ssl = 1;
+				}
+#endif
+			}
+
+			Log(TRACE_MIN, -1, "Connecting to serverURI %s", serverURI);
+#if defined(OPENSSL)
+			rc = MQTTProtocol_connect(serverURI, command->client->c, command->client->ssl);
 #else
-			rc = MQTTProtocol_connect(command->client->serverURI, command->client->c);
+			rc = MQTTProtocol_connect(serverURI, command->client->c);
 #endif
 			if (command->client->c->connect_state == 0)
 				rc = SOCKET_ERROR;
@@ -1026,15 +1062,28 @@ void MQTTAsync_processCommand()
 		}
 		else
 			MQTTAsync_disconnect_internal(command->client, 0);
-		if (command->command.onFailure)
+			
+		if (command->command.type == CONNECT &&
+			command->command.details.conn.currentURI < command->command.details.conn.serverURIcount)
 		{
-			Log(TRACE_MIN, -1, "Calling command failure for client %s", command->client->c->clientID);
-
-			Thread_unlock_mutex(mqttasync_mutex);
-			(*(command->command.onFailure))(command->command.context, NULL);
-			Thread_lock_mutex(mqttasync_mutex);
+			/* put the connect command back to the head of the command queue, using the next serverURI */
+			Log(TRACE_MIN, -1, "Connect failed, now trying %s", 
+				command->command.details.conn.serverURIs[command->command.details.conn.currentURI]);
+			rc = MQTTAsync_addCommand(command, sizeof(command->command.details.conn));
 		}
-		MQTTAsync_freeCommand(command);  /* free up the command if necessary */
+		else
+		{
+			if (command->command.onFailure)
+			{
+				Log(TRACE_MIN, -1, "Calling command failure for client %s", command->client->c->clientID);
+
+				Thread_unlock_mutex(mqttasync_mutex);
+				(*(command->command.onFailure))(command->command.context, NULL);
+				Thread_lock_mutex(mqttasync_mutex);
+			}
+			MQTTAsync_freeConnect(command->command);
+			MQTTAsync_freeCommand(command);  /* free up the command if necessary */
+		}
 	}
 	else
 	{
@@ -1073,14 +1122,32 @@ void MQTTAsync_checkTimeouts()
 		/* check connect timeout */
 		if (m->c->connect_state != 0 && MQTTAsync_elapsed(m->connect.start_time) > (m->connect.details.conn.timeout * 1000))
 		{
-			if (m->connect.onFailure)
+			if (m->connect.details.conn.currentURI < m->connect.details.conn.serverURIcount)
 			{
-				Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
-				Thread_unlock_mutex(mqttasync_mutex);
-				(*(m->connect.onFailure))(m->connect.context, NULL);
-				Thread_lock_mutex(mqttasync_mutex);
+				MQTTAsync_queuedCommand* conn;
+				
+				MQTTAsync_closeOnly(m->c);
+				/* put the connect command back to the head of the command queue, using the next serverURI */
+				conn = malloc(sizeof(MQTTAsync_queuedCommand));
+				memset(conn, '\0', sizeof(MQTTAsync_queuedCommand));
+				conn->client = m;
+				conn->command = m->connect; 
+				Log(TRACE_MIN, -1, "Connect failed, now trying %s", 
+					m->connect.details.conn.serverURIs[m->connect.details.conn.currentURI]);
+				MQTTAsync_addCommand(conn, sizeof(m->connect));
 			}
-			MQTTProtocol_closeSession(m->c, 0);
+			else
+			{
+				MQTTProtocol_closeSession(m->c, 0);
+				MQTTAsync_freeConnect(m->connect);
+				if (m->connect.onFailure)
+				{
+					Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
+					Thread_unlock_mutex(mqttasync_mutex);
+					(*(m->connect.onFailure))(m->connect.context, NULL);
+					Thread_lock_mutex(mqttasync_mutex);
+				}
+			}
 			continue;
 		}
 	
@@ -1299,8 +1366,6 @@ int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack)
 					rc = MQTTASYNC_DISCONNECTED;
 			}
 		}
-		else
-			MQTTProtocol_closeSession(m->c, 0);
 		free(connack);
 		m->pack = NULL;
 	}
@@ -1381,24 +1446,53 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 				{
 					int rc = MQTTAsync_completeConnection(m, pack);
 					
-					if (rc == MQTTASYNC_SUCCESS && m->connect.onSuccess)
+					if (rc == MQTTASYNC_SUCCESS)
 					{
-						Log(TRACE_MIN, -1, "Calling connect success for client %s", m->c->clientID);
-						Thread_unlock_mutex(mqttasync_mutex);
-						(*(m->connect.onSuccess))(m->connect.context, NULL);
-						Thread_lock_mutex(mqttasync_mutex);
+						if (m->connect.details.conn.serverURIcount > 0)
+							Log(TRACE_MIN, -1, "Connect succeeded to %s", 
+								m->connect.details.conn.serverURIs[m->connect.details.conn.currentURI - 1]);
+						MQTTAsync_freeConnect(m->connect);
+						if (m->connect.onSuccess)
+						{
+							Log(TRACE_MIN, -1, "Calling connect success for client %s", m->c->clientID);
+							Thread_unlock_mutex(mqttasync_mutex);
+							(*(m->connect.onSuccess))(m->connect.context, NULL);
+							Thread_lock_mutex(mqttasync_mutex);
+						}
 					}
-					else if (rc != MQTTASYNC_SUCCESS && m->connect.onFailure)
+					else
 					{
-						MQTTAsync_failureData data;
+						if (m->connect.details.conn.currentURI < m->connect.details.conn.serverURIcount)
+						{
+							MQTTAsync_queuedCommand* conn;
+							
+							MQTTAsync_closeOnly(m->c);
+							/* put the connect command back to the head of the command queue, using the next serverURI */
+							conn = malloc(sizeof(MQTTAsync_queuedCommand));
+							memset(conn, '\0', sizeof(MQTTAsync_queuedCommand));
+							conn->client = m;
+							conn->command = m->connect; 
+							Log(TRACE_MIN, -1, "Connect failed, now trying %s", 
+								m->connect.details.conn.serverURIs[m->connect.details.conn.currentURI]);
+							MQTTAsync_addCommand(conn, sizeof(m->connect));
+						}
+					 	else
+					 	{
+					 		MQTTProtocol_closeSession(m->c, 0);
+					 		MQTTAsync_freeConnect(m->connect);
+					 		if (m->connect.onFailure)
+							{
+								MQTTAsync_failureData data;
 						
-						data.token = 0;
-						data.code = rc;
-						data.message = "CONNACK return code";
-						Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
-						Thread_unlock_mutex(mqttasync_mutex);
-						(*(m->connect.onFailure))(m->connect.context, &data);
-						Thread_lock_mutex(mqttasync_mutex);
+								data.token = 0;
+								data.code = rc;
+								data.message = "CONNACK return code";
+								Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
+								Thread_unlock_mutex(mqttasync_mutex);
+								(*(m->connect.onFailure))(m->connect.context, &data);
+								Thread_lock_mutex(mqttasync_mutex);
+							}
+						}
 					}
 				}
 				else if (pack->header.bits.type == SUBACK)
@@ -1561,10 +1655,11 @@ int MQTTAsync_setCallbacks(MQTTAsync handle, void* context,
 }
 
 
-void MQTTProtocol_closeSession(Clients* client, int sendwill)
+void MQTTAsync_closeOnly(Clients* client)
 {
 	FUNC_ENTRY;
 	client->good = 0;
+	client->ping_outstanding = 0;
 	if (client->net.socket > 0)
 	{
 		if (client->connected || client->connect_state)
@@ -1579,7 +1674,15 @@ void MQTTProtocol_closeSession(Clients* client, int sendwill)
 #endif
 	}
 	client->connected = 0;
-	client->connect_state = 0;
+	client->connect_state = 0;		
+	FUNC_EXIT;
+}
+
+
+void MQTTProtocol_closeSession(Clients* client, int sendwill)
+{
+	FUNC_ENTRY;
+	MQTTAsync_closeOnly(client);
 
 	if (client->cleansession)
 		MQTTAsync_cleanSession(client);
@@ -1873,7 +1976,9 @@ int MQTTAsync_connect(MQTTAsync handle, MQTTAsync_connectOptions* options)
 		rc = MQTTASYNC_NULL_PARAMETER;
 		goto exit;
 	}
-	if (strncmp(options->struct_id, "MQTC", 4) != 0 || (options->struct_version != 0 && options->struct_version != 1))
+
+	if (strncmp(options->struct_id, "MQTC", 4) != 0 || 
+		(options->struct_version != 0 && options->struct_version != 1 && options->struct_version != 2))
 	{
 		rc = MQTTASYNC_BAD_STRUCTURE;
 		goto exit;
@@ -1974,6 +2079,20 @@ int MQTTAsync_connect(MQTTAsync handle, MQTTAsync_connectOptions* options)
 		conn->command.onFailure = options->onFailure;
 		conn->command.context = options->context;
 		conn->command.details.conn.timeout = options->connectTimeout;
+			
+		if (options->struct_version >= 2 && options->serverURIcount > 0)
+		{
+			int i;
+			
+			conn->command.details.conn.serverURIcount = options->serverURIcount;
+			conn->command.details.conn.serverURIs = malloc(options->serverURIcount * sizeof(char*));
+			for (i = 0; i < options->serverURIcount; ++i)
+			{
+				conn->command.details.conn.serverURIs[i] = malloc(strlen(options->serverURIs[i]) + 1);
+				strcpy(conn->command.details.conn.serverURIs[i], options->serverURIs[i]);
+			}
+			conn->command.details.conn.currentURI = 0;
+		}
 	}
 	conn->command.type = CONNECT;
 	rc = MQTTAsync_addCommand(conn, sizeof(conn));
@@ -2347,14 +2466,32 @@ int MQTTAsync_connecting(MQTTAsyncs* m)
 exit:
 	if ((rc != 0 && m->c->connect_state != 2) || (rc == SSL_FATAL))
 	{
-		if (m->connect.onFailure)
+		if (m->connect.details.conn.currentURI < m->connect.details.conn.serverURIcount)
 		{
-			Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
-			Thread_unlock_mutex(mqttasync_mutex);
-			(*(m->connect.onFailure))(m->connect.context, NULL);
-			Thread_lock_mutex(mqttasync_mutex);
+			MQTTAsync_queuedCommand* conn;
+				
+			MQTTAsync_closeOnly(m->c);
+			/* put the connect command back to the head of the command queue, using the next serverURI */
+			conn = malloc(sizeof(MQTTAsync_queuedCommand));
+			memset(conn, '\0', sizeof(MQTTAsync_queuedCommand));
+			conn->client = m;
+			conn->command = m->connect; 
+			Log(TRACE_MIN, -1, "Connect failed, now trying %s", 
+				m->connect.details.conn.serverURIs[m->connect.details.conn.currentURI]);
+			MQTTAsync_addCommand(conn, sizeof(m->connect));
 		}
-		MQTTProtocol_closeSession(m->c, 0);
+		else
+		{
+			MQTTProtocol_closeSession(m->c, 0);
+			MQTTAsync_freeConnect(m->connect);
+			if (m->connect.onFailure)
+			{
+				Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
+				Thread_unlock_mutex(mqttasync_mutex);
+				(*(m->connect.onFailure))(m->connect.context, NULL);
+				Thread_lock_mutex(mqttasync_mutex);
+			}
+		}
 	}
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -2409,10 +2546,33 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 				pack = MQTTPacket_Factory(&m->c->net, rc);
 			if ((m->c->connect_state == 3) && (*rc == SOCKET_ERROR))
 			{
-				Log( TRACE_MINIMUM, -1, "CONNECT sent but MQTTPacket_Factory has returned SOCKET_ERROR, calling connect.onFailure");
-				MQTTProtocol_closeSession(m->c, 0);
-				if (m->connect.onFailure)
-					(*(m->connect.onFailure))(m->connect.context, NULL);
+				Log(TRACE_MINIMUM, -1, "CONNECT sent but MQTTPacket_Factory has returned SOCKET_ERROR");
+				if (m->connect.details.conn.currentURI < m->connect.details.conn.serverURIcount)
+				{
+					MQTTAsync_queuedCommand* conn;
+				
+					MQTTAsync_closeOnly(m->c);
+					/* put the connect command back to the head of the command queue, using the next serverURI */
+					conn = malloc(sizeof(MQTTAsync_queuedCommand));
+					memset(conn, '\0', sizeof(MQTTAsync_queuedCommand));
+					conn->client = m;
+					conn->command = m->connect; 
+					Log(TRACE_MIN, -1, "Connect failed, now trying %s", 
+						m->connect.details.conn.serverURIs[m->connect.details.conn.currentURI]);
+					MQTTAsync_addCommand(conn, sizeof(m->connect));
+				}
+				else
+				{
+					MQTTProtocol_closeSession(m->c, 0);
+					MQTTAsync_freeConnect(m->connect);
+					if (m->connect.onFailure)
+					{
+						Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
+						Thread_unlock_mutex(mqttasync_mutex);
+						(*(m->connect.onFailure))(m->connect.context, NULL);
+						Thread_lock_mutex(mqttasync_mutex);
+					}
+				}
 			}
 		}
 		if (pack)

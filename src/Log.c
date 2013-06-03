@@ -15,6 +15,13 @@
  *    Ian Craggs - updates for the async client
  *******************************************************************************/
 
+/**
+ * @file
+ * \brief Logging and tracing module
+ *
+ * 
+ */
+
 #include "Log.h"
 #include "MQTTPacket.h"
 #include "MQTTProtocol.h"

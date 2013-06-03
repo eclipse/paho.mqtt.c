@@ -15,32 +15,41 @@
  *******************************************************************************/
 
 
-/*
-  See page 104 of the Unicode Standard 5.0 for the list of well formed
-  UTF-8 byte sequences.
-
-*/
+/**
+ * @file
+ * \brief Functions for checking that strings contain UTF-8 characters only
+ *
+ * See page 104 of the Unicode Standard 5.0 for the list of well formed
+ * UTF-8 byte sequences.
+ * 
+ */
 
 #include <stdlib.h>
 #include <string.h>
 
 #include "StackTrace.h"
 
+/**
+ * Macro to determine the number of elements in a single-dimension array
+ */
 #if !defined(ARRAY_SIZE)
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 #endif
 
 
+/**
+ * Structure to hold the valid ranges of UTF-8 characters, for each byte up to 4
+ */
 struct
 {
-	int len;
+	int len; /**< number of elements in the following array (1 to 4) */
 	struct
 	{
-		char lower;
-		char upper;
-	} bytes[4];
+		char lower; /**< lower limit of valid range */
+		char upper; /**< upper limit of valid range */
+	} bytes[4];   /**< up to 4 bytes can be used per character */
 }
-valid_ranges[] =
+valid_ranges[] = 
 {
 		{1, { {00, 0x7F} } },
 		{2, { {0xC2, 0xDF}, {0x80, 0xBF} } },
@@ -54,6 +63,12 @@ valid_ranges[] =
 };
 
 
+/**
+ * Validate a single UTF-8 character
+ * @param len the length of the string in "data"
+ * @param data the bytes to check for a valid UTF-8 char
+ * @return pointer to the start of the next UTF-8 character in "data"
+ */
 char* UTF8_char_validate(int len, char* data)
 {
 	int good = 0;
@@ -100,6 +115,12 @@ char* UTF8_char_validate(int len, char* data)
 }
 
 
+/**
+ * Validate a length-delimited string has only UTF-8 characters
+ * @param len the length of the string in "data"
+ * @param data the bytes to check for valid UTF-8 characters
+ * @return 1 (true) if the string has only UTF-8 characters, 0 (false) otherwise
+ */
 int UTF8_validate(int len, char* data)
 {
 	char* curdata = NULL;
@@ -116,6 +137,11 @@ int UTF8_validate(int len, char* data)
 }
 
 
+/**
+ * Validate a null-terminated string has only UTF-8 characters
+ * @param string the string to check for valid UTF-8 characters
+ * @return 1 (true) if the string has only UTF-8 characters, 0 (false) otherwise
+ */
 int UTF8_validateString(char* string)
 {
 	int rc = 0;

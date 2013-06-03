@@ -18,6 +18,12 @@
  *    Ian Craggs - multiple server connection support
  *******************************************************************************/
 
+/**
+ * @file
+ * \brief Synchronous API implementation
+ *
+ */
+
 #include <stdlib.h>
 #if !defined(WIN32)
 	#include <sys/time.h>

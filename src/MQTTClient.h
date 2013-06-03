@@ -17,6 +17,25 @@
  *******************************************************************************/
 
 /**
+ * @cond MQTTClient_internal
+ * @mainpage MQTT Client Library Internals
+ * In the beginning there was one MQTT C client library, MQTTClient, as implemented in MQTTClient.c
+ * This library was designed to be easy to use for applications which didn't mind if some of the calls 
+ * blocked for a while.  For instance, the MQTTClient_connect call will block until a successful
+ * connection has completed, or a connection has failed, which could be as long as the "connection 
+ * timeout" interval, whose default is 30 seconds.
+ * 
+ * However in mobile devices and other windowing environments, blocking on the GUI thread is a bad
+ * thing as it causes the user interface to freeze.  Hence a new API, MQTTAsync, implemented 
+ * in MQTTAsync.c, was devised.  There are no blocking calls in this library, so it is well suited 
+ * to GUI and mobile environments, at the expense of some extra complexity.
+ * 
+ * Both libraries are designed to be sparing in the use of threads.  So multiple client objects are
+ * handled by one or two threads, with a select call in Socket_getReadySocket(), used to determine 
+ * when a socket has incoming data.
+ *
+ * @endcond
+ * @cond MQTTClient_main
  * @mainpage MQTT Client library for C
  * &copy; Copyright IBM Corp. 2009, 2013
  * 
@@ -26,7 +45,7 @@
  * considered easier to use.  Some of the calls will block.  For the new
  * totally asynchronous API where no calls block, which is especially suitable
  * for use in windowed environments, see the
- * <a href="MQTTAsync/html/index.html">MQTT C Client Asynchronous API Documentation</a>.
+ * <a href="../Casync/index.html">MQTT C Client Asynchronous API Documentation</a>.
  *
  * An MQTT client application connects to MQTT-capable servers.
  * A typical client is responsible for collecting information from a telemetry 
@@ -38,17 +57,16 @@
  * API to the MQTT protocol using the programming language and platform of your 
  * choice. This can be time-consuming and error-prone.
  * 
- * To simplify writing MQTT client applications, WebSphere MQ Telemetry provides
- * C and Java client libraries that encapsulate the MQTT v3 protocol for a 
- * number of platforms. If you incorporate these libraries in your MQTT 
- * applications, a fully functional MQTT client can be written in a few lines of
- * code. The information presented here documents the API provided by the IBM
- * MQTT Client library for C.
+ * To simplify writing MQTT client applications, this library encapsulates
+ * the MQTT v3 protocol for you. Using this library enables a fully functional 
+ * MQTT client application to be written in a few lines of code.
+ * The information presented here documents the API provided
+ * by the MQTT Client library for C.
  * 
  * <b>Using the client</b><br>
  * Applications that use the client library typically use a similar structure:
  * <ul>
- * <li>Create a clent</li>
+ * <li>Create a client object</li>
  * <li>Set the options to connect to an MQTT server</li>
  * <li>Set up callback functions if multi-threaded (asynchronous mode) 
  * operation is being used (see @ref async).</li>
@@ -72,7 +90,9 @@
  * <li>@ref async</li>
  * <li>@ref wildcard</li>
  * <li>@ref qos</li>
+ * <li>@ref tracing</li>
  * </ul>
+ * @endcond
  */
 
 /// @cond EXCLUDE
@@ -470,93 +490,98 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0 or 1.  0 signifies no SSL options */
+	/** The version number of this structure.  Must be 0, 1 or 2.  
+	  * 0 signifies no SSL options and no serverURIs
+	  * 1 signifies no serverURIs 
+	  */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
-      * that should pass without communication between the client and the server
-      * The client will ensure that at least one message travels across the
-      * network within each keep alive period.  In the absence of a data-related 
-	  * message during the time period, the client sends a very small MQTT 
-      * "ping" message, which the server will acknowledge. The keep alive 
-      * interval enables the client to detect when the server is no longer 
-	  * available without having to wait for the long TCP/IP timeout.
-	  */
+   * that should pass without communication between the client and the server
+   * The client will ensure that at least one message travels across the
+   * network within each keep alive period.  In the absence of a data-related 
+	 * message during the time period, the client sends a very small MQTT 
+   * "ping" message, which the server will acknowledge. The keep alive 
+   * interval enables the client to detect when the server is no longer 
+	 * available without having to wait for the long TCP/IP timeout.
+	 */
 	int keepAliveInterval;
 	/** 
-      * This is a boolean value. The cleansession setting controls the behaviour
-      * of both the client and the server at connection and disconnection time.
-      * The client and server both maintain session state information. This
-      * information is used to ensure "at least once" and "exactly once"
-      * delivery, and "exactly once" receipt of messages. Session state also
-      * includes subscriptions created by an MQTT client. You can choose to
-      * maintain or discard state information between sessions. 
-      *
-      * When cleansession is true, the state information is discarded at 
-      * connect and disconnect. Setting cleansession to false keeps the state 
-      * information. When you connect an MQTT client application with 
-      * MQTTClient_connect(), the client identifies the connection using the 
-      * client identifier and the address of the server. The server checks 
-      * whether session information for this client
-      * has been saved from a previous connection to the server. If a previous 
-      * session still exists, and cleansession=true, then the previous session 
-      * information at the client and server is cleared. If cleansession=false,
-      * the previous session is resumed. If no previous session exists, a new
-      * session is started.
-	  */
+   * This is a boolean value. The cleansession setting controls the behaviour
+   * of both the client and the server at connection and disconnection time.
+   * The client and server both maintain session state information. This
+   * information is used to ensure "at least once" and "exactly once"
+   * delivery, and "exactly once" receipt of messages. Session state also
+   * includes subscriptions created by an MQTT client. You can choose to
+   * maintain or discard state information between sessions. 
+   *
+   * When cleansession is true, the state information is discarded at 
+   * connect and disconnect. Setting cleansession to false keeps the state 
+   * information. When you connect an MQTT client application with 
+   * MQTTClient_connect(), the client identifies the connection using the 
+   * client identifier and the address of the server. The server checks 
+   * whether session information for this client
+   * has been saved from a previous connection to the server. If a previous 
+   * session still exists, and cleansession=true, then the previous session 
+   * information at the client and server is cleared. If cleansession=false,
+   * the previous session is resumed. If no previous session exists, a new
+   * session is started.
+	 */
 	int cleansession;
 	/** 
-      * This is a boolean value that controls how many messages can be in-flight
-      * simultaneously. Setting <i>reliable</i> to true means that a published 
-      * message must be completed (acknowledgements received) before another
-      * can be sent. Attempts to publish additional messages receive an
-      * ::MQTTCLIENT_MAX_MESSAGES_INFLIGHT return code. Setting this flag to
-	  * false allows up to 10 messages to be in-flight. This can increase 
-      * overall throughput in some circumstances.
-	  */
+   * This is a boolean value that controls how many messages can be in-flight
+   * simultaneously. Setting <i>reliable</i> to true means that a published 
+   * message must be completed (acknowledgements received) before another
+   * can be sent. Attempts to publish additional messages receive an
+   * ::MQTTCLIENT_MAX_MESSAGES_INFLIGHT return code. Setting this flag to
+	 * false allows up to 10 messages to be in-flight. This can increase 
+   * overall throughput in some circumstances.
+	 */
 	int reliable;		
 	/** 
-      * This is a pointer to an MQTTClient_willOptions structure. If your 
-      * application does not make use of the Last Will and Testament feature, 
-      * set this pointer to NULL.
-      */
+   * This is a pointer to an MQTTClient_willOptions structure. If your 
+   * application does not make use of the Last Will and Testament feature, 
+   * set this pointer to NULL.
+   */
 	MQTTClient_willOptions* will;
 	/** 
-      * MQTT servers that support the MQTT v3.1 protocol provide authentication
-      * and authorisation by user name and password. This is the user name 
-      * parameter. 
-      */
+   * MQTT servers that support the MQTT v3.1 protocol provide authentication
+   * and authorisation by user name and password. This is the user name 
+   * parameter. 
+   */
 	char* username;	
 	/** 
-      * MQTT servers that support the MQTT v3.1 protocol provide authentication
-      * and authorisation by user name and password. This is the password 
-      * parameter.
-      */
+   * MQTT servers that support the MQTT v3.1 protocol provide authentication
+   * and authorisation by user name and password. This is the password 
+   * parameter.
+   */
 	char* password;
 	/**
-      * The time interval in seconds to allow a connect to complete.
-      */
+   * The time interval in seconds to allow a connect to complete.
+   */
 	int connectTimeout;
 	/**
 	 * The time interval in seconds
 	 */
 	int retryInterval;
 	/** 
-    * This is a pointer to an MQTTClient_SSLOptions structure. If your 
-    * application does not make use of SSL, set this pointer to NULL.
-    */
+   * This is a pointer to an MQTTClient_SSLOptions structure. If your 
+   * application does not make use of SSL, set this pointer to NULL.
+   */
 	MQTTClient_SSLOptions* ssl;
 	/**
-	  * The number of entries in the serverURIs array.
-	  */
+	 * The number of entries in the optional serverURIs array. Defaults to 0.
+	 */
 	int serverURIcount;
 	/**
-	  * An array of null-terminated strings specifying the servers to
-      * which the client will connect. Each string takes the form <i>protocol://host:port</i>.
-      * <i>protocol</i> must be <i>tcp</i> or <i>ssl</i>. For <i>host</i>, you can 
-      * specify either an IP address or a domain name. For instance, to connect to
-      * a server running on the local machines with the default MQTT port, specify
-      * <i>tcp://localhost:1883</i>.
-      */    
+   * An optional array of null-terminated strings specifying the servers to
+   * which the client will connect. Each string takes the form <i>protocol://host:port</i>.
+   * <i>protocol</i> must be <i>tcp</i> or <i>ssl</i>. For <i>host</i>, you can 
+   * specify either an IP address or a host name. For instance, to connect to
+   * a server running on the local machines with the default MQTT port, specify
+   * <i>tcp://localhost:1883</i>.
+   * If this list is empty (the default), the server URI specified on MQTTClient_create()
+   * is used.
+   */    
 	char** serverURIs;
 } MQTTClient_connectOptions;
 
@@ -855,6 +880,7 @@ DLLExport void MQTTClient_destroy(MQTTClient* handle);
 #endif
 
 /**
+  * @cond MQTTClient_main
   * @page async Asynchronous vs synchronous client applications
   * The client library supports two modes of operation. These are referred to
   * as <b>synchronous</b> and <b>asynchronous</b> modes. If your application
@@ -1174,4 +1200,94 @@ int main(int argc, char* argv[])
 }
               
   * @endcode
+  * @page tracing Tracing
+  * 
+  * Runtime tracing is controlled by environment variables.
+  *
+  * Tracing is switched on by setting MQTT_C_CLIENT_TRACE.  A value of ON, or stdout, prints to
+  * stdout, any other value is interpreted as a file name to use.
+  *
+  * The amount of trace detail is controlled with the MQTT_C_CLIENT_TRACE_LEVEL environment
+  * variable - valid values are ERROR, PROTOCOL, MINIMUM, MEDIUM and MAXIMUM
+  * (from least to most verbose).
+  *
+  * The variable MQTT_C_CLIENT_TRACE_MAX_LINES limits the number of lines of trace that are output
+  * to a file.  Two files are used at most, when they are full, the last one is overwritten with the
+  * new trace entries.  The default size is 1000 lines.
+  *
+  * ### MQTT Packet Tracing
+  * 
+  * A feature that can be very useful is printing the MQTT packets that are sent and received.  To 
+  * achieve this, use the following environment variable settings:
+  * @code
+    MQTT_C_CLIENT_TRACE=ON
+    MQTT_C_CLIENT_TRACE_LEVEL=PROTOCOL
+  * @endcode
+  * The output you should see looks like this:
+  * @code
+    20130528 155936.813 3 stdout-subscriber -> CONNECT cleansession: 1 (0)
+    20130528 155936.813 3 stdout-subscriber <- CONNACK rc: 0
+    20130528 155936.813 3 stdout-subscriber -> SUBSCRIBE msgid: 1 (0)
+    20130528 155936.813 3 stdout-subscriber <- SUBACK msgid: 1
+    20130528 155941.818 3 stdout-subscriber -> DISCONNECT (0)
+  * @endcode
+  * where the fields are:
+  * 1. date
+  * 2. time
+  * 3. socket number
+  * 4. client id
+  * 5. direction (-> from client to server, <- from server to client)
+  * 6. packet details
+  *
+  * ### Default Level Tracing
+  * 
+  * This is an extract of a default level trace of a call to connect:
+  * @code
+    19700101 010000.000 (1152206656) (0)> MQTTClient_connect:893
+    19700101 010000.000 (1152206656)  (1)> MQTTClient_connectURI:716
+    20130528 160447.479 Connecting to serverURI localhost:1883
+    20130528 160447.479 (1152206656)   (2)> MQTTProtocol_connect:98
+    20130528 160447.479 (1152206656)    (3)> MQTTProtocol_addressPort:48
+    20130528 160447.479 (1152206656)    (3)< MQTTProtocol_addressPort:73
+    20130528 160447.479 (1152206656)    (3)> Socket_new:599
+    20130528 160447.479 New socket 4 for localhost, port 1883
+    20130528 160447.479 (1152206656)     (4)> Socket_addSocket:163
+    20130528 160447.479 (1152206656)      (5)> Socket_setnonblocking:73
+    20130528 160447.479 (1152206656)      (5)< Socket_setnonblocking:78 (0)
+    20130528 160447.479 (1152206656)     (4)< Socket_addSocket:176 (0)
+    20130528 160447.479 (1152206656)     (4)> Socket_error:95
+    20130528 160447.479 (1152206656)     (4)< Socket_error:104 (115)
+    20130528 160447.479 Connect pending
+    20130528 160447.479 (1152206656)    (3)< Socket_new:683 (115)
+    20130528 160447.479 (1152206656)   (2)< MQTTProtocol_connect:131 (115)
+  * @endcode
+  * where the fields are:
+  * 1. date
+  * 2. time
+  * 3. thread id
+  * 4. function nesting level
+  * 5. function entry (>) or exit (<)
+  * 6. function name : line of source code file
+  * 7. return value (if there is one)
+  *
+  * ### Memory Allocation Tracing
+  * 
+  * Setting the trace level to maximum causes memory allocations and frees to be traced along with 
+  * the default trace entries, with messages like the following:
+  * @code
+    20130528 161819.657 Allocating 16 bytes in heap at file /home/icraggs/workspaces/mqrtc/mqttv3c/src/MQTTPacket.c line 177 ptr 0x179f930
+
+    20130528 161819.657 Freeing 16 bytes in heap at file /home/icraggs/workspaces/mqrtc/mqttv3c/src/MQTTPacket.c line 201, heap use now 896 bytes
+  * @endcode
+  * When the last MQTT client object is destroyed, if the trace is being recorded 
+  * and all memory allocated by the client library has not been freed, an error message will be
+  * written to the trace.  This can help with fixing memory leaks.  The message will look like this:
+  * @code
+    20130528 163909.208 Some memory not freed at shutdown, possible memory leak
+    20130528 163909.208 Heap scan start, total 880 bytes
+    20130528 163909.208 Heap element size 32, line 354, file /home/icraggs/workspaces/mqrtc/mqttv3c/src/MQTTPacket.c, ptr 0x260cb00
+    20130528 163909.208   Content           
+    20130528 163909.209 Heap scan end
+  * @endcode
+  * @endcond
   */

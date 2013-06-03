@@ -16,6 +16,13 @@
  *    Ian Craggs - multiple server connection support
  *******************************************************************************/
 
+/**
+ * @file
+ * \brief Asynchronous API implementation
+ *
+ */
+
+
 #include <stdlib.h>
 #if !defined(WIN32)
 	#include <sys/time.h>

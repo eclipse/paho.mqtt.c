@@ -376,7 +376,7 @@ exit:
 	MyLog(LOGA_INFO, "TEST1: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 
-	fprintf(xml, " time=\"%d\" />\n", elapsed(global_start_time)); 
+	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time)); 
 	if (cur_output != output)
 	{
 		fprintf(xml, output);
@@ -539,7 +539,7 @@ exit:
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 
-	fprintf(xml, " time=\"%d\" />\n", elapsed(global_start_time)); 
+	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time)); 
 	if (cur_output != output)
 	{
 		fprintf(xml, output);
@@ -626,7 +626,7 @@ int test3(struct Options options)
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 
-	fprintf(xml, " time=\"%d\" />\n", elapsed(global_start_time)); 
+	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time)); 
 	if (cur_output != output)
 	{
 		fprintf(xml, output);
@@ -793,7 +793,7 @@ int test4(struct Options options)
 	fprintf(xml, "<testcase classname=\"test1\" name=\"persistence\"");
 	global_start_time = start_clock();
 	rc = test4_run(1) + test4_run(2);
-	fprintf(xml, " time=\"%d\" />\n", elapsed(global_start_time)); 
+	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time)); 
 	if (cur_output != output)
 	{
 		fprintf(xml, output);
@@ -874,7 +874,7 @@ exit:
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 
-	fprintf(xml, " time=\"%d\" />\n", elapsed(global_start_time)); 
+	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time)); 
 	if (cur_output != output)
 	{
 		fprintf(xml, output);
@@ -1112,7 +1112,7 @@ exit:
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.\n",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 
-	fprintf(xml, " time=\"%d\" />\n", elapsed(global_start_time)); 
+	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time)); 
 	if (cur_output != output)
 	{
 		fprintf(xml, output);

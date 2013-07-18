@@ -116,10 +116,7 @@ void getopts(int argc, char** argv)
 	}
 }
 
-#if 0
-#include <logaX.h>   /* For general log messages                      */
-#define MyLog logaLine
-#else
+
 #define LOGA_DEBUG 0
 #define LOGA_INFO 1
 #include <stdarg.h>
@@ -149,7 +146,6 @@ void MyLog(int LOGA_level, char* format, ...)
 	printf("%s\n", msg_buf);
 	fflush(stdout);
 }
-#endif
 
 
 #if defined(WIN32) || defined(_WINDOWS)
@@ -218,6 +214,7 @@ START_TIME_TYPE global_start_time;
 
 int tests = 0;
 int failures = 0;
+FILE* xml;
 
 
 void myassert(char* filename, int lineno, char* description, int value, char* format, ...)
@@ -233,6 +230,8 @@ void myassert(char* filename, int lineno, char* description, int value, char* fo
 		va_start(args, format);
 		vprintf(format, args);
 		va_end(args);
+
+		fprintf(xml, "<failure type=\"%s\">file %s, line %d </failure>\n", description, filename, lineno);
 	}
     else
     	MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);  
@@ -315,6 +314,7 @@ int test1(struct Options options)
 	int rc = 0;
 	char* test_topic = "C client test1";
 
+	fprintf(xml, "<testcase classname=\"test1\" name=\"single threaded client using receive\" >\n");
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 1 - single threaded client using receive");
 	
@@ -376,6 +376,7 @@ exit:
 	MyLog(LOGA_INFO, "TEST1: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 
+	fprintf(xml, "</testcase>\n");
 	return failures;
 }
 
@@ -490,6 +491,7 @@ int test2(struct Options options)
 
 	failures = 0;
 
+	fprintf(xml, "<testcase classname=\"test1\" name=\"multi-threaded client using callbacks\" >\n");
 	MyLog(LOGA_INFO, "Starting test 2 - multi-threaded client using callbacks");
 	MQTTClient_create(&c, options.connection, "multi_threaded_sample", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 
@@ -530,6 +532,7 @@ exit:
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 
+	fprintf(xml, "</testcase>\n");
 	return failures;
 }
 
@@ -556,8 +559,9 @@ int test3(struct Options options)
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	/* TODO - unused - remove? MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer; */
 
-	failures = 0;
 
+	fprintf(xml, "<testcase classname=\"test1\" name=\"connack return codes\" >\n");
+	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 3 - connack return codes");
 
 	/* clientid too long (RC = 2) */
@@ -610,6 +614,7 @@ int test3(struct Options options)
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 
+	fprintf(xml, "</testcase>\n");
 	return failures;
 }
 
@@ -636,8 +641,7 @@ int test4_run(int qos)
 	int count = 3;
 	int i, rc;
 
-	failures = 0;
-	
+	failures = 0;	
 	MyLog(LOGA_INFO, "Starting test 4 - persistence, qos %d", qos);
 
 	MQTTClient_create(&c, options.connection, "xrctest1_test_4", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
@@ -767,7 +771,11 @@ int test4_run(int qos)
 
 int test4(struct Options options)
 {
-	return test4_run(1) + test4_run(2);
+	int rc = 0;
+	fprintf(xml, "<testcase classname=\"test1\" name=\"persistence\" >\n");
+	rc = test4_run(1) + test4_run(2);
+	fprintf(xml, "</testcase>\n");
+	return rc;
 }
 
 
@@ -793,6 +801,7 @@ int test5(struct Options options)
 	int count = 5;
 	int i, rc;
 
+	fprintf(xml, "<testcase classname=\"test1\" name=\"disconnect with quiesce timeout should allow exchanges to complete\" >\n");
 	failures = 0;
  	MyLog(LOGA_INFO, "Starting test 5 - disconnect with quiesce timeout should allow exchanges to complete");
 
@@ -839,6 +848,7 @@ exit:
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 
+	fprintf(xml, "</testcase>\n");
 	return failures;
 }
 
@@ -976,6 +986,7 @@ int test6(struct Options options)
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 6 - connectionLost and will messages");
+	fprintf(xml, "<testcase classname=\"test1\" name=\"connectionLost and will messages\" >\n");
  
 	opts.keepAliveInterval = 10;
 	opts.cleansession = 1;
@@ -1068,6 +1079,7 @@ exit:
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.\n",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 
+	fprintf(xml, "</testcase>\n");
 	return failures;
 }
 
@@ -1076,6 +1088,10 @@ int main(int argc, char** argv)
 	int rc = 0;
  	int (*tests[])() = {NULL, test1, test2, test3, test4, test5, test6};
 	
+
+	xml = fopen("TEST-test1.xml", "w");
+	fprintf(xml, "<testsuite tests=\"%d\">\n", ARRAY_SIZE(tests) - 1);
+
 	getopts(argc, argv);
 
  	if (options.test_no == 0)
@@ -1086,10 +1102,12 @@ int main(int argc, char** argv)
 	else
  	   	rc = tests[options.test_no](options); /* run just the selected test */
     	
- 	if (failures == 0)
+ 	if (rc == 0)
 		MyLog(LOGA_INFO, "verdict pass");
 	else
 		MyLog(LOGA_INFO, "verdict fail");
-	
+
+	fprintf(xml, "</testsuite>\n");
+	fclose(xml);	
 	return rc;
 }

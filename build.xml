@@ -125,6 +125,16 @@
     </exec>
   </target>
 
+  <target name="test" >
+    <foreach target="runAtest" param="aTest" list="test1,test3"/>
+  </target>
+
+  <target name="runAtest">
+    <exec executable="./${aTest}" failonerror="true" dir="${output.folder}" > 
+      <env key="LD_LIBRARY_PATH" value="." />
+    </exec>
+  </target>
+
   <target name="doc" >
     <if>
       <available file="${doxygen}"/>
@@ -178,6 +188,6 @@
   </target>
 
   <!-- target name="full" depends="init, version, compile, doc, copy" -->
-  <target name="full" depends="init, version, compile" />
+  <target name="full" depends="init, version, compile, test" />
 
 </project>

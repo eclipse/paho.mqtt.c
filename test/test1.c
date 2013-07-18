@@ -205,17 +205,15 @@ long elapsed(START_TIME_TYPE start_time)
 #endif
 
 
-START_TIME_TYPE global_start_time;
-
-
 #define assert(a, b, c, d) myassert(__FILE__, __LINE__, a, b, c, d)
 #define assert1(a, b, c, d, e) myassert(__FILE__, __LINE__, a, b, c, d, e)
-
 
 int tests = 0;
 int failures = 0;
 FILE* xml;
-
+START_TIME_TYPE global_start_time;
+char output[3000];
+char* cur_output = output;
 
 void myassert(char* filename, int lineno, char* description, int value, char* format, ...)
 {
@@ -231,7 +229,8 @@ void myassert(char* filename, int lineno, char* description, int value, char* fo
 		vprintf(format, args);
 		va_end(args);
 
-		fprintf(xml, "<failure type=\"%s\">file %s, line %d </failure>\n", description, filename, lineno);
+		cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n", 
+                        description, filename, lineno);
 	}
     else
     	MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);  
@@ -314,7 +313,8 @@ int test1(struct Options options)
 	int rc = 0;
 	char* test_topic = "C client test1";
 
-	fprintf(xml, "<testcase classname=\"test1\" name=\"single threaded client using receive\" >\n");
+	fprintf(xml, "<testcase classname=\"test1\" name=\"single threaded client using receive\"");
+	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 1 - single threaded client using receive");
 	
@@ -376,6 +376,12 @@ exit:
 	MyLog(LOGA_INFO, "TEST1: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 
+	fprintf(xml, " time=\"%d\" />\n", elapsed(global_start_time)); 
+	if (cur_output != output)
+	{
+		fprintf(xml, output);
+		cur_output = output;	
+	}
 	fprintf(xml, "</testcase>\n");
 	return failures;
 }
@@ -489,10 +495,11 @@ int test2(struct Options options)
 	int rc = 0;
 	char* test_topic = "C client test2";
 
+	fprintf(xml, "<testcase classname=\"test1\" name=\"multi-threaded client using callbacks\"");
+	MyLog(LOGA_INFO, "Starting test 2 - multi-threaded client using callbacks");
+	global_start_time = start_clock();
 	failures = 0;
 
-	fprintf(xml, "<testcase classname=\"test1\" name=\"multi-threaded client using callbacks\" >\n");
-	MyLog(LOGA_INFO, "Starting test 2 - multi-threaded client using callbacks");
 	MQTTClient_create(&c, options.connection, "multi_threaded_sample", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 
 	opts.keepAliveInterval = 20;
@@ -532,6 +539,12 @@ exit:
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 
+	fprintf(xml, " time=\"%d\" />\n", elapsed(global_start_time)); 
+	if (cur_output != output)
+	{
+		fprintf(xml, output);
+		cur_output = output;	
+	}
 	fprintf(xml, "</testcase>\n");
 	return failures;
 }
@@ -560,7 +573,8 @@ int test3(struct Options options)
 	/* TODO - unused - remove? MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer; */
 
 
-	fprintf(xml, "<testcase classname=\"test1\" name=\"connack return codes\" >\n");
+	fprintf(xml, "<testcase classname=\"test1\" name=\"connack return codes\"");
+	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 3 - connack return codes");
 
@@ -614,6 +628,12 @@ int test3(struct Options options)
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 
+	fprintf(xml, " time=\"%d\" />\n", elapsed(global_start_time)); 
+	if (cur_output != output)
+	{
+		fprintf(xml, output);
+		cur_output = output;	
+	}
 	fprintf(xml, "</testcase>\n");
 	return failures;
 }
@@ -772,8 +792,15 @@ int test4_run(int qos)
 int test4(struct Options options)
 {
 	int rc = 0;
-	fprintf(xml, "<testcase classname=\"test1\" name=\"persistence\" >\n");
+	fprintf(xml, "<testcase classname=\"test1\" name=\"persistence\"");
+	global_start_time = start_clock();
 	rc = test4_run(1) + test4_run(2);
+	fprintf(xml, " time=\"%d\" />\n", elapsed(global_start_time)); 
+	if (cur_output != output)
+	{
+		fprintf(xml, output);
+		cur_output = output;	
+	}
 	fprintf(xml, "</testcase>\n");
 	return rc;
 }
@@ -801,7 +828,8 @@ int test5(struct Options options)
 	int count = 5;
 	int i, rc;
 
-	fprintf(xml, "<testcase classname=\"test1\" name=\"disconnect with quiesce timeout should allow exchanges to complete\" >\n");
+	fprintf(xml, "<testcase classname=\"test1\" name=\"disconnect with quiesce timeout should allow exchanges to complete\"");
+	global_start_time = start_clock();
 	failures = 0;
  	MyLog(LOGA_INFO, "Starting test 5 - disconnect with quiesce timeout should allow exchanges to complete");
 
@@ -848,6 +876,12 @@ exit:
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 
+	fprintf(xml, " time=\"%d\" />\n", elapsed(global_start_time)); 
+	if (cur_output != output)
+	{
+		fprintf(xml, output);
+		cur_output = output;	
+	}
 	fprintf(xml, "</testcase>\n");
 	return failures;
 }
@@ -986,7 +1020,8 @@ int test6(struct Options options)
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 6 - connectionLost and will messages");
-	fprintf(xml, "<testcase classname=\"test1\" name=\"connectionLost and will messages\" >\n");
+	fprintf(xml, "<testcase classname=\"test1\" name=\"connectionLost and will messages\"");
+	global_start_time = start_clock();
  
 	opts.keepAliveInterval = 10;
 	opts.cleansession = 1;
@@ -1079,6 +1114,12 @@ exit:
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.\n",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 
+	fprintf(xml, " time=\"%d\" />\n", elapsed(global_start_time)); 
+	if (cur_output != output)
+	{
+		fprintf(xml, output);
+		cur_output = output;	
+	}
 	fprintf(xml, "</testcase>\n");
 	return failures;
 }
@@ -1090,7 +1131,7 @@ int main(int argc, char** argv)
 	
 
 	xml = fopen("TEST-test1.xml", "w");
-	fprintf(xml, "<testsuite tests=\"%d\">\n", ARRAY_SIZE(tests) - 1);
+	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", ARRAY_SIZE(tests) - 1);
 
 	getopts(argc, argv);
 

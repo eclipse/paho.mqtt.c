@@ -1,3 +1,4 @@
+#define MY_ID "@(#) stmqcom/pub1.c, stmqcom, cs 1.85 10/08/24 07:36:24"
 /*--------------------------------------------------------------------*/
 /* [Platforms]UNIX NT[/Platforms]                                     */
 /* [Title]MQ Telemetry MQTT C client tests                            */
@@ -54,16 +55,12 @@ void usage()
 struct Options
 {
 	char* connection;         /**< connection to system under test. */
-	char** haconnections;
-	int hacount;
 	int verbose;
-	int test_no;
+  int test_no;
 	int size;									/**< size of big message */
 } options =
 {
-	"tcp://localhost:1883",
-	NULL,
-	0,
+	"tcp://m2m.eclipse.org:1883",
 	0,
 	-1,
 	5000000,
@@ -93,24 +90,6 @@ void getopts(int argc, char** argv)
 		{
 			if (++count < argc)
 				options.connection = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--haconnections") == 0)
-		{
-			if (++count < argc)
-			{
-				char* tok = strtok(argv[count], " ");
-				options.hacount = 0;
-				options.haconnections = malloc(sizeof(char*) * 5);
-				while (tok)
-				{
-					options.haconnections[options.hacount] = malloc(strlen(tok) + 1);
-					strcpy(options.haconnections[options.hacount], tok);
-					options.hacount++;
-					tok = strtok(NULL, " ");
-				}
-			}
 			else
 				usage();
 		}
@@ -371,11 +350,6 @@ int test1(struct Options options)
 	opts.cleansession = 1;
 	opts.username = "testuser";
 	opts.password = "testpassword";
-	if (options.haconnections != NULL)
-	{
-		opts.serverURIs = options.haconnections;
-		opts.serverURIcount = options.hacount;
-	}
 
 	opts.will = &wopts;
 	opts.will->message = "will message";
@@ -466,11 +440,6 @@ int test2(struct Options options)
 	opts.cleansession = 1;
 	opts.username = "testuser";
 	opts.password = "testpassword";
-	if (options.haconnections != NULL)
-	{
-		opts.serverURIs = options.haconnections;
-		opts.serverURIcount = options.hacount;
-	}
 
 	opts.will = &wopts;
 	opts.will->message = "will message";
@@ -634,6 +603,7 @@ void test3_onFailure(void* context, MQTTAsync_failureData* response)
 {
 	client_data* cd = (client_data*)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	int rc;
 	
 	assert("Should have connected", 0, "failed to connect", NULL);
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, \"%s\" rc %d\n", cd->clientid, response->code);
@@ -651,14 +621,13 @@ Test3: More than one client object - simultaneous working.
 *********************************************************************/
 int test3(struct Options options)
 {
-	#define TEST3_CLIENTS 10
-	int num_clients = TEST3_CLIENTS;
+	const int num_clients = 10;
 	int subsqos = 2;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
 	int rc = 0;
 	int i;
-	client_data clientdata[TEST3_CLIENTS];
+	client_data clientdata[num_clients];
 
 	test_finished = 0;
 	MyLog(LOGA_INFO, "Starting test 3 - multiple connections");
@@ -681,11 +650,6 @@ int test3(struct Options options)
 		opts.cleansession = 1;
 		opts.username = "testuser";
 		opts.password = "testpassword";
-		if (options.haconnections != NULL)
-		{
-			opts.serverURIs = options.haconnections;
-			opts.serverURIcount = options.hacount;
-		}
 
 		opts.will = &wopts;
 		opts.will->message = "will message";
@@ -871,11 +835,6 @@ int test4(struct Options options)
 	opts.cleansession = 1;
 	opts.username = "testuser";
 	opts.password = "testpassword";
-	if (options.haconnections != NULL)
-	{
-		opts.serverURIs = options.haconnections;
-		opts.serverURIcount = options.hacount;
-	}
 
 	opts.will = &wopts;
 	opts.will->message = "will message";
@@ -911,26 +870,200 @@ exit:
 }
 
 
+void test5_onConnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	int rc;
+	
+	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
+
+	MyLog(LOGA_INFO, "Connack rc is %d", response ? response->code : -999);
+
+	test_finished = 1;
+}
+
+
+void test5_onConnect(void* context, MQTTAsync_successData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	int rc;
+	
+	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
+
+	test_finished = 1;
+}
+
+
+/********************************************************************
+
+Test5: Connack return codes
+
+*********************************************************************/
+int test5(struct Options options)
+{
+	int subsqos = 2;
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	int rc = 0;
+	char* test_topic = "C client test1";
+
+	test_finished = failures = 0;
+	MyLog(LOGA_INFO, "Starting test 5 - connack return codes");
+	
+	rc = MQTTAsync_create(&c, options.connection, "a clientid that is too long to be accepted",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);		
+	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
+
+	rc = MQTTAsync_setCallbacks(c, c, NULL, test1_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+
+	opts.onSuccess = test5_onConnect;
+	opts.onFailure = test5_onConnectFailure;
+	opts.context = c;
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	rc = 0;
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (!test_finished)
+		#if defined(WIN32)
+			Sleep(100);
+		#else
+			usleep(10000L);
+		#endif		
+
+	MQTTAsync_destroy(&c);
+
+exit:
+	MyLog(LOGA_INFO, "TEST5: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+
+	return failures;
+}
+
+
+void test6_onConnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	int rc;
+	
+	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
+
+	MyLog(LOGA_INFO, "Connack rc is %d", response ? response->code : -999);
+
+	test_finished = 1;
+}
+
+
+void test6_onConnect(void* context, MQTTAsync_successData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	int rc;
+	
+	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
+
+	test_finished = 1;
+}
+
+
+/********************************************************************
+
+Test6: HA connections
+
+*********************************************************************/
+int test6(struct Options options)
+{
+	int subsqos = 2;
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	int rc = 0;
+	char* test_topic = "C client test1";
+	char* uris[2] = {"tcp://localhost:1884", "tcp://localhost:1883"};
+
+	test_finished = failures = 0;
+	MyLog(LOGA_INFO, "Starting test 7 - HA connections");
+	
+	rc = MQTTAsync_create(&c, options.connection, "a clientid that is too long to be accepted",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);		
+	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
+
+	rc = MQTTAsync_setCallbacks(c, c, NULL, test1_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+
+	opts.onSuccess = test6_onConnect;
+	opts.onFailure = test6_onConnectFailure;
+	opts.context = c;
+	opts.serverURIs = uris;
+	opts.serverURIcount = 2;
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	rc = 0;
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (!test_finished)
+		#if defined(WIN32)
+			Sleep(100);
+		#else
+			usleep(10000L);
+		#endif		
+
+	MQTTAsync_destroy(&c);
+
+exit:
+	MyLog(LOGA_INFO, "TEST6: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+
+	return failures;
+}
+
+
+
 void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 {
 	printf("Trace : %d, %s\n", level, message);
 }
 
 
+
+
 int main(int argc, char** argv)
 {
 	int rc = 0;
- 	int (*tests[])() = {NULL, test1, test2, test3, test4}; /* indexed starting from 1 */
-	char** info;
+ 	int (*tests[])() = {NULL, test1, test2, test3, test4, test5, test6}; /* indexed starting from 1 */
+	MQTTAsync_nameValue* info;
 	
 	getopts(argc, argv);
 
 	MQTTAsync_setTraceCallback(trace_callback);
 
 	info = MQTTAsync_getVersionInfo();
-	
-	while (*info)
-		printf("Version info \"%s\"\n", *info++);
+	while (info->name)
+	{
+	  MyLog(LOGA_INFO, "%s: %s", info->name, info->value);
+	  info++;
+	}
 
  	if (options.test_no == -1)
 	{ /* run all the tests */

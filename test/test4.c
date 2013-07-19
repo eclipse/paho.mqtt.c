@@ -656,7 +656,7 @@ int test3(struct Options options)
 
 	test_finished = 0;
 	MyLog(LOGA_INFO, "Starting test 3 - multiple connections");
-	fprintf(xml, "<testcase classname=\"test4\" name=\"asynchronous connect\"");
+	fprintf(xml, "<testcase classname=\"test4\" name=\"multiple connections\"");
 	global_start_time = start_clock();
 	
 	for (i = 0; i < num_clients; ++i)

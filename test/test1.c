@@ -376,7 +376,7 @@ exit:
 	MyLog(LOGA_INFO, "TEST1: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 
-	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time)); 
+	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
 	if (cur_output != output)
 	{
 		fprintf(xml, output);

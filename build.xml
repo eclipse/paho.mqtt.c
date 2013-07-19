@@ -14,6 +14,7 @@
   <property name="libname.ssl" value="mqttv3cs" />
   <property name="libname.async" value="mqttv3a" />
   <property name="libname.async.ssl" value="mqttv3as" />
+  <property name="ssl" value="no" />
 	
   <target name="init">
     <tstamp>
@@ -61,14 +62,18 @@
 	<arg value="${output.filename}" />
       </exec>
 
-      <!-- SSL, synchronous library --> 
-      <property name="output.ssl.filename" value="${output.folder}/lib${libname.ssl}.so" />
-      <exec executable="gcc" failonerror="true">
-	<arg line="-DOPENSSL ${ccflags.so} ${ldflags.so} -o ${output.ssl.filename} ${sync.source.files}"/>	
-      </exec>
-      <exec executable="strip" failonerror="true">
-	<arg value="${output.ssl.filename}" />
-      </exec>
+      <if>
+	<equals arg1="${ssl}" arg2="yes" />	
+	<then>		
+	  <!-- SSL, synchronous library --> 
+	  <property name="output.ssl.filename" value="${output.folder}/lib${libname.ssl}.so" />
+	  <exec executable="gcc" failonerror="true">
+	    <arg line="-DOPENSSL ${ccflags.so} ${ldflags.so} -o ${output.ssl.filename} ${sync.source.files}"/>	
+	  </exec>
+	  <exec executable="strip" failonerror="true">
+	    <arg value="${output.ssl.filename}" />
+	  </exec>
+	</then>
 
       <!-- non-SSL, asynchronous library -->
       <property name="output.async.filename" value="${output.folder}/lib${libname.async}.so" /> 
@@ -79,14 +84,18 @@
 	<arg value="${output.async.filename}" />
       </exec>
 
-      <!-- SSL, asynchronous library --> 
-      <property name="output.async.ssl.filename" value="${output.folder}/lib${libname.async.ssl}.so" />
-      <exec executable="gcc" failonerror="true">
-	<arg line="-DOPENSSL ${ccflags.so} ${ldflags.async.so} -o ${output.async.ssl.filename} ${sync.source.files}"/>	
-      </exec>
-      <exec executable="strip" failonerror="true">
-	<arg value="${output.async.ssl.filename}" />
-      </exec>
+      <if>
+	<equals arg1="${ssl}" arg2="yes" />	
+	<then>
+	  <!-- SSL, asynchronous library --> 
+	  <property name="output.async.ssl.filename" value="${output.folder}/lib${libname.async.ssl}.so" />
+	  <exec executable="gcc" failonerror="true">
+	    <arg line="-DOPENSSL ${ccflags.so} ${ldflags.async.so} -o ${output.async.ssl.filename} ${sync.source.files}"/>	
+	  </exec>
+	  <exec executable="strip" failonerror="true">
+	    <arg value="${output.async.ssl.filename}" />
+	  </exec>
+	</then>
 
       <!-- MQTTVersion --> 
       <property name="output.async.ssl.filename" value="${output.folder}/lib${libname.async.ssl}.so" />
@@ -108,8 +117,8 @@
       </exec> -->
 
       <!-- Build tests --> 
-      <foreach target="onecompile" param="aFile" list="test1,test3"/>
-      <foreach target="asynccompile" param="aFile" list="test4,test5"/>
+      <foreach target="onecompile" param="aFile" list="test1"/>
+      <foreach target="asynccompile" param="aFile" list="test4"/>
 	
     </then>
     <elseif>

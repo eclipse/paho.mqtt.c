@@ -626,7 +626,7 @@ int test3(struct Options options)
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 
-	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time)); 
+	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
 	if (cur_output != output)
 	{
 		fprintf(xml, output);

@@ -74,6 +74,7 @@
 	    <arg value="${output.ssl.filename}" />
 	  </exec>
 	</then>
+      </if>
 
       <!-- non-SSL, asynchronous library -->
       <property name="output.async.filename" value="${output.folder}/lib${libname.async}.so" /> 
@@ -96,6 +97,7 @@
 	    <arg value="${output.async.ssl.filename}" />
 	  </exec>
 	</then>
+      </if>
 
       <!-- MQTTVersion --> 
       <property name="output.async.ssl.filename" value="${output.folder}/lib${libname.async.ssl}.so" />

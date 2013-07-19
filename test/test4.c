@@ -339,7 +339,7 @@ int test1(struct Options options)
 	char* test_topic = "C client test1";
 
 	MyLog(LOGA_INFO, "Starting test 1 - asynchronous connect");
-	fprintf(xml, "<testcase classname=\"test1\" name=\"asynchronous connect\"");
+	fprintf(xml, "<testcase classname=\"test4\" name=\"asynchronous connect\"");
 	global_start_time = start_clock();
 	
 	rc = MQTTAsync_create(&c, options.connection, "async_test",
@@ -438,7 +438,7 @@ int test2(struct Options options)
 	test_finished = 0;
 
 	MyLog(LOGA_INFO, "Starting test 2 - connect timeout");
-	fprintf(xml, "<testcase classname=\"test1\" name=\"connect timeout\"");
+	fprintf(xml, "<testcase classname=\"test4\" name=\"connect timeout\"");
 	global_start_time = start_clock();
 	
 	rc = MQTTAsync_create(&c, "tcp://9.20.96.160:66", "connect timeout",
@@ -491,8 +491,8 @@ exit:
 
 	MyLog(LOGA_INFO, "TEST2: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
-
-	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
+	duration = elapsed(global_start_time);
+	fprintf(xml, " time=\"%d.%.3d\" >\n", duration / 1000, duration % 1000);  
 	if (cur_output != output)
 	{
 		fprintf(xml, output);
@@ -656,7 +656,7 @@ int test3(struct Options options)
 
 	test_finished = 0;
 	MyLog(LOGA_INFO, "Starting test 3 - multiple connections");
-	fprintf(xml, "<testcase classname=\"test1\" name=\"asynchronous connect\"");
+	fprintf(xml, "<testcase classname=\"test4\" name=\"asynchronous connect\"");
 	global_start_time = start_clock();
 	
 	for (i = 0; i < num_clients; ++i)
@@ -710,7 +710,8 @@ int test3(struct Options options)
 exit:
 	MyLog(LOGA_INFO, "TEST3: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
-	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
+	duration = elapsed(global_start_time);
+	fprintf(xml, " time=\"%d.%.3d\" >\n", duration / 1000, duration % 1000);  
 	if (cur_output != output)
 	{
 		fprintf(xml, output);
@@ -851,7 +852,7 @@ int test4(struct Options options)
 
 	test_finished = failures = 0;
 	MyLog(LOGA_INFO, "Starting test 4 - big messages");
-	fprintf(xml, "<testcase classname=\"test1\" name=\"big messages\"");
+	fprintf(xml, "<testcase classname=\"test4\" name=\"big messages\"");
 	global_start_time = start_clock();
 	
 	rc = MQTTAsync_create(&c, options.connection, "async_test_4",
@@ -900,7 +901,8 @@ int test4(struct Options options)
 exit:
 	MyLog(LOGA_INFO, "TEST4: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
-	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
+	duration = elapsed(global_start_time);
+	fprintf(xml, " time=\"%d.%.3d\" >\n", duration / 1000, duration % 1000); 
 	if (cur_output != output)
 	{
 		fprintf(xml, output);
@@ -953,7 +955,7 @@ int test5(struct Options options)
 
 	test_finished = failures = 0;
 	MyLog(LOGA_INFO, "Starting test 5 - connack return codes");
-	fprintf(xml, "<testcase classname=\"test1\" name=\"connack return codes\"");
+	fprintf(xml, "<testcase classname=\"test4\" name=\"connack return codes\"");
 	global_start_time = start_clock();
 	
 	rc = MQTTAsync_create(&c, options.connection, "a clientid that is too long to be accepted",
@@ -991,7 +993,8 @@ int test5(struct Options options)
 exit:
 	MyLog(LOGA_INFO, "TEST5: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
-	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
+	duration = elapsed(global_start_time);
+	fprintf(xml, " time=\"%d.%.3d\" >\n", duration / 1000, duration % 1000); 
 	if (cur_output != output)
 	{
 		fprintf(xml, output);
@@ -1045,7 +1048,7 @@ int test6(struct Options options)
 
 	test_finished = failures = 0;
 	MyLog(LOGA_INFO, "Starting test 7 - HA connections");
-	fprintf(xml, "<testcase classname=\"test1\" name=\"HA connections\"");
+	fprintf(xml, "<testcase classname=\"test4\" name=\"HA connections\"");
 	global_start_time = start_clock();
 	
 	rc = MQTTAsync_create(&c, options.connection, "a clientid that is too long to be accepted",
@@ -1085,7 +1088,8 @@ int test6(struct Options options)
 exit:
 	MyLog(LOGA_INFO, "TEST6: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
-	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
+	duration = elapsed(global_start_time);
+	fprintf(xml, " time=\"%d.%.3d\" >\n", duration / 1000, duration % 1000); 
 	if (cur_output != output)
 	{
 		fprintf(xml, output);

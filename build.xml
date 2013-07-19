@@ -2,10 +2,7 @@
 
   <taskdef resource="net/sf/antcontrib/antlib.xml">
     <classpath>
-      <pathelement path="${classpath}" />
-      <pathelement location="${relengCommonBuilderDir}/lib/ant-contrib.jar" />
-      <pathelement location="${relengBuilderDir}/lib/ant-contrib.jar" />
-      <pathelement location="${thirdPartyJarsDir}/ant-contrib.jar" />
+      <pathelement location="/opt/public/cbi/build/ant-contrib.jar" />
       <pathelement location="/usr/share/java/ant-contrib.jar" />
     </classpath>
   </taskdef>

@@ -60,10 +60,10 @@ struct Options
 	int size;									/**< size of big message */
 } options =
 {
-	"tcp://m2m.eclipse.org:1883",
+	"m2m.eclipse.org:1883",
 	0,
 	-1,
-	5000000,
+	10000,
 };
 
 void getopts(int argc, char** argv)
@@ -193,6 +193,7 @@ long elapsed(START_TIME_TYPE start_time)
 
 
 START_TIME_TYPE global_start_time;
+long duration;
 
 
 #define assert(a, b, c, d) myassert(__FILE__, __LINE__, a, b, c, d)
@@ -201,7 +202,10 @@ START_TIME_TYPE global_start_time;
 
 int tests = 0;
 int failures = 0;
-
+FILE* xml;
+START_TIME_TYPE global_start_time;
+char output[3000];
+char* cur_output = output;
 
 void myassert(char* filename, int lineno, char* description, int value, char* format, ...)
 {
@@ -216,6 +220,9 @@ void myassert(char* filename, int lineno, char* description, int value, char* fo
 		va_start(args, format);
 		vprintf(format, args);
 		va_end(args);
+
+		cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n", 
+                        description, filename, lineno);
 	}
     else
     	MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);  
@@ -331,8 +338,9 @@ int test1(struct Options options)
 	int rc = 0;
 	char* test_topic = "C client test1";
 
-	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 1 - asynchronous connect");
+	fprintf(xml, "<testcase classname=\"test1\" name=\"asynchronous connect\"");
+	global_start_time = start_clock();
 	
 	rc = MQTTAsync_create(&c, options.connection, "async_test",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);		
@@ -381,6 +389,14 @@ exit:
 	MyLog(LOGA_INFO, "TEST1: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 
+	duration = elapsed(global_start_time);
+	fprintf(xml, " time=\"%d.%.3d\" >\n", duration / 1000, duration % 1000); 
+	if (cur_output != output)
+	{
+		fprintf(xml, output);
+		cur_output = output;	
+	}
+	fprintf(xml, "</testcase>\n");
 	return failures;
 }
 
@@ -422,6 +438,8 @@ int test2(struct Options options)
 	test_finished = 0;
 
 	MyLog(LOGA_INFO, "Starting test 2 - connect timeout");
+	fprintf(xml, "<testcase classname=\"test1\" name=\"connect timeout\"");
+	global_start_time = start_clock();
 	
 	rc = MQTTAsync_create(&c, "tcp://9.20.96.160:66", "connect timeout",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);		
@@ -474,6 +492,13 @@ exit:
 	MyLog(LOGA_INFO, "TEST2: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 
+	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
+	if (cur_output != output)
+	{
+		fprintf(xml, output);
+		cur_output = output;	
+	}
+	fprintf(xml, "</testcase>\n");
 	return failures;
 }
 
@@ -631,6 +656,8 @@ int test3(struct Options options)
 
 	test_finished = 0;
 	MyLog(LOGA_INFO, "Starting test 3 - multiple connections");
+	fprintf(xml, "<testcase classname=\"test1\" name=\"asynchronous connect\"");
+	global_start_time = start_clock();
 	
 	for (i = 0; i < num_clients; ++i)
 	{
@@ -683,7 +710,13 @@ int test3(struct Options options)
 exit:
 	MyLog(LOGA_INFO, "TEST3: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
-
+	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
+	if (cur_output != output)
+	{
+		fprintf(xml, output);
+		cur_output = output;	
+	}
+	fprintf(xml, "</testcase>\n");
 	return failures;
 }
 
@@ -818,6 +851,8 @@ int test4(struct Options options)
 
 	test_finished = failures = 0;
 	MyLog(LOGA_INFO, "Starting test 4 - big messages");
+	fprintf(xml, "<testcase classname=\"test1\" name=\"big messages\"");
+	global_start_time = start_clock();
 	
 	rc = MQTTAsync_create(&c, options.connection, "async_test_4",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);		
@@ -865,7 +900,13 @@ int test4(struct Options options)
 exit:
 	MyLog(LOGA_INFO, "TEST4: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
-
+	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
+	if (cur_output != output)
+	{
+		fprintf(xml, output);
+		cur_output = output;	
+	}
+	fprintf(xml, "</testcase>\n");
 	return failures;
 }
 
@@ -912,6 +953,8 @@ int test5(struct Options options)
 
 	test_finished = failures = 0;
 	MyLog(LOGA_INFO, "Starting test 5 - connack return codes");
+	fprintf(xml, "<testcase classname=\"test1\" name=\"connack return codes\"");
+	global_start_time = start_clock();
 	
 	rc = MQTTAsync_create(&c, options.connection, "a clientid that is too long to be accepted",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);		
@@ -948,7 +991,13 @@ int test5(struct Options options)
 exit:
 	MyLog(LOGA_INFO, "TEST5: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
-
+	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
+	if (cur_output != output)
+	{
+		fprintf(xml, output);
+		cur_output = output;	
+	}
+	fprintf(xml, "</testcase>\n");
 	return failures;
 }
 
@@ -996,6 +1045,8 @@ int test6(struct Options options)
 
 	test_finished = failures = 0;
 	MyLog(LOGA_INFO, "Starting test 7 - HA connections");
+	fprintf(xml, "<testcase classname=\"test1\" name=\"HA connections\"");
+	global_start_time = start_clock();
 	
 	rc = MQTTAsync_create(&c, options.connection, "a clientid that is too long to be accepted",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);		
@@ -1034,7 +1085,13 @@ int test6(struct Options options)
 exit:
 	MyLog(LOGA_INFO, "TEST6: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
-
+	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
+	if (cur_output != output)
+	{
+		fprintf(xml, output);
+		cur_output = output;	
+	}
+	fprintf(xml, "</testcase>\n");
 	return failures;
 }
 
@@ -1053,6 +1110,9 @@ int main(int argc, char** argv)
 	int rc = 0;
  	int (*tests[])() = {NULL, test1, test2, test3, test4, test5, test6}; /* indexed starting from 1 */
 	MQTTAsync_nameValue* info;
+
+	xml = fopen("TEST-test4.xml", "w");
+	fprintf(xml, "<testsuite name=\"test4\" tests=\"%d\">\n", ARRAY_SIZE(tests) - 1);
 	
 	getopts(argc, argv);
 
@@ -1080,10 +1140,13 @@ int main(int argc, char** argv)
 		rc = tests[options.test_no](options); /* run just the selected test */
 	}
 
-	if (failures == 0)
+	if (rc == 0)
 		MyLog(LOGA_INFO, "verdict pass");
 	else
 		MyLog(LOGA_INFO, "verdict fail");
+
+	fprintf(xml, "</testsuite>\n");
+	fclose(xml);
 	
 	return rc;
 }

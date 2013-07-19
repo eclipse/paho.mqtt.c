@@ -145,7 +145,7 @@
   </target>
 
   <target name="test" >
-    <foreach target="runAtest" param="aTest" list="test1"/>
+    <foreach target="runAtest" param="aTest" list="test4"/>
   </target>
 
   <target name="runAtest">

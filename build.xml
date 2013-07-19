@@ -7,7 +7,7 @@
     </classpath>
   </taskdef>
 
-  <property name="output.folder" value="/tmp/build/paho/c" /> 
+  <property name="output.folder" value="${WORKSPACE}/build/output" /> 
   <property name="release.version" value="1.0.0.2" />
 
   <property name="libname" value="mqttv3c" />

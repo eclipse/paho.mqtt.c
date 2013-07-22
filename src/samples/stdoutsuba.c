@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial contribution
+ *    Ian Craggs - fix for bug 413429 - connectionLost not called
  *******************************************************************************/
 
 /*
@@ -93,7 +94,7 @@ void usage()
 	printf("  --clientid <clientid> (default is hostname+timestamp)\n");
 	printf("  --username none\n");
 	printf("  --password none\n");
-  printf("  --showtopics <on or off> (default is on if the topic has a wildcard, else off)\n");
+	printf("  --showtopics <on or off> (default is on if the topic has a wildcard, else off)\n");
 	exit(-1);
 }
 
@@ -188,22 +189,6 @@ void getopts(int argc, char** argv)
 }
 
 
-void connectionLost(void *context, char *cause)
-{
-	MQTTAsync client = (MQTTAsync)context;
-	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
-	int rc;
-
-	conn_opts.keepAliveInterval = 20;
-	conn_opts.cleansession = 1;
-	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
-	{
-		printf("Failed to start reconnect, return code %d\n", rc);
-    finished = 1;
-	}
-}
-
-
 int messageArrived(void *context, char *topicName, int topicLen, MQTTAsync_message *message)
 {
 	if (opts.showtopics)
@@ -261,7 +246,24 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	if ((rc = MQTTAsync_subscribe(client, topic, opts.qos, &ropts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start subscribe, return code %d\n", rc);
-    finished = 1;	
+    		finished = 1;	
+	}
+}
+
+
+MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
+
+
+void connectionLost(void *context, char *cause)
+{
+	MQTTAsync client = (MQTTAsync)context;
+	int rc;
+
+	printf("connectionLost called\n");
+	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to start reconnect, return code %d\n", rc);
+		finished = 1;
 	}
 }
 
@@ -269,7 +271,6 @@ void onConnect(void* context, MQTTAsync_successData* response)
 int main(int argc, char** argv)
 {
 	MQTTAsync client;
-	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
 	MQTTAsync_disconnectOptions disc_opts = MQTTAsync_disconnectOptions_initializer;
 	int rc = 0;
 	char url[100];
@@ -279,9 +280,9 @@ int main(int argc, char** argv)
 	
 	topic = argv[1];
 
-  if (strchr(topic, '#') || strchr(topic, '+'))
+	if (strchr(topic, '#') || strchr(topic, '+'))
 		opts.showtopics = 1;
-  if (opts.showtopics)
+	if (opts.showtopics)
 		printf("topic is %s\n", topic);
 
 	getopts(argc, argv);	
@@ -289,7 +290,7 @@ int main(int argc, char** argv)
 
 	rc = MQTTAsync_create(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL);
 
-	MQTTAsync_setCallbacks(client, NULL, connectionLost, messageArrived, NULL);
+	MQTTAsync_setCallbacks(client, client, connectionLost, messageArrived, NULL);
 
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
@@ -304,10 +305,10 @@ int main(int argc, char** argv)
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-    exit(-1);	
+		exit(-1);	
 	}
 
-  while	(!subscribed)
+	while (!subscribed)
 		#if defined(WIN32)
 			Sleep(100);
 		#else
@@ -317,7 +318,7 @@ int main(int argc, char** argv)
 	if (finished)
 		goto exit;
 
-  while	(!finished)
+	while (!finished)
 		#if defined(WIN32)
 			Sleep(100);
 		#else

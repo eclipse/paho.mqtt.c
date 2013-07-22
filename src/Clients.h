@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs - add SSL support
+ *    Ian Craggs - fix for bug 413429 - connectionLost not called
  *******************************************************************************/
 
 #if !defined(CLIENTS_H)
@@ -180,6 +181,7 @@ typedef struct
 	unsigned int qentry_seqno;
 	void* phandle;  /* the persistence handle */
 	MQTTClient_persistence* persistence; /* a persistence implementation */
+	void* context; /* calling context - used when calling disconnect_internal */
 #if defined(OPENSSL)
 	MQTTClient_SSLOptions *sslopts;
 	SSL_SESSION* session;    /***< SSL session pointer for fast handhake */

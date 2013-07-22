@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
+ *    Ian Craggs - fix for bug 413429 - connectionLost not called
  *******************************************************************************/
 
 /**
@@ -508,9 +509,16 @@ void MQTTProtocol_keepalive(time_t now)
 			{
 				if (Socket_noPendingWrites(client->net.socket))
 				{
-					MQTTPacket_send_pingreq(&client->net, client->clientID);
-					client->net.lastContact = now;
-					client->ping_outstanding = 1;
+					if (MQTTPacket_send_pingreq(&client->net, client->clientID) != TCPSOCKET_COMPLETE)
+					{
+						Log(TRACE_MIN, -1, "Error sending PINGREQ for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
+						MQTTProtocol_closeSession(client, 1);
+					}
+					else
+					{
+						client->net.lastContact = now;
+						client->ping_outstanding = 1;
+					}
 				}
 			}
 			else

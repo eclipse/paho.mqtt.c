@@ -14,6 +14,7 @@
  *    Ian Craggs - initial implementation and documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL support
  *    Ian Craggs - multiple server connection support
+ *    Ian Craggs - fix for bug 413429 - connectionLost not called
  *******************************************************************************/
 
 /**
@@ -42,8 +43,8 @@
 
 #define URI_TCP "tcp://"
 
-#define BUILD_TIMESTAMP "##MQTTCLIENT_BUILD_TAG##"
-#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##"
+#define BUILD_TIMESTAMP "201307221023"
+#define CLIENT_VERSION  "1.0.0.2"
 
 char* client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
@@ -123,6 +124,7 @@ int MQTTAsync_cleanSession(Clients* client);
 void MQTTAsync_stop();
 int MQTTAsync_disconnect_internal(MQTTAsync handle, int timeout);
 void MQTTAsync_closeOnly(Clients* client);
+void MQTTAsync_closeSession(Clients* client);
 void MQTTProtocol_closeSession(Clients* client, int sendwill);
 void MQTTAsync_writeComplete(int socket);
 
@@ -357,6 +359,7 @@ int MQTTAsync_create(MQTTAsync* handle, char* serverURI, char* clientId,
 
 	m->c = malloc(sizeof(Clients));
 	memset(m->c, '\0', sizeof(Clients));
+	m->c->context = m;
 	m->c->outboundMsgs = ListInitialize();
 	m->c->inboundMsgs = ListInitialize();
 	m->c->messageQueue = ListInitialize();
@@ -378,8 +381,7 @@ int MQTTAsync_create(MQTTAsync* handle, char* serverURI, char* clientId,
 	ListAppend(bstate->clients, m->c, sizeof(Clients) + 3*sizeof(List));
 
 exit:
-	if (Thread_unlock_mutex(mqttasync_mutex) != 0)
-		/* FFDC? */;
+	Thread_unlock_mutex(mqttasync_mutex);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -722,7 +724,7 @@ void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* command)
 	if (m->c->outboundMsgs->count == 0 || MQTTAsync_elapsed(command->start_time) >= command->details.dis.timeout)
 	{	
 		int was_connected = m->c->connected;
-		MQTTProtocol_closeSession(m->c, 0);
+		MQTTAsync_closeSession(m->c);
 		if (command->details.dis.internal && m->cl && was_connected)
 		{
 			Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
@@ -1145,7 +1147,7 @@ void MQTTAsync_checkTimeouts()
 			}
 			else
 			{
-				MQTTProtocol_closeSession(m->c, 0);
+				MQTTAsync_closeSession(m->c);
 				MQTTAsync_freeConnect(m->connect);
 				if (m->connect.onFailure)
 				{
@@ -1485,7 +1487,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 						}
 					 	else
 					 	{
-					 		MQTTProtocol_closeSession(m->c, 0);
+					 		MQTTAsync_closeSession(m->c);
 					 		MQTTAsync_freeConnect(m->connect);
 					 		if (m->connect.onFailure)
 							{
@@ -1686,7 +1688,7 @@ void MQTTAsync_closeOnly(Clients* client)
 }
 
 
-void MQTTProtocol_closeSession(Clients* client, int sendwill)
+void MQTTAsync_closeSession(Clients* client)
 {
 	FUNC_ENTRY;
 	MQTTAsync_closeOnly(client);
@@ -2158,6 +2160,12 @@ int MQTTAsync_disconnect_internal(MQTTAsync handle, int timeout)
 }
 
 
+void MQTTProtocol_closeSession(Clients* c, int sendwill)
+{
+	MQTTAsync_disconnect_internal((MQTTAsync)c->context, 0);
+}
+
+
 int MQTTAsync_disconnect(MQTTAsync handle, MQTTAsync_disconnectOptions* options)
 {	
 	return MQTTAsync_disconnect1(handle, options, 0);
@@ -2489,7 +2497,7 @@ exit:
 		}
 		else
 		{
-			MQTTProtocol_closeSession(m->c, 0);
+			MQTTAsync_closeSession(m->c);
 			MQTTAsync_freeConnect(m->connect);
 			if (m->connect.onFailure)
 			{
@@ -2570,7 +2578,7 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 				}
 				else
 				{
-					MQTTProtocol_closeSession(m->c, 0);
+					MQTTAsync_closeSession(m->c);
 					MQTTAsync_freeConnect(m->connect);
 					if (m->connect.onFailure)
 					{

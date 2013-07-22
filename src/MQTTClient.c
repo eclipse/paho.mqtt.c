@@ -16,6 +16,7 @@
  *    Ian Craggs - bug 384053 - v1.0.0.7 - stop MQTTClient_receive on socket error 
  *    Ian Craggs, Allan Stockdill-Mander - add ability to connect with SSL
  *    Ian Craggs - multiple server connection support
+ *    Ian Craggs - fix for bug 413429 - connectionLost not called
  *******************************************************************************/
 
 /**
@@ -47,8 +48,8 @@
 
 #define URI_TCP "tcp://"
 
-#define BUILD_TIMESTAMP "##MQTTCLIENT_BUILD_TAG##"
-#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##"
+#define BUILD_TIMESTAMP "201307221023"
+#define CLIENT_VERSION  "1.0.0.2"
 
 char* client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
@@ -106,8 +107,6 @@ static int tostop = 0;
 static thread_id_type run_id = 0;
 
 MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long timeout);
-int MQTTClient_receiveOrComplete(MQTTClient handle, char** topicName, int* topicLen, MQTTClient_message** message,
-											 unsigned long timeout, MQTTPacket** packetaddr);
 MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc);
 int MQTTClient_cleanSession(Clients* client);
 void MQTTClient_stop();
@@ -261,6 +260,7 @@ int MQTTClient_create(MQTTClient* handle, char* serverURI, char* clientId,
 
 	m->c = malloc(sizeof(Clients));
 	memset(m->c, '\0', sizeof(Clients));
+	m->c->context = m;
 	m->c->outboundMsgs = ListInitialize();
 	m->c->inboundMsgs = ListInitialize();
 	m->c->messageQueue = ListInitialize();
@@ -279,8 +279,7 @@ int MQTTClient_create(MQTTClient* handle, char* serverURI, char* clientId,
 	ListAppend(bstate->clients, m->c, sizeof(Clients) + 3*sizeof(List));
 
 exit:
-	if (Thread_unlock_mutex(mqttclient_mutex) != 0)
-		/* FFDC? */;
+	Thread_unlock_mutex(mqttclient_mutex);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -625,7 +624,7 @@ int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTClient_connect
 }
 
 
-void MQTTProtocol_closeSession(Clients* client, int sendwill)
+void MQTTClient_closeSession(Clients* client)
 {
 	FUNC_ENTRY;
 	client->good = 0;
@@ -1009,7 +1008,7 @@ int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal)
 		}
 	}
 
-	MQTTProtocol_closeSession(m->c, 0);
+	MQTTClient_closeSession(m->c);
 
 	if (Thread_check_sem(m->connect_sem))
 		Thread_post_sem(m->connect_sem);
@@ -1036,6 +1035,12 @@ exit:
 int MQTTClient_disconnect_internal(MQTTClient handle, int timeout)
 {
 	return MQTTClient_disconnect1(handle, timeout, 1);
+}
+
+
+void MQTTProtocol_closeSession(Clients* c, int sendwill)
+{
+	MQTTClient_disconnect_internal((MQTTClient)c->context, 0);
 }
 
 

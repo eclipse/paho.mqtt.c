@@ -14,7 +14,7 @@
   <property name="libname.ssl" value="mqttv3cs" />
   <property name="libname.async" value="mqttv3a" />
   <property name="libname.async.ssl" value="mqttv3as" />
-  <property name="ssl" value="no" />
+  <property name="ssl" value="yes" />
 	
   <target name="init">
     <tstamp>

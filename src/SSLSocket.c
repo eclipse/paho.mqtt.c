@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs, Allan Stockdill-Mander - initial implementation
+ *    Ian Craggs - fix for bug #409702
  *******************************************************************************/
 
 /**
@@ -228,7 +229,7 @@ int SSL_create_mutex(ssl_mutex_type* mutex)
 
 	FUNC_ENTRY;
 #if defined(WIN32)
-	mutex = CreateMutex(NULL, 0, NULL);
+	*mutex = CreateMutex(NULL, 0, NULL);
 #else
 	rc = pthread_mutex_init(mutex, NULL);
 #endif
@@ -240,9 +241,9 @@ int SSL_lock_mutex(ssl_mutex_type* mutex)
 {
 	int rc = -1;
 
-	/* don't add entry/exit trace points as the stack log uses mutexes - recursion beckons */
+	/* don't add entry/exit trace points, as trace gets lock too, and it might happen quite frequently  */
 #if defined(WIN32)
-	if (WaitForSingleObject(mutex, INFINITE) != WAIT_FAILED)
+	if (WaitForSingleObject(*mutex, INFINITE) != WAIT_FAILED)
 #else
 	if ((rc = pthread_mutex_lock(mutex)) == 0)
 #endif
@@ -255,9 +256,9 @@ int SSL_unlock_mutex(ssl_mutex_type* mutex)
 {
 	int rc = -1;
 
-	/* don't add entry/exit trace points as the stack log uses mutexes - recursion beckons */
+	/* don't add entry/exit trace points, as trace gets lock too, and it might happen quite frequently  */
 #if defined(WIN32)
-	if (ReleaseMutex(mutex) != 0)
+	if (ReleaseMutex(*mutex) != 0)
 #else
 	if ((rc = pthread_mutex_unlock(mutex)) == 0)
 #endif
@@ -272,7 +273,7 @@ void SSL_destroy_mutex(ssl_mutex_type* mutex)
 
 	FUNC_ENTRY;
 #if defined(WIN32)
-	rc = CloseHandle(mutex);
+	rc = CloseHandle(*mutex);
 #else
 	rc = pthread_mutex_destroy(mutex);
 	free(mutex);

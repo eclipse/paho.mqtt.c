@@ -286,7 +286,7 @@ void SSL_destroy_mutex(ssl_mutex_type* mutex)
 
 
 
-#if (OPENSSL_VERSION_NUMBER >= 0x01)
+#if (OPENSSL_VERSION_NUMBER >= 0x010000000)
 extern void SSLThread_id(CRYPTO_THREADID *id)
 {
 #if defined(WIN32)
@@ -351,7 +351,7 @@ int SSLSocket_initialize()
 		/* prc = */SSL_create_mutex(&sslLocks[i]);
 	}
 
-#if (OPENSSL_VERSION_NUMBER >= 0x01)
+#if (OPENSSL_VERSION_NUMBER >= 0x010000000)
 	CRYPTO_THREADID_set_callback(SSLThread_id);
 #else
 	CRYPTO_set_id_callback(SSLThread_id);

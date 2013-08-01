@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs, Allan Stockdill-Mander - initial implementation
  *    Ian Craggs - fix for bug #409702
+ *    Ian Craggs - allow compilation for OpenSSL < 1.0
  *******************************************************************************/
 
 /**
@@ -131,15 +132,17 @@ X509_message_table[] =
 	{ X509_V_ERR_INVALID_EXTENSION, "X509_V_ERR_INVALID_EXTENSION" },
 	{ X509_V_ERR_INVALID_POLICY_EXTENSION, "X509_V_ERR_INVALID_POLICY_EXTENSION" },
 	{ X509_V_ERR_NO_EXPLICIT_POLICY, "X509_V_ERR_NO_EXPLICIT_POLICY" },
+	{ X509_V_ERR_UNNESTED_RESOURCE, "X509_V_ERR_UNNESTED_RESOURCE" },
+#if defined(X509_V_ERR_DIFFERENT_CRL_SCOPE)
 	{ X509_V_ERR_DIFFERENT_CRL_SCOPE, "X509_V_ERR_DIFFERENT_CRL_SCOPE" },
 	{ X509_V_ERR_UNSUPPORTED_EXTENSION_FEATURE, "X509_V_ERR_UNSUPPORTED_EXTENSION_FEATURE" },
-	{ X509_V_ERR_UNNESTED_RESOURCE, "X509_V_ERR_UNNESTED_RESOURCE" },
 	{ X509_V_ERR_PERMITTED_VIOLATION, "X509_V_ERR_PERMITTED_VIOLATION" },
 	{ X509_V_ERR_EXCLUDED_VIOLATION, "X509_V_ERR_EXCLUDED_VIOLATION" },
 	{ X509_V_ERR_SUBTREE_MINMAX, "X509_V_ERR_SUBTREE_MINMAX" },
 	{ X509_V_ERR_UNSUPPORTED_CONSTRAINT_TYPE, "X509_V_ERR_UNSUPPORTED_CONSTRAINT_TYPE" },
 	{ X509_V_ERR_UNSUPPORTED_CONSTRAINT_SYNTAX, "X509_V_ERR_UNSUPPORTED_CONSTRAINT_SYNTAX" },
 	{ X509_V_ERR_UNSUPPORTED_NAME_SYNTAX, "X509_V_ERR_UNSUPPORTED_NAME_SYNTAX" },
+#endif
 };
 
 #if !defined(ARRAY_SIZE)
@@ -281,6 +284,9 @@ void SSL_destroy_mutex(ssl_mutex_type* mutex)
 	FUNC_EXIT_RC(rc);
 }
 
+
+
+#if (OPENSSL_VERSION_NUMBER >= 0x01)
 extern void SSLThread_id(CRYPTO_THREADID *id)
 {
 #if defined(WIN32)
@@ -289,6 +295,16 @@ extern void SSLThread_id(CRYPTO_THREADID *id)
 	CRYPTO_THREADID_set_numeric(id, (unsigned long)pthread_self());
 #endif
 }
+#else
+extern unsigned long SSLThread_id(void)
+{
+#if defined(WIN32)
+	return (unsigned long)GetCurrentThreadId();
+#else
+	return (unsigned long)pthread_self();
+#endif
+}
+#endif
 
 extern void SSLLocks_callback(int mode, int n, const char *file, int line)
 {
@@ -335,7 +351,11 @@ int SSLSocket_initialize()
 		/* prc = */SSL_create_mutex(&sslLocks[i]);
 	}
 
+#if (OPENSSL_VERSION_NUMBER >= 0x01)
 	CRYPTO_THREADID_set_callback(SSLThread_id);
+#else
+	CRYPTO_set_id_callback(SSLThread_id);
+#endif
 	CRYPTO_set_locking_callback(SSLLocks_callback);
 
 	SSL_create_mutex(&sslCoreMutex);

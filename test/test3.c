@@ -61,38 +61,68 @@ char* persistenceStore = NULL;
 void usage()
 {
 	printf("Options:\n");
-    printf("\t--test_no <test_no> - Run test number <test_no>\n");
-    printf("\t--connection <mqtt URL> - Connect to <mqtt URL> for tests\n");
-    printf("\t--haconnections \"<mqtt URLs>\" - Use \"<mqtt URLs>\" as the list of servers for HA tests (space separated)\n");
-    printf("\t--client_key <key_file> - Use <key_file> as the client certificate for SSL authentication\n");
-    printf("\t--client_key_pass <password> - Use <password> to access the private key in the client certificate\n");
-    printf("\t--server_key <key_file> - Use <key_file> as the trusted certificate for server\n");
-    printf("\t--verbose - Enable verbose output \n");
-    printf("\tserver connection URLs should be in the form; (tcp|ssl)://hostname:port\n");
-    printf("\t--help - This help output\n");
+	printf("\t--test_no <test_no> - Run test number <test_no>\n");
+	printf("\t--connection <mqtt URL> - Connect to <mqtt URL> for tests\n");
+	printf("\t--haconnections \"<mqtt URLs>\" - Use \"<mqtt URLs>\" as the list of servers for HA tests (space separated)\n");
+	printf("\t--client_key <key_file> - Use <key_file> as the client certificate for SSL authentication\n");
+	printf("\t--client_key_pass <password> - Use <password> to access the private key in the client certificate\n");
+	printf("\t--client_privatekey <file> - Client private key file if not in certificate file\n");
+	printf("\t--server_key <key_file> - Use <key_file> as the trusted certificate for server\n");
+	printf("\t--verbose - Enable verbose output \n");
+	printf("\tserver connection URLs should be in the form; (tcp|ssl)://hostname:port\n");
+	printf("\t--help - This help output\n");
 	exit(-1);
 }
 
 struct Options
 {
-	char* connection;         /**< connection to system under test. */
-	char** haconnections;         /**< connection to system under test. */
+	char* connection;
+	char* mutual_auth_connection;   /**< connection to system under test. */
+	char* nocert_mutual_auth_connection;
+	char* server_auth_connection;
+	char* anon_connection;
+	char** haconnections;         	/**< connection to system under test. */
 	int hacount;
-    char* client_key_file;
+	char* client_key_file;
 	char* client_key_pass;
-    char* server_key_file;
+	char* server_key_file;
+	char* client_private_key_file;
 	int verbose;
-    int test_no;
+	int test_no;
 } options =
 {
+	"tcp://localhost:1883",
 	"ssl://localhost:8883",
+	"ssl://localhost:8884",
+	"ssl://localhost:8885",
+	"ssl://localhost:8886",
 	NULL,
 	0,
-    NULL,
-    NULL,
+	NULL,
+	NULL,
+	NULL,
 	NULL,
 	0,
 	0,
+};
+
+
+char* test_map[] =
+{
+  "none",
+  "1",         // 1
+  "2a_s",      // 2
+  "2a_m",      // 3
+  "2b",        // 4
+  "2c",        // 5
+  "3a_s",      // 6
+  "3a_m",      // 7
+  "3b",        // 8
+  "4s",        // 9
+  "4m",        // 10
+  "5a",        // 11
+  "5b",        // 12
+  "5c",        // 13
 };
 
 void getopts(int argc, char** argv)
@@ -101,14 +131,27 @@ void getopts(int argc, char** argv)
 	
 	while (count < argc)
 	{
-        if (strcmp(argv[count], "--help") == 0)
-        {
-            usage();
-        }
+        	if (strcmp(argv[count], "--help") == 0)
+        	{
+        	    usage();
+        	}
 		else if (strcmp(argv[count], "--test_no") == 0)
 		{
 			if (++count < argc)
-				options.test_no = atoi(argv[count]);
+			{
+				int i;
+				for (i = 1; i < ARRAY_SIZE(test_map); ++i)
+				{
+					if (strcmp(argv[count], test_map[i]) == 0)
+					{
+						options.test_no = i;
+						break;
+					}
+				}
+				if (options.test_no == 0)
+					options.test_no = atoi(argv[count]);
+				
+			}
 			else
 				usage();
 		}
@@ -140,15 +183,30 @@ void getopts(int argc, char** argv)
 		else if (strcmp(argv[count], "--client_key") == 0)
 		{
 			if (++count < argc)
-            {
+        		{
 #if defined(IOS)
-                strcat(ckeytmp, getenv("HOME"));
-                strcat(ckeytmp, argv[count]);
-                options.client_key_file = ckeytmp;
+        		        strcat(ckeytmp, getenv("HOME"));
+        		        strcat(ckeytmp, argv[count]);
+        		        options.client_key_file = ckeytmp;
 #else
 				options.client_key_file = argv[count];
 #endif
-            }
+        		}
+			else
+				usage();
+		}
+		else if (strcmp(argv[count], "--client_privatekey") == 0)
+		{
+			if (++count < argc)
+        		{
+#if defined(IOS)
+        		        strcat(ckeytmp, getenv("HOME"));
+        		        strcat(ckeytmp, argv[count]);
+        		        options.client_private_key_file = ckeytmp;
+#else
+				options.client_private_key_file = argv[count];
+#endif
+        		}
 			else
 				usage();
 		}
@@ -162,29 +220,29 @@ void getopts(int argc, char** argv)
 		else if (strcmp(argv[count], "--server_key") == 0)
 		{
 			if (++count < argc)
-            {
+			{
 #if defined(IOS)
-                strcat(skeytmp, getenv("HOME"));
-                strcat(skeytmp, argv[count]);
-                options.server_key_file = skeytmp;
+		                strcat(skeytmp, getenv("HOME"));
+		                strcat(skeytmp, argv[count]);
+		                options.server_key_file = skeytmp;
 #else
-                options.server_key_file = argv[count];
+		                options.server_key_file = argv[count];
 #endif
-            }
+			}
 			else
 				usage();
 		}
 		else if (strcmp(argv[count], "--verbose") == 0)
 		{
 			options.verbose = 1;
-		    //TODO
-		    printf("\nSetting verbose on\n");
+			//TODO
+			printf("\nSetting verbose on\n");
 		}
 		count++;
 	}
 #if defined(IOS)
-    strcpy(persistenceStore, getenv("HOME"));
-    strcat(persistenceStore, "/Library/Caches");
+	strcpy(persistenceStore, getenv("HOME"));
+	strcat(persistenceStore, "/Library/Caches");
 #endif
 }
 
@@ -467,6 +525,7 @@ void multiThread_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 	}
 }
 
+
 /*********************************************************************
 
 Test1: SSL connection to non SSL MQTT server
@@ -480,13 +539,14 @@ int test1(struct Options options)
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
-    MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
+	MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
 	int rc = 0;
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting SSL test 1 - connection to nonSSL MQTT server");
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.connection, "test1", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d \n", rc)))
+	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.connection, "test1",
+		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d \n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -499,16 +559,16 @@ int test1(struct Options options)
 		opts.serverURIcount = options.hacount;
 	}
 
-    opts.ssl = &sslopts;
-    //opts.ssl->trustStore = /*file of certificates trusted by client*/
-    //opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
+	opts.ssl = &sslopts;
+	//opts.ssl->trustStore = /*file of certificates trusted by client*/
+	//opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
 	//if (options.client_key_pass != NULL) opts.ssl->privateKeyPassword = options.client_key_pass;
-    //opts.ssl->enabledCipherSuites = "DEFAULT";
-    opts.ssl->enableServerCertAuth = 0;
+	//opts.ssl->enabledCipherSuites = "DEFAULT";
+	opts.ssl->enableServerCertAuth = 0;
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
-	if (!(assert("Good rc from connect", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_FAILURE, "rc was %d ", rc)))
+	if (!(assert("Connect should fail", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_FAILURE, "rc was %d ", rc)))
 		goto exit;
 
 exit:
@@ -518,6 +578,7 @@ exit:
 
 	return failures;
 }
+
 
 /*********************************************************************
 
@@ -533,13 +594,14 @@ int test2a_s(struct Options options)
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
-    MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
+	MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
 	int rc = 0;
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 2a_s - Mutual SSL authentication - single threaded client using receive");
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.connection, "test2a_s", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.mutual_auth_connection, "test2a_s",
+		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -552,12 +614,16 @@ int test2a_s(struct Options options)
 		opts.serverURIcount = options.hacount;
 	}
 
-    opts.ssl = &sslopts;
-    if (options.server_key_file != NULL) opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
-    opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
-    if (options.client_key_pass != NULL) opts.ssl->privateKeyPassword = options.client_key_pass;
-    //opts.ssl->enabledCipherSuites = "DEFAULT";
-    //opts.ssl->enabledServerCertAuth = 1;
+	opts.ssl = &sslopts;
+	if (options.server_key_file) 
+		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
+	opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
+	if (options.client_key_pass) 
+		opts.ssl->privateKeyPassword = options.client_key_pass;
+	if (options.client_private_key_file) 
+		opts.ssl->privateKey = options.client_private_key_file;
+	//opts.ssl->enabledCipherSuites = "DEFAULT";
+	//opts.ssl->enabledServerCertAuth = 1;
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
@@ -608,13 +674,14 @@ int test2a_m(struct Options options)
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
-    MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
+	MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
 	int rc = 0;
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 2a_m - Mutual SSL authentication - multi-threaded client using callbacks");
 
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.connection, "test2a_m", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.mutual_auth_connection, "test2a_m",
+		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -627,14 +694,19 @@ int test2a_m(struct Options options)
 		opts.serverURIcount = options.hacount;
 	}
 
-    opts.ssl = &sslopts;
-    if (options.server_key_file != NULL) opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
-    opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
-	if (options.client_key_pass != NULL) opts.ssl->privateKeyPassword = options.client_key_pass;
-    //opts.ssl->enabledCipherSuites = "DEFAULT";
-    //opts.ssl->enabledServerCertAuth = 1;
+	opts.ssl = &sslopts;
+	if (options.server_key_file) 
+		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
+	opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
+	if (options.client_key_pass) 
+		opts.ssl->privateKeyPassword = options.client_key_pass;
+	if (options.client_private_key_file) 
+		opts.ssl->privateKey = options.client_private_key_file;
+	//opts.ssl->enabledCipherSuites = "DEFAULT";
+	//opts.ssl->enabledServerCertAuth = 1;
 
-	if (!(assert("Good rc from setCallbacks", (rc = MQTTClient_setCallbacks(c, NULL, NULL, multiThread_messageArrived, multiThread_deliveryComplete)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	if (!(assert("Good rc from setCallbacks", (rc = MQTTClient_setCallbacks(c, NULL, NULL, multiThread_messageArrived,
+		multiThread_deliveryComplete)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 	MyLog(LOGA_DEBUG, "Connecting");
@@ -666,7 +738,7 @@ exit:
 
 /*********************************************************************
 
-Test2b: Mutual SSL Authentication - Server does not have Client cert
+Test2b: Mutual SSL Authentication - Server does not have Client cert, connection fails
 
 *********************************************************************/
 int test2b(struct Options options)
@@ -677,13 +749,14 @@ int test2b(struct Options options)
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
-    MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
+	MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
 	int rc = 0;
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 2b - connection to SSL MQTT server with clientauth=req but server does not have client cert");
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.connection, "test2b", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.nocert_mutual_auth_connection, "test2b",
+		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -696,16 +769,21 @@ int test2b(struct Options options)
 		opts.serverURIcount = options.hacount;
 	}
 
-    opts.ssl = &sslopts;
-    if (options.server_key_file != NULL) opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
-    opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
-	if (options.client_key_pass != NULL) opts.ssl->privateKeyPassword = options.client_key_pass;
-    //opts.ssl->enabledCipherSuites = "DEFAULT";
-    //opts.ssl->enabledServerCertAuth = 0;
+	opts.ssl = &sslopts;
+	if (options.server_key_file) 
+		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
+	opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
+	if (options.client_key_pass) 
+		opts.ssl->privateKeyPassword = options.client_key_pass;
+	if (options.client_private_key_file)  
+		opts.ssl->privateKey = options.client_private_key_file;
+	//opts.ssl->enabledCipherSuites = "DEFAULT";
+	//opts.ssl->enabledServerCertAuth = 0;
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
-	if (!(assert("Good rc from connect", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_FAILURE, "rc was %d\n", rc)))
+	if (!(assert("Bad rc from connect", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_FAILURE, 
+		"rc was %d\n", rc)))
 		goto exit;
 
 exit:
@@ -729,13 +807,14 @@ int test2c(struct Options options)
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
-    MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
+	MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
 	int rc = 0;
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 2c - connection to SSL MQTT server, server auth enabled but unknown cert");
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.connection, "test2c", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.mutual_auth_connection, "test2c", 
+		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -748,12 +827,16 @@ int test2c(struct Options options)
 		opts.serverURIcount = options.hacount;
 	}
 
-    opts.ssl = &sslopts;
-    //if (options.server_key_file != NULL) opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
-    opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
-	if (options.client_key_pass != NULL) opts.ssl->privateKeyPassword = options.client_key_pass;
-    //opts.ssl->enabledCipherSuites = "DEFAULT";
-    //opts.ssl->enabledServerCertAuth = 0;
+	opts.ssl = &sslopts;
+    	//if (options.server_key_file) 
+	//	opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
+	opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
+	if (options.client_key_pass) 
+		opts.ssl->privateKeyPassword = options.client_key_pass;
+	if (options.client_private_key_file) 
+		opts.ssl->privateKey = options.client_private_key_file;
+	//opts.ssl->enabledCipherSuites = "DEFAULT";
+	//opts.ssl->enabledServerCertAuth = 0;
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
@@ -782,13 +865,14 @@ int test3a_s(struct Options options)
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
-    MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
+	MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
 	int rc = 0;
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 3a_s - Server authentication - single threaded client using receive");
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.connection, "test3a_s", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, "test3a_s", 
+		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -801,12 +885,9 @@ int test3a_s(struct Options options)
 		opts.serverURIcount = options.hacount;
 	}
 
-    opts.ssl = &sslopts;
-    if (options.server_key_file != NULL) opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
-    //opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
-	//if (options.client_key_pass != NULL) opts.ssl->privateKeyPassword = options.client_key_pass;
-    //opts.ssl->enabledCipherSuites = "DEFAULT";
-    //opts.ssl->enabledServerCertAuth = 1;
+	opts.ssl = &sslopts;
+	if (options.server_key_file != NULL) 
+		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
@@ -855,13 +936,14 @@ int test3a_m(struct Options options)
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
-    MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
+	MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
 	int rc = 0;
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 3a_m - Server authentication - multi-threaded client using callbacks");
 
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.connection, "test3a_m", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, "test3a_m", 
+		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -874,14 +956,12 @@ int test3a_m(struct Options options)
 		opts.serverURIcount = options.hacount;
 	}
 
-    opts.ssl = &sslopts;
-    if (options.server_key_file != NULL) opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
-    //opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
-	//if (options.client_key_pass != NULL) opts.ssl->privateKeyPassword = options.client_key_pass;
-    //opts.ssl->enabledCipherSuites = "DEFAULT";
-    //opts.ssl->enabledServerCertAuth = 1;
+	opts.ssl = &sslopts;
+	if (options.server_key_file != NULL) 
+		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
 
-	if (!(assert("Good rc from setCallbacks", (rc = MQTTClient_setCallbacks(c, NULL, NULL, multiThread_messageArrived, multiThread_deliveryComplete)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	if (!(assert("Good rc from setCallbacks", (rc = MQTTClient_setCallbacks(c, NULL, NULL, multiThread_messageArrived,
+		multiThread_deliveryComplete)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
@@ -923,13 +1003,14 @@ int test3b(struct Options options)
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
-    MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
+	MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
 	int rc = 0;
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 3b - connection to SSL MQTT server with clientauth=opt but client does not have server cert");
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.connection, "test3b", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, "test3b", 
+		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -942,12 +1023,7 @@ int test3b(struct Options options)
 		opts.serverURIcount = options.hacount;
 	}
 
-    opts.ssl = &sslopts;
-    //if (options.server_key_file != NULL) opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
-    //opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
-	//if (options.client_key_pass != NULL) opts.ssl->privateKeyPassword = options.client_key_pass;
-    //opts.ssl->enabledCipherSuites = "DEFAULT";
-    //opts.ssl->enabledServerCertAuth = 0;
+	opts.ssl = &sslopts;
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
@@ -976,13 +1052,14 @@ int test4_s(struct Options options)
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
-    MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
+	MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
 	int rc = 0;
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 4_s - accept invalid server certificates - single threaded");
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.connection, "test4_s", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, "test4_s", 
+		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -995,12 +1072,8 @@ int test4_s(struct Options options)
 		opts.serverURIcount = options.hacount;
 	}
 
-    opts.ssl = &sslopts;
-    //if (options.server_key_file != NULL) opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
-    //opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
-	//if (options.client_key_pass != NULL) opts.ssl->privateKeyPassword = options.client_key_pass;
-    //opts.ssl->enabledCipherSuites = "DEFAULT";
-    opts.ssl->enableServerCertAuth = 0;
+	opts.ssl = &sslopts;
+	opts.ssl->enableServerCertAuth = 0;
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
@@ -1049,13 +1122,14 @@ int test4_m(struct Options options)
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
-    MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
+	MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
 	int rc = 0;
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 4_m - accept invalid server certificates - multi-threaded");
 
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.connection, "test4_m", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, 
+		"test4_m", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -1068,12 +1142,8 @@ int test4_m(struct Options options)
 		opts.serverURIcount = options.hacount;
 	}
 
-    opts.ssl = &sslopts;
-    //if (options.server_key_file != NULL) opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
-    //opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
-	//if (options.client_key_pass != NULL) opts.ssl->privateKeyPassword = options.client_key_pass;
-    //opts.ssl->enabledCipherSuites = "TLSv1.2";
-    opts.ssl->enableServerCertAuth = 0;
+	opts.ssl = &sslopts;
+	opts.ssl->enableServerCertAuth = 0;
 
 	if (!(assert("Good rc from setCallbacks", (rc = MQTTClient_setCallbacks(c, NULL, NULL, multiThread_messageArrived, multiThread_deliveryComplete)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
@@ -1119,13 +1189,14 @@ int test5a(struct Options options)
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
-    MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
+	MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
 	int rc = 0;
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting SSL test 5a - Anonymous ciphers - server authentication disabled");
 	
-	if (!(assert("good rc from create",	(rc = MQTTClient_create(&c, options.connection, "test5a", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	if (!(assert("good rc from create",	(rc = MQTTClient_create(&c, options.anon_connection, "test5a", 
+		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -1138,12 +1209,9 @@ int test5a(struct Options options)
 		opts.serverURIcount = options.hacount;
 	}
 
-    opts.ssl = &sslopts;
-    //opts.ssl->trustStore = /*file of certificates trusted by client*/
-    //opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
-	//if (options.client_key_pass != NULL) opts.ssl->privateKeyPassword = options.client_key_pass;
-    opts.ssl->enabledCipherSuites = "aNULL";
-    opts.ssl->enableServerCertAuth = 0;
+	opts.ssl = &sslopts;
+	opts.ssl->enabledCipherSuites = "aNULL";
+	opts.ssl->enableServerCertAuth = 0;
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
@@ -1192,13 +1260,14 @@ int test5b(struct Options options)
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
-    MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
+	MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
 	int rc = 0;
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting SSL test 5b - Anonymous ciphers - server authentication enabled");
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.connection, "test5b", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.anon_connection, "test5b", 
+		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -1211,12 +1280,12 @@ int test5b(struct Options options)
 		opts.serverURIcount = options.hacount;
 	}
 
-    opts.ssl = &sslopts;
-    //opts.ssl->trustStore = /*file of certificates trusted by client*/
-    //opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
+	opts.ssl = &sslopts;
+	//opts.ssl->trustStore = /*file of certificates trusted by client*/
+	//opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
 	//if (options.client_key_pass != NULL) opts.ssl->privateKeyPassword = options.client_key_pass;
-    opts.ssl->enabledCipherSuites = "aNULL";
-    opts.ssl->enableServerCertAuth = 1;
+	opts.ssl->enabledCipherSuites = "aNULL";
+	opts.ssl->enableServerCertAuth = 1;
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
@@ -1265,13 +1334,14 @@ int test5c(struct Options options)
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
-    MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
+	MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
 	int rc = 0;
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting SSL test 5c - Anonymous ciphers - client not using anonymous cipher");
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.connection, "test5c", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.anon_connection, "test5c", 
+		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -1284,12 +1354,12 @@ int test5c(struct Options options)
 		opts.serverURIcount = options.hacount;
 	}
 
-    opts.ssl = &sslopts;
-    //opts.ssl->trustStore = /*file of certificates trusted by client*/
-    //opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
+	opts.ssl = &sslopts;
+	//opts.ssl->trustStore = /*file of certificates trusted by client*/
+	//opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
 	//if (options.client_key_pass != NULL) opts.ssl->privateKeyPassword = options.client_key_pass;
-    //opts.ssl->enabledCipherSuites = "DEFAULT";
-    opts.ssl->enableServerCertAuth = 0;
+	//opts.ssl->enabledCipherSuites = "DEFAULT";
+	opts.ssl->enableServerCertAuth = 0;
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
@@ -1309,8 +1379,8 @@ typedef struct
 	char* clientID;					/**< the string id of the client */
 	char* username;					/**< MQTT v3.1 user name */
 	char* password;					/**< MQTT v3.1 password */
-	unsigned int cleansession : 1;	/**< MQTT clean session flag */
-	unsigned int connected : 1;		/**< whether it is currently connected */
+	unsigned int cleansession : 1;			/**< MQTT clean session flag */
+	unsigned int connected : 1;			/**< whether it is currently connected */
 	unsigned int good : 1; 			/**< if we have an error on the socket we turn this off */
 	unsigned int ping_outstanding : 1;
 	unsigned int connect_state : 2;
@@ -1346,6 +1416,7 @@ typedef struct
 	void* pack;
 } MQTTClients;
 
+
 int main(int argc, char** argv)
 {
 	int* numtests = &tests;
@@ -1356,14 +1427,14 @@ int main(int argc, char** argv)
 
  	if (options.test_no == 0)
 	{ /* run all the tests */
-    	for (options.test_no = 1; options.test_no < ARRAY_SIZE(tests); ++options.test_no)
-		rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */
+		for (options.test_no = 1; options.test_no < ARRAY_SIZE(tests); ++options.test_no)
+			rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */
 	}
 	else
-    	rc = tests[options.test_no](options); /* run just the selected test */
+		rc = tests[options.test_no](options); /* run just the selected test */
     	
 	MyLog(LOGA_INFO, "Total tests run: %d", *numtests);
-    if (rc == 0)
+	if (rc == 0)
 		MyLog(LOGA_INFO, "verdict pass");
 	else
 		MyLog(LOGA_INFO, "verdict fail");

@@ -49,14 +49,13 @@
     <os family="unix" />
     <then> 
       <property name="ccflags.so" value="-fPIC -Os -Wall" />
-      <property name="ldflags.so" value="-fvisibility=hidden -shared -Wl,-soname,lib${libname}.so" />
-      <property name="ldflags.async.so" value="-fvisibility=hidden -shared -Wl,-soname,lib${libname.async}.so" />
+      <property name="ldflags.so" value="-fvisibility=hidden -shared" />
       <mkdir dir="${output.folder}"/>
 
       <!-- non-SSL, synchronous library -->
       <property name="output.filename" value="${output.folder}/lib${libname}.so" /> 
       <exec executable="gcc" failonerror="true">
-	<arg line="${ccflags.so} ${ldflags.so} -o ${output.filename} ${sync.source.files}"/>	
+	<arg line="${ccflags.so} ${ldflags.so} -Wl,-soname,lib${libname}.so -o ${output.filename} ${sync.source.files}"/>	
       </exec>
       <exec executable="strip" failonerror="true">
 	<arg value="${output.filename}" />
@@ -68,7 +67,7 @@
 	  <!-- SSL, synchronous library --> 
 	  <property name="output.ssl.filename" value="${output.folder}/lib${libname.ssl}.so" />
 	  <exec executable="gcc" failonerror="true">
-	    <arg line="-DOPENSSL ${ccflags.so} ${ldflags.so} -o ${output.ssl.filename} ${sync.source.files}"/>	
+	    <arg line="-DOPENSSL ${ccflags.so} ${ldflags.so} -Wl,-soname,lib${libname.ssl}.so -o ${output.ssl.filename} ${sync.source.files}"/>	
 	  </exec>
 	  <exec executable="strip" failonerror="true">
 	    <arg value="${output.ssl.filename}" />
@@ -79,7 +78,7 @@
       <!-- non-SSL, asynchronous library -->
       <property name="output.async.filename" value="${output.folder}/lib${libname.async}.so" /> 
       <exec executable="gcc" failonerror="true">
-	<arg line="${ccflags.so} ${ldflags.async.so} -o ${output.async.filename} ${async.source.files}"/>	
+	<arg line="${ccflags.so} ${ldflags.so} -Wl,-soname,lib${libname.async}.so -o ${output.async.filename} ${async.source.files}"/>	
       </exec>
       <exec executable="strip" failonerror="true">
 	<arg value="${output.async.filename}" />
@@ -91,7 +90,7 @@
 	  <!-- SSL, asynchronous library --> 
 	  <property name="output.async.ssl.filename" value="${output.folder}/lib${libname.async.ssl}.so" />
 	  <exec executable="gcc" failonerror="true">
-	    <arg line="-DOPENSSL ${ccflags.so} ${ldflags.async.so} -o ${output.async.ssl.filename} ${sync.source.files}"/>	
+	    <arg line="-DOPENSSL ${ccflags.so} ${ldflags.so} -Wl,-soname,lib${libname.async.ssl}.so -o ${output.async.ssl.filename} ${async.source.files}"/>	
 	  </exec>
 	  <exec executable="strip" failonerror="true">
 	    <arg value="${output.async.ssl.filename}" />
@@ -120,7 +119,9 @@
 
       <!-- Build tests --> 
       <foreach target="onecompile" param="aFile" list="test1"/>
+      <foreach target="onecompiles" param="aFile" list="test3"/>
       <foreach target="asynccompile" param="aFile" list="test4"/>
+      <foreach target="asynccompiles" param="aFile" list="test5"/>
 	
     </then>
     <elseif>
@@ -138,9 +139,21 @@
     </exec>
   </target>
 
+  <target name="onecompiles" >
+    <exec executable="gcc" failonerror="true">
+      <arg line="-I src -lpthread -lmqttv3cs -lssl -L${output.folder} -o ${output.folder}/${aFile} test/${aFile}.c"/>	
+    </exec>
+  </target>
+
   <target name="asynccompile" >
     <exec executable="gcc" failonerror="true">
       <arg line="-I src -lpthread -lmqttv3a -L${output.folder} -o ${output.folder}/${aFile} test/${aFile}.c"/>	
+    </exec>
+  </target>
+
+  <target name="asynccompiles" >
+    <exec executable="gcc" failonerror="true">
+      <arg line="-I src -lpthread -lmqttv3as -lssl -L${output.folder} -o ${output.folder}/${aFile} test/${aFile}.c"/>	
     </exec>
   </target>
 

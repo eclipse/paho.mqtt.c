@@ -20,6 +20,7 @@
     <tstamp>
       <format property="buildTimestamp" pattern="yyyyMMddHHmm" />
     </tstamp>
+    <property name="test.hostname" value="m2m.eclipse.org"/>
 
     <fileset id="sync.source.fileset" dir="src">
       <include name="*.c"/>
@@ -34,6 +35,7 @@
       <exclude name="MQTTVersion.c"/>
     </fileset>
     <pathconvert refid="async.source.fileset" property="async.source.files" pathsep=" "/>
+
   </target>
 		
   <target name="version" depends="init" description="replace tags in the source with the right levels">
@@ -163,6 +165,8 @@
 
   <target name="runAtest">
     <exec executable="./${aTest}" failonerror="true" dir="${output.folder}" > 
+      <arg value="--connection" />
+      <arg value="tcp://${test.hostname}:1883" />
       <env key="LD_LIBRARY_PATH" value="." />
     </exec>
   </target>

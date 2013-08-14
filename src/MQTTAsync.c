@@ -15,6 +15,7 @@
  *    Ian Craggs, Allan Stockdill-Mander - SSL support
  *    Ian Craggs - multiple server connection support
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
+ *    Ian Craggs - fix for bug# 415042 - using already freed structure
  *******************************************************************************/
 
 /**
@@ -2618,7 +2619,7 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 					while (ListNextElement(m->responses, &current))
 					{
 						MQTTAsync_queuedCommand* command = (MQTTAsync_queuedCommand*)(current->content);
-						if (command->command.token == ((Puback*)pack)->msgId)
+						if (command->command.token == msgid)
 						{		
 							if (!ListDetach(m->responses, command)) /* then remove the response from the list */
 								Log(LOG_ERROR, -1, "Publish command not removed from command list");

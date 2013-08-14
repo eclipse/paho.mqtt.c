@@ -19,7 +19,7 @@
 #include "string.h"
 #include "MQTTAsync.h"
 
-#define ADDRESS     "tcp://swtest.hursley.ibm.com:1883"
+#define ADDRESS     "tcp://m2m.eclipse.org:1883"
 #define CLIENTID    "ExampleClientPub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"

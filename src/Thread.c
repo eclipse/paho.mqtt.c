@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial implementation
  *    Ian Craggs, Allan Stockdill-Mander - async client updates
+ *    Ian Craggs - bug #415042 - start Linux thread as disconnected
  *******************************************************************************/
 
 /**
@@ -53,18 +54,22 @@
  */
 thread_type Thread_start(thread_fn fn, void* parameter)
 {
-	#if defined(WIN32)
+#if defined(WIN32)
 	thread_type thread = NULL;
 #else
 	thread_type thread = 0;
+	pthread_attr_t attr;
 #endif
 
 	FUNC_ENTRY;
 #if defined(WIN32)
 	thread = CreateThread(NULL, 0, fn, parameter, 0, NULL);
 #else
-	if (pthread_create(&thread, NULL, fn, parameter) != 0)
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	if (pthread_create(&thread, &attr, fn, parameter) != 0)
 		thread = 0;
+	pthread_attr_destroy(&attr);
 #endif
 	FUNC_EXIT;
 	return thread;

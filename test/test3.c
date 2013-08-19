@@ -1432,6 +1432,7 @@ int main(int argc, char** argv)
 	int rc = 0;
  	int (*tests[])() = {NULL, test1, test2a_s, test2a_m, test2b, test2c, test3a_s, test3a_m, test3b, test4_s, test4_m, test5a, test5b, test5c};
     
+	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
 	getopts(argc, argv);
 	char buf[500];
 	printf("current working dir %s\n", getcwd(buf, sizeof(buf)));

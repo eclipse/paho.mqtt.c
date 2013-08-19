@@ -76,11 +76,11 @@ void usage()
 
 struct Options
 {
-	char* connection;
-	char* mutual_auth_connection;   /**< connection to system under test. */
-	char* nocert_mutual_auth_connection;
-	char* server_auth_connection;
-	char* anon_connection;
+	char connection[100];
+	char mutual_auth_connection[100];   /**< connection to system under test. */
+	char nocert_mutual_auth_connection[100];
+	char server_auth_connection[100];
+	char anon_connection[100];
 	char** haconnections;         	/**< connection to system under test. */
 	int hacount;
 	char* client_key_file;
@@ -91,16 +91,16 @@ struct Options
 	int test_no;
 } options =
 {
-	"tcp://localhost:1883",
-	"ssl://localhost:8883",
-	"ssl://localhost:8884",
-	"ssl://localhost:8885",
-	"ssl://localhost:8886",
+	"ssl://m2m.eclipse.org:18883",
+	"ssl://m2m.eclipse.org:18884",
+	"ssl://m2m.eclipse.org:18885",
+	"ssl://m2m.eclipse.org:18886",
+	"ssl://m2m.eclipse.org:18887",
 	NULL,
 	0,
+	"../../test/ssl/client.pem",
 	NULL,
-	NULL,
-	NULL,
+	"../../test/ssl/test-root-ca.crt",
 	NULL,
 	0,
 	0,
@@ -155,10 +155,16 @@ void getopts(int argc, char** argv)
 			else
 				usage();
 		}
-		else if (strcmp(argv[count], "--connection") == 0)
+		else if (strcmp(argv[count], "--hostname") == 0)
 		{
 			if (++count < argc)
-				options.connection = argv[count];
+			{
+				sprintf(options.connection, "ssl://%s:18883", argv[count]);
+				sprintf(options.mutual_auth_connection, "ssl://%s:18884", argv[count]);
+				sprintf(options.nocert_mutual_auth_connection, "ssl://%s:18885", argv[count]);
+				sprintf(options.server_auth_connection, "ssl://%s:18886", argv[count]);
+				sprintf(options.anon_connection, "ssl://%s:18887", argv[count]);
+			}
 			else
 				usage();
 		}
@@ -560,11 +566,8 @@ int test1(struct Options options)
 	}
 
 	opts.ssl = &sslopts;
-	//opts.ssl->trustStore = /*file of certificates trusted by client*/
-	//opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
-	//if (options.client_key_pass != NULL) opts.ssl->privateKeyPassword = options.client_key_pass;
-	//opts.ssl->enabledCipherSuites = "DEFAULT";
-	opts.ssl->enableServerCertAuth = 0;
+	if (options.server_key_file != NULL) 
+		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
 
 	MyLog(LOGA_DEBUG, "Connecting");
 

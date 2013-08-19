@@ -15,12 +15,12 @@
   <property name="libname.async" value="mqttv3a" />
   <property name="libname.async.ssl" value="mqttv3as" />
   <property name="ssl" value="yes" />
+  <property name="test.hostname" value="m2m.eclipse.org"/>
 	
   <target name="init">
     <tstamp>
       <format property="buildTimestamp" pattern="yyyyMMddHHmm" />
     </tstamp>
-    <property name="test.hostname" value="m2m.eclipse.org"/>
 
     <fileset id="sync.source.fileset" dir="src">
       <include name="*.c"/>
@@ -167,7 +167,7 @@
   <target name="runAtest">
     <exec executable="./${aTest}" failonerror="true" dir="${output.folder}" > 
       <arg value="--connection" />
-      <arg value="tcp://${test.hostname}:1883" />
+      <arg value="tcp://${test.hostname}:18883" />
       <env key="LD_LIBRARY_PATH" value="." />
     </exec>
   </target>
@@ -175,7 +175,7 @@
   <target name="runSSLtest">
     <exec executable="./${aTest}" failonerror="true" dir="${output.folder}" > 
       <arg value="--hostname" />
-      <arg value="test.hostname" />
+      <arg value="${test.hostname}" />
       <env key="LD_LIBRARY_PATH" value="." />
     </exec>
   </target>
@@ -232,7 +232,7 @@
     </copy>
   </target>
 
-  <!-- target name="full" depends="init, version, compile, doc, copy" -->
+  <!-- target name="full" depends="init, version, compile, test, doc, copy" -->
   <target name="full" depends="init, version, compile, test" />
 
 </project>

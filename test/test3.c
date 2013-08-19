@@ -160,10 +160,16 @@ void getopts(int argc, char** argv)
 			if (++count < argc)
 			{
 				sprintf(options.connection, "ssl://%s:18883", argv[count]);
+				printf("Setting connection to %s\n", options.connection);
 				sprintf(options.mutual_auth_connection, "ssl://%s:18884", argv[count]);
+				printf("Setting mutual_auth_connection to %s\n", options.mutual_auth_connection);
 				sprintf(options.nocert_mutual_auth_connection, "ssl://%s:18885", argv[count]);
+				printf("Setting nocert_mutual_auth_connection to %s\n",
+					options.nocert_mutual_auth_connection);
 				sprintf(options.server_auth_connection, "ssl://%s:18886", argv[count]);
+				printf("Setting server_auth_connection to %s\n", options.server_auth_connection);
 				sprintf(options.anon_connection, "ssl://%s:18887", argv[count]);
+				printf("Setting anon_connection to %s\n", options.anon_connection);
 			}
 			else
 				usage();
@@ -1427,6 +1433,8 @@ int main(int argc, char** argv)
  	int (*tests[])() = {NULL, test1, test2a_s, test2a_m, test2b, test2c, test3a_s, test3a_m, test3b, test4_s, test4_m, test5a, test5b, test5c};
     
 	getopts(argc, argv);
+	char buf[500];
+	printf("current working dir %s\n", getcwd(buf, sizeof(buf)));
 
  	if (options.test_no == 0)
 	{ /* run all the tests */

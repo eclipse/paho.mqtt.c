@@ -168,7 +168,6 @@
     <exec executable="./${aTest}" failonerror="true" dir="${output.folder}" > 
       <arg value="--connection" />
       <arg value="tcp://${test.hostname}:1883" />
-      <arg value="--verbose" />
       <env key="LD_LIBRARY_PATH" value="." />
     </exec>
   </target>

@@ -61,7 +61,7 @@ struct Options
 	int test_no;
 } options =
 {
-	"m2m.eclipse.org:1883",
+	"tcp://m2m.eclipse.org:1883",
 	NULL,
 	0,
 	0,
@@ -84,7 +84,10 @@ void getopts(int argc, char** argv)
 		else if (strcmp(argv[count], "--connection") == 0)
 		{
 			if (++count < argc)
+			{
 				options.connection = argv[count];
+				printf("\nSetting connection to %s\n", options.connection);
+			}
 			else
 				usage();
 		}
@@ -109,8 +112,7 @@ void getopts(int argc, char** argv)
 		else if (strcmp(argv[count], "--verbose") == 0)
 		{
 			options.verbose = 1;
-		    //TODO
-		    printf("\nSetting verbose on\n");
+			printf("\nSetting verbose on\n");
 		}
 		count++;
 	}

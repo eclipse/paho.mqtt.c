@@ -342,15 +342,30 @@ long elapsed(START_TIME_TYPE start_time)
 #endif
 
 
-START_TIME_TYPE global_start_time;
-
-
 #define assert(a, b, c, d) myassert(__FILE__, __LINE__, a, b, c, d)
 #define assert1(a, b, c, d, e) myassert(__FILE__, __LINE__, a, b, c, d, e)
 
 
 int tests = 0;
 int failures = 0;
+FILE* xml;
+START_TIME_TYPE global_start_time;
+char output[3000];
+char* cur_output = output;
+long duration;
+
+
+void write_test_result()
+{
+	duration = elapsed(global_start_time);
+	fprintf(xml, " time=\"%d.%.3d\" >\n", duration / 1000, duration % 1000); 
+	if (cur_output != output)
+	{
+		fprintf(xml, output);
+		cur_output = output;	
+	}
+	fprintf(xml, "</testcase>\n");
+}
 
 
 int myassert(char* filename, int lineno, char* description, int value, char* format, ...)
@@ -366,9 +381,12 @@ int myassert(char* filename, int lineno, char* description, int value, char* for
 		va_start(args, format);
 		vprintf(format, args);
 		va_end(args);
+
+		cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n", 
+                        description, filename, lineno);
 	}
-    else
-    	MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);  
+	else
+		MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);  
 	return value;
 }
 
@@ -556,6 +574,8 @@ int test1(struct Options options)
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting SSL test 1 - connection to nonSSL MQTT server");
+	fprintf(xml, "<testcase classname=\"test3\" name=\"SSL connect fail to nonSSL MQTT server\"");
+	global_start_time = start_clock();
 	
 	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.connection, "test1",
 		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d \n", rc)))
@@ -584,7 +604,7 @@ exit:
 	MQTTClient_destroy(&c);
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-
+	write_test_result();
 	return failures;
 }
 
@@ -608,6 +628,8 @@ int test2a_s(struct Options options)
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 2a_s - Mutual SSL authentication - single threaded client using receive");
+	fprintf(xml, "<testcase classname=\"test3\" name=\"test 2a_s\"");
+	global_start_time = start_clock();
 	
 	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.mutual_auth_connection, "test2a_s",
 		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
@@ -664,7 +686,7 @@ exit:
 	MQTTClient_destroy(&c);
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-
+	write_test_result();
 	return failures;
 }
 
@@ -688,6 +710,8 @@ int test2a_m(struct Options options)
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 2a_m - Mutual SSL authentication - multi-threaded client using callbacks");
+	fprintf(xml, "<testcase classname=\"test3\" name=\"test 2a_m\"");
+	global_start_time = start_clock();
 
 	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.mutual_auth_connection, "test2a_m",
 		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
@@ -741,7 +765,7 @@ exit:
 	MQTTClient_destroy(&c);
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-
+	write_test_result();
 	return failures;
 }
 
@@ -763,6 +787,8 @@ int test2b(struct Options options)
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 2b - connection to SSL MQTT server with clientauth=req but server does not have client cert");
+	fprintf(xml, "<testcase classname=\"test3\" name=\"test 2b\"");
+	global_start_time = start_clock();
 	
 	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.nocert_mutual_auth_connection, "test2b",
 		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
@@ -799,7 +825,7 @@ exit:
 	MQTTClient_destroy(&c);
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-
+	write_test_result();
 	return failures;
 }
 
@@ -1329,6 +1355,7 @@ exit:
 	return failures;
 }
 
+
 /*********************************************************************
 
 Test5c: Anonymous ciphers - client not using anonymous ciphers
@@ -1430,13 +1457,16 @@ int main(int argc, char** argv)
 {
 	int* numtests = &tests;
 	int rc = 0;
- 	int (*tests[])() = {NULL, test1, test2a_s, test2a_m, test2b, test2c, test3a_s, test3a_m, test3b, test4_s, test4_m, test5a, test5b, test5c};
+ 	int (*tests[])() = {NULL, test1, test2a_s, test2a_m, test2b, test2c, test3a_s, test3a_m, test3b, test4_s, test4_m};
+ //test5a, test5b, test5c};
+	MQTTClient_nameValue* info;
+
+	xml = fopen("TEST-test3.xml", "w");
+	fprintf(xml, "<testsuite name=\"test3\" tests=\"%d\">\n", ARRAY_SIZE(tests) - 1);
     
 	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
+	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
 	getopts(argc, argv);
-	char buf[500];
-	printf("current working dir %s\n", getcwd(buf, sizeof(buf)));
-
  	if (options.test_no == 0)
 	{ /* run all the tests */
 		for (options.test_no = 1; options.test_no < ARRAY_SIZE(tests); ++options.test_no)
@@ -1450,6 +1480,9 @@ int main(int argc, char** argv)
 		MyLog(LOGA_INFO, "verdict pass");
 	else
 		MyLog(LOGA_INFO, "verdict fail");
+
+	fprintf(xml, "</testsuite>\n");
+	fclose(xml);
 	
 	return rc;
 }

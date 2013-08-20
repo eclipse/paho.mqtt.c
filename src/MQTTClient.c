@@ -47,9 +47,9 @@
 #endif
 
 #define URI_TCP "tcp://"
-
+ 
 #define BUILD_TIMESTAMP "##MQTTCLIENT_BUILD_TAG##"
-#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##" 
+#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##"
 
 char* client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
@@ -232,7 +232,7 @@ int MQTTClient_create(MQTTClient* handle, char* serverURI, char* clientId,
 		#if defined(HEAP_H)
 			Heap_initialize();
 		#endif
-		Log_initialize(NULL);
+		Log_initialize((Log_nameValue*)MQTTClient_getVersionInfo());
 		bstate->clients = ListInitialize();
 		Socket_outInitialize();
 		Socket_setWriteCompleteCallback(MQTTClient_writeComplete);
@@ -790,12 +790,12 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket);
 				if (rc == -1)
 					m->c->connect_state = 2;
-            	else if (rc == SSL_FATAL)
+				else if (rc == SSL_FATAL)
 				{
 					rc = SOCKET_ERROR;
-               		goto exit;
+					goto exit;
 				}
-            	else if (rc == 1 && !m->c->cleansession && m->c->session == NULL)
+				else if (rc == 1 && !m->c->cleansession && m->c->session == NULL)
 					m->c->session = SSL_get1_session(m->c->net.ssl);
 			}
 			else

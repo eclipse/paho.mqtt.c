@@ -1464,7 +1464,7 @@ int main(int argc, char** argv)
 	fprintf(xml, "<testsuite name=\"test3\" tests=\"%d\">\n", ARRAY_SIZE(tests) - 1);
     
 	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
-	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
+	//setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
 	getopts(argc, argv);
  	if (options.test_no == 0)
 	{ /* run all the tests */

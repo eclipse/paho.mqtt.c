@@ -352,12 +352,12 @@ FILE* xml;
 START_TIME_TYPE global_start_time;
 char output[3000];
 char* cur_output = output;
-long duration;
 
 
 void write_test_result()
 {
-	duration = elapsed(global_start_time);
+	long duration = elapsed(global_start_time);
+
 	fprintf(xml, " time=\"%d.%.3d\" >\n", duration / 1000, duration % 1000); 
 	if (cur_output != output)
 	{

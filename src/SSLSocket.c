@@ -456,21 +456,21 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts)
 	
 	if (net->ctx != NULL || (rc = SSLSocket_createContext(net, opts)) == 1)
 	{
-    	int i;
-    	SSL_CTX_set_info_callback(net->ctx, SSL_CTX_info_callback);
+		int i;
+		SSL_CTX_set_info_callback(net->ctx, SSL_CTX_info_callback);
    		if (opts->enableServerCertAuth) 
 			SSL_CTX_set_verify(net->ctx, SSL_VERIFY_PEER, NULL);
 	
 		net->ssl = SSL_new(net->ctx);
 
-    	/* Log all ciphers available to the SSL sessions (loaded in ctx) */
-    	for (i = 0; ;i++)
-    	{
-        	const char* cipher = SSL_get_cipher_list(net->ssl, i);
-        	if (cipher == NULL) break;
-        	Log(TRACE_MIN, 1, "SSL cipher available: %d:%s", i, cipher);
-    	}
-	
+		/* Log all ciphers available to the SSL sessions (loaded in ctx) */
+		for (i = 0; ;i++)
+		{
+			const char* cipher = SSL_get_cipher_list(net->ssl, i);
+			if (cipher == NULL)
+				break;
+			Log(TRACE_MIN, 1, "SSL cipher available: %d:%s", i, cipher);
+	    	}	
 		if ((rc = SSL_set_fd(net->ssl, net->socket)) != 1)
 			SSLSocket_error("SSL_set_fd", net->ssl, net->socket, rc);
 	}
@@ -486,11 +486,11 @@ int SSLSocket_connect(SSL* ssl, int sock)
 
 	FUNC_ENTRY;
 
-    rc = SSL_connect(ssl);
-    if (rc != 1)
+	rc = SSL_connect(ssl);
+	if (rc != 1)
 	{
 		int error;
-        error = SSLSocket_error("SSL_connect", ssl, sock, rc);
+		error = SSLSocket_error("SSL_connect", ssl, sock, rc);
 		if (error == SSL_FATAL)
 			rc = error;
 	}

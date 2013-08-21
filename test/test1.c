@@ -217,6 +217,21 @@ START_TIME_TYPE global_start_time;
 char output[3000];
 char* cur_output = output;
 
+
+void write_test_result()
+{
+	long duration = elapsed(global_start_time);
+
+	fprintf(xml, " time=\"%d.%.3d\" >\n", duration / 1000, duration % 1000); 
+	if (cur_output != output)
+	{
+		fprintf(xml, output);
+		cur_output = output;	
+	}
+	fprintf(xml, "</testcase>\n");
+}
+
+
 void myassert(char* filename, int lineno, char* description, int value, char* format, ...)
 {
 	++tests;
@@ -377,14 +392,7 @@ int test1(struct Options options)
 exit:
 	MyLog(LOGA_INFO, "TEST1: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
-
-	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
-	if (cur_output != output)
-	{
-		fprintf(xml, output);
-		cur_output = output;	
-	}
-	fprintf(xml, "</testcase>\n");
+	write_test_result();
 	return failures;
 }
 
@@ -540,14 +548,7 @@ int test2(struct Options options)
 exit:
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-
-	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
-	if (cur_output != output)
-	{
-		fprintf(xml, output);
-		cur_output = output;	
-	}
-	fprintf(xml, "</testcase>\n");
+	write_test_result();
 	return failures;
 }
 
@@ -627,14 +628,7 @@ int test3(struct Options options)
 /* TODO - unused - remove ? exit: */
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-
-	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
-	if (cur_output != output)
-	{
-		fprintf(xml, output);
-		cur_output = output;	
-	}
-	fprintf(xml, "</testcase>\n");
+	write_test_result();
 	return failures;
 }
 
@@ -875,14 +869,7 @@ int test5(struct Options options)
 exit:
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-
-	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
-	if (cur_output != output)
-	{
-		fprintf(xml, output);
-		cur_output = output;	
-	}
-	fprintf(xml, "</testcase>\n");
+	write_test_result();
 	return failures;
 }
 
@@ -1113,14 +1100,7 @@ int test6(struct Options options)
 exit:
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.\n",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-
-	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
-	if (cur_output != output)
-	{
-		fprintf(xml, output);
-		cur_output = output;	
-	}
-	fprintf(xml, "</testcase>\n");
+	write_test_result();
 	return failures;
 }
 
@@ -1129,9 +1109,11 @@ int main(int argc, char** argv)
 	int rc = 0;
  	int (*tests[])() = {NULL, test1, test2, test3, test4, test5, test6};
 	
-
 	xml = fopen("TEST-test1.xml", "w");
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", ARRAY_SIZE(tests) - 1);
+
+	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
+	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
 
 	getopts(argc, argv);
 

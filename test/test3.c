@@ -93,9 +93,9 @@ struct Options
 {
 	"ssl://m2m.eclipse.org:18883",
 	"ssl://m2m.eclipse.org:18884",
+	"ssl://m2m.eclipse.org:18887",
 	"ssl://m2m.eclipse.org:18885",
 	"ssl://m2m.eclipse.org:18886",
-	"ssl://m2m.eclipse.org:18887",
 	NULL,
 	0,
 	"../../test/ssl/client.pem",
@@ -163,12 +163,12 @@ void getopts(int argc, char** argv)
 				printf("Setting connection to %s\n", options.connection);
 				sprintf(options.mutual_auth_connection, "ssl://%s:18884", argv[count]);
 				printf("Setting mutual_auth_connection to %s\n", options.mutual_auth_connection);
-				sprintf(options.nocert_mutual_auth_connection, "ssl://%s:18885", argv[count]);
+				sprintf(options.nocert_mutual_auth_connection, "ssl://%s:18887", argv[count]);
 				printf("Setting nocert_mutual_auth_connection to %s\n",
 					options.nocert_mutual_auth_connection);
-				sprintf(options.server_auth_connection, "ssl://%s:18886", argv[count]);
+				sprintf(options.server_auth_connection, "ssl://%s:18885", argv[count]);
 				printf("Setting server_auth_connection to %s\n", options.server_auth_connection);
-				sprintf(options.anon_connection, "ssl://%s:18887", argv[count]);
+				sprintf(options.anon_connection, "ssl://%s:18886", argv[count]);
 				printf("Setting anon_connection to %s\n", options.anon_connection);
 			}
 			else
@@ -1457,15 +1457,14 @@ int main(int argc, char** argv)
 {
 	int* numtests = &tests;
 	int rc = 0;
- 	int (*tests[])() = {NULL, test1, test2a_s, test2a_m, test2b, test2c, test3a_s, test3a_m, test3b, test4_s, test4_m};
- //test5a, test5b, test5c};
+ 	int (*tests[])() = {NULL, test1, test2a_s, test2a_m, test2b, test2c, test3a_s, test3a_m, test3b, test4_s, test4_m, /*test5a, test5b,*/ test5c};
 	MQTTClient_nameValue* info;
 
 	xml = fopen("TEST-test3.xml", "w");
 	fprintf(xml, "<testsuite name=\"test3\" tests=\"%d\">\n", ARRAY_SIZE(tests) - 1);
     
 	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
-	//setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
+	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
 	getopts(argc, argv);
  	if (options.test_no == 0)
 	{ /* run all the tests */

@@ -425,9 +425,9 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	}
 
 	if (opts->enabledCipherSuites == NULL)
-        ciphers = "DEFAULT"; 
-    else
-        ciphers = opts->enabledCipherSuites;
+		ciphers = "DEFAULT"; 
+	else
+		ciphers = opts->enabledCipherSuites;
 
 	if ((rc = SSL_CTX_set_cipher_list(net->ctx, ciphers)) != 1)
 	{
@@ -469,7 +469,7 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts)
 			const char* cipher = SSL_get_cipher_list(net->ssl, i);
 			if (cipher == NULL)
 				break;
-			Log(TRACE_MIN, 1, "SSL cipher available: %d:%s", i, cipher);
+			Log(TRACE_PROTOCOL, 1, "SSL cipher available: %d:%s", i, cipher);
 	    	}	
 		if ((rc = SSL_set_fd(net->ssl, net->socket)) != 1)
 			SSLSocket_error("SSL_set_fd", net->ssl, net->socket, rc);

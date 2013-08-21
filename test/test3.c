@@ -1483,6 +1483,7 @@ int main(int argc, char** argv)
     
 	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
 	//setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
+	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "PROTOCOL", 1);
 	getopts(argc, argv);
  	if (options.test_no == 0)
 	{ /* run all the tests */

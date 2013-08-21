@@ -847,6 +847,8 @@ int test2c(struct Options options)
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 2c - connection to SSL MQTT server, server auth enabled but unknown cert");
+	fprintf(xml, "<testcase classname=\"test3\" name=\"test 2c\"");
+	global_start_time = start_clock();
 	
 	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.mutual_auth_connection, "test2c", 
 		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
@@ -882,7 +884,7 @@ exit:
 	MQTTClient_destroy(&c);
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-
+	write_test_result();
 	return failures;
 }
 
@@ -905,6 +907,8 @@ int test3a_s(struct Options options)
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 3a_s - Server authentication - single threaded client using receive");
+	fprintf(xml, "<testcase classname=\"test3\" name=\"test 3a_s\"");
+	global_start_time = start_clock();
 	
 	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, "test3a_s", 
 		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
@@ -953,7 +957,7 @@ exit:
 	MQTTClient_destroy(&c);
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-
+	write_test_result();
 	return failures;
 }
 
@@ -976,6 +980,8 @@ int test3a_m(struct Options options)
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 3a_m - Server authentication - multi-threaded client using callbacks");
+	fprintf(xml, "<testcase classname=\"test3\" name=\"test 3a_m\"");
+	global_start_time = start_clock();
 
 	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, "test3a_m", 
 		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
@@ -1021,7 +1027,7 @@ exit:
 	MQTTClient_destroy(&c);
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-
+	write_test_result();
 	return failures;
 }
 
@@ -1043,6 +1049,8 @@ int test3b(struct Options options)
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 3b - connection to SSL MQTT server with clientauth=opt but client does not have server cert");
+	fprintf(xml, "<testcase classname=\"test3\" name=\"test 3b\"");
+	global_start_time = start_clock();
 	
 	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, "test3b", 
 		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
@@ -1069,7 +1077,7 @@ exit:
 	MQTTClient_destroy(&c);
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-
+	write_test_result();
 	return failures;
 }
 
@@ -1092,6 +1100,8 @@ int test4_s(struct Options options)
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 4_s - accept invalid server certificates - single threaded");
+	fprintf(xml, "<testcase classname=\"test3\" name=\"test 4_s\"");
+	global_start_time = start_clock();
 	
 	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, "test4_s", 
 		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
@@ -1139,7 +1149,7 @@ exit:
 	MQTTClient_destroy(&c);
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-
+	write_test_result();
 	return failures;
 }
 
@@ -1162,6 +1172,8 @@ int test4_m(struct Options options)
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 4_m - accept invalid server certificates - multi-threaded");
+	fprintf(xml, "<testcase classname=\"test3\" name=\"test 4_m\"");
+	global_start_time = start_clock();
 
 	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, 
 		"test4_m", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
@@ -1206,7 +1218,7 @@ exit:
 
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-
+	write_test_result();
 	return failures;
 }
 
@@ -1229,6 +1241,8 @@ int test5a(struct Options options)
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting SSL test 5a - Anonymous ciphers - server authentication disabled");
+	fprintf(xml, "<testcase classname=\"test3\" name=\"test 5a\"");
+	global_start_time = start_clock();
 	
 	if (!(assert("good rc from create",	(rc = MQTTClient_create(&c, options.anon_connection, "test5a", 
 		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
@@ -1277,7 +1291,7 @@ exit:
 	MQTTClient_destroy(&c);
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-
+	write_test_result();
 	return failures;
 }
 
@@ -1300,6 +1314,8 @@ int test5b(struct Options options)
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting SSL test 5b - Anonymous ciphers - server authentication enabled");
+	fprintf(xml, "<testcase classname=\"test3\" name=\"test 5b\"");
+	global_start_time = start_clock();
 	
 	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.anon_connection, "test5b", 
 		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
@@ -1351,7 +1367,7 @@ exit:
 	MQTTClient_destroy(&c);
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-
+	write_test_result();
 	return failures;
 }
 
@@ -1375,6 +1391,8 @@ int test5c(struct Options options)
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting SSL test 5c - Anonymous ciphers - client not using anonymous cipher");
+	fprintf(xml, "<testcase classname=\"test3\" name=\"test 5c\"");
+	global_start_time = start_clock();
 	
 	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.anon_connection, "test5c", 
 		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
@@ -1406,7 +1424,7 @@ exit:
 	MQTTClient_destroy(&c);
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-
+	write_test_result();
 	return failures;
 }
 

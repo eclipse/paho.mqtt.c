@@ -65,6 +65,10 @@ void usage()
 struct Options
 {
 	char* connection; /**< connection to system under test. */
+	char mutual_auth_connection[100];   /**< connection to system under test. */
+	char nocert_mutual_auth_connection[100];
+	char server_auth_connection[100];
+	char anon_connection[100];
 	char* client_key_file;
 	char* client_key_pass;
 	char* server_key_file;

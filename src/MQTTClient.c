@@ -70,11 +70,11 @@ extern mutex_type stack_mutex;
 extern mutex_type heap_mutex;
 extern mutex_type log_mutex;
 BOOL APIENTRY DllMain(HANDLE hModule,
-                      DWORD  ul_reason_for_call,
-                      LPVOID lpReserved)
+					  DWORD  ul_reason_for_call,
+					  LPVOID lpReserved)
 {
-    switch (ul_reason_for_call)
-    {
+	switch (ul_reason_for_call)
+	{
 		case DLL_PROCESS_ATTACH:
 			Log(TRACE_MAX, -1, "DLL process attach");
 			if (mqttclient_mutex == NULL)
@@ -90,8 +90,8 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 			Log(TRACE_MAX, -1, "DLL thread detach");
 		case DLL_PROCESS_DETACH:
 			Log(TRACE_MAX, -1, "DLL process detach");
-    }
-    return TRUE;
+	}
+	return TRUE;
 }
 #else
 static pthread_mutex_t mqttclient_mutex_store = PTHREAD_MUTEX_INITIALIZER;
@@ -737,7 +737,7 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 
 	if (options->will && options->will->struct_version == 0)
 	{
-	    m->c->will = malloc(sizeof(willMessages));
+		m->c->will = malloc(sizeof(willMessages));
 		m->c->will->msg = options->will->message;
 		m->c->will->qos = options->will->qos;
 		m->c->will->retained = options->will->retained;
@@ -796,14 +796,14 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 					goto exit;
 				}
 				else if (rc == 1) {
-            		rc = MQTTCLIENT_SUCCESS;
-            		m->c->connect_state = 3;
-            		if (MQTTPacket_send_connect(m->c) == SOCKET_ERROR)
-            		{
-            			rc = SOCKET_ERROR;
-            			goto exit;
-            		}
-            		if(!m->c->cleansession && m->c->session == NULL))
+					rc = MQTTCLIENT_SUCCESS;
+					m->c->connect_state = 3;
+					if (MQTTPacket_send_connect(m->c) == SOCKET_ERROR)
+					{
+						rc = SOCKET_ERROR;
+						goto exit;
+					}
+					if(!m->c->cleansession && m->c->session == NULL)
 						m->c->session = SSL_get1_session(m->c->net.ssl);
 				}
 			}
@@ -838,7 +838,7 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 			rc = SOCKET_ERROR;
 			goto exit;
 		}
-   		if(!m->c->cleansession && m->c->session == NULL))
+		if(!m->c->cleansession && m->c->session == NULL)
 			m->c->session = SSL_get1_session(m->c->net.ssl);
 		m->c->connect_state = 3; /* TCP connect completed, in which case send the MQTT connect packet */
 		if (MQTTPacket_send_connect(m->c) == SOCKET_ERROR)
@@ -973,11 +973,11 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 	}
 
 exit:
-    if (m->c->will)
-    {
+	if (m->c->will)
+	{
 		free(m->c->will);
 		m->c->will = NULL;
-    }
+	}
 	Thread_unlock_mutex(mqttclient_mutex);
 	FUNC_EXIT_RC(rc);
 	return rc;

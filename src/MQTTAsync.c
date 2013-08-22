@@ -2448,8 +2448,17 @@ int MQTTAsync_connecting(MQTTAsyncs* m)
 					rc = SOCKET_ERROR;
 					goto exit;
 				}
-				else if (rc == 1 && !m->c->cleansession && m->c->session == NULL)
-					m->c->session = SSL_get1_session(m->c->net.ssl);
+				else if (rc == 1) {
+            		rc = MQTTCLIENT_SUCCESS;
+            		m->c->connect_state = 3;
+            		if (MQTTPacket_send_connect(m->c) == SOCKET_ERROR)
+            		{
+            			rc = SOCKET_ERROR;
+            			goto exit;
+            		}
+            		if(!m->c->cleansession && m->c->session == NULL))
+						m->c->session = SSL_get1_session(m->c->net.ssl);
+				}
 			}
 			else
 			{
@@ -2473,6 +2482,8 @@ int MQTTAsync_connecting(MQTTAsyncs* m)
 		if ((rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket)) != 1)
 			goto exit;
 
+   		if(!m->c->cleansession && m->c->session == NULL))
+			m->c->session = SSL_get1_session(m->c->net.ssl);
 		m->c->connect_state = 3; /* SSL connect completed, in which case send the MQTT connect packet */
 		if ((rc = MQTTPacket_send_connect(m->c)) == SOCKET_ERROR)
 			goto exit;

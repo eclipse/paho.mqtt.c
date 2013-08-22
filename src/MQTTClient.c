@@ -795,8 +795,17 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 					rc = SOCKET_ERROR;
 					goto exit;
 				}
-				else if (rc == 1 && !m->c->cleansession && m->c->session == NULL)
-					m->c->session = SSL_get1_session(m->c->net.ssl);
+				else if (rc == 1) {
+            		rc = MQTTCLIENT_SUCCESS;
+            		m->c->connect_state = 3;
+            		if (MQTTPacket_send_connect(m->c) == SOCKET_ERROR)
+            		{
+            			rc = SOCKET_ERROR;
+            			goto exit;
+            		}
+            		if(!m->c->cleansession && m->c->session == NULL))
+						m->c->session = SSL_get1_session(m->c->net.ssl);
+				}
 			}
 			else
 			{
@@ -829,6 +838,8 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 			rc = SOCKET_ERROR;
 			goto exit;
 		}
+   		if(!m->c->cleansession && m->c->session == NULL))
+			m->c->session = SSL_get1_session(m->c->net.ssl);
 		m->c->connect_state = 3; /* TCP connect completed, in which case send the MQTT connect packet */
 		if (MQTTPacket_send_connect(m->c) == SOCKET_ERROR)
 		{

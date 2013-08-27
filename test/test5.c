@@ -51,12 +51,9 @@ void usage()
 	printf("Options:\n");
 	printf("\t--test_no <test_no> - Run test number <test_no>\n");
 	printf("\t--server <hostname> - Connect to <hostname> for tests\n");
-	printf(
-			"\t--client_key <key_file> - Use <key_file> as the client certificate for SSL authentication\n");
-	printf(
-			"\t--client_key_pass <password> - Use <password> to access the private key in the client certificate\n");
-	printf(
-			"\t--server_key <key_file> - Use <key_file> as the trusted certificate for server\n");
+	printf("\t--client_key <key_file> - Use <key_file> as the client certificate for SSL authentication\n");
+	printf("\t--client_key_pass <password> - Use <password> to access the private key in the client certificate\n");
+	printf("\t--server_key <key_file> - Use <key_file> as the trusted certificate for server\n");
 	printf("\t--verbose - Enable verbose output \n");
 	printf("\t--help - This help output\n");
 	exit(-1);
@@ -64,7 +61,7 @@ void usage()
 
 struct Options
 {
-	char* connection; /**< connection to system under test. */
+	char connection[100]; /**< connection to system under test. */
 	char mutual_auth_connection[100];   /**< connection to system under test. */
 	char nocert_mutual_auth_connection[100];
 	char server_auth_connection[100];
@@ -72,11 +69,25 @@ struct Options
 	char* client_key_file;
 	char* client_key_pass;
 	char* server_key_file;
+	char* client_private_key_file;
 	int verbose;
 	int test_no;
 	int size;
 } options =
-{ "localhost", NULL, NULL, NULL, 0, 0, 5000000 };
+{ 
+	"ssl://m2m.eclipse.org:18883",
+	"ssl://m2m.eclipse.org:18884",
+	"ssl://m2m.eclipse.org:18887",
+	"ssl://m2m.eclipse.org:18885",
+	"ssl://m2m.eclipse.org:18886",
+	"../../test/ssl/client.pem",
+	NULL,
+	"../../test/ssl/test-root-ca.crt",
+	NULL,
+	0,
+	0,
+	5000000
+};
 
 typedef struct
 {
@@ -109,13 +120,6 @@ void getopts(int argc, char** argv)
 			else
 				usage();
 		}
-		else if (strcmp(argv[count], "--server") == 0)
-		{
-			if (++count < argc)
-				options.connection = argv[count];
-			else
-				usage();
-		}
 		else if (strcmp(argv[count], "--client_key") == 0)
 		{
 			if (++count < argc)
@@ -140,8 +144,26 @@ void getopts(int argc, char** argv)
 		else if (strcmp(argv[count], "--verbose") == 0)
 		{
 			options.verbose = 1;
-			//TODO
 			printf("\nSetting verbose on\n");
+		}
+		else if (strcmp(argv[count], "--hostname") == 0)
+		{
+			if (++count < argc)
+			{
+				sprintf(options.connection, "ssl://%s:18883", argv[count]);
+				printf("Setting connection to %s\n", options.connection);
+				sprintf(options.mutual_auth_connection, "ssl://%s:18884", argv[count]);
+				printf("Setting mutual_auth_connection to %s\n", options.mutual_auth_connection);
+				sprintf(options.nocert_mutual_auth_connection, "ssl://%s:18887", argv[count]);
+				printf("Setting nocert_mutual_auth_connection to %s\n",
+					options.nocert_mutual_auth_connection);
+				sprintf(options.server_auth_connection, "ssl://%s:18885", argv[count]);
+				printf("Setting server_auth_connection to %s\n", options.server_auth_connection);
+				sprintf(options.anon_connection, "ssl://%s:18886", argv[count]);
+				printf("Setting anon_connection to %s\n", options.anon_connection);
+			}
+			else
+				usage();
 		}
 		count++;
 	}
@@ -279,6 +301,9 @@ void myassert(char* filename, int lineno, char* description, int value,
 		va_start(args, format);
 		vprintf(format, args);
 		va_end(args);
+
+		cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n", 
+                        description, filename, lineno);
 	}
 	else
 		MyLog(LOGA_DEBUG,
@@ -600,8 +625,7 @@ int test1(struct Options options)
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	snprintf(url, 100, "ssl://%s:1883", options.connection);
-	rc = MQTTAsync_create(&c, url, "test1", MQTTCLIENT_PERSISTENCE_DEFAULT,
+	rc = MQTTAsync_create(&c, options.connection, "test1", MQTTCLIENT_PERSISTENCE_DEFAULT,
 			NULL);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
@@ -688,7 +712,6 @@ int test2a(struct Options options)
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
 	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
 	int rc = 0;
-	char url[100];
 	int i;
 
 	failures = 0;
@@ -696,8 +719,7 @@ int test2a(struct Options options)
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	snprintf(url, 100, "ssl://%s:8883", options.connection);
-	MQTTAsync_create(&c, url, "test2a", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	MQTTAsync_create(&c, options.mutual_auth_connection, "test2a", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 		goto exit;
@@ -803,20 +825,17 @@ int test2b(struct Options options)
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
 	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
 	int rc = 0;
-	char url[100];
 	int count = 0;
 
 	test2bFinished = 0;
 	failures = 0;
-	MyLog(
-			LOGA_INFO,
+	MyLog(LOGA_INFO,
 			"Starting test 2b - connection to SSL MQTT server with clientauth=req but server does not have client cert");
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	snprintf(url, 100, "ssl://%s:8884", options.connection);
-	rc = MQTTAsync_create(&c, url, "test2b", MQTTCLIENT_PERSISTENCE_DEFAULT,
-			NULL);
+	rc = MQTTAsync_create(&c, options.nocert_mutual_auth_connection,
+            "test2b", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -902,7 +921,6 @@ int test2c(struct Options options)
 	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
 	int rc = 0;
 	char* test_topic = "C client test2c";
-	char url[100];
 	int count = 0;
 
 	failures = 0;
@@ -912,9 +930,8 @@ int test2c(struct Options options)
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	snprintf(url, 100, "ssl://%s:8883", options.connection);
-	rc = MQTTAsync_create(&c, url, "test2c", MQTTCLIENT_PERSISTENCE_DEFAULT,
-			NULL);
+	rc = MQTTAsync_create(&c, options.nocert_mutual_auth_connection, 
+            "test2c", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -995,7 +1012,6 @@ int test3a(struct Options options)
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
 	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
 	int rc = 0;
-	char url[100];
 	int i;
 
 	failures = 0;
@@ -1004,8 +1020,7 @@ int test3a(struct Options options)
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	snprintf(url, 100, "ssl://%s:8885", options.connection);
-	MQTTAsync_create(&c, url, "test3a", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	MQTTAsync_create(&c, options.server_auth_connection, "test3a", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 
 	tc.client = c;
 	sprintf(tc.clientid, "%s", testname);
@@ -1127,7 +1142,6 @@ int test3b(struct Options options)
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
 	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
 	int rc = 0;
-	char url[100];
 	int count = 0;
 
 	test3bFinished = 0;
@@ -1138,8 +1152,7 @@ int test3b(struct Options options)
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	snprintf(url, 100, "ssl://%s:8885", options.connection);
-	rc = MQTTAsync_create(&c, url, "test3b", MQTTCLIENT_PERSISTENCE_DEFAULT,
+	rc = MQTTAsync_create(&c, options.server_auth_connection, "test3b", MQTTCLIENT_PERSISTENCE_DEFAULT,
 			NULL);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
@@ -1221,7 +1234,6 @@ int test4(struct Options options)
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
 	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
 	int rc = 0;
-	char url[100];
 	int i;
 
 	failures = 0;
@@ -1230,8 +1242,7 @@ int test4(struct Options options)
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	snprintf(url, 100, "ssl://%s:8885", options.connection);
-	MQTTAsync_create(&c, url, "test4", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	MQTTAsync_create(&c, options.server_auth_connection, "test4", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 
 	tc.client = c;
 	sprintf(tc.clientid, "%s", testname);
@@ -1351,7 +1362,6 @@ int test5a(struct Options options)
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
 	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
 	int rc = 0;
-	char url[100];
 	int i;
 
 	failures = 0;
@@ -1361,8 +1371,7 @@ int test5a(struct Options options)
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	snprintf(url, 100, "ssl://%s:8886", options.connection);
-	rc = MQTTAsync_create(&c, url, "test5a", MQTTCLIENT_PERSISTENCE_DEFAULT,
+	rc = MQTTAsync_create(&c, options.anon_connection, "test5a", MQTTCLIENT_PERSISTENCE_DEFAULT,
 			NULL);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
@@ -1486,7 +1495,6 @@ int test5b(struct Options options)
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
 	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
 	int rc = 0;
-	char url[100];
 	int i;
 
 	failures = 0;
@@ -1496,8 +1504,7 @@ int test5b(struct Options options)
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	snprintf(url, 100, "ssl://%s:8886", options.connection);
-	rc = MQTTAsync_create(&c, url, "test5b", MQTTCLIENT_PERSISTENCE_DEFAULT,
+	rc = MQTTAsync_create(&c, options.anon_connection, "test5b", MQTTCLIENT_PERSISTENCE_DEFAULT,
 			NULL);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
@@ -1621,7 +1628,6 @@ int test5c(struct Options options)
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
 	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
 	int rc = 0;
-	char url[100];
 	int count = 0;
 
 	test5cFinished = 0;
@@ -1631,8 +1637,7 @@ int test5c(struct Options options)
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	snprintf(url, 100, "ssl://%s:8886", options.connection);
-	rc = MQTTAsync_create(&c, url, "test5c", MQTTCLIENT_PERSISTENCE_DEFAULT,
+	rc = MQTTAsync_create(&c, options.anon_connection, "test5c", MQTTCLIENT_PERSISTENCE_DEFAULT,
 			NULL);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
@@ -1713,15 +1718,12 @@ int test6(struct Options options)
 	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
 	int rc = 0;
 	int i;
-	char url[100];
 	AsyncTestClient tc[num_clients];
 	int test6finished = 0;
 
 	MyLog(LOGA_INFO, "Starting test 6 - multiple connections");
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
-
-	snprintf(url, 100, "ssl://%s:8883", options.connection);
 
 	for (i = 0; i < num_clients; ++i)
 	{
@@ -1736,7 +1738,7 @@ int test6(struct Options options)
 		sprintf(tc[i].clientid, "sslasync_test6_num_%d", i);
 		sprintf(tc[i].topic, "sslasync test6 topic num %d", i);
 
-		rc = MQTTAsync_create(&(tc[i].client), url, tc[i].clientid,
+		rc = MQTTAsync_create(&(tc[i].client), options.server_auth_connection, tc[i].clientid,
 				MQTTCLIENT_PERSISTENCE_NONE, NULL);
 		assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 
@@ -1947,16 +1949,15 @@ int test7(struct Options options)
 	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
 	int rc = 0;
 	char* test_topic = "C client test7";
-	char url[100];
 	int test_finished;
 
 	test_finished = failures = 0;
-	snprintf(url, 100, "ssl://%s:8883", options.connection);
+
 	MyLog(LOGA_INFO, "Starting test 7 - big messages");
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	rc = MQTTAsync_create(&c, url, "async_test_7", MQTTCLIENT_PERSISTENCE_NONE,
+	rc = MQTTAsync_create(&c, options.server_auth_connection, "async_test_7", MQTTCLIENT_PERSISTENCE_NONE,
 			NULL);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
@@ -2033,14 +2034,13 @@ int main(int argc, char** argv)
 	int rc = 0;
 	int i;
 	int (*tests[])() =
-	{ NULL, test1, test2a, test2b, test2c, test3a, test3b, test4, test5a,
-			test5b, test5c, test6, test7 };
+	{ NULL, test1, test2a, test2b, test2c, test3a, test3b, test4, /* test5a,
+			test5b, */ test5c, test6, test7 };
 
 	xml = fopen("TEST-test5.xml", "w");
 	fprintf(xml, "<testsuite name=\"test5\" tests=\"%d\">\n", ARRAY_SIZE(tests) - 1);
 
 	MQTTAsync_setTraceCallback(handleTrace);
-
 	getopts(argc, argv);
 
 	if (options.test_no == 0)

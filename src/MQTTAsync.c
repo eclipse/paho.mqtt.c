@@ -2737,7 +2737,7 @@ MQTTAsync_nameValue* MQTTAsync_getVersionInfo()
 	int i = 0; 
 	
 	libinfo[i].name = "Product name";
-	libinfo[i++].value = "Asynchronous MQTT C Client Library";
+	libinfo[i++].value = "Paho Asynchronous MQTT C Client Library";
 	
 	libinfo[i].name = "Version";
 	libinfo[i++].value = CLIENT_VERSION;

@@ -47,9 +47,9 @@
 #endif
 
 #define URI_TCP "tcp://"
- 
+
 #define BUILD_TIMESTAMP "##MQTTCLIENT_BUILD_TAG##"
-#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##"
+#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##" 
 
 char* client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
@@ -1725,14 +1725,17 @@ exit:
 
 MQTTClient_nameValue* MQTTClient_getVersionInfo()
 {
-	#define MAX_INFO_STRINGS 7
+	#define MAX_INFO_STRINGS 8
 	static MQTTClient_nameValue libinfo[MAX_INFO_STRINGS + 1];
 	int i = 0;
 
-	libinfo[i].name = "version";
+	libinfo[i].name = "Product name";
+	libinfo[i++].value = "Paho Synchronous MQTT C Client Library";
+
+	libinfo[i].name = "Version";
 	libinfo[i++].value = CLIENT_VERSION;
 
-	libinfo[i].name = "build level";
+	libinfo[i].name = "Build level";
 	libinfo[i++].value = BUILD_TIMESTAMP;
 #if defined(OPENSSL)
 	libinfo[i].name = "OpenSSL version";

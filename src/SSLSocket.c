@@ -74,7 +74,7 @@ int SSLSocket_error(char* aString, SSL* ssl, int sock, int rc)
 
         if (strcmp(aString, "shutdown") != 0)
         	Log(TRACE_MIN, -1, "SSLSocket error %s(%d) in %s for socket %d rc %d errno %d %s\n", buf, error, aString, sock, rc, errno, strerror(errno));
-        //ERR_print_errors_fp(stderr);
+         ERR_print_errors_fp(stderr);
 		if (error == SSL_ERROR_SSL || error == SSL_ERROR_SYSCALL)
 			error = SSL_FATAL;
     }
@@ -165,13 +165,12 @@ char* SSL_get_verify_result_string(int rc)
 			break;
 		}
 	}
-    return retstring;
+	return retstring;
 }
+
 
 void SSL_CTX_info_callback(const SSL* ssl, int where, int ret)
 {
-    FUNC_ENTRY;
-   
 	if (where & SSL_CB_LOOP)
 	{
 		Log(TRACE_PROTOCOL, 1, "SSL state %s:%s:%s", 
@@ -209,21 +208,96 @@ void SSL_CTX_info_callback(const SSL* ssl, int where, int ret)
 		Log(TRACE_PROTOCOL, 1, "SSL state %s:%s:%s", SSL_state_string_long(ssl), 
                    SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
 	}
-	FUNC_EXIT;
 }
+
+
+char* SSLSocket_get_version_string(int version)
+{
+	int i;
+	static char buf[20];
+	char* retstring = NULL;
+	static struct
+	{
+		int code;
+		char* string;
+	}
+	version_string_table[] =
+	{
+		{ SSL2_VERSION, "SSL 2.0" },
+		{ SSL3_VERSION, "SSL 3.0" },
+		{ TLS1_VERSION, "TLS 1.0" },
+#if defined(TLS2_VERSION)
+		{ TLS2_VERSION, "TLS 1.1" },
+#endif
+#if defined(TLS3_VERSION)
+		{ TLS3_VERSION, "TLS 1.2" },
+#endif
+	};
+
+	for (i = 0; i < ARRAY_SIZE(version_string_table); ++i)
+	{
+		if (version_string_table[i].code == version)
+		{
+			retstring = version_string_table[i].string;
+			break;
+		}
+	}
+	
+	if (retstring == NULL)
+	{
+		sprintf(buf, "%i", version);
+		retstring = buf;
+	}
+	return retstring;
+}
+
+
+void SSL_CTX_msg_callback(int write_p, int version, int content_type, const void* buf, size_t len, 
+        SSL* ssl, void* arg)
+{  
+
+/*  
+called by the SSL/TLS library for a protocol message, the function arguments have the following meaning:
+
+write_p
+This flag is 0 when a protocol message has been received and 1 when a protocol message has been sent.
+
+version
+The protocol version according to which the protocol message is interpreted by the library. Currently, this is one of SSL2_VERSION, SSL3_VERSION and TLS1_VERSION (for SSL 2.0, SSL 3.0 and TLS 1.0, respectively).
+
+content_type
+In the case of SSL 2.0, this is always 0. In the case of SSL 3.0 or TLS 1.0, this is one of the ContentType values defined in the protocol specification (change_cipher_spec(20), alert(21), handshake(22); but never application_data(23) because the callback will only be called for protocol messages).
+
+buf, len
+buf points to a buffer containing the protocol message, which consists of len bytes. The buffer is no longer valid after the callback function has returned.
+
+ssl
+The SSL object that received or sent the message.
+
+arg
+The user-defined argument optionally defined by SSL_CTX_set_msg_callback_arg() or SSL_set_msg_callback_arg().
+
+*/
+
+	Log(TRACE_PROTOCOL, -1, "%s %s %d buflen %d", (write_p ? "sent" : "received"), 
+		SSLSocket_get_version_string(version),
+		content_type, (int)len);	
+}
+
 
 int pem_passwd_cb(char* buf, int size, int rwflag, void* userdata)
 {
-    FUNC_ENTRY;
+	int rc = 0;
 
-    if (!rwflag)
-    {
-        strncpy(buf, (char*)(userdata), size);
-        buf[size-1] = '\0';
-    }
-    FUNC_EXIT;
-    if (!rwflag) return strlen(buf);
-    else return 0;
+	FUNC_ENTRY;
+	if (!rwflag)
+	{
+		strncpy(buf, (char*)(userdata), size);
+		buf[size-1] = '\0';
+		rc = strlen(buf);
+	}
+	FUNC_EXIT_RC(rc);
+	return rc;
 }
 
 int SSL_create_mutex(ssl_mutex_type* mutex)
@@ -458,6 +532,7 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts)
 	{
 		int i;
 		SSL_CTX_set_info_callback(net->ctx, SSL_CTX_info_callback);
+		SSL_CTX_set_msg_callback(net->ctx, SSL_CTX_msg_callback);
    		if (opts->enableServerCertAuth) 
 			SSL_CTX_set_verify(net->ctx, SSL_VERIFY_PEER, NULL);
 	

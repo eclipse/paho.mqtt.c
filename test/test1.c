@@ -994,23 +994,18 @@ typedef struct
 int test6(struct Options options)
 {
 	char* testname = "test6";
-	/* TODO - unused -remove? char summaryname[50]; */
-	/* TODO - unused -remove? FILE *outfile = NULL; */
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_willOptions wopts =  MQTTClient_willOptions_initializer;
-	/* TODO - unused -remove? MQTTClient_connectOptions opts2 = MQTTClient_connectOptions_initializer; */
-	int rc;
-	/* TODO - unused -remove? MQTTClient_message pubmsg = MQTTClient_message_initializer; */
-	/* TODO - unused -remove? MQTTClient_message* m = NULL; */
-	/* TODO - unused -remove? int count = 0; */
-	/* TODO - unused -remove? char* mqttsas_topic = "MQTTSAS topic"; */
+	MQTTClient_connectOptions opts2 = MQTTClient_connectOptions_initializer;
+	int rc, count;
+	char* mqttsas_topic = "MQTTSAS topic"; 
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 6 - connectionLost and will messages");
 	fprintf(xml, "<testcase classname=\"test1\" name=\"connectionLost and will messages\"");
 	global_start_time = start_clock();
  
-	opts.keepAliveInterval = 10;
+	opts.keepAliveInterval = 2;
 	opts.cleansession = 1;
 	opts.will = &wopts;
 	opts.will->message = test6_will_message;
@@ -1024,7 +1019,6 @@ int test6(struct Options options)
 	}
 
 	/* Client-1 with Will options */
-	/* connect to 1884 which is the protocol tracer and which allows the connection to be broken on command */
 	rc = MQTTClient_create(&test6_c1, options.connection, "Client_1", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTCLIENT_SUCCESS)
@@ -1041,12 +1035,8 @@ int test6(struct Options options)
 	if (rc != MQTTCLIENT_SUCCESS)
 		goto exit;
 
-#if 1
-	rc = MQTTClient_disconnect(test6_c1, 100L);
-	assert("Good rc from disconnect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
-#else
 	/* Client - 2 (multi-threaded) */
-	rc = MQTTClient_create(&test6_c2, "127.0.0.1:1883", "Client_2", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	rc = MQTTClient_create(&test6_c2, options.connection, "Client_2", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 
 	/* Set the callback functions for the client */
@@ -1064,9 +1054,9 @@ int test6(struct Options options)
 	assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 
 	/* now send the command which will break the connection and cause the will message to be sent */
-	rc = MQTTClient_publish(test6_c1, mqttsas_topic, strlen("TERMINATE"), "TERMINATE", 0, 0, NULL);
-	assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
-  	/* test6_socket_close(((MQTTClients*)test6_c1)->c->socket); */
+	/*rc = MQTTClient_publish(test6_c1, mqttsas_topic, strlen("TERMINATE"), "TERMINATE", 0, 0, NULL);
+	assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);*/
+  	test6_socket_close(((MQTTClients*)test6_c1)->c->socket); 
 
 	MyLog(LOGA_INFO, "Waiting to receive the will message");
 	count = 0;
@@ -1084,9 +1074,8 @@ int test6(struct Options options)
 	rc = MQTTClient_unsubscribe(test6_c2, test6_will_topic);
 	assert("Good rc from unsubscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 	
-	rc = MQTTClient_isConnected(test6_c1);
+	rc = MQTTClient_isConnected(test6_c2);
 	assert("Client-2 still connected", rc == 1, "isconnected is %d", rc);
-#endif
 
 	rc = MQTTClient_isConnected(test6_c1);
 	assert("Client-1 not connected", rc == 0, "isconnected is %d", rc);

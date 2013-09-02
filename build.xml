@@ -108,15 +108,15 @@
 	<arg value="${output.folder}/MQTTVersion" />
       </exec>
 
-      <!-- Samples 
-      <property name="output.async.ssl.filename" value="${output.folder}/lib${libname.async.ssl}.so" />
-      <foreach list="$">
-      <exec executable="gcc" failonerror="true">
-	<arg line="-lpthread -ldl -o ${output.folder}/MQTTVersion src/MQTTVersion.c"/>	
-      </exec>
-      <exec executable="strip" failonerror="true">
-	<arg value="${output.folder}/MQTTVersion" />
-      </exec> -->
+      <!-- Samples -->
+      <mkdir dir="${output.folder}/samples"/>
+      <copy overwrite="true" todir="${output.folder}/samples">
+        <fileset dir="src/samples">
+          <include name="*"/>
+        </fileset>
+      </copy>
+      <foreach target="sample.compile" param="aFile" list="stdinpub,stdoutsub,pubsync,pubasync,subasync"/>
+      <foreach target="sample.async.compile" param="aFile" list="stdoutsuba,MQTTAsync_publish,MQTTAsync_subscribe"/>
 
       <!-- Build tests --> 
       <foreach target="onecompile" param="aFile" list="test1"/>
@@ -135,7 +135,7 @@
       </copy>
 
       <zip destfile="${output.folder}/paho-client-mqtt-c.zip">
-        <zipfileset dir="${output.folder}" includes="*.so,include/*,MQTTVersion"/>
+        <zipfileset dir="${output.folder}" includes="*.so,include/*,MQTTVersion,samples/*"/>
       </zip>
 	
     </then>
@@ -146,6 +146,18 @@
       </then>
     </elseif>
     </if>
+  </target>
+
+  <target name="sample.compile" >
+    <exec executable="gcc" failonerror="true">
+      <arg line="-I src -lpthread -lmqttv3c -L${output.folder} -o ${output.folder}/samples/${aFile} src/samples/${aFile}.c"/>	
+    </exec>
+  </target>
+
+  <target name="sample.async.compile" >
+    <exec executable="gcc" failonerror="true">
+      <arg line="-I src -lpthread -lmqttv3a -L${output.folder} -o ${output.folder}/samples/${aFile} src/samples/${aFile}.c"/>	
+    </exec>
   </target>
 
   <target name="onecompile" >

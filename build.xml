@@ -182,30 +182,22 @@
 
   <target name="doc" >
     <if>
-      <available file="${doxygen}"/>
+      <available file="/usr/bin/doxygen"/>
       <then>
-	<exec executable="${doxygen}" dir="${mqttclient_src}">
-	  <arg value="${source.folder}/mqttv3c/doc/DoxyfileV3ClientAPI"/>
+        <mkdir dir="${output.folder}/doc"/>
+	<exec executable="doxygen" dir="src">
+	  <arg value="../doc/DoxyfileV3ClientAPI"/>
 	</exec>
-	<mkdir dir="${ship.folder}/doc/html"/>
-	<copy todir="${ship.folder}/doc/html">
-	  <fileset dir="${mqttclient_src}/MQTTClient/html"/>
-	</copy>
-	<!-- <zip destfile="${output.folder}/doc/MQTTClient.zip">
-	     <zipfileset dir="${mqttclient_src}/MQTTClient" />
-	</zip> -->
-	<exec executable="${doxygen}" dir="${mqttclient_src}">
-	  <arg value="${source.folder}/mqttv3c/doc/DoxyfileV3AsyncAPI"/>
+	<exec executable="doxygen" dir="src">
+	  <arg value="../doc/DoxyfileV3AsyncAPI"/>
 	</exec>
-	<mkdir dir="${ship.folder}/doc/html/MQTTAsync"/>
-	<copy todir="${ship.folder}/doc/html/MQTTAsync">
-	  <fileset dir="${mqttclient_src}/MQTTAsync"/>
-	</copy>
-	<!-- <zip destfile="${output.folder}/doc/MQTTAsync.zip">
-	     <zipfileset dir="${mqttclient_src}/MQTTAsync" prefix="MQTTAsync/"/>
-	</zip> -->
-	<delete dir="${mqttclient_src}/MQTTClient" />
-	<delete dir="${mqttclient_src}/MQTTAsync" />
+	<zip destfile="${output.folder}/MQTTClient_doc.zip">
+	     <zipfileset dir="${output.folder}/doc/MQTTClient" />
+	</zip> 
+	<zip destfile="${output.folder}/MQTTAsync_doc.zip">
+	     <zipfileset dir="${output.folder}/doc/MQTTAsync" prefix="MQTTAsync/"/>
+	</zip> 
+	<delete dir="${output.folder}/doc" />
       </then>
       <else>
 	<echo message="doxygen is not available" />
@@ -232,7 +224,6 @@
     </copy>
   </target>
 
-  <!-- target name="full" depends="init, version, compile, test, doc, copy" -->
-  <target name="full" depends="init, version, compile, test" />
+  <target name="full" depends="init, version, compile, test, doc" />
 
 </project>

@@ -101,7 +101,6 @@
       </if>
 
       <!-- MQTTVersion --> 
-      <property name="output.async.ssl.filename" value="${output.folder}/lib${libname.async.ssl}.so" />
       <exec executable="gcc" failonerror="true">
 	<arg line="-lpthread -ldl -o ${output.folder}/MQTTVersion src/MQTTVersion.c"/>	
       </exec>
@@ -124,6 +123,20 @@
       <foreach target="onecompiles" param="aFile" list="test3"/>
       <foreach target="asynccompile" param="aFile" list="test4"/>
       <foreach target="asynccompiles" param="aFile" list="test5"/>
+
+      <mkdir dir="${output.folder}/include"/>
+      <echo message="Copying the headers for the C clients from the output tree" />
+      <copy overwrite="true" todir="${output.folder}/include">
+        <fileset dir="src">
+	  <include name="MQTTClient.h"/>
+	  <include name="MQTTClientPersistence.h"/>
+	  <include name="MQTTAsync.h"/>
+        </fileset>
+      </copy>
+
+      <zip destfile="${output.folder}/paho-client-mqtt-c.zip">
+        <zipfileset dir="${output.folder}" includes="*.so,include/*,MQTTVersion"/>
+      </zip>
 	
     </then>
     <elseif>
@@ -206,24 +219,20 @@
   </target>
 
   <target name="copy">
-    <mkdir dir="${ship.folder}/include"/>
-    <echo message="Copying the headers for the c_client from the output tree" />
-    <copy overwrite="true" todir="${ship.folder}/include">
-      <fileset dir="${mqttclient_src}">
-	<include name="MQTTClient.h"/>
-	<include name="MQTTClientPersistence.h"/>
-	<include name="MQTTAsync.h"/>
-      </fileset>
-    </copy>
-    
-    <echo message="Copying the source.zip file from the output tree" />
-    <copy overwrite="true" todir="${ship.folder}">
-      <fileset dir="${output.folder}">
-	<include name="source.zip"/>
-      </fileset>
-    </copy>
+    <if>
+      <available file="/shared/technology"/>
+      <then>
+	<mkdir dir="/shared/technology/paho/C"/>
+	<echo message="Copying the build output to /shared" />
+	<copy overwrite="true" todir="/shared/technology/paho/C">
+          <fileset dir="${output.folder}">
+	    <include name="*.zip"/>
+          </fileset>
+	</copy> 
+      </then>
+    </if>
   </target>
 
-  <target name="full" depends="init, version, compile, test, doc" />
+  <target name="full" depends="init, version, compile, test, doc, copy" />
 
 </project>

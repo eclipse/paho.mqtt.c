@@ -279,7 +279,7 @@ void test1_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 	for (i = 0; i< iterations; ++i)
 	{
 		if (i % 10 == 0)
-			rc = MQTTClient_publish(c, test_topic, pubmsg.payloadlen, pubmsg.payload, pubmsg.qos, pubmsg.retained, NULL);
+			rc = MQTTClient_publish(c, test_topic, pubmsg.payloadlen, pubmsg.payload, pubmsg.qos, pubmsg.retained, &dt);
 		else
 			rc = MQTTClient_publishMessage(c, test_topic, &pubmsg, &dt);
 		assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);

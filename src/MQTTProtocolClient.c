@@ -66,11 +66,9 @@ int messageIDCompare(void* a, void* b)
 int MQTTProtocol_assignMsgId(Clients* client)
 {
 	FUNC_ENTRY;
-	++(client->msgID);
+	client->msgID = (client->msgID == MAX_MSG_ID) ? 1 : client->msgID + 1;
 	while (ListFindItem(client->outboundMsgs, &(client->msgID), messageIDCompare) != NULL)
-		++(client->msgID);
-	if (client->msgID == MAX_MSG_ID + 1)
-		client->msgID = 1;
+		client->msgID = (client->msgID == MAX_MSG_ID) ? 1 : client->msgID + 1;
 	FUNC_EXIT_RC(client->msgID);
 	return client->msgID;
 }

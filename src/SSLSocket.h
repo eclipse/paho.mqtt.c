@@ -13,9 +13,6 @@
  * Contributors:
  *    Ian Craggs, Allan Stockdill-Mander - initial implementation 
  *******************************************************************************/
-
-#include "MQTTClient.h"
-
 #if !defined(SSLSOCKET_H)
 #define SSLSOCKET_H
 

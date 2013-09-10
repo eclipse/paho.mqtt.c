@@ -24,12 +24,14 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #define MAXHOSTNAMELEN 256
+#if !defined(SSLSOCKET_H)
 #define EAGAIN WSAEWOULDBLOCK
 #define EINTR WSAEINTR
 #define EINPROGRESS WSAEINPROGRESS
 #define EWOULDBLOCK WSAEWOULDBLOCK
 #define ENOTCONN WSAENOTCONN
 #define ECONNRESET WSAECONNRESET
+#endif
 #define ioctl ioctlsocket
 #define socklen_t int
 #else

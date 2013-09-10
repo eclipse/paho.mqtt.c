@@ -1520,7 +1520,7 @@ MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long
 					int error;
 					socklen_t len = sizeof(error);
 
-					if (getsockopt(m->c->net.socket, SOL_SOCKET, SO_ERROR, &error, &len) == 0)
+					if (getsockopt(m->c->net.socket, SOL_SOCKET, SO_ERROR, (char*)&error, &len) == 0)
 					{
 						if (error)
 						{

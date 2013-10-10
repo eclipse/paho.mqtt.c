@@ -45,14 +45,14 @@ BE*/
 
 typedef struct
 {
-	unsigned long threadid;
+	thread_id_type threadid;
 	char name[MAX_FUNCTION_NAME_LENGTH];
 	int line;
 } stackEntry;
 
 typedef struct
 {
-	unsigned long id;
+	thread_id_type id;
 	int maxdepth;
 	int current_depth;
 	stackEntry callstack[MAX_STACK_DEPTH];

@@ -324,7 +324,6 @@ static void Log_output(int log_level, char* msg)
 {
 	if (trace_destination)
 	{
-		Thread_lock_mutex(log_mutex); /* need to lock around the fiddling with the log files */
 		fprintf(trace_destination, "%s\n", msg);
 
 		if (trace_destination != stdout && ++lines_written >= max_lines_per_file)
@@ -340,7 +339,6 @@ static void Log_output(int log_level, char* msg)
 		}
 		else
 			fflush(trace_destination);
-		Thread_unlock_mutex(log_mutex);
 	}
 		
 	if (trace_callback)
@@ -393,13 +391,14 @@ static void Log_trace(int log_level, char* buf)
  */
 void Log(int log_level, int msgno, char* format, ...)
 {
-	char* temp = NULL;
-	static char msg_buf[512];
-
 	if (log_level >= trace_settings.trace_level)
 	{
+		char* temp = NULL;
+		static char msg_buf[512];
 		va_list args;
 
+		/* we're using a static character buffer, so we need to make sure only one thread uses it at a time */
+		Thread_lock_mutex(log_mutex); 
 		if (format == NULL && (temp = Messages_get(msgno, log_level)) != NULL)
 			format = temp;
 
@@ -408,6 +407,7 @@ void Log(int log_level, int msgno, char* format, ...)
 
 		Log_trace(log_level, msg_buf);
 		va_end(args);
+		Thread_unlock_mutex(log_mutex); 
 	}
 
 	/*if (log_level >= LOG_ERROR)
@@ -415,9 +415,7 @@ void Log(int log_level, int msgno, char* format, ...)
 		char* filename = NULL;
 		Log_recordFFDC(&msg_buf[7]);
 	}
-
-	if (log_level == LOG_FATAL)
-		exit(-1);*/
+	*/
 }
 
 

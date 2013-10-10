@@ -114,11 +114,7 @@ int Thread_lock_mutex(mutex_type mutex)
 	#else
 		if (mutex->__data.__owner != 0)
 		{
-			printf("mutex owner != 0\n");
-			if (mutex == mqttasync_mutex)
-				printf("mutex is mqttasync mutex\n");
-			if (mutex == mqttcommand_mutex)
-				printf("mutex is mqttasync mutex\n");
+			printf("mutex owner != 0, %p\n", mutex);
 			StackTrace_printStack(stdout);
 		}
 		if ((rc = pthread_mutex_lock(mutex)) == 0)

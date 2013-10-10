@@ -140,6 +140,10 @@
  * Return code: A qos parameter is not 0, 1 or 2
  */
 #define MQTTASYNC_BAD_QOS -9
+/**
+ * Return code: All 65535 MQTT msgids are being used
+ */
+#define MQTTASYNC_NO_MORE_MSGIDS -10
 
 /**
  * A handle representing an MQTT client. A valid client handle is available

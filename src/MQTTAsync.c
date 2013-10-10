@@ -1187,8 +1187,8 @@ void MQTTAsync_checkTimeouts()
 		for (i = 0; i < timed_out_count; ++i)
 			ListRemoveHead(m->responses);	/* remove the first response in the list */
 	}
-exit:
 	Thread_unlock_mutex(mqttasync_mutex);
+exit:
 	FUNC_EXIT;
 }
 

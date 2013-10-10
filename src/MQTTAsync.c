@@ -393,11 +393,6 @@ void MQTTAsync_terminate(void)
 	if (initialized)
 	{
 		ListElement* elem = NULL;
-#if !defined(WIN32)
-		//Thread_destroy_cond(send_cond);
-#else
-		//Thread_destroy_sem(send_sem);
-#endif
 		ListFree(bstate->clients);
 		ListFree(handles);
 		while (ListNextElement(commands, &elem))

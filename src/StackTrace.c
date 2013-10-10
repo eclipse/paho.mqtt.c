@@ -137,11 +137,13 @@ exit:
 }
 
 
-void StackTrace_printStack(char* dest)
+void StackTrace_printStack(FILE* dest)
 {
 	FILE* file = stdout;
 	int t = 0;
 
+	if (dest)
+		file = dest;
 	for (t = 0; t < thread_count; ++t)
 	{
 		threadEntry *cur_thread = &threads[t];

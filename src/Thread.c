@@ -110,6 +110,11 @@ int Thread_lock_mutex(mutex_type mutex)
 	#if defined(WIN32)
 		if (WaitForSingleObject(mutex, INFINITE) != WAIT_FAILED)
 	#else
+		if (mutex->__data.__owner != 0)
+		{
+			printf("mutex owner != 0\n");
+			StackTrace_printStack(stdout);
+		}
 		if ((rc = pthread_mutex_lock(mutex)) == 0)
 	#endif
 		rc = 0;

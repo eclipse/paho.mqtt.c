@@ -97,6 +97,8 @@ mutex_type Thread_create_mutex()
 }
 
 
+extern mutex_type mqttasync_mutex;
+extern mutex_type mqttcommand_mutex;
 /**
  * Lock a mutex which has already been created, block until ready
  * @param mutex the mutex
@@ -113,6 +115,10 @@ int Thread_lock_mutex(mutex_type mutex)
 		if (mutex->__data.__owner != 0)
 		{
 			printf("mutex owner != 0\n");
+			if (mutex == mqttasync_mutex)
+				printf("mutex is mqttasync mutex\n");
+			if (mutex == mqttcommand_mutex)
+				printf("mutex is mqttasync mutex\n");
 			StackTrace_printStack(stdout);
 		}
 		if ((rc = pthread_mutex_lock(mutex)) == 0)

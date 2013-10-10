@@ -117,7 +117,10 @@ int Thread_lock_mutex(mutex_type mutex)
 			printf("mutex owner != 0, %p\n", mutex);
 			StackTrace_printStack(stdout);
 		}
-		if ((rc = pthread_mutex_lock(mutex)) == 0)
+		rc = pthread_mutex_lock(mutex);
+		if (rc != 0)
+			printf("rc from mutex_lock was %d\n", rc);
+		//if ((rc = pthread_mutex_lock(mutex)) == 0)
 	#endif
 		rc = 0;
 
@@ -138,7 +141,15 @@ int Thread_unlock_mutex(mutex_type mutex)
 	#if defined(WIN32)
 		if (ReleaseMutex(mutex) != 0)
 	#else
-		if ((rc = pthread_mutex_unlock(mutex)) == 0)
+		if (mutex->__data.__owner == 0)
+		{
+			printf("thread_unlock: mutex owner == 0, %p\n", mutex);
+			StackTrace_printStack(stdout);
+		}
+		rc = pthread_mutex_unlock(mutex);
+		if (rc != 0)
+			printf("rc from mutex_unlock was %d\n", rc);
+		//if ((rc = pthread_mutex_unlock(mutex)) == 0)
 	#endif
 		rc = 0;
 

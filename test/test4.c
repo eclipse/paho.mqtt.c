@@ -1063,7 +1063,7 @@ int test6(struct Options options)
 
 	test_finished = 0;
 	cinfo.should_fail = 0; /* should connect */
-	rc = MQTTAsync_create(&cinfo.c, "tcp://rubbish:1883", "async ha connection test",
+	rc = MQTTAsync_create(&cinfo.c, "tcp://rubbish:1883", "async ha connection",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);		
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)

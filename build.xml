@@ -80,7 +80,7 @@
       <!-- non-SSL, asynchronous library -->
       <property name="output.async.filename" value="${output.folder}/lib${libname.async}.so" /> 
       <exec executable="gcc" failonerror="true">
-	<arg line="${ccflags.so} ${ldflags.so} -Wl,-soname,lib${libname.async}.so -o ${output.async.filename} ${async.source.files}"/>	
+	<arg line="${ccflags.so} ${ldflags.so} -Wl,-init,MQTTAsync_init -Wl,-soname,lib${libname.async}.so -o ${output.async.filename} ${async.source.files}"/>	
       </exec>
       <exec executable="strip" failonerror="true">
 	<arg value="${output.async.filename}" />
@@ -92,7 +92,7 @@
 	  <!-- SSL, asynchronous library --> 
 	  <property name="output.async.ssl.filename" value="${output.folder}/lib${libname.async.ssl}.so" />
 	  <exec executable="gcc" failonerror="true">
-	    <arg line="-DOPENSSL ${ccflags.so} ${ldflags.so} -Wl,-soname,lib${libname.async.ssl}.so -o ${output.async.ssl.filename} ${async.source.files}"/>	
+	    <arg line="-DOPENSSL ${ccflags.so} ${ldflags.so} -Wl,-init,MQTTAsync_init -Wl,-soname,lib${libname.async.ssl}.so -o ${output.async.ssl.filename} ${async.source.files}"/>	
 	  </exec>
 	  <exec executable="strip" failonerror="true">
 	    <arg value="${output.async.ssl.filename}" />

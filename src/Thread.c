@@ -97,12 +97,10 @@ mutex_type Thread_create_mutex()
 }
 
 
-extern mutex_type mqttasync_mutex;
-extern mutex_type mqttcommand_mutex;
 /**
  * Lock a mutex which has already been created, block until ready
  * @param mutex the mutex
- * @return completion code
+ * @return completion code, 0 is success
  */
 int Thread_lock_mutex(mutex_type mutex)
 {
@@ -110,14 +108,11 @@ int Thread_lock_mutex(mutex_type mutex)
 
 	/* don't add entry/exit trace points as the stack log uses mutexes - recursion beckons */
 	#if defined(WIN32)
-		if (WaitForSingleObject(mutex, INFINITE) != WAIT_FAILED)
+		/* WaitForSingleObject returns WAIT_OBJECT_0 (0), on success */
+		rc = WaitForSingleObject(mutex, INFINITE);
 	#else
 		rc = pthread_mutex_lock(mutex);
-		if (rc != 0)
-			printf("rc from mutex_lock was %d\n", rc);
-		//if ((rc = pthread_mutex_lock(mutex)) == 0)
 	#endif
-		rc = 0;
 
 	return rc;
 }
@@ -126,7 +121,7 @@ int Thread_lock_mutex(mutex_type mutex)
 /**
  * Unlock a mutex which has already been locked
  * @param mutex the mutex
- * @return completion code
+ * @return completion code, 0 is success
  */
 int Thread_unlock_mutex(mutex_type mutex)
 {
@@ -134,14 +129,14 @@ int Thread_unlock_mutex(mutex_type mutex)
 
 	/* don't add entry/exit trace points as the stack log uses mutexes - recursion beckons */
 	#if defined(WIN32)
-		if (ReleaseMutex(mutex) != 0)
+		/* if ReleaseMutex fails, the return value is 0 */
+		if (ReleaseMutex(mutex) == 0)
+			rc = GetLastError();
+		else
+			rc = 0;
 	#else
 		rc = pthread_mutex_unlock(mutex);
-		if (rc != 0)
-			printf("rc from mutex_unlock was %d\n", rc);
-		//if ((rc = pthread_mutex_unlock(mutex)) == 0)
 	#endif
-		rc = 0;
 
 	return rc;
 }

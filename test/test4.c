@@ -61,7 +61,7 @@ struct Options
 } options =
 {
 	"m2m.eclipse.org:1883",
-	0,
+	1,
 	-1,
 	10000,
 };

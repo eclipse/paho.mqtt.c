@@ -352,17 +352,9 @@ int MQTTProtocol_handlePubrecs(void* pack, int sock)
 	Pubrec* pubrec = (Pubrec*)pack;
 	Clients* client = NULL;
 	int rc = TCPSOCKET_COMPLETE;
-	ListElement* elem = NULL;
 
 	FUNC_ENTRY;
-	elem = ListFindItem(bstate->clients, &sock, clientSocketCompare);
-	if (!elem)
-	{
-		printf("pubrec: couldn't find client for socket %d\n", sock);
-		rc = SOCKET_ERROR;
-		goto exit;
-	}
-  client = (Clients*)(elem->content);
+	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	Log(LOG_PROTOCOL, 15, NULL, sock, client->clientID, pubrec->msgId);
 
 	/* look for the message by message id in the records of outbound messages for this client */
@@ -392,7 +384,6 @@ int MQTTProtocol_handlePubrecs(void* pack, int sock)
 			time(&(m->lastTouch));
 		}
 	}
-exit:
 	free(pack);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -470,18 +461,9 @@ int MQTTProtocol_handlePubcomps(void* pack, int sock)
 	Pubcomp* pubcomp = (Pubcomp*)pack;
 	Clients* client = NULL;
 	int rc = TCPSOCKET_COMPLETE;
-	ListElement* elem = NULL;
 
 	FUNC_ENTRY;
-	elem = ListFindItem(bstate->clients, &sock, clientSocketCompare);
-	if (!elem)
-	{
-		printf("pubrec: couldn't find client for socket %d\n", sock);
-		rc = SOCKET_ERROR;
-		goto exit;
-	}
-  client = (Clients*)(elem->content);
-	//client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
+	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	Log(LOG_PROTOCOL, 19, NULL, sock, client->clientID, pubcomp->msgId);
 
 	/* look for the message by message id in the records of outbound messages for this client */
@@ -511,7 +493,6 @@ int MQTTProtocol_handlePubcomps(void* pack, int sock)
 			}
 		}
 	}
-exit:
 	free(pack);
 	FUNC_EXIT_RC(rc);
 	return rc;

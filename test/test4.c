@@ -1031,7 +1031,7 @@ int test6(struct Options options)
 	
 	test_finished = 0;
 	cinfo.should_fail = 1; /* fail to connect */
-	rc = MQTTAsync_create(&cinfo.c, "tcp://rubbish:1883", "async ha connection test",
+	rc = MQTTAsync_create(&cinfo.c, "tcp://rubbish:1883", "async ha connection",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);		
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
@@ -1060,8 +1060,6 @@ int test6(struct Options options)
 		#else
 			usleep(10000L);
 		#endif	
-
-	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_MINIMUM);
 
 	test_finished = 0;
 	cinfo.should_fail = 0; /* should connect */

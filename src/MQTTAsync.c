@@ -25,7 +25,7 @@
  *
  */
 
-#define _XOPEN_SOURCE 700
+#define _GNU_SOURCE
 #include <stdlib.h>
 #if !defined(WIN32)
 	#include <sys/time.h>

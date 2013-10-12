@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #if !defined(WIN32)
 	#include <sys/time.h>
+	#include <pthread.h>
 #endif
 
 #if !defined(NO_PERSISTENCE)

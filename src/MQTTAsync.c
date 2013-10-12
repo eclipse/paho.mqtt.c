@@ -28,8 +28,8 @@
 
 #include <stdlib.h>
 #if !defined(WIN32)
+	#define _XOPEN_SOURCE 700
 	#include <sys/time.h>
-	#include <pthread.h>
 #endif
 
 #if !defined(NO_PERSISTENCE)

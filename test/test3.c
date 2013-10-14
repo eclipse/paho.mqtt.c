@@ -161,12 +161,12 @@ void getopts(int argc, char** argv)
 			{
 				sprintf(options.connection, "ssl://%s:18883", argv[count]);
 				printf("Setting connection to %s\n", options.connection);
-				sprintf(options.mutual_auth_connection, "ssl://%s:18885", argv[count]);
+				sprintf(options.mutual_auth_connection, "ssl://%s:18884", argv[count]);
 				printf("Setting mutual_auth_connection to %s\n", options.mutual_auth_connection);
 				sprintf(options.nocert_mutual_auth_connection, "ssl://%s:18887", argv[count]);
 				printf("Setting nocert_mutual_auth_connection to %s\n",
 					options.nocert_mutual_auth_connection);
-				sprintf(options.server_auth_connection, "ssl://%s:18885", argv[count]);
+				sprintf(options.server_auth_connection, "ssl://%s:18884", argv[count]);
 				printf("Setting server_auth_connection to %s\n", options.server_auth_connection);
 				sprintf(options.anon_connection, "ssl://%s:18886", argv[count]);
 				printf("Setting anon_connection to %s\n", options.anon_connection);

@@ -926,7 +926,6 @@ int test3a_s(struct Options options)
 	if (options.server_key_file != NULL) 
 		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
 
-#if 0
 	/* these settings are for mutual authentication, should not be needed */
 	opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
 	if (options.client_key_pass) 
@@ -934,7 +933,6 @@ int test3a_s(struct Options options)
 	if (options.client_private_key_file) 
 		opts.ssl->privateKey = options.client_private_key_file;
 	/* remove these previous lines, for test proper */
-#endif
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
@@ -1008,6 +1006,14 @@ int test3a_m(struct Options options)
 	opts.ssl = &sslopts;
 	if (options.server_key_file != NULL) 
 		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
+
+	/* these settings are for mutual authentication, should not be needed */
+	opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
+	if (options.client_key_pass) 
+		opts.ssl->privateKeyPassword = options.client_key_pass;
+	if (options.client_private_key_file) 
+		opts.ssl->privateKey = options.client_private_key_file;
+	/* remove these previous lines, for test proper */
 
 	if (!(assert("Good rc from setCallbacks", (rc = MQTTClient_setCallbacks(c, NULL, NULL, multiThread_messageArrived,
 		multiThread_deliveryComplete)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))

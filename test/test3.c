@@ -631,7 +631,7 @@ int test2a_s(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 2a_s\"");
 	global_start_time = start_clock();
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.mutual_auth_connection, "test2a_s",
+	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, "test2a_s",
 		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 

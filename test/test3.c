@@ -166,7 +166,7 @@ void getopts(int argc, char** argv)
 				sprintf(options.nocert_mutual_auth_connection, "ssl://%s:18887", argv[count]);
 				printf("Setting nocert_mutual_auth_connection to %s\n",
 					options.nocert_mutual_auth_connection);
-				sprintf(options.server_auth_connection, "ssl://%s:18884", argv[count]);
+				sprintf(options.server_auth_connection, "ssl://%s:18885", argv[count]);
 				printf("Setting server_auth_connection to %s\n", options.server_auth_connection);
 				sprintf(options.anon_connection, "ssl://%s:18886", argv[count]);
 				printf("Setting anon_connection to %s\n", options.anon_connection);
@@ -653,8 +653,6 @@ int test2a_s(struct Options options)
 		opts.ssl->privateKeyPassword = options.client_key_pass;
 	if (options.client_private_key_file) 
 		opts.ssl->privateKey = options.client_private_key_file;
-	//opts.ssl->enabledCipherSuites = "DEFAULT";
-	//opts.ssl->enabledServerCertAuth = 1;
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
@@ -928,6 +926,7 @@ int test3a_s(struct Options options)
 	if (options.server_key_file != NULL) 
 		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
 
+#if 0
 	/* these settings are for mutual authentication, should not be needed */
 	opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
 	if (options.client_key_pass) 
@@ -935,6 +934,7 @@ int test3a_s(struct Options options)
 	if (options.client_private_key_file) 
 		opts.ssl->privateKey = options.client_private_key_file;
 	/* remove these previous lines, for test proper */
+#endif
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
@@ -1490,7 +1490,7 @@ int main(int argc, char** argv)
 	fprintf(xml, "<testsuite name=\"test3\" tests=\"%d\">\n", ARRAY_SIZE(tests) - 1);
     
 	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
-	//setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
+	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
 	getopts(argc, argv);
  	if (options.test_no == 0)
 	{ /* run all the tests */

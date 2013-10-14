@@ -125,21 +125,21 @@ char* test_map[] =
   "5c",        // 13
 };
 
+
 void getopts(int argc, char** argv)
 {
 	int count = 1;
 	
 	while (count < argc)
 	{
-        	if (strcmp(argv[count], "--help") == 0)
-        	{
-        	    usage();
-        	}
+		if (strcmp(argv[count], "--help") == 0)
+			usage();
 		else if (strcmp(argv[count], "--test_no") == 0)
 		{
 			if (++count < argc)
 			{
 				int i;
+
 				for (i = 1; i < ARRAY_SIZE(test_map); ++i)
 				{
 					if (strcmp(argv[count], test_map[i]) == 0)
@@ -928,6 +928,14 @@ int test3a_s(struct Options options)
 	if (options.server_key_file != NULL) 
 		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
 
+	/* these settings are for mutual authentication, should not be needed */
+	opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
+	if (options.client_key_pass) 
+		opts.ssl->privateKeyPassword = options.client_key_pass;
+	if (options.client_private_key_file) 
+		opts.ssl->privateKey = options.client_private_key_file;
+	/* remove these previous lines, for test proper */
+
 	MyLog(LOGA_DEBUG, "Connecting");
 
 	if (!(assert("Good rc from connect", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
@@ -1482,7 +1490,7 @@ int main(int argc, char** argv)
 	fprintf(xml, "<testsuite name=\"test3\" tests=\"%d\">\n", ARRAY_SIZE(tests) - 1);
     
 	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
-	//setenv("MQTT_C_CLIENT_TRACE_LEVEL", "PROTOCOL", 1);
+	//setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
 	getopts(argc, argv);
  	if (options.test_no == 0)
 	{ /* run all the tests */

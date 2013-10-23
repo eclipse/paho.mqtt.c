@@ -926,14 +926,6 @@ int test3a_s(struct Options options)
 	if (options.server_key_file != NULL) 
 		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
 
-	/* these settings are for mutual authentication, should not be needed */
-	opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
-	if (options.client_key_pass) 
-		opts.ssl->privateKeyPassword = options.client_key_pass;
-	if (options.client_private_key_file) 
-		opts.ssl->privateKey = options.client_private_key_file;
-	/* remove these previous lines, for test proper */
-
 	MyLog(LOGA_DEBUG, "Connecting");
 
 	if (!(assert("Good rc from connect", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
@@ -1006,14 +998,6 @@ int test3a_m(struct Options options)
 	opts.ssl = &sslopts;
 	if (options.server_key_file != NULL) 
 		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
-
-	/* these settings are for mutual authentication, should not be needed */
-	opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
-	if (options.client_key_pass) 
-		opts.ssl->privateKeyPassword = options.client_key_pass;
-	if (options.client_private_key_file) 
-		opts.ssl->privateKey = options.client_private_key_file;
-	/* remove these previous lines, for test proper */
 
 	if (!(assert("Good rc from setCallbacks", (rc = MQTTClient_setCallbacks(c, NULL, NULL, multiThread_messageArrived,
 		multiThread_deliveryComplete)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
@@ -1426,7 +1410,7 @@ int test5c(struct Options options)
 	//opts.ssl->trustStore = /*file of certificates trusted by client*/
 	//opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
 	//if (options.client_key_pass != NULL) opts.ssl->privateKeyPassword = options.client_key_pass;
-	//opts.ssl->enabledCipherSuites = "DEFAULT";
+	opts.ssl->enabledCipherSuites = "DEFAULT";
 	opts.ssl->enableServerCertAuth = 0;
 
 	MyLog(LOGA_DEBUG, "Connecting");
@@ -1489,7 +1473,7 @@ int main(int argc, char** argv)
 {
 	int* numtests = &tests;
 	int rc = 0;
- 	int (*tests[])() = {NULL, test1, test2a_s, test2a_m, test2b, test2c, test3a_s, test3a_m, test3b, test4_s, test4_m, /*test5a, test5b,*/ test5c};
+ 	int (*tests[])() = {NULL, test1, test2a_s, test2a_m, test2b, test2c, test3a_s, test3a_m, test3b, test4_s, test4_m, /*test5a, test5b,test5c */};
 	MQTTClient_nameValue* info;
 
 	xml = fopen("TEST-test3.xml", "w");

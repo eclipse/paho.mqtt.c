@@ -2035,7 +2035,7 @@ int main(int argc, char** argv)
 	int i;
 	int (*tests[])() =
 	{ NULL, test1, test2a, test2b, test2c, test3a, test3b, test4, /* test5a,
-			test5b, */ test5c, test6, test7 };
+			test5b, test5c, */ test6, test7 };
 
 	xml = fopen("TEST-test5.xml", "w");
 	fprintf(xml, "<testsuite name=\"test5\" tests=\"%d\">\n", ARRAY_SIZE(tests) - 1);

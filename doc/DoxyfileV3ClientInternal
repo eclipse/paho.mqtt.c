@@ -52,7 +52,7 @@ PROJECT_LOGO           = "../doc/pahologo.png"
 # If a relative path is entered, it will be relative to the location
 # where doxygen was started. If left blank the current directory will be used.
 
-OUTPUT_DIRECTORY       = "MQTTClient_internal/"
+OUTPUT_DIRECTORY       = "../build/output/doc/MQTTClient_internal/"
 
 # If the CREATE_SUBDIRS tag is set to YES, then doxygen will create
 # 4096 sub-directories (in 2 levels) under the output directory of each output

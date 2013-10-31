@@ -176,7 +176,7 @@ void printEyecatchers(char* filename)
 int main(int argc, char** argv)
 {
 	printf("MQTTVersion: print the version strings of an MQTT client library\n"); 
-	printf("Copyright (c) 2012 IBM Corp.\n"); 
+	printf("Copyright (c) 2013 IBM Corp.\n"); 
 	
 	if (argc == 1)
 	{
@@ -190,7 +190,7 @@ int main(int argc, char** argv)
 #if defined(WIN32)
 			sprintf(namebuf, "%s.dll", libraries[i]);
 #else
-			sprintf(namebuf, "lib%s.so", libraries[i]);
+			sprintf(namebuf, "lib%s.so.1", libraries[i]);
 #endif
 			printf("--- Trying library %s ---\n", libraries[i]);
 			if (!loadandcall(namebuf))

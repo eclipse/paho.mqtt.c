@@ -19,6 +19,7 @@
 # Note: on OS X you should install XCode and the associated command-line tools
 
 SHELL = /bin/sh
+.PHONY: clean, mkdir, install, uninstall, html 
 
 # assume this is normally run in the main Paho directory
 ifndef srcdir
@@ -72,28 +73,30 @@ else
 endif
 
 ifeq ($(OSTYPE),Linux)
-	CC = gcc
 
-	MAJOR_VERSION = 1
-	MINOR_VERSION = 0
-	VERSION = ${MAJOR_VERSION}.${MINOR_VERSION}
+CC = gcc
 
-	MQTTLIB_C_TARGET = ${blddir}/lib${MQTTLIB_C}.so.${VERSION}
-	MQTTLIB_CS_TARGET = ${blddir}/lib${MQTTLIB_CS}.so.${VERSION}
-	MQTTLIB_A_TARGET = ${blddir}/lib${MQTTLIB_A}.so.${VERSION}
-	MQTTLIB_AS_TARGET = ${blddir}/lib${MQTTLIB_AS}.so.${VERSION}
+MAJOR_VERSION = 1
+MINOR_VERSION = 0
+VERSION = ${MAJOR_VERSION}.${MINOR_VERSION}
 
-	CCFLAGS_SO = -g -fPIC -Os -Wall -fvisibility=hidden
-	FLAGS_EXE = -I ${srcdir} -lpthread -L ${blddir}
+MQTTLIB_C_TARGET = ${blddir}/lib${MQTTLIB_C}.so.${VERSION}
+MQTTLIB_CS_TARGET = ${blddir}/lib${MQTTLIB_CS}.so.${VERSION}
+MQTTLIB_A_TARGET = ${blddir}/lib${MQTTLIB_A}.so.${VERSION}
+MQTTLIB_AS_TARGET = ${blddir}/lib${MQTTLIB_AS}.so.${VERSION}
+MQTTVERSION_TARGET = ${blddir}/MQTTVersion
 
-	LDFLAGS_C = -shared -Wl,-soname,lib$(MQTTLIB_C).so.${MAJOR_VERSION}
-	LDFLAGS_CS = -shared -Wl,-soname,lib$(MQTTLIB_CS).so.${MAJOR_VERSION} -ldl -Wl,-whole-archive -lcrypto -lssl -Wl,-no-whole-archive
-	LDFLAGS_A = -shared -Wl,-soname,lib${MQTTLIB_A}.so.${MAJOR_VERSION}
-	LDFLAGS_AS = -shared -Wl,-soname,lib${MQTTLIB_AS}.so.${MAJOR_VERSION} -ldl -Wl,-whole-archive -lcrypto -lssl -Wl,-no-whole-archive
+CCFLAGS_SO = -g -fPIC -Os -Wall -fvisibility=hidden
+FLAGS_EXE = -I ${srcdir} -lpthread -L ${blddir}
+
+LDFLAGS_C = -shared -Wl,-soname,lib$(MQTTLIB_C).so.${MAJOR_VERSION}
+LDFLAGS_CS = -shared -Wl,-soname,lib$(MQTTLIB_CS).so.${MAJOR_VERSION} -ldl -Wl,-whole-archive -lcrypto -lssl -Wl,-no-whole-archive
+LDFLAGS_A = -shared -Wl,-soname,lib${MQTTLIB_A}.so.${MAJOR_VERSION}
+LDFLAGS_AS = -shared -Wl,-soname,lib${MQTTLIB_AS}.so.${MAJOR_VERSION} -ldl -Wl,-whole-archive -lcrypto -lssl -Wl,-no-whole-archive
 
 all: build
 	
-build: mkdir ${MQTTLIB_C_TARGET} ${MQTTLIB_CS_TARGET} ${MQTTLIB_A_TARGET} ${MQTTLIB_AS_TARGET} ${SYNC_SAMPLES} ${ASYNC_SAMPLES}
+build: | mkdir ${MQTTLIB_C_TARGET} ${MQTTLIB_CS_TARGET} ${MQTTLIB_A_TARGET} ${MQTTLIB_AS_TARGET} ${MQTTVERSION_TARGET} ${SYNC_SAMPLES} ${ASYNC_SAMPLES}
 
 clean:
 	rm -rf ${blddir}/*
@@ -127,25 +130,35 @@ ${MQTTLIB_AS_TARGET}: ${SOURCE_FILES_AS} ${HEADERS_A}
 	ln -s lib$(MQTTLIB_AS).so.${VERSION}  ${blddir}/lib$(MQTTLIB_AS).so.${MAJOR_VERSION}
 	ln -s lib$(MQTTLIB_AS).so.${MAJOR_VERSION} ${blddir}/lib$(MQTTLIB_AS).so
 
+${MQTTVERSION_TARGET}: $(srcdir)/MQTTVersion.c $(srcdir)/MQTTAsync.h
+	${CC} ${FLAGS_EXE} -o $@ -l${MQTTLIB_A} $(srcdir)/MQTTVersion.c -ldl
+
+strip_options:
+	$(eval INSTALL_OPTS := -s)
+
+install-strip: build strip_options install
+
 install: build 
-	cp ${MQTTLIB_C_TARGET} ${libdir}
-	cp ${MQTTLIB_CS_TARGET} ${libdir}
-	cp ${MQTTLIB_A_TARGET} ${libdir}
-	cp ${MQTTLIB_AS_TARGET} ${libdir}
+	install ${INSTALL_OPTS} ${MQTTLIB_C_TARGET} ${libdir}
+	install ${INSTALL_OPTS} ${MQTTLIB_CS_TARGET} ${libdir}
+	install ${INSTALL_OPTS} ${MQTTLIB_A_TARGET} ${libdir}
+	install ${INSTALL_OPTS} ${MQTTLIB_AS_TARGET} ${libdir}
+	install ${INSTALL_OPTS} ${MQTTVERSION_TARGET} ${bindir}
 	/sbin/ldconfig ${libdir}
 	ln -s lib$(MQTTLIB_C).so.${MAJOR_VERSION} ${libdir}/lib$(MQTTLIB_C).so
 	ln -s lib$(MQTTLIB_CS).so.${MAJOR_VERSION} ${libdir}/lib$(MQTTLIB_CS).so
 	ln -s lib$(MQTTLIB_A).so.${MAJOR_VERSION} ${libdir}/lib$(MQTTLIB_A).so
 	ln -s lib$(MQTTLIB_AS).so.${MAJOR_VERSION} ${libdir}/lib$(MQTTLIB_AS).so
-	cp ${srcdir}/MQTTAsync.h ${includedir}
-	cp ${srcdir}/MQTTClient.h ${includedir}
-	cp ${srcdir}/MQTTClientPersistence.h ${includedir}
+	install ${srcdir}/MQTTAsync.h ${includedir}
+	install ${srcdir}/MQTTClient.h ${includedir}
+	install ${srcdir}/MQTTClientPersistence.h ${includedir}
 
 uninstall:
 	rm ${libdir}/lib$(MQTTLIB_C).so.${VERSION}
 	rm ${libdir}/lib$(MQTTLIB_CS).so.${VERSION}
 	rm ${libdir}/lib$(MQTTLIB_A).so.${VERSION}
 	rm ${libdir}/lib$(MQTTLIB_AS).so.${VERSION}
+	rm ${bindir}/MQTTVersion
 	/sbin/ldconfig ${libdir}
 	rm ${libdir}/lib$(MQTTLIB_C).so
 	rm ${libdir}/lib$(MQTTLIB_CS).so

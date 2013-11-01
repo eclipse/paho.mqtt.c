@@ -59,10 +59,10 @@ SAMPLE_FILES_A = stdoutsuba MQTTAsync_subscribe MQTTAsync_publish
 ASYNC_SAMPLES = ${addprefix ${blddir}/samples/,${SAMPLE_FILES_A}}
 
 # The names of the four different libraries to be built
-MQTTLIB_C = mqttv3c
-MQTTLIB_CS = mqttv3cs
-MQTTLIB_A = mqttv3a
-MQTTLIB_AS = mqttv3as
+MQTTLIB_C = paho-mqtt3c
+MQTTLIB_CS = paho-mqtt3cs
+MQTTLIB_A = paho-mqtt3a
+MQTTLIB_AS = paho-mqtt3as
 
 # determine current platform
 ifeq ($(OS),Windows_NT)
@@ -75,6 +75,13 @@ endif
 ifeq ($(OSTYPE),Linux)
 
 CC = gcc
+
+ifndef INSTALL
+INSTALL = install
+endif
+INSTALL_PROGRAM = $(INSTALL)
+INSTALL_DATA =  $(INSTALL) -m 644
+DOXYGEN_COMMAND = doxygen
 
 MAJOR_VERSION = 1
 MINOR_VERSION = 0
@@ -139,40 +146,40 @@ strip_options:
 install-strip: build strip_options install
 
 install: build 
-	install ${INSTALL_OPTS} ${MQTTLIB_C_TARGET} ${libdir}
-	install ${INSTALL_OPTS} ${MQTTLIB_CS_TARGET} ${libdir}
-	install ${INSTALL_OPTS} ${MQTTLIB_A_TARGET} ${libdir}
-	install ${INSTALL_OPTS} ${MQTTLIB_AS_TARGET} ${libdir}
-	install ${INSTALL_OPTS} ${MQTTVERSION_TARGET} ${bindir}
-	/sbin/ldconfig ${libdir}
-	ln -s lib$(MQTTLIB_C).so.${MAJOR_VERSION} ${libdir}/lib$(MQTTLIB_C).so
-	ln -s lib$(MQTTLIB_CS).so.${MAJOR_VERSION} ${libdir}/lib$(MQTTLIB_CS).so
-	ln -s lib$(MQTTLIB_A).so.${MAJOR_VERSION} ${libdir}/lib$(MQTTLIB_A).so
-	ln -s lib$(MQTTLIB_AS).so.${MAJOR_VERSION} ${libdir}/lib$(MQTTLIB_AS).so
-	install ${srcdir}/MQTTAsync.h ${includedir}
-	install ${srcdir}/MQTTClient.h ${includedir}
-	install ${srcdir}/MQTTClientPersistence.h ${includedir}
+	$(INSTALL_DATA) ${INSTALL_OPTS} ${MQTTLIB_C_TARGET} $(DESTDIR)${libdir}
+	$(INSTALL_DATA) ${INSTALL_OPTS} ${MQTTLIB_CS_TARGET} $(DESTDIR)${libdir}
+	$(INSTALL_DATA) ${INSTALL_OPTS} ${MQTTLIB_A_TARGET} $(DESTDIR)${libdir}
+	$(INSTALL_DATA) ${INSTALL_OPTS} ${MQTTLIB_AS_TARGET} $(DESTDIR)${libdir}
+	$(INSTALL_PROGRAM) ${INSTALL_OPTS} ${MQTTVERSION_TARGET} $(DESTDIR)${bindir}
+	/sbin/ldconfig $(DESTDIR)${libdir}
+	ln -s lib$(MQTTLIB_C).so.${MAJOR_VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_C).so
+	ln -s lib$(MQTTLIB_CS).so.${MAJOR_VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_CS).so
+	ln -s lib$(MQTTLIB_A).so.${MAJOR_VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so
+	ln -s lib$(MQTTLIB_AS).so.${MAJOR_VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_AS).so
+	$(INSTALL_DATA) ${srcdir}/MQTTAsync.h $(DESTDIR)${includedir}
+	$(INSTALL_DATA) ${srcdir}/MQTTClient.h $(DESTDIR)${includedir}
+	$(INSTALL_DATA) ${srcdir}/MQTTClientPersistence.h $(DESTDIR)${includedir}
 
 uninstall:
-	rm ${libdir}/lib$(MQTTLIB_C).so.${VERSION}
-	rm ${libdir}/lib$(MQTTLIB_CS).so.${VERSION}
-	rm ${libdir}/lib$(MQTTLIB_A).so.${VERSION}
-	rm ${libdir}/lib$(MQTTLIB_AS).so.${VERSION}
-	rm ${bindir}/MQTTVersion
-	/sbin/ldconfig ${libdir}
-	rm ${libdir}/lib$(MQTTLIB_C).so
-	rm ${libdir}/lib$(MQTTLIB_CS).so
-	rm ${libdir}/lib$(MQTTLIB_A).so
-	rm ${libdir}/lib$(MQTTLIB_AS).so
-	rm ${includedir}/MQTTAsync.h
-	rm ${includedir}/MQTTClient.h 
-	rm ${includedir}/MQTTClientPersistence.h 
+	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_C).so.${VERSION}
+	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_CS).so.${VERSION}
+	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so.${VERSION}
+	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_AS).so.${VERSION}
+	rm $(DESTDIR)${bindir}/MQTTVersion
+	/sbin/ldconfig $(DESTDIR)${libdir}
+	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_C).so
+	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_CS).so
+	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so
+	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_AS).so
+	rm $(DESTDIR)${includedir}/MQTTAsync.h
+	rm $(DESTDIR)${includedir}/MQTTClient.h 
+	rm $(DESTDIR)${includedir}/MQTTClientPersistence.h 
 
 html:
 	-mkdir -p ${blddir}/doc
-	cd ${srcdir}; doxygen ../doc/DoxyfileV3ClientAPI
-	cd ${srcdir}; doxygen ../doc/DoxyfileV3AsyncAPI
-	cd ${srcdir}; doxygen ../doc/DoxyfileV3ClientInternal
+	cd ${srcdir}; $(DOXYGEN_COMMAND) ../doc/DoxyfileV3ClientAPI
+	cd ${srcdir}; $(DOXYGEN_COMMAND) ../doc/DoxyfileV3AsyncAPI
+	cd ${srcdir}; $(DOXYGEN_COMMAND) ../doc/DoxyfileV3ClientInternal
 
 endif
 

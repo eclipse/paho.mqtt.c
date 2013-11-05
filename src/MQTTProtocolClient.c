@@ -14,6 +14,7 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
+ *    Ian Craggs - fix for bug 421103 - trying to write to same socket, in retry
  *******************************************************************************/
 
 /**
@@ -556,7 +557,9 @@ void MQTTProtocol_retries(time_t now, Clients* client)
 	if (client->retryInterval <= 0) /* 0 or -ive retryInterval turns off retry */
 		goto exit;
 
-	while (client && ListNextElement(client->outboundMsgs, &outcurrent))
+	while (client && ListNextElement(client->outboundMsgs, &outcurrent) &&
+		   client->connected && client->good &&        /* client is connected and has no errors */
+		   Socket_noPendingWrites(client->net.socket)) /* there aren't any previous packets still stacked up on the socket */
 	{
 		Messages* m = (Messages*)(outcurrent->content);
 		if (difftime(now, m->lastTouch) > max(client->retryInterval, 10))

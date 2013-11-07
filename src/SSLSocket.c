@@ -461,6 +461,8 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	
 	if (opts->keyStore)
 	{
+		int rc1 = 0;
+
 		if ((rc = SSL_CTX_use_certificate_chain_file(net->ctx, opts->keyStore)) != 1)
 		{
 			SSLSocket_error("SSL_CTX_use_certificate_chain_file", NULL, net->socket, rc);
@@ -470,14 +472,17 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 		if (opts->privateKey == NULL)
 			opts->privateKey = opts->keyStore;   /* the privateKey can be included in the keyStore */
 
-        if (opts->privateKeyPassword != NULL)
-        {
-            SSL_CTX_set_default_passwd_cb(net->ctx, pem_passwd_cb);
-            SSL_CTX_set_default_passwd_cb_userdata(net->ctx, (void*)opts->privateKeyPassword);
-        }
+		if (opts->privateKeyPassword != NULL)
+		{
+			SSL_CTX_set_default_passwd_cb(net->ctx, pem_passwd_cb);
+			SSL_CTX_set_default_passwd_cb_userdata(net->ctx, (void*)opts->privateKeyPassword);
+    }
 		
 		/* support for ASN.1 == DER format? DER can contain only one certificate? */
-		if ((rc = SSL_CTX_use_PrivateKey_file(net->ctx, opts->privateKey, SSL_FILETYPE_PEM)) != 1)
+		rc1 = SSL_CTX_use_PrivateKey_file(net->ctx, opts->privateKey, SSL_FILETYPE_PEM);
+		if (opts->privateKey == opts->keyStore)
+			opts->privateKey = NULL;
+		if (rc1 != 1)
 		{
 			SSLSocket_error("SSL_CTX_use_PrivateKey_file", NULL, net->socket, rc);
 			goto free_ctx;

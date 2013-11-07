@@ -664,7 +664,19 @@ void MQTTProtocol_freeClient(Clients* client)
 	}
 #if defined(OPENSSL)
 	if (client->sslopts)
+	{
+		if (client->sslopts->trustStore)
+			free(client->sslopts->trustStore);
+		if (client->sslopts->keyStore)
+			free(client->sslopts->keyStore);
+		if (client->sslopts->privateKey)
+			free(client->sslopts->privateKey);
+		if (client->sslopts->privateKeyPassword)
+			free(client->sslopts->privateKeyPassword);
+		if (client->sslopts->enabledCipherSuites)
+			free(client->sslopts->enabledCipherSuites);
 		free(client->sslopts);
+	}
 #endif
 	/* don't free the client structure itself... this is done elsewhere */
 	FUNC_EXIT;

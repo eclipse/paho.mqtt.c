@@ -46,7 +46,7 @@
 #define URI_TCP "tcp://"
 
 #define BUILD_TIMESTAMP "##MQTTCLIENT_BUILD_TAG##"
-#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##" 
+#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##"
 
 char* client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
@@ -2076,6 +2076,8 @@ int MQTTAsync_connect(MQTTAsync handle, MQTTAsync_connectOptions* options)
 
 	if (m->c->will)
 	{
+		free(m->c->will->msg);
+		free(m->c->will->topic);
 		free(m->c->will);
 		m->c->will = NULL;
 	}
@@ -2092,14 +2094,51 @@ int MQTTAsync_connect(MQTTAsync handle, MQTTAsync_connectOptions* options)
 	}
 	
 #if defined(OPENSSL)
+	if (m->c->sslopts)
+	{
+		if (m->c->sslopts->trustStore)
+			free(m->c->sslopts->trustStore);
+		if (m->c->sslopts->keyStore)
+			free(m->c->sslopts->keyStore);
+		if (m->c->sslopts->privateKey)
+			free(m->c->sslopts->privateKey);
+		if (m->c->sslopts->privateKeyPassword)
+			free(m->c->sslopts->privateKeyPassword);
+		if (m->c->sslopts->enabledCipherSuites)
+			free(m->c->sslopts->enabledCipherSuites);
+		free(m->c->sslopts);
+		m->c->sslopts = NULL;
+	}
+
 	if (options->struct_version != 0 && options->ssl)
 	{
 		m->c->sslopts = malloc(sizeof(MQTTClient_SSLOptions));
-		m->c->sslopts->trustStore = options->ssl->trustStore; 
-		m->c->sslopts->keyStore = options->ssl->keyStore; 
-		m->c->sslopts->privateKey = options->ssl->privateKey;
-		m->c->sslopts->privateKeyPassword = options->ssl->privateKeyPassword;
-		m->c->sslopts->enabledCipherSuites = options->ssl->enabledCipherSuites;
+		memset(m->c->sslopts, '\0', sizeof(MQTTClient_SSLOptions));
+		if (options->ssl->trustStore)
+		{
+			m->c->sslopts->trustStore = malloc(strlen(options->ssl->trustStore) + 1);
+			strcpy(m->c->sslopts->trustStore, options->ssl->trustStore); 
+		}
+		if (options->ssl->keyStore)
+		{
+			m->c->sslopts->keyStore = malloc(strlen(options->ssl->keyStore) + 1);
+			strcpy(m->c->sslopts->keyStore, options->ssl->keyStore);
+		}
+		if (options->ssl->privateKey)
+		{
+			m->c->sslopts->privateKey = malloc(strlen(options->ssl->privateKey) + 1);
+			strcpy(m->c->sslopts->privateKey, options->ssl->privateKey);
+		}
+		if (options->ssl->privateKeyPassword)
+		{
+			m->c->sslopts->privateKeyPassword = malloc(strlen(options->ssl->privateKeyPassword) + 1);
+			strcpy(m->c->sslopts->privateKeyPassword, options->ssl->privateKeyPassword);
+		}
+		if (options->ssl->enabledCipherSuites)
+		{
+			m->c->sslopts->enabledCipherSuites = malloc(strlen(options->ssl->enabledCipherSuites) + 1);
+			strcpy(m->c->sslopts->enabledCipherSuites, options->ssl->enabledCipherSuites);
+		}
 		m->c->sslopts->enableServerCertAuth = options->ssl->enableServerCertAuth;
 	}
 #endif

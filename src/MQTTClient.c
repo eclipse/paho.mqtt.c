@@ -17,6 +17,7 @@
  *    Ian Craggs, Allan Stockdill-Mander - add ability to connect with SSL
  *    Ian Craggs - multiple server connection support
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
+ *    Ian Craggs - fix for bug 421103 - trying to write to same socket, in publish/retries
  *******************************************************************************/
 
 /**
@@ -735,18 +736,73 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 	m->c->cleansession = options->cleansession;
 	m->c->maxInflightMessages = (options->reliable) ? 1 : 10;
 
+	if (m->c->will)
+	{
+		free(m->c->will->msg);
+		free(m->c->will->topic);
+		free(m->c->will);
+		m->c->will = NULL;
+	}
+
 	if (options->will && options->will->struct_version == 0)
 	{
 		m->c->will = malloc(sizeof(willMessages));
-		m->c->will->msg = options->will->message;
+		m->c->will->msg = malloc(strlen(options->will->message) + 1); 
+		strcpy(m->c->will->msg, options->will->message);
 		m->c->will->qos = options->will->qos;
 		m->c->will->retained = options->will->retained;
-		m->c->will->topic = options->will->topicName;
+		m->c->will->topic = malloc(strlen(options->will->topicName) + 1);
+		strcpy(m->c->will->topic, options->will->topicName);
 	}
 	
 #if defined(OPENSSL)
+	if (m->c->sslopts)
+	{
+		if (m->c->sslopts->trustStore)
+			free(m->c->sslopts->trustStore);
+		if (m->c->sslopts->keyStore)
+			free(m->c->sslopts->keyStore);
+		if (m->c->sslopts->privateKey)
+			free(m->c->sslopts->privateKey);
+		if (m->c->sslopts->privateKeyPassword)
+			free(m->c->sslopts->privateKeyPassword);
+		if (m->c->sslopts->enabledCipherSuites)
+			free(m->c->sslopts->enabledCipherSuites);
+		free(m->c->sslopts);
+		m->c->sslopts = NULL;
+	}
+
 	if (options->struct_version != 0 && options->ssl)
-		m->c->sslopts = options->ssl;
+	{
+		m->c->sslopts = malloc(sizeof(MQTTClient_SSLOptions));
+		memset(m->c->sslopts, '\0', sizeof(MQTTClient_SSLOptions));
+		if (options->ssl->trustStore)
+		{
+			m->c->sslopts->trustStore = malloc(strlen(options->ssl->trustStore) + 1);
+			strcpy(m->c->sslopts->trustStore, options->ssl->trustStore); 
+		}
+		if (options->ssl->keyStore)
+		{
+			m->c->sslopts->keyStore = malloc(strlen(options->ssl->keyStore) + 1);
+			strcpy(m->c->sslopts->keyStore, options->ssl->keyStore);
+		}
+		if (options->ssl->privateKey)
+		{
+			m->c->sslopts->privateKey = malloc(strlen(options->ssl->privateKey) + 1);
+			strcpy(m->c->sslopts->privateKey, options->ssl->privateKey);
+		}
+		if (options->ssl->privateKeyPassword)
+		{
+			m->c->sslopts->privateKeyPassword = malloc(strlen(options->ssl->privateKeyPassword) + 1);
+			strcpy(m->c->sslopts->privateKeyPassword, options->ssl->privateKeyPassword);
+		}
+		if (options->ssl->enabledCipherSuites)
+		{
+			m->c->sslopts->enabledCipherSuites = malloc(strlen(options->ssl->enabledCipherSuites) + 1);
+			strcpy(m->c->sslopts->enabledCipherSuites, options->ssl->enabledCipherSuites);
+		}
+		m->c->sslopts->enableServerCertAuth = options->ssl->enableServerCertAuth;
+	}
 #endif
 
 	m->c->username = options->username;
@@ -1262,7 +1318,8 @@ int MQTTClient_publish(MQTTClient handle, char* topicName, int payloadlen, void*
 		goto exit;
 
 	/* If outbound queue is full, block until it is not */
-	while (m->c->outboundMsgs->count >= m->c->maxInflightMessages)
+	while (m->c->outboundMsgs->count >= m->c->maxInflightMessages || 
+         Socket_noPendingWrites(m->c->net.socket) == 0) /* wait until the socket is free of large packets being written */
 	{
 		if (blocked == 0)
 		{

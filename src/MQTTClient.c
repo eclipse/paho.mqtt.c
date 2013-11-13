@@ -97,6 +97,18 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #else
 static pthread_mutex_t mqttclient_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 static mutex_type mqttclient_mutex = &mqttclient_mutex_store;
+
+void MQTTClient_init()
+{
+	pthread_mutexattr_t attr;
+	int rc;
+
+	pthread_mutexattr_init(&attr);
+	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+	if ((rc = pthread_mutex_init(mqttclient_mutex, &attr)) != 0)
+		printf("MQTTAsync: error %d initializing client_mutex\n", rc);
+}
+
 #define WINAPI
 #endif
 

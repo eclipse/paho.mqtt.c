@@ -91,10 +91,10 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 				mqttasync_mutex = CreateMutex(NULL, 0, NULL);
 				mqttcommand_mutex = CreateMutex(NULL, 0, NULL);
 				send_sem = CreateEvent(
-		        NULL,               // default security attributes
-		        FALSE,              // manual-reset event?
-		        FALSE,              // initial state is nonsignaled
-		        NULL                // object name
+		        NULL,               /* default security attributes */
+		        FALSE,              /* manual-reset event? */
+		        FALSE,              /* initial state is nonsignaled */
+		        NULL                /* object name */
 		        );
 				stack_mutex = CreateMutex(NULL, 0, NULL);
 				heap_mutex = CreateMutex(NULL, 0, NULL);
@@ -753,16 +753,12 @@ void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* command)
 		if (command->details.dis.internal && m->cl && was_connected)
 		{
 			Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
-			//MQTTAsync_unlock_mutex(mqttasync_mutex);
 			(*(m->cl))(m->context, NULL);
-			//MQTTAsync_lock_mutex(mqttasync_mutex);
 		}
 		else if (!command->details.dis.internal && command->onSuccess)
 		{
 			Log(TRACE_MIN, -1, "Calling disconnect complete for client %s", m->c->clientID);
-			//MQTTAsync_unlock_mutex(mqttasync_mutex);
 			(*(command->onSuccess))(command->context, NULL);
-			//MQTTAsync_lock_mutex(mqttasync_mutex);
 		}
 	}
 	FUNC_EXIT;
@@ -1051,9 +1047,7 @@ void MQTTAsync_processCommand()
 					data.alt.pub.message.qos = command->command.details.pub.qos;
 					data.alt.pub.message.retained = command->command.details.pub.retained;
 					Log(TRACE_MIN, -1, "Calling publish success for client %s", command->client->c->clientID);
-					//MQTTAsync_unlock_mutex(mqttasync_mutex);
 					(*(command->command.onSuccess))(command->command.context, &data);
-					//MQTTAsync_lock_mutex(mqttasync_mutex);
 				}
 			}
 			else
@@ -1115,10 +1109,7 @@ void MQTTAsync_processCommand()
 			if (command->command.onFailure)
 			{
 				Log(TRACE_MIN, -1, "Calling command failure for client %s", command->client->c->clientID);
-
-				//MQTTAsync_unlock_mutex(mqttasync_mutex);
 				(*(command->command.onFailure))(command->command.context, NULL);
-				//MQTTAsync_lock_mutex(mqttasync_mutex);
 			}
 			MQTTAsync_freeConnect(command->command);
 			MQTTAsync_freeCommand(command);  /* free up the command if necessary */
@@ -1182,9 +1173,7 @@ void MQTTAsync_checkTimeouts()
 				if (m->connect.onFailure)
 				{
 					Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
-					//MQTTAsync_unlock_mutex(mqttasync_mutex);
 					(*(m->connect.onFailure))(m->connect.context, NULL);
-					//MQTTAsync_lock_mutex(mqttasync_mutex);
 				}
 			}
 			continue;
@@ -1208,9 +1197,7 @@ void MQTTAsync_checkTimeouts()
 				{		
 					Log(TRACE_MIN, -1, "Calling %s failure for client %s", 
 								MQTTPacket_name(com->command.type), m->c->clientID);
-					//MQTTAsync_unlock_mutex(mqttasync_mutex);
 					(*(com->command.onFailure))(com->command.context, NULL);
-					//MQTTAsync_lock_mutex(mqttasync_mutex);
 				}
 				timed_out_count++;
 			}
@@ -1494,9 +1481,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 						if (m->connect.onSuccess)
 						{
 							Log(TRACE_MIN, -1, "Calling connect success for client %s", m->c->clientID);
-							//MQTTAsync_unlock_mutex(mqttasync_mutex);
 							(*(m->connect.onSuccess))(m->connect.context, NULL);
-							//MQTTAsync_lock_mutex(mqttasync_mutex);
 						}
 					}
 					else
@@ -1527,9 +1512,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 								data.code = rc;
 								data.message = "CONNACK return code";
 								Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
-								//MQTTAsync_unlock_mutex(mqttasync_mutex);
 								(*(m->connect.onFailure))(m->connect.context, &data);
-								//MQTTAsync_lock_mutex(mqttasync_mutex);
 							}
 						}
 					}
@@ -1567,9 +1550,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 								rc = MQTTProtocol_handleSubacks(pack, m->c->net.socket);
 								handleCalled = 1;
 								Log(TRACE_MIN, -1, "Calling subscribe success for client %s", m->c->clientID);
-								//MQTTAsync_unlock_mutex(mqttasync_mutex);
 								(*(command->command.onSuccess))(command->command.context, &data);
-								//MQTTAsync_lock_mutex(mqttasync_mutex);
 								if (array)
 									free(array);
 							}
@@ -1598,9 +1579,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 								rc = MQTTProtocol_handleUnsubacks(pack, m->c->net.socket);
 								handleCalled = 1;
 								Log(TRACE_MIN, -1, "Calling unsubscribe success for client %s", m->c->clientID);
-								//MQTTAsync_unlock_mutex(mqttasync_mutex);
 								(*(command->command.onSuccess))(command->command.context, NULL);
-								//MQTTAsync_lock_mutex(mqttasync_mutex);
 							}
 							MQTTAsync_freeCommand(command);
 							break;
@@ -1932,9 +1911,7 @@ int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, int topicLen, MQTTA
 					
 	Log(TRACE_MIN, -1, "Calling messageArrived for client %s, queue depth %d",
 					m->c->clientID, m->c->messageQueue->count);
-	//MQTTAsync_unlock_mutex(mqttasync_mutex);
 	rc = (*(m->ma))(m->context, topicName, topicLen, mm);
-	//MQTTAsync_lock_mutex(mqttasync_mutex);
 	/* if 0 (false) is returned by the callback then it failed, so we don't remove the message from
 	 * the queue, and it will be retried later.  If 1 is returned then the message data may have been freed,
 	 * so we must be careful how we use it.
@@ -2594,9 +2571,7 @@ exit:
 			if (m->connect.onFailure)
 			{
 				Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
-				//MQTTAsync_unlock_mutex(mqttasync_mutex);
 				(*(m->connect.onFailure))(m->connect.context, NULL);
-				//MQTTAsync_lock_mutex(mqttasync_mutex);
 			}
 		}
 	}
@@ -2675,9 +2650,7 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 					if (m->connect.onFailure)
 					{
 						Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
-						//MQTTAsync_unlock_mutex(mqttasync_mutex);
 						(*(m->connect.onFailure))(m->connect.context, NULL);
-						//MQTTAsync_lock_mutex(mqttasync_mutex);
 					}
 				}
 			}
@@ -2706,9 +2679,7 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 					if (m->dc)
 					{
 						Log(TRACE_MIN, -1, "Calling deliveryComplete for client %s, msgid %d", m->c->clientID, msgid);
-						//MQTTAsync_unlock_mutex(mqttasync_mutex);
 						(*(m->dc))(m->context, msgid);
-						//MQTTAsync_lock_mutex(mqttasync_mutex);
 					}
 					/* use the msgid to find the callback to be called */
 					while (ListNextElement(m->responses, &current))
@@ -2729,9 +2700,7 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 								data.alt.pub.message.qos = command->command.details.pub.qos;
 								data.alt.pub.message.retained = command->command.details.pub.retained;
 								Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
-								//MQTTAsync_unlock_mutex(mqttasync_mutex);
 								(*(command->command.onSuccess))(command->command.context, &data);
-								//MQTTAsync_lock_mutex(mqttasync_mutex);
 							}
 							MQTTAsync_freeCommand(command);
 							break;

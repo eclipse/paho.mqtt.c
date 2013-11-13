@@ -57,7 +57,7 @@
       <!-- non-SSL, synchronous library -->
       <property name="output.filename" value="${output.folder}/lib${libname}.so" /> 
       <exec executable="gcc" failonerror="true">
-	<arg line="${ccflags.so} ${ldflags.so} -Wl,-soname,lib${libname}.so -o ${output.filename} ${sync.source.files}"/>	
+	<arg line="${ccflags.so} ${ldflags.so} -Wl,-init,MQTTClient_init -Wl,-soname,lib${libname}.so -o ${output.filename} ${sync.source.files}"/>	
       </exec>
       <exec executable="strip" failonerror="true">
 	<arg value="${output.filename}" />
@@ -69,7 +69,7 @@
 	  <!-- SSL, synchronous library --> 
 	  <property name="output.ssl.filename" value="${output.folder}/lib${libname.ssl}.so" />
 	  <exec executable="gcc" failonerror="true">
-	    <arg line="-DOPENSSL ${ccflags.so} ${ldflags.so} -Wl,-soname,lib${libname.ssl}.so -o ${output.ssl.filename} ${sync.source.files}"/>	
+	    <arg line="-DOPENSSL ${ccflags.so} ${ldflags.so} -Wl,-init,MQTTClient_init -Wl,-soname,lib${libname.ssl}.so -o ${output.ssl.filename} ${sync.source.files}"/>	
 	  </exec>
 	  <exec executable="strip" failonerror="true">
 	    <arg value="${output.ssl.filename}" />
@@ -210,22 +210,22 @@
       <available file="/usr/bin/doxygen"/>
       <then>
         <mkdir dir="${output.folder}/doc"/>
-	<exec executable="doxygen" dir="src">
-	  <arg value="../doc/DoxyfileV3ClientAPI"/>
-	</exec>
-	<exec executable="doxygen" dir="src">
-	  <arg value="../doc/DoxyfileV3AsyncAPI"/>
-	</exec>
-	<zip destfile="${output.folder}/MQTTClient_doc.zip">
-	     <zipfileset dir="${output.folder}/doc/MQTTClient" />
-	</zip> 
-	<zip destfile="${output.folder}/MQTTAsync_doc.zip">
-	     <zipfileset dir="${output.folder}/doc/MQTTAsync" prefix="MQTTAsync/"/>
-	</zip> 
-	<delete dir="${output.folder}/doc" />
+        <exec executable="doxygen" dir="src">
+          <arg value="../doc/DoxyfileV3ClientAPI"/>
+        </exec>
+        <exec executable="doxygen" dir="src">
+          <arg value="../doc/DoxyfileV3AsyncAPI"/>
+        </exec>
+        <zip destfile="${output.folder}/MQTTClient_doc.zip">
+          <zipfileset dir="${output.folder}/doc/MQTTClient" />
+        </zip> 
+        <zip destfile="${output.folder}/MQTTAsync_doc.zip">
+	        <zipfileset dir="${output.folder}/doc/MQTTAsync" prefix="MQTTAsync/"/>
+        </zip> 
+        <delete dir="${output.folder}/doc" />
       </then>
       <else>
-	<echo message="doxygen is not available" />
+        <echo message="doxygen is not available" />
       </else>
     </if>
   </target>
@@ -234,13 +234,13 @@
     <if>
       <available file="/shared/technology"/>
       <then>
-	<mkdir dir="/shared/technology/paho/C"/>
-	<echo message="Copying the build output to /shared" />
-	<copy overwrite="true" todir="/shared/technology/paho/C">
+        <mkdir dir="/shared/technology/paho/C"/>
+       	<echo message="Copying the build output to /shared" />
+      	<copy overwrite="true" todir="/shared/technology/paho/C">
           <fileset dir="${output.folder}">
-	    <include name="*.zip"/>
+	          <include name="*.zip"/>
           </fileset>
-	</copy> 
+        </copy> 
       </then>
     </if>
   </target>

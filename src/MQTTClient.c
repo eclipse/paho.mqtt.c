@@ -18,6 +18,7 @@
  *    Ian Craggs - multiple server connection support
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
  *    Ian Craggs - fix for bug 421103 - trying to write to same socket, in publish/retries
+ *    Ian Craggs - fix for bug 419233 - mutexes not reporting errors
  *******************************************************************************/
 
 /**
@@ -26,6 +27,7 @@
  *
  */
 
+#define _GNU_SOURCE /* for pthread_mutexattr_settype */
 #include <stdlib.h>
 #if !defined(WIN32)
 	#include <sys/time.h>

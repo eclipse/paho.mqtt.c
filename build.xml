@@ -54,6 +54,11 @@
       <property name="ldflags.so" value="-fvisibility=hidden -shared" />
       <mkdir dir="${output.folder}"/>
 
+      <!-- display gcc version -->
+      <exec executable="gcc" failonerror="true">
+        <arg line="-v"/>	
+      </exec>
+
       <!-- non-SSL, synchronous library -->
       <property name="output.filename" value="${output.folder}/lib${libname}.so" /> 
       <exec executable="gcc" failonerror="true">

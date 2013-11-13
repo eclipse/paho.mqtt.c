@@ -25,7 +25,7 @@
  *
  */
 
-#define _GNU_SOURCE
+#define _GNU_SOURCE /* for pthread_mutexattr_settype */
 #include <stdlib.h>
 #if !defined(WIN32)
 	#include <sys/time.h>

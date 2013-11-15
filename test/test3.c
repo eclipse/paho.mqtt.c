@@ -358,10 +358,10 @@ void write_test_result()
 {
 	long duration = elapsed(global_start_time);
 
-	fprintf(xml, " time=\"%d.%.3d\" >\n", duration / 1000, duration % 1000); 
+	fprintf(xml, " time=\"%ld.%.3ld\" >\n", duration / 1000, duration % 1000); 
 	if (cur_output != output)
 	{
-		fprintf(xml, output);
+		fprintf(xml, "%s", output);
 		cur_output = output;	
 	}
 	fprintf(xml, "</testcase>\n");
@@ -1477,7 +1477,7 @@ int main(int argc, char** argv)
 	MQTTClient_nameValue* info;
 
 	xml = fopen("TEST-test3.xml", "w");
-	fprintf(xml, "<testsuite name=\"test3\" tests=\"%d\">\n", ARRAY_SIZE(tests) - 1);
+	fprintf(xml, "<testsuite name=\"test3\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
     
 	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
 	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);

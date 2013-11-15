@@ -125,22 +125,22 @@ mkdir:
 	-mkdir -p ${blddir}/test
 
 ${SYNC_TESTS}: ${blddir}/test/%: ${srcdir}/../test/%.c
-	${CC} ${FLAGS_EXE} -g -o ${blddir}/test/${basename ${+F}} $< -l${MQTTLIB_C} 
+	${CC} -g -o ${blddir}/test/${basename ${+F}} $< -l${MQTTLIB_C} ${FLAGS_EXE}
 
 ${SYNC_SSL_TESTS}: ${blddir}/test/%: ${srcdir}/../test/%.c
-	${CC} ${FLAGS_EXE} -g -o ${blddir}/test/${basename ${+F}} $< -l${MQTTLIB_CS} 
+	${CC} -g -o ${blddir}/test/${basename ${+F}} $< -l${MQTTLIB_CS} ${FLAGS_EXE} -lssl
 
 ${ASYNC_TESTS}: ${blddir}/test/%: ${srcdir}/../test/%.c
-	${CC} ${FLAGS_EXE} -g -o ${blddir}/test/${basename ${+F}} $< -l${MQTTLIB_A} 
+	${CC} -g -o ${blddir}/test/${basename ${+F}} $< -l${MQTTLIB_A} ${FLAGS_EXE} 
 
 ${ASYNC_SSL_TESTS}: ${blddir}/test/%: ${srcdir}/../test/%.c
-	${CC} ${FLAGS_EXE} -g -o ${blddir}/test/${basename ${+F}} $< -l${MQTTLIB_AS} 
+	${CC} -g -o ${blddir}/test/${basename ${+F}} $< -l${MQTTLIB_AS} ${FLAGS_EXE} -lssl
 
 ${SYNC_SAMPLES}: ${blddir}/samples/%: ${srcdir}/samples/%.c
-	${CC} ${FLAGS_EXE} -o ${blddir}/samples/${basename ${+F}} $< -l${MQTTLIB_C} 
+	${CC} -o ${blddir}/samples/${basename ${+F}} $< -l${MQTTLIB_C} ${FLAGS_EXE}
 
 ${ASYNC_SAMPLES}: ${blddir}/samples/%: ${srcdir}/samples/%.c
-	${CC} ${FLAGS_EXE} -o ${blddir}/samples/${basename ${+F}} $< -l${MQTTLIB_A} 
+	${CC} -o ${blddir}/samples/${basename ${+F}} $< -l${MQTTLIB_A} ${FLAGS_EXE}
 
 ${MQTTLIB_C_TARGET}: ${SOURCE_FILES_C} ${HEADERS_C}
 	${CC} ${CCFLAGS_SO} ${LDFLAGS_C} -o $@ ${SOURCE_FILES_C}

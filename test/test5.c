@@ -277,10 +277,10 @@ void write_test_result()
 {
 	long duration = elapsed(global_start_time);
 
-	fprintf(xml, " time=\"%d.%.3d\" >\n", duration / 1000, duration % 1000); 
+	fprintf(xml, " time=\"%ld.%.3ld\" >\n", duration / 1000, duration % 1000); 
 	if (cur_output != output)
 	{
-		fprintf(xml, output);
+		fprintf(xml, "%s", output);
 		cur_output = output;	
 	}
 	fprintf(xml, "</testcase>\n");
@@ -2038,7 +2038,7 @@ int main(int argc, char** argv)
 			test5b, test5c, */ test6, test7 };
 
 	xml = fopen("TEST-test5.xml", "w");
-	fprintf(xml, "<testsuite name=\"test5\" tests=\"%d\">\n", ARRAY_SIZE(tests) - 1);
+	fprintf(xml, "<testsuite name=\"test5\" tests=\"%lu\">\n", ARRAY_SIZE(tests) - 1);
 
 	MQTTAsync_setTraceCallback(handleTrace);
 	getopts(argc, argv);

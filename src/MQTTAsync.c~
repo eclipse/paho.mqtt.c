@@ -17,7 +17,6 @@
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
  *    Ian Craggs - fix for bug# 415042 - using already freed structure
  *    Ian Craggs - fix for bug 419233 - mutexes not reporting errors
- *    Ian Craggs - fix for bug #420851
  *******************************************************************************/
 
 /**

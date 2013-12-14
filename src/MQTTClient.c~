@@ -19,7 +19,6 @@
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
  *    Ian Craggs - fix for bug 421103 - trying to write to same socket, in publish/retries
  *    Ian Craggs - fix for bug 419233 - mutexes not reporting errors
- *    Ian Craggs - fix for bug #420851
  *******************************************************************************/
 
 /**

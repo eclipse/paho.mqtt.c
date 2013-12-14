@@ -14,7 +14,6 @@
  *    Ian Craggs - initial implementation
  *    Ian Craggs, Allan Stockdill-Mander - async client updates
  *    Ian Craggs - bug #415042 - start Linux thread as disconnected
- *    Ian Craggs - fix for bug #420851
  *******************************************************************************/
 
 /**

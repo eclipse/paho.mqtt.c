@@ -13,7 +13,6 @@
  * Contributors:
  *    Ian Craggs - initial implementation
  *    Ian Craggs, Allan Stockdill-Mander - async client updates
- *    Ian Craggs - fix for bug #420851
  *******************************************************************************/
 
 #if !defined(THREAD_H)

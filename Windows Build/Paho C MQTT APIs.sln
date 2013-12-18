@@ -1,0 +1,44 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "paho-mqtt3c", "paho-mqtt3c\paho-mqtt3c.vcxproj", "{172F8995-C780-44A1-996C-C7949B4DB35A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "paho-mqtt3a", "paho-mqtt3a\paho-mqtt3a.vcxproj", "{B479B6EF-787D-4716-912A-E0F6F7BDA7A9}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "stdoutsub", "stdoutsub\stdoutsub.vcxproj", "{DFDF6238-DA97-4474-84C2-D313E8B985AE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B479B6EF-787D-4716-912A-E0F6F7BDA7A9} = {B479B6EF-787D-4716-912A-E0F6F7BDA7A9}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "stdoutsuba", "stdoutsuba\stdoutsuba.vcxproj", "{AF322561-C692-43D3-8502-CC1E6CD2869A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B479B6EF-787D-4716-912A-E0F6F7BDA7A9} = {B479B6EF-787D-4716-912A-E0F6F7BDA7A9}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{172F8995-C780-44A1-996C-C7949B4DB35A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{172F8995-C780-44A1-996C-C7949B4DB35A}.Debug|Win32.Build.0 = Debug|Win32
+		{172F8995-C780-44A1-996C-C7949B4DB35A}.Release|Win32.ActiveCfg = Release|Win32
+		{172F8995-C780-44A1-996C-C7949B4DB35A}.Release|Win32.Build.0 = Release|Win32
+		{B479B6EF-787D-4716-912A-E0F6F7BDA7A9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B479B6EF-787D-4716-912A-E0F6F7BDA7A9}.Debug|Win32.Build.0 = Debug|Win32
+		{B479B6EF-787D-4716-912A-E0F6F7BDA7A9}.Release|Win32.ActiveCfg = Release|Win32
+		{B479B6EF-787D-4716-912A-E0F6F7BDA7A9}.Release|Win32.Build.0 = Release|Win32
+		{DFDF6238-DA97-4474-84C2-D313E8B985AE}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DFDF6238-DA97-4474-84C2-D313E8B985AE}.Debug|Win32.Build.0 = Debug|Win32
+		{DFDF6238-DA97-4474-84C2-D313E8B985AE}.Release|Win32.ActiveCfg = Release|Win32
+		{DFDF6238-DA97-4474-84C2-D313E8B985AE}.Release|Win32.Build.0 = Release|Win32
+		{AF322561-C692-43D3-8502-CC1E6CD2869A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{AF322561-C692-43D3-8502-CC1E6CD2869A}.Debug|Win32.Build.0 = Debug|Win32
+		{AF322561-C692-43D3-8502-CC1E6CD2869A}.Release|Win32.ActiveCfg = Release|Win32
+		{AF322561-C692-43D3-8502-CC1E6CD2869A}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

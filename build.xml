@@ -141,9 +141,51 @@
     </then>
     <elseif>
       <os family="windows" />
-      <then>
-	
-      </then>
+    <then>
+      <property name="clflags.so" value="/D WIN32 /D _UNICODE /D UNICODE /D _CRT_SECURE_NO_WARNINGS
+ /nologo /c /O2 /W3 /Fd /MD /TC" />
+      <property name="ldflags.so" value="/dll /nologo /machine:x86 /manifest" />
+      <mkdir dir="${output.folder}"/>
+      <delete>
+
+        <fileset dir="${output.folder}" includes="*.obj"/>
+    
+  </delete>
+
+      <!-- non-SSL, synchronous library -->
+      <property name="output.filename" value="${output.folder}/${libname}.dll" /> 
+      <exec executable="cl" failonerror="true">
+	<arg line="${clflags.so} /I src /Fo${output.folder}/ ${sync.source.files}"/>	
+      </exec>
+      <exec executable="link" failonerror="true">
+	<arg line="${ldflags.so} /out:${output.filename} ws2_32.lib ${output.folder}/*.obj" />
+      </exec>
+      <exec executable="mt" failonerror="true">
+	<arg line="-manifest ${output.folder}/{libname}.dll.manifest -outputresource:${output.filename}\;2" />
+      </exec>
+      <delete>
+
+        <fileset dir="${output.folder}" includes="*.obj"/>
+    
+  </delete>
+
+      <!-- non-SSL, asynchronous library -->
+      <property name="output.async.filename" value="${output.folder}/${libname.async}.dll" />   
+      <exec executable="cl" failonerror="true">
+	<arg line="${clflags.so} /I src /Fo${output.folder}/ ${async.source.files}"/>	
+      </exec>
+      <exec executable="link" failonerror="true">
+	<arg line="${ldflags.so} /out:${output.async.filename} ws2_32.lib ${output.folder}/*.obj" />
+      </exec>
+      <exec executable="mt" failonerror="true">
+	<arg line="-manifest ${output.folder}/{libname.async}.dll.manifest -outputresource:${output.async.filename}\;2" />
+      </exec>
+      <delete>
+
+        <fileset dir="${output.folder}" includes="*.obj"/>
+    
+  </delete>
+    </then>
     </elseif>
     </if>
   </target>

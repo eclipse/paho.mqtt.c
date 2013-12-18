@@ -418,7 +418,7 @@ $(MQTTDLL_S): ${SOURCE_FILES_S}  ${HEADERS}
 	$(LD) $(LIBLDFLAGS_S) *.obj /out:$(MQTTDLL_S)
 	mt -manifest windows_ia32/mqttv3cs.dll.manifest -outputresource:$(MQTTDLL_S)\;2
 
-$(MQTTDLL_AS): ${SOURCE_FILES}  ${HEADERS}
+$(MQTTDLL_AS): ${SOURCE_FILES_AS}  ${HEADERS}
 	-rm -f *.obj
 	${CC} ${CPPFLAGS} ${CFLAGS} ${CPPFLAGS_S} /I ${MQTTCLIENT_DIR} /I ${MQTTCLIENT_DIR}/.. /Fo ${SOURCE_FILES_AS}
 	$(LD) $(LIBLDFLAGS_S) *.obj /out:$(MQTTDLL_AS)

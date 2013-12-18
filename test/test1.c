@@ -222,10 +222,10 @@ void write_test_result()
 {
 	long duration = elapsed(global_start_time);
 
-	fprintf(xml, " time=\"%d.%.3d\" >\n", duration / 1000, duration % 1000); 
+	fprintf(xml, " time=\"%ld.%.3ld\" >\n", duration / 1000, duration % 1000); 
 	if (cur_output != output)
 	{
-		fprintf(xml, output);
+		fprintf(xml, "%s", output);
 		cur_output = output;	
 	}
 	fprintf(xml, "</testcase>\n");
@@ -789,10 +789,10 @@ int test4(struct Options options)
 	fprintf(xml, "<testcase classname=\"test1\" name=\"persistence\"");
 	global_start_time = start_clock();
 	rc = test4_run(1) + test4_run(2);
-	fprintf(xml, " time=\"%d\" >\n", elapsed(global_start_time) / 1000); 
+	fprintf(xml, " time=\"%ld\" >\n", elapsed(global_start_time) / 1000); 
 	if (cur_output != output)
 	{
-		fprintf(xml, output);
+		fprintf(xml, "%s", output);
 		cur_output = output;	
 	}
 	fprintf(xml, "</testcase>\n");
@@ -1099,7 +1099,7 @@ int main(int argc, char** argv)
  	int (*tests[])() = {NULL, test1, test2, test3, test4, test5, test6};
 	
 	xml = fopen("TEST-test1.xml", "w");
-	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", ARRAY_SIZE(tests) - 1);
+	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
 
 	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
 	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);

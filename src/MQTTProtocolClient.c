@@ -14,6 +14,7 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
+ *    Ian Craggs - fix for bug 421103 - trying to write to same socket, in retry
  *******************************************************************************/
 
 /**
@@ -61,16 +62,28 @@ int messageIDCompare(void* a, void* b)
  * Assign a new message id for a client.  Make sure it isn't already being used and does
  * not exceed the maximum.
  * @param client a client structure
- * @return the next message id to use
+ * @return the next message id to use, or 0 if none available
  */
 int MQTTProtocol_assignMsgId(Clients* client)
 {
+	int start_msgid = client->msgID;
+	int msgid = start_msgid;
+
 	FUNC_ENTRY;
-	client->msgID = (client->msgID == MAX_MSG_ID) ? 1 : client->msgID + 1;
-	while (ListFindItem(client->outboundMsgs, &(client->msgID), messageIDCompare) != NULL)
-		client->msgID = (client->msgID == MAX_MSG_ID) ? 1 : client->msgID + 1;
-	FUNC_EXIT_RC(client->msgID);
-	return client->msgID;
+	msgid = (msgid == MAX_MSG_ID) ? 1 : msgid + 1;
+	while (ListFindItem(client->outboundMsgs, &msgid, messageIDCompare) != NULL)
+	{
+		msgid = (msgid == MAX_MSG_ID) ? 1 : msgid + 1;
+		if (msgid == start_msgid) 
+		{ /* we've tried them all - none free */
+			msgid = 0;
+			break;
+		}
+	}
+	if (msgid != 0)
+		client->msgID = msgid;
+	FUNC_EXIT_RC(msgid);
+	return msgid;
 }
 
 
@@ -544,7 +557,9 @@ void MQTTProtocol_retries(time_t now, Clients* client)
 	if (client->retryInterval <= 0) /* 0 or -ive retryInterval turns off retry */
 		goto exit;
 
-	while (client && ListNextElement(client->outboundMsgs, &outcurrent))
+	while (client && ListNextElement(client->outboundMsgs, &outcurrent) &&
+		   client->connected && client->good &&        /* client is connected and has no errors */
+		   Socket_noPendingWrites(client->net.socket)) /* there aren't any previous packets still stacked up on the socket */
 	{
 		Messages* m = (Messages*)(outcurrent->content);
 		if (difftime(now, m->lastTouch) > max(client->retryInterval, 10))
@@ -649,7 +664,19 @@ void MQTTProtocol_freeClient(Clients* client)
 	}
 #if defined(OPENSSL)
 	if (client->sslopts)
+	{
+		if (client->sslopts->trustStore)
+			free(client->sslopts->trustStore);
+		if (client->sslopts->keyStore)
+			free(client->sslopts->keyStore);
+		if (client->sslopts->privateKey)
+			free(client->sslopts->privateKey);
+		if (client->sslopts->privateKeyPassword)
+			free(client->sslopts->privateKeyPassword);
+		if (client->sslopts->enabledCipherSuites)
+			free(client->sslopts->enabledCipherSuites);
 		free(client->sslopts);
+	}
 #endif
 	/* don't free the client structure itself... this is done elsewhere */
 	FUNC_EXIT;

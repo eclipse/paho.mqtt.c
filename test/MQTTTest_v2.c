@@ -39,6 +39,7 @@
 #include <MQTTClientPersistence.h>
 #include <signal.h>
 #include <stdio.h>
+#include <sys/time.h>
 
 #if defined(WIN32)
 #include <Windows.h>
@@ -150,7 +151,7 @@
 
  void onSend(void* context, MQTTAsync_successData* response)
  {
-	static int last_send = 0;
+	static last_send = 0;
 
 	if (response->token - last_send != 1)
 		printf("Error in onSend, token value %d, last_send %d\n", response->token, last_send);
@@ -234,7 +235,6 @@ void handleTrace(enum MQTTASYNC_TRACE_LEVELS level, char* message)
  	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
  	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
  	MQTTAsync_token token;
- 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 
  	signal(SIGINT, handleSignal);
  	signal(SIGTERM, handleSignal);
@@ -339,10 +339,11 @@ void handleTrace(enum MQTTASYNC_TRACE_LEVELS level, char* message)
  	printf("Waiting for connect\n");
  	while (connected == 0 && finished == 0 && toStop == 0) {
  		printf("Waiting for connect: %d %d %d\n", connected, finished, toStop);
- 		Sleep(1);
+ 		usleep(10000L);
  	}
 
-	printf("Waiting for connect: %d %d %d\n", connected, finished, toStop);
+ 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+ 		printf("Waiting for connect: %d %d %d\n", connected, finished, toStop);
 
  	printf("Successful connection\n");
 
@@ -350,8 +351,8 @@ void handleTrace(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 	{	
  		unsigned long i; 
  		struct timeval tv;
- 		//gettimeofday(&tv,NULL);
- 		//printf("start seconds : %ld\n",tv.tv_sec); 
+ 		gettimeofday(&tv,NULL);
+ 		printf("start seconds : %ld\n",tv.tv_sec); 
  		for (i = 0; i < options.message_count; i++)
  		{
  			opts.onSuccess = onSend;
@@ -362,7 +363,7 @@ void handleTrace(enum MQTTASYNC_TRACE_LEVELS level, char* message)
  			pubmsg.qos = options.qos;
  			pubmsg.retained = 0;
  			deliveredtoken = 0;
- 			Sleep(1);
+ 			usleep(100);
 
  			if ((rc = MQTTAsync_sendMessage(client, options.topic, &pubmsg, &opts))
  				!= MQTTASYNC_SUCCESS)
@@ -372,9 +373,9 @@ void handleTrace(enum MQTTASYNC_TRACE_LEVELS level, char* message)
  			}
  		}
 
- 		//gettimeofday(&tv,NULL);
+ 		gettimeofday(&tv,NULL);
 
- 		//printf("end seconds : %ld\n",tv.tv_sec); 
+ 		printf("end seconds : %ld\n",tv.tv_sec); 
  	} else if (strcmp(options.action, "subscribe") == 0) {
  		opts.onSuccess = onSubscribe;
  		opts.onFailure = onSubscribeFailure;

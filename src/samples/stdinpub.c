@@ -63,7 +63,7 @@ void usage()
 	printf("  --port <port> (default is 1883)\n");
 	printf("  --qos <qos> (default is 0)\n");
 	printf("  --retained (default is off)\n");
-	printf("  --delimiter <delim> (default is \n)");
+	printf("  --delimiter <delim> (default is \\n)");
 	printf("  --clientid <clientid> (default is hostname+timestamp)");
 	printf("  --maxdatalen 100\n");
 	printf("  --username none\n");
@@ -93,7 +93,7 @@ void cfinish(int sig)
 struct
 {
 	char* clientid;
-	char delimiter;
+	char* delimiter;
 	int maxdatalen;
 	int qos;
 	int retained;
@@ -104,7 +104,7 @@ struct
   int verbose;
 } opts =
 {
-	"publisher", '\n', 100, 0, 0, NULL, NULL, "localhost", "1883", 0
+	"publisher", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", 0
 };
 
 void getopts(int argc, char** argv);
@@ -156,11 +156,19 @@ int main(int argc, char** argv)
 	while (!toStop)
 	{
 		int data_len = 0;
+		int delim_len = 0;
 		
+		delim_len = strlen(opts.delimiter);
 		do
 		{
 			buffer[data_len++] = getchar();
-		} while (buffer[data_len-1] != opts.delimiter && data_len < opts.maxdatalen);
+			if (data_len > delim_len)
+			{
+			//printf("comparing %s %s\n", opts.delimiter, &buffer[data_len - delim_len]);
+			if (strncmp(opts.delimiter, &buffer[data_len - delim_len], delim_len) == 0)
+				break;
+			}
+		} while (data_len < opts.maxdatalen);
 				
 		if (opts.verbose)
 				printf("Publishing data of length %d\n", data_len);
@@ -256,7 +264,7 @@ void getopts(int argc, char** argv)
 		else if (strcmp(argv[count], "--delimiter") == 0)
 		{
 			if (++count < argc)
-				opts.delimiter = argv[count][0];
+				opts.delimiter = argv[count];
 			else
 				usage();
 		}

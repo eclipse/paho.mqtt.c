@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial contribution
+ *    Ian Craggs - change delimiter option from char to string
  *******************************************************************************/
 
 /*
@@ -61,7 +62,7 @@ void usage()
 	printf("  --host <hostname> (default is localhost)\n");
 	printf("  --port <port> (default is 1883)\n");
 	printf("  --qos <qos> (default is 2)\n");
-	printf("  --delimiter <delim> (default is no delimiter)\n");
+	printf("  --delimiter <delim> (default is \\n)\n");
 	printf("  --clientid <clientid> (default is hostname+timestamp)\n");
 	printf("  --username none\n");
 	printf("  --password none\n");
@@ -92,7 +93,7 @@ struct opts_struct
 {
 	char* clientid;
   int nodelimiter;
-	char delimiter;
+	char* delimiter;
 	int qos;
 	char* username;
 	char* password;
@@ -101,7 +102,7 @@ struct opts_struct
   int showtopics;
 } opts =
 {
-	"stdout-subscriber", 1, '\n', 2, NULL, NULL, "localhost", "1883", 0
+	"stdout-subscriber", 0, "\n", 2, NULL, NULL, "localhost", "1883", 0
 };
 
 void getopts(int argc, char** argv);
@@ -156,7 +157,7 @@ int main(int argc, char** argv)
       if (opts.nodelimiter)
 				printf("%.*s", message->payloadlen, (char*)message->payload);
 			else
-				printf("%.*s%c", message->payloadlen, (char*)message->payload, opts.delimiter);
+				printf("%.*s%s", message->payloadlen, (char*)message->payload, opts.delimiter);
 			fflush(stdout);
 			MQTTClient_freeMessage(&message);
 			MQTTClient_free(topicName);
@@ -234,15 +235,9 @@ void getopts(int argc, char** argv)
 		else if (strcmp(argv[count], "--delimiter") == 0)
 		{
 			if (++count < argc)
-			{
-				if (strcmp("newline", argv[count]) == 0)
-					opts.delimiter = '\n';
-				else
-					opts.delimiter = argv[count][0];
-				opts.nodelimiter = 0;
-			}
+				opts.delimiter = argv[count];
 			else
-				usage();
+				opts.nodelimiter = 1;
 		}
 		else if (strcmp(argv[count], "--showtopics") == 0)
 		{

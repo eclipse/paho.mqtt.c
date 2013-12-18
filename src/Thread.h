@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial implementation
  *    Ian Craggs, Allan Stockdill-Mander - async client updates
+ *    Ian Craggs - fix for bug #420851
  *******************************************************************************/
 
 #if !defined(THREAD_H)
@@ -41,7 +42,7 @@
 
 	cond_type Thread_create_cond();
 	int Thread_signal_cond(cond_type);
-	int Thread_wait_cond_timeout(cond_type condvar, int timeout);
+	int Thread_wait_cond(cond_type condvar, int timeout);
 	int Thread_destroy_cond(cond_type);
 #endif
 
@@ -55,8 +56,7 @@ void Thread_destroy_mutex(mutex_type);
 thread_id_type Thread_getid();
 
 sem_type Thread_create_sem();
-int Thread_wait_sem(sem_type sem);
-int Thread_wait_sem_timeout(sem_type sem, int timeout);
+int Thread_wait_sem(sem_type sem, int timeout);
 int Thread_check_sem(sem_type sem);
 int Thread_post_sem(sem_type sem);
 int Thread_destroy_sem(sem_type sem);

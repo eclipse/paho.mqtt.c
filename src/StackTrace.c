@@ -45,14 +45,14 @@ BE*/
 
 typedef struct
 {
-	unsigned long threadid;
+	thread_id_type threadid;
 	char name[MAX_FUNCTION_NAME_LENGTH];
 	int line;
 } stackEntry;
 
 typedef struct
 {
-	unsigned long id;
+	thread_id_type id;
 	int maxdepth;
 	int current_depth;
 	stackEntry callstack[MAX_STACK_DEPTH];
@@ -137,11 +137,13 @@ exit:
 }
 
 
-void StackTrace_printStack(char* dest)
+void StackTrace_printStack(FILE* dest)
 {
 	FILE* file = stdout;
 	int t = 0;
 
+	if (dest)
+		file = dest;
 	for (t = 0; t < thread_count; ++t)
 	{
 		threadEntry *cur_thread = &threads[t];

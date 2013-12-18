@@ -205,10 +205,10 @@ void write_test_result()
 {
 	long duration = elapsed(global_start_time);
 
-	fprintf(xml, " time=\"%d.%.3d\" >\n", duration / 1000, duration % 1000); 
+	fprintf(xml, " time=\"%ld.%.3ld\" >\n", duration / 1000, duration % 1000); 
 	if (cur_output != output)
 	{
-		fprintf(xml, output);
+		fprintf(xml, "%s", output);
 		cur_output = output;	
 	}
 	fprintf(xml, "</testcase>\n");
@@ -1031,7 +1031,7 @@ int test6(struct Options options)
 	
 	test_finished = 0;
 	cinfo.should_fail = 1; /* fail to connect */
-	rc = MQTTAsync_create(&cinfo.c, "tcp://rubbish:1883", "async ha connection test",
+	rc = MQTTAsync_create(&cinfo.c, "tcp://rubbish:1883", "async ha connection",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);		
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
@@ -1063,7 +1063,7 @@ int test6(struct Options options)
 
 	test_finished = 0;
 	cinfo.should_fail = 0; /* should connect */
-	rc = MQTTAsync_create(&cinfo.c, "tcp://rubbish:1883", "async ha connection test",
+	rc = MQTTAsync_create(&cinfo.c, "tcp://rubbish:1883", "async ha connection",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);		
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
@@ -1122,7 +1122,7 @@ int main(int argc, char** argv)
 	MQTTAsync_nameValue* info;
 
 	xml = fopen("TEST-test4.xml", "w");
-	fprintf(xml, "<testsuite name=\"test4\" tests=\"%d\">\n", ARRAY_SIZE(tests) - 1);
+	fprintf(xml, "<testsuite name=\"test4\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests)) - 1);
 	
 	getopts(argc, argv);
 

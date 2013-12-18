@@ -14,6 +14,7 @@
  *    Ian Craggs - initial implementation
  *    Ian Craggs, Allan Stockdill-Mander - async client updates
  *    Ian Craggs - bug #415042 - start Linux thread as disconnected
+ *    Ian Craggs - fix for bug #420851
  *******************************************************************************/
 
 /**
@@ -100,7 +101,7 @@ mutex_type Thread_create_mutex()
 /**
  * Lock a mutex which has already been created, block until ready
  * @param mutex the mutex
- * @return completion code
+ * @return completion code, 0 is success
  */
 int Thread_lock_mutex(mutex_type mutex)
 {
@@ -108,11 +109,11 @@ int Thread_lock_mutex(mutex_type mutex)
 
 	/* don't add entry/exit trace points as the stack log uses mutexes - recursion beckons */
 	#if defined(WIN32)
-		if (WaitForSingleObject(mutex, INFINITE) != WAIT_FAILED)
+		/* WaitForSingleObject returns WAIT_OBJECT_0 (0), on success */
+		rc = WaitForSingleObject(mutex, INFINITE);
 	#else
-		if ((rc = pthread_mutex_lock(mutex)) == 0)
+		rc = pthread_mutex_lock(mutex);
 	#endif
-		rc = 0;
 
 	return rc;
 }
@@ -121,7 +122,7 @@ int Thread_lock_mutex(mutex_type mutex)
 /**
  * Unlock a mutex which has already been locked
  * @param mutex the mutex
- * @return completion code
+ * @return completion code, 0 is success
  */
 int Thread_unlock_mutex(mutex_type mutex)
 {
@@ -129,11 +130,14 @@ int Thread_unlock_mutex(mutex_type mutex)
 
 	/* don't add entry/exit trace points as the stack log uses mutexes - recursion beckons */
 	#if defined(WIN32)
-		if (ReleaseMutex(mutex) != 0)
+		/* if ReleaseMutex fails, the return value is 0 */
+		if (ReleaseMutex(mutex) == 0)
+			rc = GetLastError();
+		else
+			rc = 0;
 	#else
-		if ((rc = pthread_mutex_unlock(mutex)) == 0)
+		rc = pthread_mutex_unlock(mutex);
 	#endif
-		rc = 0;
 
 	return rc;
 }
@@ -236,10 +240,10 @@ sem_type Thread_create_sem()
 /**
  * Wait for a semaphore to be posted, or timeout.
  * @param sem the semaphore
- * @param timeout the maximum time to wait, in seconds
+ * @param timeout the maximum time to wait, in milliseconds
  * @return completion code
  */
-int Thread_wait_sem_timeout(sem_type sem, int timeout)
+int Thread_wait_sem(sem_type sem, int timeout)
 {
 /* sem_timedwait is the obvious call to use, but seemed not to work on the Viper,
  * so I've used trywait in a loop instead. Ian Craggs 23/7/2010
@@ -249,8 +253,8 @@ int Thread_wait_sem_timeout(sem_type sem, int timeout)
 #define USE_TRYWAIT
 #if defined(USE_TRYWAIT)
 	int i = 0;
-	int interval = 10000;
-	int count = (1000000 / interval) * timeout;
+	int interval = 10000; /* 10000 microseconds: 10 milliseconds */
+	int count = (1000 * timeout) / interval; /* how many intervals in timeout period */
 #else
 	struct timespec ts;
 #endif
@@ -258,7 +262,7 @@ int Thread_wait_sem_timeout(sem_type sem, int timeout)
 
 	FUNC_ENTRY;
 	#if defined(WIN32)
-		rc = WaitForSingleObject(sem, timeout*1000L);
+		rc = WaitForSingleObject(sem, timeout);
 	#elif defined(USE_TRYWAIT)
 		while (++i < count && (rc = sem_trywait(sem)) != 0)
 		{
@@ -279,17 +283,6 @@ int Thread_wait_sem_timeout(sem_type sem, int timeout)
 
  	FUNC_EXIT_RC(rc);
  	return rc;
-}
-
-
-/**
- * Wait for a semaphore to be posted, or timeout after 10 seconds.
- * @param sem the semaphore
- * @return completion code
- */
-int Thread_wait_sem(sem_type sem)
-{
-	return Thread_wait_sem_timeout(sem, 10);
 }
 
 
@@ -404,7 +397,7 @@ int Thread_signal_cond(cond_type condvar)
  * Wait with a timeout (seconds) for condition variable
  * @return completion code
  */
-int Thread_wait_cond_timeout(cond_type condvar, int timeout)
+int Thread_wait_cond(cond_type condvar, int timeout)
 {
 	FUNC_ENTRY;
 	int rc = 0;

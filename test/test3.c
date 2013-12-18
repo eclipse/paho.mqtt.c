@@ -125,21 +125,21 @@ char* test_map[] =
   "5c",        // 13
 };
 
+
 void getopts(int argc, char** argv)
 {
 	int count = 1;
 	
 	while (count < argc)
 	{
-        	if (strcmp(argv[count], "--help") == 0)
-        	{
-        	    usage();
-        	}
+		if (strcmp(argv[count], "--help") == 0)
+			usage();
 		else if (strcmp(argv[count], "--test_no") == 0)
 		{
 			if (++count < argc)
 			{
 				int i;
+
 				for (i = 1; i < ARRAY_SIZE(test_map); ++i)
 				{
 					if (strcmp(argv[count], test_map[i]) == 0)
@@ -358,10 +358,10 @@ void write_test_result()
 {
 	long duration = elapsed(global_start_time);
 
-	fprintf(xml, " time=\"%d.%.3d\" >\n", duration / 1000, duration % 1000); 
+	fprintf(xml, " time=\"%ld.%.3ld\" >\n", duration / 1000, duration % 1000); 
 	if (cur_output != output)
 	{
-		fprintf(xml, output);
+		fprintf(xml, "%s", output);
 		cur_output = output;	
 	}
 	fprintf(xml, "</testcase>\n");
@@ -631,7 +631,7 @@ int test2a_s(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 2a_s\"");
 	global_start_time = start_clock();
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.mutual_auth_connection, "test2a_s",
+	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, "test2a_s",
 		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
@@ -653,8 +653,6 @@ int test2a_s(struct Options options)
 		opts.ssl->privateKeyPassword = options.client_key_pass;
 	if (options.client_private_key_file) 
 		opts.ssl->privateKey = options.client_private_key_file;
-	//opts.ssl->enabledCipherSuites = "DEFAULT";
-	//opts.ssl->enabledServerCertAuth = 1;
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
@@ -1412,7 +1410,7 @@ int test5c(struct Options options)
 	//opts.ssl->trustStore = /*file of certificates trusted by client*/
 	//opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
 	//if (options.client_key_pass != NULL) opts.ssl->privateKeyPassword = options.client_key_pass;
-	//opts.ssl->enabledCipherSuites = "DEFAULT";
+	opts.ssl->enabledCipherSuites = "DEFAULT";
 	opts.ssl->enableServerCertAuth = 0;
 
 	MyLog(LOGA_DEBUG, "Connecting");
@@ -1475,11 +1473,11 @@ int main(int argc, char** argv)
 {
 	int* numtests = &tests;
 	int rc = 0;
- 	int (*tests[])() = {NULL, test1, test2a_s, test2a_m, test2b, test2c, test3a_s, test3a_m, test3b, test4_s, test4_m, /*test5a, test5b,*/ test5c};
+ 	int (*tests[])() = {NULL, test1, test2a_s, test2a_m, test2b, test2c, test3a_s, test3a_m, test3b, test4_s, test4_m, /*test5a, test5b,test5c */};
 	MQTTClient_nameValue* info;
 
 	xml = fopen("TEST-test3.xml", "w");
-	fprintf(xml, "<testsuite name=\"test3\" tests=\"%d\">\n", ARRAY_SIZE(tests) - 1);
+	fprintf(xml, "<testsuite name=\"test3\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
     
 	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
 	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);

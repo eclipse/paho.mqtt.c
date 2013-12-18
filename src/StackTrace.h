@@ -17,6 +17,7 @@
 #ifndef STACKTRACE_H_
 #define STACKTRACE_H_
 
+#include <stdio.h>
 #include "Log.h"
 
 #if defined(NOSTACKTRACE)
@@ -63,7 +64,7 @@
 void StackTrace_entry(const char* name, int line, int trace);
 void StackTrace_exit(const char* name, int line, void* return_value, int trace);
 
-void StackTrace_dumpStack(char* dest);
+void StackTrace_printStack(FILE* dest);
 char* StackTrace_get(unsigned long);
 
 #endif /* STACKTRACE_H_ */

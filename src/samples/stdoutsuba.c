@@ -238,7 +238,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	int rc;
 
 	if (opts.showtopics)
-		printf("Subscribing to topic %s\n", topic, opts.clientid, opts.qos);
+		printf("Subscribing to topic %s with client %s at QoS %d\n", topic, opts.clientid, opts.qos);
 
 	ropts.onSuccess = onSubscribe;
 	ropts.onFailure = onSubscribeFailure;

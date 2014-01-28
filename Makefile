@@ -108,10 +108,10 @@ MQTTVERSION_TARGET = ${blddir}/MQTTVersion
 CCFLAGS_SO = -g -fPIC -Os -Wall -fvisibility=hidden
 FLAGS_EXE = -I ${srcdir} -lpthread -L ${blddir}
 
-LDFLAGS_C = -shared -Wl,-soname,lib$(MQTTLIB_C).so.${MAJOR_VERSION} -Wl,-init,MQTTClient_init 
-LDFLAGS_CS = -shared -Wl,-soname,lib$(MQTTLIB_CS).so.${MAJOR_VERSION} -ldl -lcrypto -lssl -Wl,-no-whole-archive -Wl,-init,MQTTClient_init 
-LDFLAGS_A = -shared -Wl,-soname,lib${MQTTLIB_A}.so.${MAJOR_VERSION} -Wl,-init,MQTTAsync_init 
-LDFLAGS_AS = -shared -Wl,-soname,lib${MQTTLIB_AS}.so.${MAJOR_VERSION} -ldl -lcrypto -lssl -Wl,-no-whole-archive -Wl,-init,MQTTAsync_init 
+LDFLAGS_C = -shared -Wl,-soname,lib$(MQTTLIB_C).so.${MAJOR_VERSION} -Wl,-init,MQTTClient_init -lpthread 
+LDFLAGS_CS = -shared -Wl,-soname,lib$(MQTTLIB_CS).so.${MAJOR_VERSION} -lpthread -ldl -lcrypto -lssl -Wl,-no-whole-archive -Wl,-init,MQTTClient_init 
+LDFLAGS_A = -shared -Wl,-soname,lib${MQTTLIB_A}.so.${MAJOR_VERSION} -Wl,-init,MQTTAsync_init -lpthread
+LDFLAGS_AS = -shared -Wl,-soname,lib${MQTTLIB_AS}.so.${MAJOR_VERSION} -lpthread -ldl -lcrypto -lssl -Wl,-no-whole-archive -Wl,-init,MQTTAsync_init 
 
 all: build
 	
@@ -143,22 +143,22 @@ ${ASYNC_SAMPLES}: ${blddir}/samples/%: ${srcdir}/samples/%.c
 	${CC} -o ${blddir}/samples/${basename ${+F}} $< -l${MQTTLIB_A} ${FLAGS_EXE}
 
 ${MQTTLIB_C_TARGET}: ${SOURCE_FILES_C} ${HEADERS_C}
-	${CC} ${CCFLAGS_SO} ${LDFLAGS_C} -o $@ ${SOURCE_FILES_C}
+	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_C} ${LDFLAGS_C}
 	-ln -s lib$(MQTTLIB_C).so.${VERSION}  ${blddir}/lib$(MQTTLIB_C).so.${MAJOR_VERSION}
 	-ln -s lib$(MQTTLIB_C).so.${MAJOR_VERSION} ${blddir}/lib$(MQTTLIB_C).so
 
 ${MQTTLIB_CS_TARGET}: ${SOURCE_FILES_CS} ${HEADERS_C}
-	${CC} ${CCFLAGS_SO} ${LDFLAGS_CS} -o $@ ${SOURCE_FILES_CS} -DOPENSSL
+	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_CS} -DOPENSSL ${LDFLAGS_CS}
 	-ln -s lib$(MQTTLIB_CS).so.${VERSION}  ${blddir}/lib$(MQTTLIB_CS).so.${MAJOR_VERSION}
 	-ln -s lib$(MQTTLIB_CS).so.${MAJOR_VERSION} ${blddir}/lib$(MQTTLIB_CS).so
 
 ${MQTTLIB_A_TARGET}: ${SOURCE_FILES_A} ${HEADERS_A}
-	${CC} ${CCFLAGS_SO} ${LDFLAGS_A} -o $@ ${SOURCE_FILES_A}
+	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_A} ${LDFLAGS_A}
 	-ln -s lib$(MQTTLIB_A).so.${VERSION}  ${blddir}/lib$(MQTTLIB_A).so.${MAJOR_VERSION}
 	-ln -s lib$(MQTTLIB_A).so.${MAJOR_VERSION} ${blddir}/lib$(MQTTLIB_A).so
 
 ${MQTTLIB_AS_TARGET}: ${SOURCE_FILES_AS} ${HEADERS_A}
-	${CC} ${CCFLAGS_SO} ${LDFLAGS_AS} -o $@ ${SOURCE_FILES_AS} -DOPENSSL
+	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_AS} -DOPENSSL ${LDFLAGS_AS}
 	-ln -s lib$(MQTTLIB_AS).so.${VERSION}  ${blddir}/lib$(MQTTLIB_AS).so.${MAJOR_VERSION}
 	-ln -s lib$(MQTTLIB_AS).so.${MAJOR_VERSION} ${blddir}/lib$(MQTTLIB_AS).so
 

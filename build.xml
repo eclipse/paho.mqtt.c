@@ -300,7 +300,7 @@
       <then>
         <mkdir dir="/shared/technology/paho/C/${build.level}"/>
        	<echo message="Copying the build output to /shared" />
-      	<copy overwrite="true" todir="/shared/technology/paho/C${build.level}">
+      	<copy overwrite="true" todir="/shared/technology/paho/C/${build.level}">
           <fileset dir="${output.folder}">
 	          <include name="*.zip"/>
           </fileset>

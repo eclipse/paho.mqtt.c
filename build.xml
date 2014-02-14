@@ -139,10 +139,6 @@
         </fileset>
       </copy>
 
-      <zip destfile="${output.folder}/paho-client-mqtt-c.zip">
-        <zipfileset dir="${output.folder}" includes="*.so,include/*,MQTTVersion,samples/*"/>
-      </zip>
-	
     </then>
     <elseif>
       <os family="windows" />
@@ -237,18 +233,18 @@
   </target>
 
   <target name="runAtest">
-    <exec executable="./${aTest}" failonerror="true" dir="${output.folder}" > 
+    <exec executable="./${aTest}" failonerror="true" dir="${output.folder}/test" > 
       <arg value="--connection" />
       <arg value="tcp://${test.hostname}:18883" />
-      <env key="LD_LIBRARY_PATH" value="." />
+      <env key="LD_LIBRARY_PATH" value=".." />
     </exec>
   </target>
 
   <target name="runSSLtest">
-    <exec executable="./${aTest}" failonerror="true" dir="${output.folder}" > 
+    <exec executable="./${aTest}" failonerror="true" dir="${output.folder}/test" > 
       <arg value="--hostname" />
       <arg value="${test.hostname}" />
-      <env key="LD_LIBRARY_PATH" value="." />
+      <env key="LD_LIBRARY_PATH" value=".." />
     </exec>
   </target>
 
@@ -277,13 +273,34 @@
     </if>
   </target>
 
+  <target name="build" >
+    <if>
+    <os family="unix"/>
+    <then> 
+    <!-- display gcc version -->
+    <exec executable="gcc" failonerror="true">
+      <arg line="-v"/>	
+    </exec>
+    <if>
+      <available file="/usr/bin/make"/>
+      <then>
+        <exec executable="make" dir="."/>
+      </then>
+    </if>
+    <zip destfile="${output.folder}/paho-client-mqtt-c.zip">
+      <zipfileset dir="${output.folder}" includes="libpaho*,include/*,MQTTVersion,samples/*"/>
+    </zip>
+    </then>
+    </if>
+  </target>
+
   <target name="copy">
     <if>
       <available file="/shared/technology"/>
       <then>
-        <mkdir dir="/shared/technology/paho/C"/>
+        <mkdir dir="/shared/technology/paho/C/${build.level}"/>
        	<echo message="Copying the build output to /shared" />
-      	<copy overwrite="true" todir="/shared/technology/paho/C">
+      	<copy overwrite="true" todir="/shared/technology/paho/C${build.level}">
           <fileset dir="${output.folder}">
 	          <include name="*.zip"/>
           </fileset>
@@ -292,6 +309,6 @@
     </if>
   </target>
 
-  <target name="full" depends="init, version, compile, test, doc, copy" />
+  <target name="full" depends="init, version, build, test, doc, copy" />
 
 </project>

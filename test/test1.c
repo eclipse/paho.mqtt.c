@@ -950,6 +950,17 @@ int test6_socket_close(int socket)
 
 typedef struct
 {
+	int socket;
+	time_t lastContact;
+#if defined(OPENSSL)
+	SSL* ssl;
+	SSL_CTX* ctx;
+#endif
+} networkHandles;
+
+
+typedef struct
+{
 	char* clientID;					/**< the string id of the client */
 	char* username;					/**< MQTT v3.1 user name */
 	char* password;					/**< MQTT v3.1 password */
@@ -957,21 +968,11 @@ typedef struct
 	unsigned int connected : 1;		/**< whether it is currently connected */
 	unsigned int good : 1; 			/**< if we have an error on the socket we turn this off */
 	unsigned int ping_outstanding : 1;
-	unsigned int connect_state : 2;
-	int socket;
-	int msgID;
-	int keepAliveInterval;
-	int retryInterval;
-	int maxInflightMessages;
-	time_t lastContact;
-	void* will;
-	void* inboundMsgs;
-	void* outboundMsgs;				/**< in flight */
-	void* messageQueue;
-	void* phandle;  /* the persistence handle */
-	MQTTClient_persistence* persistence; /* a persistence implementation */
-	int connectOptionsVersion;
+	int connect_state : 4;
+	networkHandles net;
+/* ... */
 } Clients;
+
 
 typedef struct
 {
@@ -1056,7 +1057,7 @@ int test6(struct Options options)
 	/* now send the command which will break the connection and cause the will message to be sent */
 	/*rc = MQTTClient_publish(test6_c1, mqttsas_topic, strlen("TERMINATE"), "TERMINATE", 0, 0, NULL);
 	assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);*/
-  	test6_socket_close(((MQTTClients*)test6_c1)->c->socket); 
+  test6_socket_close(((MQTTClients*)test6_c1)->c->net.socket); 
 
 	MyLog(LOGA_INFO, "Waiting to receive the will message");
 	count = 0;

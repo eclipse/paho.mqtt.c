@@ -20,7 +20,7 @@
 
 #include "MQTTPacket.h"
 
-int MQTTPacket_send_connect(Clients* client);
+int MQTTPacket_send_connect(Clients* client, int MQTTVersion);
 void* MQTTPacket_connack(unsigned char aHeader, char* data, int datalen);
 
 int MQTTPacket_send_pingreq(networkHandles* net, char* clientID);

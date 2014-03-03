@@ -36,20 +36,20 @@
 /**
  * Send an MQTT CONNECT packet down a socket.
  * @param client a structure from which to get all the required values
+ * @param MQTTVersion the MQTT version to connect with
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-int MQTTPacket_send_connect(Clients* client)
+int MQTTPacket_send_connect(Clients* client, int MQTTVersion)
 {
 	char *buf, *ptr;
 	Connect packet;
-	int rc, len;
+	int rc = -1, len;
 
 	FUNC_ENTRY;
 	packet.header.byte = 0;
 	packet.header.bits.type = CONNECT;
-	packet.header.bits.qos = 1;
 
-	len = 12 + strlen(client->clientID)+2;
+	len = ((MQTTVersion == 3) ? 12 : 10) + strlen(client->clientID)+2;
 	if (client->will)
 		len += strlen(client->will->topic)+2 + strlen(client->will->msg)+2;
 	if (client->username)
@@ -58,8 +58,18 @@ int MQTTPacket_send_connect(Clients* client)
 		len += strlen(client->password)+2;
 
 	ptr = buf = malloc(len);
-	writeUTF(&ptr, "MQIsdp");
-	writeChar(&ptr, (char)3);
+  if (MQTTVersion == 3)
+  {
+  	writeUTF(&ptr, "MQIsdp");
+	  writeChar(&ptr, (char)3);
+  }
+  else if (MQTTVersion == 4)
+  {
+  	writeUTF(&ptr, "MQTT");
+	  writeChar(&ptr, (char)4);
+  }
+  else
+    goto exit;
 
 	packet.flags.all = 0;
 	packet.flags.bits.cleanstart = client->cleansession;
@@ -90,6 +100,7 @@ int MQTTPacket_send_connect(Clients* client)
 
 	rc = MQTTPacket_send(&client->net, packet.header, buf, len);
 	Log(LOG_PROTOCOL, 0, NULL, client->net.socket, client->clientID, client->cleansession, rc);
+exit:
 	free(buf);
 	FUNC_EXIT_RC(rc);
 	return rc;

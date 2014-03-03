@@ -77,18 +77,15 @@ char* MQTTProtocol_addressPort(char* ip_address, int* port)
 /**
  * MQTT outgoing connect processing for a client
  * @param ip_address the TCP address:port to connect to
- * @param clientID the MQTT client id to use
- * @param cleansession MQTT cleansession flag
- * @param keepalive MQTT keepalive timeout in seconds
- * @param willMessage pointer to the will message to be used, if any
- * @param username MQTT 3.1 username, or NULL
- * @param password MQTT 3.1 password, or NULL
- * @return the new client structure
+ * @param aClient a structure with all MQTT data needed
+ * @param int ssl
+ * @param int MQTTVersion the MQTT version to connect with (3 or 4)
+ * @return return code
  */
 #if defined(OPENSSL)
-int MQTTProtocol_connect(char* ip_address, Clients* aClient, int ssl)
+int MQTTProtocol_connect(char* ip_address, Clients* aClient, int ssl, int MQTTVersion)
 #else
-int MQTTProtocol_connect(char* ip_address, Clients* aClient)
+  int MQTTProtocol_connect(char* ip_address, Clients* aClient, int MQTTVersion)
 #endif
 {
 	int rc, port;
@@ -120,7 +117,7 @@ int MQTTProtocol_connect(char* ip_address, Clients* aClient)
 		if (rc == 0)
 		{
 			/* Now send the MQTT connect packet */
-			if ((rc = MQTTPacket_send_connect(aClient)) == 0)
+		  if ((rc = MQTTPacket_send_connect(aClient, MQTTVersion)) == 0)
 				aClient->connect_state = 3; /* MQTT Connect sent - wait for CONNACK */ 
 			else
 				aClient->connect_state = 0;

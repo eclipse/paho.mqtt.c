@@ -109,7 +109,7 @@ void MQTTClient_init()
 	pthread_mutexattr_init(&attr);
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
 	if ((rc = pthread_mutex_init(mqttclient_mutex, &attr)) != 0)
-		printf("MQTTAsync: error %d initializing client_mutex\n", rc);
+		printf("MQTTClient: error %d initializing client_mutex\n", rc);
 }
 
 #define WINAPI
@@ -127,6 +127,7 @@ MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc);
 int MQTTClient_cleanSession(Clients* client);
 void MQTTClient_stop();
 int MQTTClient_disconnect_internal(MQTTClient handle, int timeout);
+int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal, int stop);
 void MQTTClient_writeComplete(int socket);
 
 typedef struct
@@ -726,16 +727,13 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 }
 
 
-int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options, char* serverURI)
+int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* options, char* serverURI, int MQTTVersion,
+	START_TIME_TYPE start, long millisecsTimeout)
 {
 	MQTTClients* m = handle;
-	START_TIME_TYPE start;
-	long millisecsTimeout = 30000L;
 	int rc = SOCKET_ERROR;
 
-	FUNC_ENTRY;
-	millisecsTimeout = options->connectTimeout * 1000;
-	start = MQTTClient_start_clock();
+  FUNC_ENTRY;
 	if (m->ma && !running)
 	{
 		Thread_start(MQTTClient_run, handle);
@@ -746,6 +744,165 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 		}
 		MQTTClient_sleep(100L);
 	}
+
+	Log(TRACE_MIN, -1, "Connecting to serverURI %s with MQTT version %d", serverURI, MQTTVersion);
+#if defined(OPENSSL)
+	rc = MQTTProtocol_connect(serverURI, m->c, m->ssl, MQTTVersion);
+#else
+	rc = MQTTProtocol_connect(serverURI, m->c, MQTTVersion);
+#endif
+	if (rc == SOCKET_ERROR)
+		goto exit;
+
+	if (m->c->connect_state == 0)
+	{
+		rc = SOCKET_ERROR;
+		goto exit;
+	}
+
+	if (m->c->connect_state == 1) /* TCP connect started - wait for completion */
+	{
+		Thread_unlock_mutex(mqttclient_mutex);
+		MQTTClient_waitfor(handle, CONNECT, &rc, millisecsTimeout - MQTTClient_elapsed(start));
+		Thread_lock_mutex(mqttclient_mutex);
+		if (rc != 0)
+		{
+			rc = SOCKET_ERROR;
+			goto exit;
+		}
+		
+#if defined(OPENSSL)
+		if (m->ssl)
+		{
+			if (SSLSocket_setSocketForSSL(&m->c->net, m->c->sslopts) != MQTTCLIENT_SUCCESS)
+			{
+				if (m->c->session != NULL)
+					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)
+						Log(TRACE_MIN, -1, "Failed to set SSL session with stored data, non critical");
+				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket);
+				if (rc == -1)
+					m->c->connect_state = 2;
+				else if (rc == SSL_FATAL)
+				{
+					rc = SOCKET_ERROR;
+					goto exit;
+				}
+				else if (rc == 1) 
+        {
+					rc = MQTTCLIENT_SUCCESS;
+					m->c->connect_state = 3;
+					if (MQTTPacket_send_connect(m->c, MQTTVersion) == SOCKET_ERROR)
+					{
+						rc = SOCKET_ERROR;
+						goto exit;
+					}
+					if(!m->c->cleansession && m->c->session == NULL)
+						m->c->session = SSL_get1_session(m->c->net.ssl);
+				}
+			}
+			else
+			{
+				rc = SOCKET_ERROR;
+				goto exit;
+			}
+		}
+		else
+		{
+#endif
+			m->c->connect_state = 3; /* TCP connect completed, in which case send the MQTT connect packet */
+			if (MQTTPacket_send_connect(m->c, MQTTVersion) == SOCKET_ERROR)
+			{
+				rc = SOCKET_ERROR;
+				goto exit;
+			}
+#if defined(OPENSSL)
+		}
+#endif
+	}
+	
+#if defined(OPENSSL)
+	if (m->c->connect_state == 2) /* SSL connect sent - wait for completion */
+	{
+		Thread_unlock_mutex(mqttclient_mutex);
+		MQTTClient_waitfor(handle, CONNECT, &rc, millisecsTimeout - MQTTClient_elapsed(start));
+		Thread_lock_mutex(mqttclient_mutex);
+		if (rc != 1)
+		{
+			rc = SOCKET_ERROR;
+			goto exit;
+		}
+		if(!m->c->cleansession && m->c->session == NULL)
+			m->c->session = SSL_get1_session(m->c->net.ssl);
+		m->c->connect_state = 3; /* TCP connect completed, in which case send the MQTT connect packet */
+		if (MQTTPacket_send_connect(m->c, MQTTVersion) == SOCKET_ERROR)
+		{
+			rc = SOCKET_ERROR;
+			goto exit;
+		}
+	}
+#endif
+
+	if (m->c->connect_state == 3) /* MQTT connect sent - wait for CONNACK */
+	{
+		MQTTPacket* pack = NULL;
+
+		Thread_unlock_mutex(mqttclient_mutex);
+		pack = MQTTClient_waitfor(handle, CONNACK, &rc, millisecsTimeout - MQTTClient_elapsed(start));
+		Thread_lock_mutex(mqttclient_mutex);
+		if (pack == NULL)
+			rc = SOCKET_ERROR;
+		else
+		{
+			Connack* connack = (Connack*)pack;
+			Log(LOG_PROTOCOL, 1, NULL, m->c->net.socket, m->c->clientID, connack->rc);
+			if ((rc = connack->rc) == MQTTCLIENT_SUCCESS)
+			{
+				m->c->connected = 1;
+				m->c->good = 1;
+				m->c->connect_state = 0;
+				if (m->c->cleansession)
+					rc = MQTTClient_cleanSession(m->c);
+				if (m->c->outboundMsgs->count > 0)
+				{
+					ListElement* outcurrent = NULL;
+
+					while (ListNextElement(m->c->outboundMsgs, &outcurrent))
+					{
+						Messages* m = (Messages*)(outcurrent->content);
+						m->lastTouch = 0;
+					}
+					MQTTProtocol_retry(m->c->net.lastContact, 1);
+					if (m->c->connected != 1)
+						rc = MQTTCLIENT_DISCONNECTED;
+				}
+			}
+			free(connack);
+			m->pack = NULL;
+		}
+	}
+
+exit:
+	if (rc != MQTTCLIENT_SUCCESS)
+	{
+		Thread_unlock_mutex(mqttclient_mutex);
+    MQTTClient_disconnect1(handle, 0, 0, (MQTTVersion == 3)); /* not "internal" because we don't want to call connection lost */
+		Thread_lock_mutex(mqttclient_mutex);
+	}
+	FUNC_EXIT_RC(rc);
+  return rc;
+}
+
+
+int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options, char* serverURI)
+{
+	MQTTClients* m = handle;
+	START_TIME_TYPE start;
+	long millisecsTimeout = 30000L;
+	int rc = SOCKET_ERROR;
+
+	FUNC_ENTRY;
+	millisecsTimeout = options->connectTimeout * 1000;
+	start = MQTTClient_start_clock();
 
 	m->c->keepAliveInterval = options->keepAliveInterval;
 	m->c->cleansession = options->cleansession;
@@ -824,148 +981,9 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 	m->c->password = options->password;
 	m->c->retryInterval = options->retryInterval;
 
-	Log(TRACE_MIN, -1, "Connecting to serverURI %s", serverURI);
-#if defined(OPENSSL)
-	rc = MQTTProtocol_connect(serverURI, m->c, m->ssl);
-#else
-	rc = MQTTProtocol_connect(serverURI, m->c);
-#endif
-	if (rc == SOCKET_ERROR)
-		goto exit;
+  if ((rc = MQTTClient_connectURIVersion(handle, options, serverURI, 4	, start, millisecsTimeout)) != MQTTCLIENT_SUCCESS)
+    rc = MQTTClient_connectURIVersion(handle, options, serverURI, 3, start, millisecsTimeout);
 
-	if (m->c->connect_state == 0)
-	{
-		rc = SOCKET_ERROR;
-		goto exit;
-	}
-
-	if (m->c->connect_state == 1) /* TCP connect started - wait for completion */
-	{
-		Thread_unlock_mutex(mqttclient_mutex);
-		MQTTClient_waitfor(handle, CONNECT, &rc, millisecsTimeout - MQTTClient_elapsed(start));
-		Thread_lock_mutex(mqttclient_mutex);
-		if (rc != 0)
-		{
-			rc = SOCKET_ERROR;
-			goto exit;
-		}
-		
-#if defined(OPENSSL)
-		if (m->ssl)
-		{
-			if (SSLSocket_setSocketForSSL(&m->c->net, m->c->sslopts) != MQTTCLIENT_SUCCESS)
-			{
-				if (m->c->session != NULL)
-					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)
-						Log(TRACE_MIN, -1, "Failed to set SSL session with stored data, non critical");
-				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket);
-				if (rc == -1)
-					m->c->connect_state = 2;
-				else if (rc == SSL_FATAL)
-				{
-					rc = SOCKET_ERROR;
-					goto exit;
-				}
-				else if (rc == 1) {
-					rc = MQTTCLIENT_SUCCESS;
-					m->c->connect_state = 3;
-					if (MQTTPacket_send_connect(m->c) == SOCKET_ERROR)
-					{
-						rc = SOCKET_ERROR;
-						goto exit;
-					}
-					if(!m->c->cleansession && m->c->session == NULL)
-						m->c->session = SSL_get1_session(m->c->net.ssl);
-				}
-			}
-			else
-			{
-				rc = SOCKET_ERROR;
-				goto exit;
-			}
-		}
-		else
-		{
-#endif
-			m->c->connect_state = 3; /* TCP connect completed, in which case send the MQTT connect packet */
-			if (MQTTPacket_send_connect(m->c) == SOCKET_ERROR)
-			{
-				rc = SOCKET_ERROR;
-				goto exit;
-			}
-#if defined(OPENSSL)
-		}
-#endif
-	}
-	
-#if defined(OPENSSL)
-	if (m->c->connect_state == 2) /* SSL connect sent - wait for completion */
-	{
-		Thread_unlock_mutex(mqttclient_mutex);
-		MQTTClient_waitfor(handle, CONNECT, &rc, millisecsTimeout - MQTTClient_elapsed(start));
-		Thread_lock_mutex(mqttclient_mutex);
-		if (rc != 1)
-		{
-			rc = SOCKET_ERROR;
-			goto exit;
-		}
-		if(!m->c->cleansession && m->c->session == NULL)
-			m->c->session = SSL_get1_session(m->c->net.ssl);
-		m->c->connect_state = 3; /* TCP connect completed, in which case send the MQTT connect packet */
-		if (MQTTPacket_send_connect(m->c) == SOCKET_ERROR)
-		{
-			rc = SOCKET_ERROR;
-			goto exit;
-		}
-	}
-#endif
-
-	if (m->c->connect_state == 3) /* MQTT connect sent - wait for CONNACK */
-	{
-		MQTTPacket* pack = NULL;
-
-		Thread_unlock_mutex(mqttclient_mutex);
-		pack = MQTTClient_waitfor(handle, CONNACK, &rc, millisecsTimeout - MQTTClient_elapsed(start));
-		Thread_lock_mutex(mqttclient_mutex);
-		if (pack == NULL)
-			rc = SOCKET_ERROR;
-		else
-		{
-			Connack* connack = (Connack*)pack;
-			Log(LOG_PROTOCOL, 1, NULL, m->c->net.socket, m->c->clientID, connack->rc);
-			if ((rc = connack->rc) == MQTTCLIENT_SUCCESS)
-			{
-				m->c->connected = 1;
-				m->c->good = 1;
-				m->c->connect_state = 0;
-				if (m->c->cleansession)
-					rc = MQTTClient_cleanSession(m->c);
-				if (m->c->outboundMsgs->count > 0)
-				{
-					ListElement* outcurrent = NULL;
-
-					while (ListNextElement(m->c->outboundMsgs, &outcurrent))
-					{
-						Messages* m = (Messages*)(outcurrent->content);
-						m->lastTouch = 0;
-					}
-					MQTTProtocol_retry(m->c->net.lastContact, 1);
-					if (m->c->connected != 1)
-						rc = MQTTCLIENT_DISCONNECTED;
-				}
-			}
-			free(connack);
-			m->pack = NULL;
-		}
-	}
-
-exit:
-	if (rc != MQTTCLIENT_SUCCESS)
-	{
-		Thread_unlock_mutex(mqttclient_mutex);
-		MQTTClient_disconnect(handle, 0); /* not "internal" because we don't want to call connection lost */
-		Thread_lock_mutex(mqttclient_mutex);
-	}
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -1055,7 +1073,7 @@ exit:
 }
 
 
-int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal)
+int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal, int stop)
 {
 	MQTTClients* m = handle;
 	START_TIME_TYPE start;
@@ -1095,14 +1113,15 @@ int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal)
 	if (Thread_check_sem(m->connect_sem))
 		Thread_post_sem(m->connect_sem);
 	if (Thread_check_sem(m->connack_sem))
-		Thread_post_sem(m->connack_sem);
+    Thread_post_sem(m->connect_sem);
 	if (Thread_check_sem(m->suback_sem))
 		Thread_post_sem(m->suback_sem);
 	if (Thread_check_sem(m->unsuback_sem))
 		Thread_post_sem(m->unsuback_sem);
 
 exit:
-	MQTTClient_stop();
+  if (stop)
+  	MQTTClient_stop();
 	if (internal && m->cl && was_connected)
 	{
 		Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
@@ -1116,7 +1135,7 @@ exit:
 
 int MQTTClient_disconnect_internal(MQTTClient handle, int timeout)
 {
-	return MQTTClient_disconnect1(handle, timeout, 1);
+	return MQTTClient_disconnect1(handle, timeout, 1, 1);
 }
 
 
@@ -1128,7 +1147,7 @@ void MQTTProtocol_closeSession(Clients* c, int sendwill)
 
 int MQTTClient_disconnect(MQTTClient handle, int timeout)
 {
-	return MQTTClient_disconnect1(handle, timeout, 0);
+	return MQTTClient_disconnect1(handle, timeout, 0, 1);
 }
 
 
@@ -1550,7 +1569,7 @@ MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long
 		else if (packet_type == UNSUBACK)
 			*rc = Thread_wait_sem(m->unsuback_sem, timeout);
 		if (*rc == 0 && packet_type != CONNECT && m->pack == NULL)
-			Log(TRACE_MIN, -1, "waitfor unexpectedly is NULL for client %s, packet_type %d", m->c->clientID, packet_type);
+			Log(TRACE_MIN, -1, "waitfor unexpectedly is NULL for client %s, packet_type %d, timeout %ld", m->c->clientID, packet_type, timeout);
 		pack = m->pack;
 	}
 	else

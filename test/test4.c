@@ -1094,7 +1094,6 @@ int test6(struct Options options)
 		#else
 			usleep(10000L);
 		#endif		
-	
 
 	MQTTAsync_destroy(&cinfo.c);
 

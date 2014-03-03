@@ -30,9 +30,9 @@
 
 void MQTTProtocol_reconnect(char* ip_address, Clients* client);
 #if defined(OPENSSL)
-int MQTTProtocol_connect(char* ip_address, Clients* acClients, int ssl);
+int MQTTProtocol_connect(char* ip_address, Clients* acClients, int ssl, int MQTTVersion);
 #else
-int MQTTProtocol_connect(char* ip_address, Clients* acClients);
+int MQTTProtocol_connect(char* ip_address, Clients* acClients, int MQTTVersion);
 #endif
 int MQTTProtocol_handlePingresps(void* pack, int sock);
 int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss);

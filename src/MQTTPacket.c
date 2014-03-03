@@ -518,7 +518,7 @@ void MQTTPacket_freePublish(Publish* pack)
  * @param type the MQTT packet type e.g. SUBACK
  * @param msgid the MQTT message id to use
  * @param dup boolean - whether to set the MQTT DUP flag
- * @param socket the open socket to send the data to
+ * @param net the network handle to send the data to
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
 int MQTTPacket_send_ack(int type, int msgid, int dup, networkHandles *net)
@@ -532,6 +532,8 @@ int MQTTPacket_send_ack(int type, int msgid, int dup, networkHandles *net)
 	header.byte = 0;
 	header.bits.type = type;
 	header.bits.dup = dup;
+  if (type == PUBREL)
+    header.bits.qos = 1;
 	writeInt(&ptr, msgid);
 	if ((rc = MQTTPacket_send(net, header, buf, 2)) != TCPSOCKET_INTERRUPTED)
 		free(buf);

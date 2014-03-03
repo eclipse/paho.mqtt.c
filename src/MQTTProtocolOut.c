@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 201 IBM Corp.
+ * Copyright (c) 2009, 2014 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
+ *    Ian Craggs - MQTT 3.1.1 support
  *******************************************************************************/
 
 /**
@@ -117,7 +118,7 @@ int MQTTProtocol_connect(char* ip_address, Clients* aClient, int ssl, int MQTTVe
 		if (rc == 0)
 		{
 			/* Now send the MQTT connect packet */
-		  if ((rc = MQTTPacket_send_connect(aClient, MQTTVersion)) == 0)
+			if ((rc = MQTTPacket_send_connect(aClient, MQTTVersion)) == 0)
 				aClient->connect_state = 3; /* MQTT Connect sent - wait for CONNACK */ 
 			else
 				aClient->connect_state = 0;

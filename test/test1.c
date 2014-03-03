@@ -1,14 +1,19 @@
-#define MY_ID "@(#) stmqcom/pub1.c, stmqcom, cs 1.85 10/08/24 07:36:24"
-/*--------------------------------------------------------------------*/
-/* [Platforms]UNIX NT[/Platforms]                                     */
-/* [Title]MQ Telemetry MQTT C client tests                            */
-/* [/Title]                                                           */
-/* [Testclasses]stcom1 stmqcom1[/Category]                            */
-/* [Category]MQ Telemetry[/Category]                                  */
-/*                                                                    */
-/* Copyright IBM 2012                                                 */
-/* All rights reserved.                                               */
-/*--------------------------------------------------------------------*/
+/*******************************************************************************
+ * Copyright (c) 2009, 2014 IBM Corp.
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Eclipse Distribution License v1.0 which accompany this distribution. 
+ *
+ * The Eclipse Public License is available at 
+ *    http://www.eclipse.org/legal/epl-v10.html
+ * and the Eclipse Distribution License is available at 
+ *   http://www.eclipse.org/org/documents/edl-v10.php.
+ *
+ * Contributors:
+ *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - MQTT 3.1.1 support
+ *******************************************************************************/
 
 
 /**
@@ -1057,7 +1062,7 @@ int test6(struct Options options)
 	/* now send the command which will break the connection and cause the will message to be sent */
 	/*rc = MQTTClient_publish(test6_c1, mqttsas_topic, strlen("TERMINATE"), "TERMINATE", 0, 0, NULL);
 	assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);*/
-  test6_socket_close(((MQTTClients*)test6_c1)->c->net.socket); 
+	test6_socket_close(((MQTTClients*)test6_c1)->c->net.socket); 
 
 	MyLog(LOGA_INFO, "Waiting to receive the will message");
 	count = 0;

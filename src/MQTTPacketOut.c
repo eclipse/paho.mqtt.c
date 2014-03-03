@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2014 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
+ *    Ian Craggs - MQTT 3.1.1 support
  *******************************************************************************/
 
 /**
@@ -58,18 +59,18 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion)
 		len += strlen(client->password)+2;
 
 	ptr = buf = malloc(len);
-  if (MQTTVersion == 3)
-  {
-  	writeUTF(&ptr, "MQIsdp");
-	  writeChar(&ptr, (char)3);
-  }
-  else if (MQTTVersion == 4)
-  {
-  	writeUTF(&ptr, "MQTT");
-	  writeChar(&ptr, (char)4);
-  }
-  else
-    goto exit;
+	if (MQTTVersion == 3)
+	{
+		writeUTF(&ptr, "MQIsdp");
+		writeChar(&ptr, (char)3);
+	}
+	else if (MQTTVersion == 4)
+	{
+		writeUTF(&ptr, "MQTT");
+		writeChar(&ptr, (char)4);
+	}
+	else
+		goto exit;
 
 	packet.flags.all = 0;
 	packet.flags.bits.cleanstart = client->cleansession;

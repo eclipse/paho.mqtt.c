@@ -995,10 +995,10 @@ void MQTTAsync_processCommand()
 #endif
 			}
 
-      if (command->command.details.conn.MQTTVersion == 0)
-        command->command.details.conn.MQTTVersion = 4;
-      else if (command->command.details.conn.MQTTVersion == 4)
-        command->command.details.conn.MQTTVersion = 3;
+			if (command->command.details.conn.MQTTVersion == 0)
+				command->command.details.conn.MQTTVersion = 4;
+			else if (command->command.details.conn.MQTTVersion == 4)
+				command->command.details.conn.MQTTVersion = 3;
 
 			Log(TRACE_MIN, -1, "Connecting to serverURI %s with MQTT version %d", serverURI, command->command.details.conn.MQTTVersion);
 #if defined(OPENSSL)
@@ -1701,7 +1701,7 @@ void MQTTAsync_closeOnly(Clients* client)
 	client->ping_outstanding = 0;
 	if (client->net.socket > 0)
 	{
-		if (client->connected || client->connect_state)
+		if (client->connected)
 			MQTTPacket_send_disconnect(&client->net, client->clientID);
 #if defined(OPENSSL)
 		SSLSocket_close(&client->net);

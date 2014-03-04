@@ -665,12 +665,8 @@ void MQTTClient_closeSession(Clients* client)
 	client->ping_outstanding = 0;
 	if (client->net.socket > 0)
 	{
-		if (client->connected || client->connect_state)
-		{
+		if (client->connected)
 			MQTTPacket_send_disconnect(&client->net, client->clientID);
-			client->connected = 0;
-			client->connect_state = 0;
-		}
 #if defined(OPENSSL)
 		SSLSocket_close(&client->net);
 #endif
@@ -680,6 +676,8 @@ void MQTTClient_closeSession(Clients* client)
 		client->net.ssl = NULL;
 #endif
 	}
+	client->connected = 0;
+	client->connect_state = 0;
 
 	if (client->cleansession)
 		MQTTClient_cleanSession(client);

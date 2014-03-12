@@ -37,7 +37,7 @@ int SSLSocket_getch(SSL* ssl, int socket, char* c);
 char *SSLSocket_getdata(SSL* ssl, int socket, int bytes, int* actual_len);
 
 int SSLSocket_close(networkHandles* net);
-int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, int buf0len, int count, char** buffers, int* buflens);
+int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, int buf0len, int count, char** buffers, int* buflens, int* frees);
 int SSLSocket_connect(SSL* ssl, int socket);
 
 int SSLSocket_getPendingRead();

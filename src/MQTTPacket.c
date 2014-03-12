@@ -168,7 +168,7 @@ exit:
  * @param buflen the length of the data in buffer to be written
  * @return the completion code (TCPSOCKET_COMPLETE etc)
  */
-int MQTTPacket_send(networkHandles* net, Header header, char* buffer, int buflen)
+int MQTTPacket_send(networkHandles* net, Header header, char* buffer, int buflen, int free)
 {
 	int rc, buf0len;
 	char *buf;
@@ -189,10 +189,10 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, int buflen
 
 #if defined(OPENSSL)
 	if (net->ssl)
-		rc = SSLSocket_putdatas(net->ssl, net->socket, buf, buf0len, 1, &buffer, &buflen);
+		rc = SSLSocket_putdatas(net->ssl, net->socket, buf, buf0len, 1, &buffer, &buflen, &free);
 	else
 #endif
-		rc = Socket_putdatas(net->socket, buf, buf0len, 1, &buffer, &buflen);
+		rc = Socket_putdatas(net->socket, buf, buf0len, 1, &buffer, &buflen, &free);
 		
 	if (rc == TCPSOCKET_COMPLETE)
 		time(&(net->lastContact));
@@ -214,7 +214,7 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, int buflen
  * @param buflens the lengths of the data in the array of buffers to be written
  * @return the completion code (TCPSOCKET_COMPLETE etc)
  */
-int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffers, int* buflens)
+int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffers, int* buflens, int* frees)
 {
 	int i, rc, buf0len, total = 0;
 	char *buf;
@@ -236,10 +236,10 @@ int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffe
 #endif
 #if defined(OPENSSL)
 	if (net->ssl)
-		rc = SSLSocket_putdatas(net->ssl, net->socket, buf, buf0len, count, buffers, buflens);
+		rc = SSLSocket_putdatas(net->ssl, net->socket, buf, buf0len, count, buffers, buflens, frees);
 	else
 #endif
-		rc = Socket_putdatas(net->socket, buf, buf0len, count, buffers, buflens);
+		rc = Socket_putdatas(net->socket, buf, buf0len, count, buffers, buflens, frees);
 		
 	if (rc == TCPSOCKET_COMPLETE)
 		time(&(net->lastContact));
@@ -460,7 +460,7 @@ int MQTTPacket_send_disconnect(networkHandles *net, char* clientID)
 	FUNC_ENTRY;
 	header.byte = 0;
 	header.bits.type = DISCONNECT;
-	rc = MQTTPacket_send(net, header, NULL, 0);
+	rc = MQTTPacket_send(net, header, NULL, 0, 0);
 	Log(LOG_PROTOCOL, 28, NULL, net->socket, clientID, rc);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -536,7 +536,7 @@ int MQTTPacket_send_ack(int type, int msgid, int dup, networkHandles *net)
   if (type == PUBREL)
     header.bits.qos = 1;
 	writeInt(&ptr, msgid);
-	if ((rc = MQTTPacket_send(net, header, buf, 2)) != TCPSOCKET_INTERRUPTED)
+	if ((rc = MQTTPacket_send(net, header, buf, 2, 1)) != TCPSOCKET_INTERRUPTED)
 		free(buf);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -683,10 +683,12 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 		char *ptr = buf;
 		char* bufs[4] = {topiclen, pack->topic, buf, pack->payload};
 		int lens[4] = {2, strlen(pack->topic), 2, pack->payloadlen};
+		int frees[4] = {1, 0, 1, 0};
+
 		writeInt(&ptr, pack->msgId);
 		ptr = topiclen;
 		writeInt(&ptr, lens[1]);
-		rc = MQTTPacket_sends(net, header, 4, bufs, lens);
+		rc = MQTTPacket_sends(net, header, 4, bufs, lens, frees);
 		if (rc != TCPSOCKET_INTERRUPTED)
 			free(buf);
 	}
@@ -695,8 +697,10 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 		char* ptr = topiclen;
 		char* bufs[3] = {topiclen, pack->topic, pack->payload};
 		int lens[3] = {2, strlen(pack->topic), pack->payloadlen};
+		int frees[3] = {1, 0, 0};
+
 		writeInt(&ptr, lens[1]);
-		rc = MQTTPacket_sends(net, header, 3, bufs, lens);
+		rc = MQTTPacket_sends(net, header, 3, bufs, lens, frees);
 	}
 	if (rc != TCPSOCKET_INTERRUPTED)
 		free(topiclen);

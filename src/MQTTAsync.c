@@ -47,8 +47,8 @@
 
 #define URI_TCP "tcp://"
 
-#define BUILD_TIMESTAMP "##MQTTCLIENT_BUILD_TAG##"
-#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##"
+#define BUILD_TIMESTAMP "201403121114"
+#define CLIENT_VERSION  "1.0.0.2"
 
 char* client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
@@ -249,7 +249,7 @@ typedef struct
 			int serverURIcount;
 			char** serverURIs;
 			int currentURI;
-      int MQTTVersion;
+			int MQTTVersion;
 		} conn;
 	} details;
 } MQTTAsync_command;
@@ -2527,7 +2527,7 @@ int MQTTAsync_connecting(MQTTAsyncs* m)
 					goto exit;
 				}
 				else if (rc == 1) 
-        {
+				{
 					rc = MQTTCLIENT_SUCCESS;
 					m->c->connect_state = 3;
 					if (MQTTPacket_send_connect(m->c, m->connect.details.conn.MQTTVersion) == SOCKET_ERROR)
@@ -2535,7 +2535,7 @@ int MQTTAsync_connecting(MQTTAsyncs* m)
 						rc = SOCKET_ERROR;
 						goto exit;
 					}
-					if(!m->c->cleansession && m->c->session == NULL)
+					if (!m->c->cleansession && m->c->session == NULL)
 						m->c->session = SSL_get1_session(m->c->net.ssl);
 				}
 			}
@@ -2570,7 +2570,9 @@ int MQTTAsync_connecting(MQTTAsyncs* m)
 #endif
 
 exit:
-	if ((rc != 0 && m->c->connect_state != 2) || (rc == SSL_FATAL))
+    if (rc == TCPSOCKET_INTERRUPTED)
+      printf("Interrupted connect encountered****\n");
+	if ((rc != 0 && rc != TCPSOCKET_INTERRUPTED && m->c->connect_state != 2) || (rc == SSL_FATAL))
 	{
 		if (MQTTAsync_checkConn(&m->connect))
 		{
@@ -2649,7 +2651,7 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 				pack = MQTTPacket_Factory(&m->c->net, rc);
 			if ((m->c->connect_state == 3) && (*rc == SOCKET_ERROR))
 			{
-				Log(TRACE_MINIMUM, -1, "CONNECT sent but MQTTPacket_Factory has returned SOCKET_ERROR");
+				Log(LOG_ERROR, -1, "CONNECT sent but MQTTPacket_Factory has returned SOCKET_ERROR");
 				if (MQTTAsync_checkConn(&m->connect))
 				{
 					MQTTAsync_queuedCommand* conn;

@@ -210,8 +210,8 @@ void writeUTF(char** pptr, char* string);
 char* MQTTPacket_name(int ptype);
 
 void* MQTTPacket_Factory(networkHandles* net, int* error);
-int MQTTPacket_send(networkHandles* net, Header header, char* buffer, int buflen);
-int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffers, int* buflens);
+int MQTTPacket_send(networkHandles* net, Header header, char* buffer, int buflen, int free);
+int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffers, int* buflens, int* frees);
 
 void* MQTTPacket_header_only(unsigned char aHeader, char* data, int datalen);
 int MQTTPacket_send_disconnect(networkHandles* net, char* clientID);

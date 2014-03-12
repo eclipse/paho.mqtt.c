@@ -52,6 +52,7 @@ typedef struct
 #endif
 	unsigned long bytes;
 	iobuf iovecs[5];
+	int frees[5];
 } pending_writes;
 
 #define SOCKETBUFFER_COMPLETE 0
@@ -70,9 +71,9 @@ char* SocketBuffer_complete(int socket);
 void SocketBuffer_queueChar(int socket, char c);
 
 #if defined(OPENSSL)
-void SocketBuffer_pendingWrite(int socket, SSL* ssl, int count, iobuf* iovecs, int total, int bytes);
+void SocketBuffer_pendingWrite(int socket, SSL* ssl, int count, iobuf* iovecs, int* frees, int total, int bytes);
 #else
-void SocketBuffer_pendingWrite(int socket, int count, iobuf* iovecs, int total, int bytes);
+void SocketBuffer_pendingWrite(int socket, int count, iobuf* iovecs, int* frees, int total, int bytes);
 #endif
 pending_writes* SocketBuffer_getWrite(int socket);
 int SocketBuffer_writeComplete(int socket);

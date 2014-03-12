@@ -627,9 +627,9 @@ void test3_onFailure(void* context, MQTTAsync_failureData* response)
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	int rc;
 	
-	assert("Should have connected", 0, "failed to connect", NULL);
-	MyLog(LOGA_DEBUG, "In connect onFailure callback, \"%s\" rc %d\n", cd->clientid, response->code);
-	if (response->message)
+	assert("Should have connected", 0, "%s failed to connect\n", cd->clientid);
+	MyLog(LOGA_DEBUG, "In connect onFailure callback, \"%s\" rc %d\n", cd->clientid, response ? response->code : -999);
+	if (response && response->message)
 		MyLog(LOGA_DEBUG, "In connect onFailure callback, \"%s\"\n", response->message);
 
 	test_finished++;
@@ -1144,7 +1144,7 @@ int main(int argc, char** argv)
 		for (options.test_no = 1; options.test_no < ARRAY_SIZE(tests); ++options.test_no)
 		{
 			failures = 0;
-			//MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
 			rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */	
 		}
 	}

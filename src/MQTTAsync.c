@@ -47,8 +47,8 @@
 
 #define URI_TCP "tcp://"
 
-#define BUILD_TIMESTAMP "201403121114"
-#define CLIENT_VERSION  "1.0.0.2"
+#define BUILD_TIMESTAMP "##MQTTCLIENT_BUILD_TAG##"
+#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##"
 
 char* client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
@@ -2570,8 +2570,6 @@ int MQTTAsync_connecting(MQTTAsyncs* m)
 #endif
 
 exit:
-    if (rc == TCPSOCKET_INTERRUPTED)
-      printf("Interrupted connect encountered****\n");
 	if ((rc != 0 && rc != TCPSOCKET_INTERRUPTED && m->c->connect_state != 2) || (rc == SSL_FATAL))
 	{
 		if (MQTTAsync_checkConn(&m->connect))
@@ -2651,7 +2649,7 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 				pack = MQTTPacket_Factory(&m->c->net, rc);
 			if ((m->c->connect_state == 3) && (*rc == SOCKET_ERROR))
 			{
-				Log(LOG_ERROR, -1, "CONNECT sent but MQTTPacket_Factory has returned SOCKET_ERROR");
+				Log(TRACE_MINIMUM, -1, "CONNECT sent but MQTTPacket_Factory has returned SOCKET_ERROR");
 				if (MQTTAsync_checkConn(&m->connect))
 				{
 					MQTTAsync_queuedCommand* conn;

@@ -744,7 +744,6 @@ int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, int buf0len, int count,
 			ListAppend(s.write_pending, sockmem, sizeof(int));
 			FD_SET(socket, &(s.pending_wset));
 			rc = TCPSOCKET_INTERRUPTED;
-			//iovec.iov_base = NULL; /* don't free it because it hasn't been completely written yet */
 		}
 		else 
 			rc = SOCKET_ERROR;
@@ -753,9 +752,10 @@ int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, int buf0len, int count,
 
 	if (rc != TCPSOCKET_INTERRUPTED)
 		free(iovec.iov_base);
-	if (rc == TCPSOCKET_INTERRUPTED)
+	else
 	{
 		int i;
+		free(buf0);
 		for (i = 0; i < count; ++i)
 		{
 			if (frees[i])

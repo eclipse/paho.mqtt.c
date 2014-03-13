@@ -438,7 +438,6 @@ void asyncTestOnDisconnect(void* context, MQTTAsync_successData* response)
 
 	AsyncTestClient* tc = (AsyncTestClient*) context;
 	MyLog(LOGA_DEBUG, "In asyncTestOnDisconnect callback, %s", tc->clientid);
-	printf("Successful disconnection\n");
 	//rc = Thread_lock_mutex(client_mutex);
 	tc->testFinished = 1;
 	//rc = Thread_unlock_mutex(client_mutex);

@@ -14,6 +14,7 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - multiple server connection support
+ *    Ian Craggs - MQTT 3.1.1 support
  *******************************************************************************/
 
 /**
@@ -159,6 +160,19 @@
  * Return code: A QoS value that falls outside of the acceptable range (0,1,2)
  */
 #define MQTTCLIENT_BAD_QOS -9
+
+/**
+ * Default MQTT version to connect with.  Use 3.1.1 then fall back to 3.1
+ */
+#define MQTTVERSION_DEFAULT 0
+/**
+ * MQTT version to connect with: 3.1
+ */
+#define MQTTVERSION_3_1 3
+/**
+ * MQTT version to connect with: 3.1.1
+ */
+#define MQTTVERSION_3_1_1 4
 
 /**
  * A handle representing an MQTT client. A valid client handle is available
@@ -490,9 +504,10 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1 or 2.  
+	/** The version number of this structure.  Must be 0, 1, 2 or 3.  
 	  * 0 signifies no SSL options and no serverURIs
 	  * 1 signifies no serverURIs 
+      * 2 signifies no MQTTVersion
 	  */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -583,9 +598,16 @@ typedef struct
    * is used.
    */    
 	char** serverURIs;
+	/**
+      * Sets the version of MQTT to be used on the connect.
+      * MQTTVERSION_DEFAULT (0) = default: start with 3.1.1, and if that fails, fall back to 3.1
+      * MQTTVERSION_3_1 (3) = only try version 3.1
+      * MQTTVERSION_3_1_1 (4) = only try version 3.1.1
+	  */
+	int MQTTVersion;
 } MQTTClient_connectOptions;
 
-#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 2, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL }
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 2, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, 0}
 
 /**
   * MQTTClient_libraryInfo is used to store details relating to the currently used

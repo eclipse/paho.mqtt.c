@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
+ *    Ian Craggs - MQTT 3.1.1 updates
  *******************************************************************************/
 
 #if !defined(MQTTPROTOCOLCLIENT_H)
@@ -25,7 +26,7 @@
 #include "Messages.h"
 
 #define MAX_MSG_ID 65535
-#define MAX_CLIENTID_LEN 23
+#define MAX_CLIENTID_LEN 65535
 
 int MQTTProtocol_assignMsgId(Clients* client);
 int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int retained, Messages** m);

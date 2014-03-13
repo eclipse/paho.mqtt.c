@@ -61,14 +61,18 @@ struct Options
 {
 	char* connection;         /**< connection to system under test. */
 	int verbose;
-  int test_no;
+	int test_no;
 	int size;									/**< size of big message */
+	int MQTTVersion;
+	int iterations;
 } options =
 {
 	"m2m.eclipse.org:1883",
 	0,
 	-1,
 	10000,
+	MQTTVERSION_DEFAULT,
+	1,
 };
 
 void getopts(int argc, char** argv)
@@ -95,6 +99,23 @@ void getopts(int argc, char** argv)
 		{
 			if (++count < argc)
 				options.connection = argv[count];
+			else
+				usage();
+		}
+		else if (strcmp(argv[count], "--MQTTversion") == 0)
+		{
+			if (++count < argc)
+			{
+				options.MQTTVersion = atoi(argv[count]);
+				printf("setting MQTT version to %d\n", options.MQTTVersion);
+			}
+			else
+				usage();
+		}
+		else if (strcmp(argv[count], "--iterations") == 0)
+		{
+			if (++count < argc)
+				options.iterations = atoi(argv[count]);
 			else
 				usage();
 		}
@@ -370,6 +391,7 @@ int test1(struct Options options)
 	opts.cleansession = 1;
 	opts.username = "testuser";
 	opts.password = "testpassword";
+	opts.MQTTVersion = options.MQTTVersion; 
 
 	opts.will = &wopts;
 	opts.will->message = "will message";
@@ -462,6 +484,7 @@ int test2(struct Options options)
 	opts.cleansession = 1;
 	opts.username = "testuser";
 	opts.password = "testpassword";
+	opts.MQTTVersion = options.MQTTVersion;
 
 	opts.will = &wopts;
 	opts.will->message = "will message";
@@ -674,6 +697,7 @@ int test3(struct Options options)
 		opts.cleansession = 1;
 		opts.username = "testuser";
 		opts.password = "testpassword";
+		opts.MQTTVersion = options.MQTTVersion;
 
 		opts.will = &wopts;
 		opts.will->message = "will message";
@@ -861,6 +885,7 @@ int test4(struct Options options)
 	opts.cleansession = 1;
 	opts.username = "testuser";
 	opts.password = "testpassword";
+	opts.MQTTVersion = options.MQTTVersion;
 
 	opts.will = &wopts;
 	opts.will->message = "will message";
@@ -1051,6 +1076,7 @@ int test6(struct Options options)
 	opts.onSuccess = test6_onConnect;
 	opts.onFailure = test6_onConnectFailure;
 	opts.context = &cinfo;
+	opts.MQTTVersion = options.MQTTVersion;
 
 	MyLog(LOGA_DEBUG, "Connecting");
 	rc = MQTTAsync_connect(cinfo.c, &opts);

@@ -182,6 +182,7 @@ typedef struct
 	void* phandle;  /* the persistence handle */
 	MQTTClient_persistence* persistence; /* a persistence implementation */
 	void* context; /* calling context - used when calling disconnect_internal */
+	int MQTTVersion;
 #if defined(OPENSSL)
 	MQTTClient_SSLOptions *sslopts;
 	SSL_SESSION* session;    /***< SSL session pointer for fast handhake */

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2014 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - MQTT 3.1.1 updates
  *******************************************************************************/
 
 #if !defined(MQTTPROTOCOL_H)
@@ -22,7 +23,7 @@
 #include "Clients.h"
 
 #define MAX_MSG_ID 65535
-#define MAX_CLIENTID_LEN 23
+#define MAX_CLIENTID_LEN 65535
 
 typedef struct
 {

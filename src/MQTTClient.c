@@ -748,7 +748,7 @@ int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* o
 	MQTTClients* m = handle;
 	int rc = SOCKET_ERROR;
 
-  FUNC_ENTRY;
+	FUNC_ENTRY;
 	if (m->ma && !running)
 	{
 		Thread_start(MQTTClient_run, handle);
@@ -914,6 +914,7 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 	START_TIME_TYPE start;
 	long millisecsTimeout = 30000L;
 	int rc = SOCKET_ERROR;
+	int MQTTVersion = 0;
 
 	FUNC_ENTRY;
 	millisecsTimeout = options->connectTimeout * 1000;
@@ -996,8 +997,18 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 	m->c->password = options->password;
 	m->c->retryInterval = options->retryInterval;
 
-	if ((rc = MQTTClient_connectURIVersion(handle, options, serverURI, 4	, start, millisecsTimeout)) != MQTTCLIENT_SUCCESS)
-		rc = MQTTClient_connectURIVersion(handle, options, serverURI, 3, start, millisecsTimeout);
+	if (options->struct_version == 3)
+		MQTTVersion = options->MQTTVersion;
+	else
+		MQTTVersion = MQTTVERSION_DEFAULT;
+
+	if (MQTTVersion == MQTTVERSION_DEFAULT)
+	{
+		if ((rc = MQTTClient_connectURIVersion(handle, options, serverURI, 4	, start, millisecsTimeout)) != MQTTCLIENT_SUCCESS)
+			rc = MQTTClient_connectURIVersion(handle, options, serverURI, 3, start, millisecsTimeout);
+	}
+	else
+		rc = MQTTClient_connectURIVersion(handle, options, serverURI, MQTTVersion, start, millisecsTimeout);
 
 	FUNC_EXIT_RC(rc);
 	return rc;

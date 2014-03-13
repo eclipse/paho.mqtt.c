@@ -14,6 +14,7 @@
  *    Ian Craggs - initial API and implementation 
  *    Ian Craggs, Allan Stockdill-Mander - SSL connections
  *    Ian Craggs - multiple server connection support
+ *    Ian Craggs - MQTT 3.1.1 support
  *******************************************************************************/
 
 /********************************************************************/
@@ -144,6 +145,19 @@
  * Return code: All 65535 MQTT msgids are being used
  */
 #define MQTTASYNC_NO_MORE_MSGIDS -10
+
+/**
+ * Default MQTT version to connect with.  Use 3.1.1 then fall back to 3.1
+ */
+#define MQTTVERSION_DEFAULT 0
+/**
+ * MQTT version to connect with: 3.1
+ */
+#define MQTTVERSION_3_1 3
+/**
+ * MQTT version to connect with: 3.1.1
+ */
+#define MQTTVERSION_3_1_1 4
 
 /**
  * A handle representing an MQTT client. A valid client handle is available
@@ -549,9 +563,10 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1 or 2.  
+	/** The version number of this structure.  Must be 0, 1, 2 or 3.  
 	  * 0 signifies no SSL options and no serverURIs
 	  * 1 signifies no serverURIs 
+      * 2 signifies no MQTTVersion
 	  */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -653,10 +668,17 @@ typedef struct
       * <i>tcp://localhost:1883</i>.
       */    
 	char** serverURIs;
+	/**
+      * Sets the version of MQTT to be used on the connect.
+      * MQTTVERSION_DEFAULT (0) = default: start with 3.1.1, and if that fails, fall back to 3.1
+      * MQTTVERSION_3_1 (3) = only try version 3.1
+      * MQTTVERSION_3_1_1 (4) = only try version 3.1.1
+	  */
+	int MQTTVersion;
 } MQTTAsync_connectOptions;
 
 
-#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 2, 60, 1, 10, NULL, NULL, NULL, 30, 20, NULL, NULL, 0, NULL}
+#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 3, 60, 1, 10, NULL, NULL, NULL, 30, 20, NULL, NULL, 0, NULL, 0}
 
 /**
   * This function attempts to connect a previously-created client (see

@@ -1150,6 +1150,7 @@ int main(int argc, char** argv)
 	int rc = 0;
  	int (*tests[])() = {NULL, test1, test2, test3, test4, test5, test6}; /* indexed starting from 1 */
 	MQTTAsync_nameValue* info;
+	int i;
 
 	xml = fopen("TEST-test4.xml", "w");
 	fprintf(xml, "<testsuite name=\"test4\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests)) - 1);
@@ -1165,19 +1166,22 @@ int main(int argc, char** argv)
 	  info++;
 	}
 
- 	if (options.test_no == -1)
-	{ /* run all the tests */
-		for (options.test_no = 1; options.test_no < ARRAY_SIZE(tests); ++options.test_no)
-		{
-			failures = 0;
-			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
-			rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */	
-		}
-	}
-	else
+	for (i = 0; i < options.iterations; ++i)
 	{
-		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
-		rc = tests[options.test_no](options); /* run just the selected test */
+	 	if (options.test_no == -1)
+		{ /* run all the tests */
+			for (options.test_no = 1; options.test_no < ARRAY_SIZE(tests); ++options.test_no)
+			{
+				failures = 0;
+				MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+				rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */	
+			}
+		}
+		else
+		{
+			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+			rc = tests[options.test_no](options); /* run just the selected test */
+		}
 	}
 
 	if (rc == 0)

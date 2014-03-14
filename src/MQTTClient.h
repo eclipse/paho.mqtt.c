@@ -607,7 +607,7 @@ typedef struct
 	int MQTTVersion;
 } MQTTClient_connectOptions;
 
-#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 2, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, 0}
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 3, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, 0}
 
 /**
   * MQTTClient_libraryInfo is used to store details relating to the currently used

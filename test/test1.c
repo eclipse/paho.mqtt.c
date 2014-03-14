@@ -64,6 +64,8 @@ struct Options
 	int hacount;
 	int verbose;
 	int test_no;
+	int MQTTVersion;
+	int iterations;
 } options =
 {
 	"tcp://m2m.eclipse.org:1883",
@@ -71,6 +73,8 @@ struct Options
 	0,
 	0,
 	0,
+	MQTTVERSION_DEFAULT,
+	1,
 };
 
 void getopts(int argc, char** argv)
@@ -111,6 +115,23 @@ void getopts(int argc, char** argv)
 					tok = strtok(NULL, " ");
 				}
 			}
+			else
+				usage();
+		}
+		else if (strcmp(argv[count], "--MQTTversion") == 0)
+		{
+			if (++count < argc)
+			{
+				options.MQTTVersion = atoi(argv[count]);
+				printf("setting MQTT version to %d\n", options.MQTTVersion);
+			}
+			else
+				usage();
+		}
+		else if (strcmp(argv[count], "--iterations") == 0)
+		{
+			if (++count < argc)
+				options.iterations = atoi(argv[count]);
 			else
 				usage();
 		}
@@ -353,6 +374,7 @@ int test1(struct Options options)
 	opts.cleansession = 1;
 	opts.username = "testuser";
 	opts.password = "testpassword";
+	opts.MQTTVersion = options.MQTTVersion;
 	if (options.haconnections != NULL)
 	{
 		opts.serverURIs = options.haconnections;
@@ -519,6 +541,7 @@ int test2(struct Options options)
 
 	opts.keepAliveInterval = 20;
 	opts.cleansession = 1;
+	opts.MQTTVersion = options.MQTTVersion;
 	if (options.haconnections != NULL)
 	{
 		opts.serverURIs = options.haconnections;
@@ -667,6 +690,7 @@ int test4_run(int qos)
 
 	opts.keepAliveInterval = 20;
 	opts.reliable = 0;
+	opts.MQTTVersion = options.MQTTVersion;
 	if (options.haconnections != NULL)
 	{
 		opts.serverURIs = options.haconnections;
@@ -837,6 +861,7 @@ int test5(struct Options options)
 	opts.keepAliveInterval = 20;
 	opts.cleansession = 0;
 	opts.reliable = 0;
+	opts.MQTTVersion = options.MQTTVersion;
 	if (options.haconnections != NULL)
 	{
 		opts.serverURIs = options.haconnections;
@@ -1013,6 +1038,7 @@ int test6(struct Options options)
  
 	opts.keepAliveInterval = 2;
 	opts.cleansession = 1;
+	opts.MQTTVersion = options.MQTTVersion;
 	opts.will = &wopts;
 	opts.will->message = test6_will_message;
 	opts.will->qos = 1;
@@ -1103,6 +1129,7 @@ int main(int argc, char** argv)
 {
 	int rc = 0;
  	int (*tests[])() = {NULL, test1, test2, test3, test4, test5, test6};
+	int i;
 	
 	xml = fopen("TEST-test1.xml", "w");
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
@@ -1112,13 +1139,16 @@ int main(int argc, char** argv)
 
 	getopts(argc, argv);
 
- 	if (options.test_no == 0)
-	{ /* run all the tests */
- 	   	for (options.test_no = 1; options.test_no < ARRAY_SIZE(tests); ++options.test_no)
-			rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */
+	for (i = 0; i < options.iterations; ++i)
+	{
+	 	if (options.test_no == 0)
+		{ /* run all the tests */
+ 		   	for (options.test_no = 1; options.test_no < ARRAY_SIZE(tests); ++options.test_no)
+				rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */
+		}
+		else
+ 		   	rc = tests[options.test_no](options); /* run just the selected test */
 	}
-	else
- 	   	rc = tests[options.test_no](options); /* run just the selected test */
     	
  	if (rc == 0)
 		MyLog(LOGA_INFO, "verdict pass");

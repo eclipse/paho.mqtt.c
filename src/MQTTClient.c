@@ -1030,7 +1030,8 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 	}
 
 	if (strncmp(options->struct_id, "MQTC", 4) != 0 || 
-		(options->struct_version != 0 && options->struct_version != 1 && options->struct_version != 2))
+		(options->struct_version != 0 && options->struct_version != 1 && options->struct_version != 2
+			&& options->struct_version != 3))
 	{
 		rc = MQTTCLIENT_BAD_STRUCTURE;
 		goto exit;

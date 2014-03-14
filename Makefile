@@ -58,7 +58,7 @@ SYNC_SAMPLES = ${addprefix ${blddir}/samples/,${SAMPLE_FILES_C}}
 SAMPLE_FILES_A = stdoutsuba MQTTAsync_subscribe MQTTAsync_publish
 ASYNC_SAMPLES = ${addprefix ${blddir}/samples/,${SAMPLE_FILES_A}}
 
-TEST_FILES_C = test1
+TEST_FILES_C = test1 sync_client_test
 SYNC_TESTS = ${addprefix ${blddir}/test/,${TEST_FILES_C}}
 
 TEST_FILES_CS = test3

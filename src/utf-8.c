@@ -127,11 +127,17 @@ int UTF8_validate(int len, char* data)
 	int rc = 0;
 
 	FUNC_ENTRY;
+	if (len == 0)
+	{
+		rc = 1;
+		goto exit;
+	}
 	curdata = UTF8_char_validate(len, data);
 	while (curdata && (curdata < data + len))
 		curdata = UTF8_char_validate(len, curdata);
 
 	rc = curdata != NULL;
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

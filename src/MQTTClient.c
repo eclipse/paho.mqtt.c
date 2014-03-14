@@ -1246,6 +1246,14 @@ int MQTTClient_subscribeMany(MQTTClient handle, int count, char** topic, int* qo
 		Thread_lock_mutex(mqttclient_mutex);
 		if (pack != NULL)
 		{
+			Suback* sub = (Suback*)pack;	
+			ListElement* current = NULL;
+			i = 0;
+			while (ListNextElement(sub->qoss, &current))
+			{
+				int* reqqos = (int*)(current->content);
+				qos[i++] = *reqqos;
+			}	
 			rc = MQTTProtocol_handleSubacks(pack, m->c->net.socket);
 			m->pack = NULL;
 		}

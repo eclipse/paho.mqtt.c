@@ -384,9 +384,9 @@ char* readUTF(char** pptr, char* enddata)
  * @param pptr pointer to the input buffer - incremented by the number of bytes used & returned
  * @return the character read
  */
-char readChar(char** pptr)
+unsigned char readChar(char** pptr)
 {
-	char c = **pptr;
+	unsigned char c = **pptr;
 	(*pptr)++;
 	return c;
 }
@@ -533,8 +533,8 @@ int MQTTPacket_send_ack(int type, int msgid, int dup, networkHandles *net)
 	header.byte = 0;
 	header.bits.type = type;
 	header.bits.dup = dup;
-  if (type == PUBREL)
-    header.bits.qos = 1;
+	if (type == PUBREL)
+	    header.bits.qos = 1;
 	writeInt(&ptr, msgid);
 	if ((rc = MQTTPacket_send(net, header, buf, 2, 1)) != TCPSOCKET_INTERRUPTED)
 		free(buf);

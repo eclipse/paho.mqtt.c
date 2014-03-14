@@ -202,7 +202,7 @@ int MQTTPacket_encode(char* buf, int length);
 int MQTTPacket_decode(networkHandles* net, int* value);
 int readInt(char** pptr);
 char* readUTF(char** pptr, char* enddata);
-char readChar(char** pptr);
+unsigned char readChar(char** pptr);
 void writeChar(char** pptr, char c);
 void writeInt(char** pptr, int anInt);
 void writeUTF(char** pptr, char* string);

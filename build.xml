@@ -175,6 +175,7 @@
       	<copy overwrite="true" todir="/shared/technology/paho/C/${release.version}/${build.level}">
           <fileset dir="${output.folder}">
 	          <include name="*.gz"/>
+	          <include name="*.zip"/>
           </fileset>
         </copy> 
       </then>

@@ -62,187 +62,6 @@
     <replace file="src/MQTTAsync.c" token="##MQTTCLIENT_VERSION_TAG##" value="${release.version}" />
   </target>
 	
-  <target name="compile" depends="version">
-    <if>
-    <os family="unix" />
-    <then> 
-      <property name="ccflags.so" value="-fPIC -Os -Wall" />
-      <property name="ldflags.so" value="-fvisibility=hidden -shared" />
-      <mkdir dir="${output.folder}"/>
-
-      <!-- display gcc version -->
-      <exec executable="gcc" failonerror="true">
-        <arg line="-v"/>	
-      </exec>
-
-      <!-- non-SSL, synchronous library -->
-      <property name="output.filename" value="${output.folder}/lib${libname}.so" /> 
-      <exec executable="gcc" failonerror="true">
-	<arg line="${ccflags.so} ${ldflags.so} -Wl,-init,MQTTClient_init -Wl,-soname,lib${libname}.so -o ${output.filename} ${sync.source.files}"/>	
-      </exec>
-      <exec executable="strip" failonerror="true">
-	<arg value="${output.filename}" />
-      </exec>
-
-      <if>
-	<equals arg1="${ssl}" arg2="yes" />	
-	<then>		
-	  <!-- SSL, synchronous library --> 
-	  <property name="output.ssl.filename" value="${output.folder}/lib${libname.ssl}.so" />
-	  <exec executable="gcc" failonerror="true">
-	    <arg line="-DOPENSSL ${ccflags.so} ${ldflags.so} -Wl,-init,MQTTClient_init -Wl,-soname,lib${libname.ssl}.so -o ${output.ssl.filename} ${sync.source.files}"/>	
-	  </exec>
-	  <exec executable="strip" failonerror="true">
-	    <arg value="${output.ssl.filename}" />
-	  </exec>
-	</then>
-      </if>
-
-      <!-- non-SSL, asynchronous library -->
-      <property name="output.async.filename" value="${output.folder}/lib${libname.async}.so" /> 
-      <exec executable="gcc" failonerror="true">
-	<arg line="${ccflags.so} ${ldflags.so} -Wl,-init,MQTTAsync_init -Wl,-soname,lib${libname.async}.so -o ${output.async.filename} ${async.source.files}"/>	
-      </exec>
-      <exec executable="strip" failonerror="true">
-	<arg value="${output.async.filename}" />
-      </exec>
-
-      <if>
-	<equals arg1="${ssl}" arg2="yes" />	
-	<then>
-	  <!-- SSL, asynchronous library --> 
-	  <property name="output.async.ssl.filename" value="${output.folder}/lib${libname.async.ssl}.so" />
-	  <exec executable="gcc" failonerror="true">
-	    <arg line="-DOPENSSL ${ccflags.so} ${ldflags.so} -Wl,-init,MQTTAsync_init -Wl,-soname,lib${libname.async.ssl}.so -o ${output.async.ssl.filename} ${async.source.files}"/>	
-	  </exec>
-	  <exec executable="strip" failonerror="true">
-	    <arg value="${output.async.ssl.filename}" />
-	  </exec>
-	</then>
-      </if>
-
-      <!-- MQTTVersion --> 
-      <exec executable="gcc" failonerror="true">
-	<arg line="-lpthread -ldl -o ${output.folder}/MQTTVersion src/MQTTVersion.c"/>	
-      </exec>
-      <exec executable="strip" failonerror="true">
-	<arg value="${output.folder}/MQTTVersion" />
-      </exec>
-
-      <!-- Samples -->
-      <mkdir dir="${output.folder}/samples"/>
-      <copy overwrite="true" todir="${output.folder}/samples">
-        <fileset dir="src/samples">
-          <include name="*"/>
-        </fileset>
-      </copy>
-      <foreach target="sample.compile" param="aFile" list="stdinpub,stdoutsub,pubsync,pubasync,subasync"/>
-      <foreach target="sample.async.compile" param="aFile" list="stdoutsuba,MQTTAsync_publish,MQTTAsync_subscribe"/>
-
-      <!-- Build tests --> 
-      <foreach target="onecompile" param="aFile" list="test1"/>
-      <foreach target="onecompiles" param="aFile" list="test3"/>
-      <foreach target="asynccompile" param="aFile" list="test4"/>
-      <foreach target="asynccompiles" param="aFile" list="test5"/>
-
-      <mkdir dir="${output.folder}/include"/>
-      <echo message="Copying the headers for the C clients from the output tree" />
-      <copy overwrite="true" todir="${output.folder}/include">
-        <fileset dir="src">
-	  <include name="MQTTClient.h"/>
-	  <include name="MQTTClientPersistence.h"/>
-	  <include name="MQTTAsync.h"/>
-        </fileset>
-      </copy>
-
-    </then>
-    <elseif>
-      <os family="windows" />
-    <then>
-      <property name="clflags.so" value="/D WIN32 /D _UNICODE /D UNICODE /D _CRT_SECURE_NO_WARNINGS
- /nologo /c /O2 /W3 /Fd /MD /TC" />
-      <property name="ldflags.so" value="/dll /nologo /machine:x86 /manifest" />
-      <mkdir dir="${output.folder}"/>
-      <delete>
-
-        <fileset dir="${output.folder}" includes="*.obj"/>
-    
-  </delete>
-
-      <!-- non-SSL, synchronous library -->
-      <property name="output.filename" value="${output.folder}/${libname}.dll" /> 
-      <exec executable="cl" failonerror="true">
-	<arg line="${clflags.so} /I src /Fo${output.folder}/ ${sync.source.files}"/>	
-      </exec>
-      <exec executable="link" failonerror="true">
-	<arg line="${ldflags.so} /out:${output.filename} ws2_32.lib ${output.folder}/*.obj" />
-      </exec>
-      <exec executable="mt" failonerror="true">
-	<arg line="-manifest ${output.folder}/{libname}.dll.manifest -outputresource:${output.filename}\;2" />
-      </exec>
-      <delete>
-
-        <fileset dir="${output.folder}" includes="*.obj"/>
-    
-  </delete>
-
-      <!-- non-SSL, asynchronous library -->
-      <property name="output.async.filename" value="${output.folder}/${libname.async}.dll" />   
-      <exec executable="cl" failonerror="true">
-	<arg line="${clflags.so} /I src /Fo${output.folder}/ ${async.source.files}"/>	
-      </exec>
-      <exec executable="link" failonerror="true">
-	<arg line="${ldflags.so} /out:${output.async.filename} ws2_32.lib ${output.folder}/*.obj" />
-      </exec>
-      <exec executable="mt" failonerror="true">
-	<arg line="-manifest ${output.folder}/{libname.async}.dll.manifest -outputresource:${output.async.filename}\;2" />
-      </exec>
-      <delete>
-
-        <fileset dir="${output.folder}" includes="*.obj"/>
-    
-  </delete>
-    </then>
-    </elseif>
-    </if>
-  </target>
-
-  <target name="sample.compile" >
-    <exec executable="gcc" failonerror="true">
-      <arg line="-I src -lpthread -lmqttv3c -L${output.folder} -o ${output.folder}/samples/${aFile} src/samples/${aFile}.c"/>	
-    </exec>
-  </target>
-
-  <target name="sample.async.compile" >
-    <exec executable="gcc" failonerror="true">
-      <arg line="-I src -lpthread -lmqttv3a -L${output.folder} -o ${output.folder}/samples/${aFile} src/samples/${aFile}.c"/>	
-    </exec>
-  </target>
-
-  <target name="onecompile" >
-    <exec executable="gcc" failonerror="true">
-      <arg line="-I src -lpthread -lmqttv3c -L${output.folder} -o ${output.folder}/${aFile} test/${aFile}.c"/>	
-    </exec>
-  </target>
-
-  <target name="onecompiles" >
-    <exec executable="gcc" failonerror="true">
-      <arg line="-I src -lpthread -lmqttv3cs -lssl -L${output.folder} -o ${output.folder}/${aFile} test/${aFile}.c"/>	
-    </exec>
-  </target>
-
-  <target name="asynccompile" >
-    <exec executable="gcc" failonerror="true">
-      <arg line="-I src -lpthread -lmqttv3a -L${output.folder} -o ${output.folder}/${aFile} test/${aFile}.c"/>	
-    </exec>
-  </target>
-
-  <target name="asynccompiles" >
-    <exec executable="gcc" failonerror="true">
-      <arg line="-I src -lpthread -lmqttv3as -lssl -L${output.folder} -o ${output.folder}/${aFile} test/${aFile}.c"/>	
-    </exec>
-  </target>
-
   <target name="test" >
     <foreach target="runAtest" param="aTest" list="test1,test4"/>
     <foreach target="runSSLtest" param="aTest" list="test3,test5"/>
@@ -252,7 +71,7 @@
     <exec executable="./${aTest}" failonerror="true" dir="${output.folder}/test" > 
       <arg value="--connection" />
       <arg value="tcp://${test.hostname}:18883" />
-      <env key="LD_LIBRARY_PATH" value=".." />
+      <env key="LD_LIBRARY_PATH" value="../lib" />
     </exec>
   </target>
 
@@ -260,7 +79,7 @@
     <exec executable="./${aTest}" failonerror="true" dir="${output.folder}/test" > 
       <arg value="--hostname" />
       <arg value="${test.hostname}" />
-      <env key="LD_LIBRARY_PATH" value=".." />
+      <env key="LD_LIBRARY_PATH" value="../lib" />
     </exec>
   </target>
 
@@ -293,6 +112,7 @@
     <if>
     <os family="unix"/>
     <then> 
+    <delete dir="${output.folder}" />
     <!-- display gcc version -->
     <exec executable="gcc" failonerror="true">
       <arg line="-v"/>	
@@ -310,6 +130,18 @@
     </copy> 
     <copy overwrite="true" todir="${output.folder}">
       <fileset dir="." includes="README.md,CONTRIBUTING.md,about.html,notice.html,edl-v10,epl-v10"/>
+    </copy>
+    <mkdir dir="${output.folder}/lib"/>
+    <move overwrite="true" todir="${output.folder}/lib">
+      <fileset dir="${output.folder}" includes="libpaho*"/>
+    </move>
+    <mkdir dir="${output.folder}/bin"/>
+    <move overwrite="true" todir="${output.folder}/bin">
+      <fileset dir="${output.folder}/samples" includes="*"/>
+      <fileset dir="${output.folder}" includes="MQTTVersion"/>
+    </move>
+    <copy overwrite="true" todir="${output.folder}/samples">
+      <fileset dir="src/samples" includes="*"/>
     </copy> 
     <delete>
        <fileset dir="." includes="paho-mqtt-c-unix-${release.version}.tar.gz"/>
@@ -317,9 +149,17 @@
 
     <exec executable="tar" failonerror="true" dir="${output.folder}">
       <arg value="acf"/>
-      <arg value="../../paho-mqtt-c-unix-${release.version}.tar.gz"/>
-      <arg value="."/>
-      <arg value="--exclude=test"/>	
+      <arg value="paho-mqtt-c-unix-${release.version}.tar.gz"/>
+      <arg value="about.html"/>
+      <arg value="notice.html"/>
+      <arg value="README.md"/>
+      <arg value="CONTRIBUTING.md"/>
+      <arg value="epl-v10"/>
+      <arg value="edl-v10"/>
+      <arg value="include"/>
+	  <arg value="samples"/>
+      <arg value="lib"/>
+      <arg value="bin"/>
     </exec>
 
     </then>
@@ -333,7 +173,7 @@
         <mkdir dir="/shared/technology/paho/C/${build.level}"/>
        	<echo message="Copying the build output to /shared" />
       	<copy overwrite="true" todir="/shared/technology/paho/C/${build.level}">
-          <fileset dir=".">
+          <fileset dir="${output.folder}">
 	          <include name="*.gz"/>
           </fileset>
         </copy> 

@@ -71,7 +71,7 @@
     <exec executable="./${aTest}" failonerror="true" dir="${output.folder}/test" > 
       <arg value="--connection" />
       <arg value="tcp://${test.hostname}:18883" />
-      <env key="LD_LIBRARY_PATH" value="../lib" />
+      <env key="LD_LIBRARY_PATH" path="${output.folder}/lib" />
     </exec>
   </target>
 
@@ -79,7 +79,7 @@
     <exec executable="./${aTest}" failonerror="true" dir="${output.folder}/test" > 
       <arg value="--hostname" />
       <arg value="${test.hostname}" />
-      <env key="LD_LIBRARY_PATH" value="../lib" />
+      <env key="LD_LIBRARY_PATH" path="${output.folder}/lib" />
     </exec>
   </target>
 

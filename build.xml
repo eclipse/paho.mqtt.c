@@ -69,6 +69,7 @@
   </target>
 
   <target name="runAtest">
+    <echo message="LD_LIBRARY_PATH ${output.folder}/lib" />
     <exec executable="./${aTest}" failonerror="true" dir="${output.folder}/test" > 
       <arg value="--connection" />
       <arg value="tcp://${test.hostname}:${test.port}" />

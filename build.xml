@@ -32,6 +32,7 @@
   <property name="libname.async.ssl" value="mqttv3as" />
   <property name="ssl" value="yes" />
   <property name="test.hostname" value="m2m.eclipse.org"/>
+  <property name="test.port" value="18883"/>
 	
   <target name="init">
     <tstamp>
@@ -70,7 +71,7 @@
   <target name="runAtest">
     <exec executable="./${aTest}" failonerror="true" dir="${output.folder}/test" > 
       <arg value="--connection" />
-      <arg value="tcp://${test.hostname}:18883" />
+      <arg value="tcp://${test.hostname}:${test.port}" />
       <env key="LD_LIBRARY_PATH" path="${output.folder}/lib" />
     </exec>
   </target>
@@ -185,3 +186,4 @@
   <target name="full" depends="init, version, build, test, doc, copy" />
 
 </project>
+

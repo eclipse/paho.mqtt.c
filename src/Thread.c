@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2014 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -35,7 +35,7 @@
 #undef realloc
 #undef free
 
-#if !defined(WIN32)
+#if !defined(WIN32) && !defined(WIN64)
 #include <errno.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -55,7 +55,7 @@
  */
 thread_type Thread_start(thread_fn fn, void* parameter)
 {
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	thread_type thread = NULL;
 #else
 	thread_type thread = 0;
@@ -63,7 +63,7 @@ thread_type Thread_start(thread_fn fn, void* parameter)
 #endif
 
 	FUNC_ENTRY;
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	thread = CreateThread(NULL, 0, fn, parameter, 0, NULL);
 #else
 	pthread_attr_init(&attr);
@@ -87,7 +87,7 @@ mutex_type Thread_create_mutex()
 	int rc = 0;
 
 	FUNC_ENTRY;
-	#if defined(WIN32)
+	#if defined(WIN32) || defined(WIN64)
 		mutex = CreateMutex(NULL, 0, NULL);
 	#else
 		mutex = malloc(sizeof(pthread_mutex_t));
@@ -108,7 +108,7 @@ int Thread_lock_mutex(mutex_type mutex)
 	int rc = -1;
 
 	/* don't add entry/exit trace points as the stack log uses mutexes - recursion beckons */
-	#if defined(WIN32)
+	#if defined(WIN32) || defined(WIN64)
 		/* WaitForSingleObject returns WAIT_OBJECT_0 (0), on success */
 		rc = WaitForSingleObject(mutex, INFINITE);
 	#else
@@ -129,7 +129,7 @@ int Thread_unlock_mutex(mutex_type mutex)
 	int rc = -1;
 
 	/* don't add entry/exit trace points as the stack log uses mutexes - recursion beckons */
-	#if defined(WIN32)
+	#if defined(WIN32) || defined(WIN64)
 		/* if ReleaseMutex fails, the return value is 0 */
 		if (ReleaseMutex(mutex) == 0)
 			rc = GetLastError();
@@ -152,7 +152,7 @@ void Thread_destroy_mutex(mutex_type mutex)
 	int rc = 0;
 
 	FUNC_ENTRY;
-	#if defined(WIN32)
+	#if defined(WIN32) || defined(WIN64)
 		rc = CloseHandle(mutex);
 	#else
 		rc = pthread_mutex_destroy(mutex);
@@ -168,7 +168,7 @@ void Thread_destroy_mutex(mutex_type mutex)
  */
 thread_id_type Thread_getid()
 {
-	#if defined(WIN32)
+	#if defined(WIN32) || defined(WIN64)
 		return GetCurrentThreadId();
 	#else
 		return pthread_self();
@@ -200,7 +200,7 @@ sem_type Thread_create_sem()
 	int rc = 0;
 
 	FUNC_ENTRY;
-	#if defined(WIN32)
+	#if defined(WIN32) || defined(WIN64)
 		sem = CreateEvent(
 		        NULL,               // default security attributes
 		        FALSE,              // manual-reset event?
@@ -249,7 +249,7 @@ int Thread_wait_sem(sem_type sem, int timeout)
  * so I've used trywait in a loop instead. Ian Craggs 23/7/2010
  */
 	int rc = -1;
-#if !defined(WIN32)
+#if !defined(WIN32) && !defined(WIN64)
 #define USE_TRYWAIT
 #if defined(USE_TRYWAIT)
 	int i = 0;
@@ -261,7 +261,7 @@ int Thread_wait_sem(sem_type sem, int timeout)
 #endif
 
 	FUNC_ENTRY;
-	#if defined(WIN32)
+	#if defined(WIN32) || defined(WIN64)
 		rc = WaitForSingleObject(sem, timeout);
 	#elif defined(USE_TRYWAIT)
 		while (++i < count && (rc = sem_trywait(sem)) != 0)
@@ -293,7 +293,7 @@ int Thread_wait_sem(sem_type sem, int timeout)
  */
 int Thread_check_sem(sem_type sem)
 {
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	return WaitForSingleObject(sem, 0) == WAIT_OBJECT_0;
 #else
 	int semval = -1;
@@ -313,7 +313,7 @@ int Thread_post_sem(sem_type sem)
 	int rc = 0;
 
 	FUNC_ENTRY;
-	#if defined(WIN32)
+	#if defined(WIN32) || defined(WIN64)
 		if (SetEvent(sem) == 0)
 			rc = GetLastError();
 	#else
@@ -335,7 +335,7 @@ int Thread_destroy_sem(sem_type sem)
 	int rc = 0;
 
 	FUNC_ENTRY;
-	#if defined(WIN32)
+	#if defined(WIN32) || defined(WIN64)
 		rc = CloseHandle(sem);
     #elif defined(USE_NAMED_SEMAPHORES)
     	int i;
@@ -359,7 +359,7 @@ int Thread_destroy_sem(sem_type sem)
 }
 
 
-#if !defined(WIN32)
+#if !defined(WIN32) && !defined(WIN64)
 /**
  * Create a new condition variable
  * @return the condition variable struct

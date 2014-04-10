@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2014 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -78,7 +78,7 @@
 #if !defined(MQTTASYNC_H)
 #define MQTTASYNC_H
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
   #define DLLImport __declspec(dllimport)
   #define DLLExport __declspec(dllexport)
 #else
@@ -1174,7 +1174,7 @@ int main(int argc, char* argv[])
          "on topic %s for client with ClientID: %s\n",
          PAYLOAD, TOPIC, CLIENTID);
 	while (!finished)
-		#if defined(WIN32)
+		#if defined(WIN32) || defined(WIN64)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1324,7 +1324,7 @@ int main(int argc, char* argv[])
 	}
 
 	while	(!subscribed)
-		#if defined(WIN32)
+		#if defined(WIN32) || defined(WIN64)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1345,7 +1345,7 @@ int main(int argc, char* argv[])
 		exit(-1);	
 	}
  	while	(!disc_finished)
-		#if defined(WIN32)
+		#if defined(WIN32) || defined(WIN64)
 			Sleep(100);
 		#else
 			usleep(10000L);

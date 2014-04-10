@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2013 IBM Corp.
+ * Copyright (c) 2012, 2014 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include "MQTTAsync.h"
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 #include <windows.h>
 #include <tchar.h>
 #include <io.h>
@@ -123,7 +123,7 @@ int loadandcall(char* libname)
 {
 	int rc = 0;
 	MQTTAsync_nameValue* (*func_address)(void) = NULL;
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	HMODULE APILibrary = LoadLibrary(libname);
 	
 	if (APILibrary == NULL)
@@ -187,7 +187,7 @@ int main(int argc, char** argv)
 		 
 		for (i = 0; i < ARRAY_SIZE(libraries); ++i)
 		{
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 			sprintf(namebuf, "%s.dll", libraries[i]);
 #else
 			sprintf(namebuf, "lib%s.so.1", libraries[i]);

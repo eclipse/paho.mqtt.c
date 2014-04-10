@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2012 IBM Corp.
+ * Copyright (c) 2009, 2014 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 #define snprintf _snprintf
 #endif
 
@@ -64,7 +64,7 @@ static int thread_count = 0;
 static threadEntry threads[MAX_THREADS];
 static threadEntry *cur_thread = NULL;
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 mutex_type stack_mutex;
 #else
 static pthread_mutex_t stack_mutex_store = PTHREAD_MUTEX_INITIALIZER;

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2014 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -68,7 +68,7 @@ ClientStates* bstate = &ClientState;
 
 MQTTProtocol state;
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 static mutex_type mqttclient_mutex = NULL;
 extern mutex_type stack_mutex;
 extern mutex_type heap_mutex;
@@ -161,7 +161,7 @@ typedef struct
 void MQTTClient_sleep(long milliseconds)
 {
 	FUNC_ENTRY;
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	Sleep(milliseconds);
 #else
 	usleep(milliseconds*1000);
@@ -170,7 +170,7 @@ void MQTTClient_sleep(long milliseconds)
 }
 
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 #define START_TIME_TYPE DWORD
 START_TIME_TYPE MQTTClient_start_clock(void)
 {
@@ -195,7 +195,7 @@ START_TIME_TYPE MQTTClient_start_clock(void)
 #endif
 
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 long MQTTClient_elapsed(DWORD milliseconds)
 {
 	return GetTickCount() - milliseconds;

@@ -240,7 +240,7 @@ void myassert(char* filename, int lineno, char* description, int value, char* fo
 		va_list args;
 
 		++failures;
-		printf("Assertion failed, file %s, line %d, description: %s\n", filename, lineno, description);
+		MyLog(LOGA_INFO, "Assertion failed, file %s, line %d, description: %s\n", filename, lineno, description);
 
 		va_start(args, format);
 		vprintf(format, args);

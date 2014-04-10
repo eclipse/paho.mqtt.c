@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2014 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -42,7 +42,7 @@
 int Socket_close_only(int socket);
 int Socket_continueWrites(fd_set* pwset);
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 #define iov_len len
 #define iov_base buf
 #endif
@@ -61,7 +61,7 @@ static fd_set wset;
 int Socket_setnonblocking(int sock)
 {
 	int rc;
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	u_long flag = 1L;
 
 	FUNC_ENTRY;
@@ -87,12 +87,12 @@ int Socket_setnonblocking(int sock)
  */
 int Socket_error(char* aString, int sock)
 {
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	int errno;
 #endif
 
 	FUNC_ENTRY;
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	errno = WSAGetLastError();
 #endif
 	if (errno != EINTR && errno != EAGAIN && errno != EINPROGRESS && errno != EWOULDBLOCK)
@@ -110,7 +110,7 @@ int Socket_error(char* aString, int sock)
  */
 void Socket_outInitialize()
 {
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	WORD    winsockVer = 0x0202;
 	WSADATA wsd;
 
@@ -144,7 +144,7 @@ void Socket_outTerminate()
 	ListFree(s.write_pending);
 	ListFree(s.clientsds);
 	SocketBuffer_terminate();
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	WSACleanup();
 #endif
 	FUNC_EXIT;
@@ -397,7 +397,7 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 	int rc;
 
 	FUNC_ENTRY;
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	rc = WSASend(socket, iovecs, count, (LPDWORD)bytes, 0, NULL, NULL);
 	if (rc == SOCKET_ERROR)
 	{
@@ -517,7 +517,7 @@ int Socket_close_only(int socket)
 	int rc;
 
 	FUNC_ENTRY;
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	if (shutdown(socket, SD_BOTH) == SOCKET_ERROR)
 		Socket_error("shutdown", socket);
 	if ((rc = closesocket(socket)) == SOCKET_ERROR)
@@ -587,7 +587,7 @@ int Socket_new(char* addr, int port, int* sock)
 	struct sockaddr_in6 address6;
 #endif
 	int rc = SOCKET_ERROR;
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	short family;
 #else
 	sa_family_t family = AF_INET;
@@ -812,7 +812,7 @@ char* Socket_getaddrname(struct sockaddr* sa, int sock)
 #define PORTLEN 10
 	static char addr_string[ADDRLEN + PORTLEN];
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	int buflen = ADDRLEN*2;
 	wchar_t buf[ADDRLEN*2];
 	if (WSAAddressToString(sa, sizeof(struct sockaddr_in6), NULL, buf, (LPDWORD)&buflen) == SOCKET_ERROR)

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2014 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -37,7 +37,7 @@
 #include <time.h>
 #include <string.h>
 
-#if !defined(WIN32)
+#if !defined(WIN32) && !defined(WIN64)
 #include <syslog.h>
 #include <sys/stat.h>
 #define GETTIMEOFDAY 1
@@ -51,7 +51,7 @@
 	#include <sys/timeb.h>
 #endif
 
-#if !defined(WIN32)
+#if !defined(WIN32) && !defined(WIN64)
 /**
  * _unlink mapping for linux
  */
@@ -112,7 +112,7 @@ struct timeb ts, last_ts;
 #endif
 static char msg_buf[512];
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 mutex_type log_mutex;
 #else
 static pthread_mutex_t log_mutex_store = PTHREAD_MUTEX_INITIALIZER;
@@ -171,7 +171,7 @@ int Log_initialize(Log_nameValue* info)
 			info++;
 		}
 	}
-#if !defined(WIN32)
+#if !defined(WIN32) && !defined(WIN64)
 	struct stat buf;
 	if (stat("/proc/version", &buf) != -1)
 	{

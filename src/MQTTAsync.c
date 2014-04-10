@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2014 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -72,7 +72,7 @@ enum MQTTAsync_threadStates
 enum MQTTAsync_threadStates sendThread_state = STOPPED;
 enum MQTTAsync_threadStates receiveThread_state = STOPPED;
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 static mutex_type mqttasync_mutex = NULL;
 static mutex_type mqttcommand_mutex = NULL;
 static sem_type send_sem = NULL;
@@ -148,7 +148,7 @@ void MQTTAsync_closeSession(Clients* client);
 void MQTTProtocol_closeSession(Clients* client, int sendwill);
 void MQTTAsync_writeComplete(int socket);
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 #define START_TIME_TYPE DWORD
 START_TIME_TYPE MQTTAsync_start_clock(void)
 {
@@ -173,7 +173,7 @@ START_TIME_TYPE MQTTAsync_start_clock(void)
 #endif
 
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 long MQTTAsync_elapsed(DWORD milliseconds)
 {
 	return GetTickCount() - milliseconds;
@@ -296,7 +296,7 @@ int MQTTAsync_restoreMessageQueue(MQTTAsyncs* client);
 void MQTTAsync_sleep(long milliseconds)
 {
 	FUNC_ENTRY;
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	Sleep(milliseconds);
 #else
 	usleep(milliseconds*1000);

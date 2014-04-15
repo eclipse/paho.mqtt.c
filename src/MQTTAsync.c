@@ -28,7 +28,7 @@
 
 #define _GNU_SOURCE /* for pthread_mutexattr_settype */
 #include <stdlib.h>
-#if !defined(WIN32)
+#if !defined(WIN32) && !defined(WIN64)
 	#include <sys/time.h>
 #endif
 
@@ -730,7 +730,7 @@ int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 #endif
 	}
 	MQTTAsync_unlock_mutex(mqttcommand_mutex);
-#if !defined(WIN32)
+#if !defined(WIN32) && !defined(WIN64)
 	Thread_signal_cond(send_cond);
 #else
 	if (!Thread_check_sem(send_sem))
@@ -1224,7 +1224,7 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 		
 		while (commands->count > 0)
 			MQTTAsync_processCommand();
-#if !defined(WIN32)
+#if !defined(WIN32) && !defined(WIN64)
 		/*rc =*/ Thread_wait_cond(send_cond, 1);
 #else
 		/*rc =*/ Thread_wait_sem(send_sem, 1000);
@@ -1594,7 +1594,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 	}
 	receiveThread_state = STOPPED;
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
-#if !defined(WIN32)
+#if !defined(WIN32) || !defined(WIN64)
 	if (sendThread_state != STOPPED)
 		Thread_signal_cond(send_cond);
 #else

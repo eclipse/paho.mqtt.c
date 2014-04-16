@@ -19,7 +19,8 @@
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
  *    Ian Craggs - fix for bug 421103 - trying to write to same socket, in publish/retries
  *    Ian Craggs - fix for bug 419233 - mutexes not reporting errors
- *    Ian Craggs - fix for bug #420851
+ *    Ian Craggs - fix for bug 420851
+ *    Ian Craggs - fix for bug 432903 - queue persistence
  *******************************************************************************/
 
 /**
@@ -34,10 +35,11 @@
 	#include <sys/time.h>
 #endif
 
+#include "MQTTClient.h"
 #if !defined(NO_PERSISTENCE)
 #include "MQTTPersistence.h"
 #endif
-#include "MQTTClient.h"
+
 #include "utf-8.h"
 #include "MQTTProtocol.h"
 #include "MQTTProtocolOut.h"
@@ -134,6 +136,7 @@ typedef struct
 	MQTTClient_message* msg;
 	char* topicName;
 	int topicLen;
+	unsigned int seqno; /* only used on restore */
 } qEntry;
 
 
@@ -290,7 +293,11 @@ int MQTTClient_create(MQTTClient* handle, char* serverURI, char* clientId,
 #if !defined(NO_PERSISTENCE)
 	rc = MQTTPersistence_create(&(m->c->persistence), persistence_type, persistence_context);
 	if (rc == 0)
+	{
 		rc = MQTTPersistence_initialize(m->c, m->serverURI);
+		if (rc == 0)
+			MQTTPersistence_restoreMessageQueue(m->c);
+	}
 #endif
 	ListAppend(bstate->clients, m->c, sizeof(Clients) + 3*sizeof(List));
 
@@ -417,6 +424,10 @@ int MQTTClient_deliverMessage(int rc, MQTTClients* m, char** topicName, int* top
 	if (strlen(*topicName) != *topicLen)
 		rc = MQTTCLIENT_TOPICNAME_TRUNCATED;
 	ListRemove(m->c->messageQueue, m->c->messageQueue->first->content);
+#if !defined(NO_PERSISTENCE)
+	if (m->c->persistence)
+		MQTTPersistence_unpersistQueueEntry(m->c, (MQTTPersistence_qEntry*)qe);
+#endif
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -722,6 +733,10 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 	mm->msgid = publish->msgId;
 
 	ListAppend(client->messageQueue, qe, sizeof(qe) + sizeof(mm) + mm->payloadlen + strlen(qe->topicName)+1);
+#if !defined(NO_PERSISTENCE)
+	if (client->persistence)
+		MQTTPersistence_persistQueueEntry(client, (MQTTPersistence_qEntry*)qe);
+#endif
 	FUNC_EXIT;
 }
 

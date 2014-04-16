@@ -15,9 +15,10 @@
  *    Ian Craggs, Allan Stockdill-Mander - SSL support
  *    Ian Craggs - multiple server connection support
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
- *    Ian Craggs - fix for bug# 415042 - using already freed structure
+ *    Ian Craggs - fix for bug 415042 - using already freed structure
  *    Ian Craggs - fix for bug 419233 - mutexes not reporting errors
- *    Ian Craggs - fix for bug #420851
+ *    Ian Craggs - fix for bug 420851
+ *    Ian Craggs - fix for bug 432903 - queue persistence
  *******************************************************************************/
 
 /**
@@ -289,8 +290,6 @@ void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command);
 int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, int topicLen, MQTTAsync_message* mm);
 #if !defined(NO_PERSISTENCE)
 int MQTTAsync_restoreCommands(MQTTAsyncs* client);
-int MQTTAsync_unpersistQueueEntry(Clients*, qEntry*);
-int MQTTAsync_restoreMessageQueue(MQTTAsyncs* client);
 #endif
 
 void MQTTAsync_sleep(long milliseconds)
@@ -405,7 +404,7 @@ int MQTTAsync_create(MQTTAsync* handle, char* serverURI, char* clientId,
 		if (rc == 0)
 		{
 			MQTTAsync_restoreCommands(m);
-			MQTTAsync_restoreMessageQueue(m);
+			MQTTPersistence_restoreMessageQueue(m->c);
 		}
 	}
 #endif
@@ -1460,7 +1459,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 					ListRemove(m->c->messageQueue, qe);
 #if !defined(NO_PERSISTENCE)
 					if (m->c->persistence)
-						MQTTAsync_unpersistQueueEntry(m->c, qe);
+						MQTTPersistence_unpersistQueueEntry(m->c, (MQTTPersistence_qEntry*)qe);
 #endif
 				}
 				else
@@ -1749,161 +1748,7 @@ int MQTTAsync_cleanSession(Clients* client)
 }
 
 
-#if !defined(NO_PERSISTENCE)
-int MQTTAsync_unpersistQueueEntry(Clients* client, qEntry* qe)
-{
-	int rc = 0;
-	char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
-	
-	FUNC_ENTRY;
-	sprintf(key, "%s%d", PERSISTENCE_QUEUE_KEY, qe->seqno);
-	if ((rc = client->persistence->premove(client->phandle, key)) != 0)
-		Log(LOG_ERROR, 0, "Error %d removing qEntry from persistence", rc);
-	FUNC_EXIT_RC(rc);
-	return rc;
-}
 
-int MQTTAsync_persistQueueEntry(Clients* aclient, qEntry* qe)
-{
-	int rc = 0;
-	int nbufs = 8;
-	int bufindex = 0;
-	char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
-	int* lens = NULL;
-	void** bufs = NULL;
-		
-	FUNC_ENTRY;
-	lens = (int*)malloc(nbufs * sizeof(int));
-	bufs = malloc(nbufs * sizeof(char *));
-						
-	bufs[bufindex] = &qe->msg->payloadlen;
-	lens[bufindex++] = sizeof(qe->msg->payloadlen);
-				
-	bufs[bufindex] = qe->msg->payload;
-	lens[bufindex++] = qe->msg->payloadlen;
-		
-	bufs[bufindex] = &qe->msg->qos;
-	lens[bufindex++] = sizeof(qe->msg->qos);
-		
-	bufs[bufindex] = &qe->msg->retained;
-	lens[bufindex++] = sizeof(qe->msg->retained);
-		
-	bufs[bufindex] = &qe->msg->dup;
-	lens[bufindex++] = sizeof(qe->msg->dup);
-				
-	bufs[bufindex] = &qe->msg->msgid;
-	lens[bufindex++] = sizeof(qe->msg->msgid);
-						
-	bufs[bufindex] = qe->topicName;
-	lens[bufindex++] = strlen(qe->topicName) + 1;
-				
-	bufs[bufindex] = &qe->topicLen;
-	lens[bufindex++] = sizeof(qe->topicLen);			
-		
-	sprintf(key, "%s%d", PERSISTENCE_QUEUE_KEY, ++aclient->qentry_seqno);	
-	qe->seqno = aclient->qentry_seqno;
-
-	if ((rc = aclient->persistence->pput(aclient->phandle, key, nbufs, (char**)bufs, lens)) != 0)
-		Log(LOG_ERROR, 0, "Error persisting queue entry, rc %d", rc);
-
-	free(lens);
-	free(bufs);
-
-	FUNC_EXIT_RC(rc);
-	return rc;
-}
-
-
-qEntry* MQTTAsync_restoreQueueEntry(char* buffer, int buflen)
-{
-	qEntry* qe = NULL;
-	char* ptr = buffer;
-	int data_size;
-	
-	FUNC_ENTRY;
-	qe = malloc(sizeof(qEntry));
-	memset(qe, '\0', sizeof(qEntry));
-	
-	qe->msg = malloc(sizeof(MQTTAsync_message));
-	memset(qe->msg, '\0', sizeof(MQTTAsync_message));
-	
-	qe->msg->payloadlen = *(int*)ptr;
-	ptr += sizeof(int);
-	
-	data_size = qe->msg->payloadlen;
-	qe->msg->payload = malloc(data_size);
-	memcpy(qe->msg->payload, ptr, data_size);
-	ptr += data_size;
-	
-	qe->msg->qos = *(int*)ptr;
-	ptr += sizeof(int);
-	
-	qe->msg->retained = *(int*)ptr;
-	ptr += sizeof(int);
-	
-	qe->msg->dup = *(int*)ptr;
-	ptr += sizeof(int);
-	
-	qe->msg->msgid = *(int*)ptr;
-	ptr += sizeof(int);
-	
-	data_size = strlen(ptr) + 1;	
-	qe->topicName = malloc(data_size);
-	strcpy(qe->topicName, ptr);
-	ptr += data_size;
-	
-	qe->topicLen = *(int*)ptr;
-	ptr += sizeof(int);
-
-	FUNC_EXIT;
-	return qe;
-}
-
-
-int MQTTAsync_restoreMessageQueue(MQTTAsyncs* client)
-{
-	int rc = 0;
-	char **msgkeys;
-	int nkeys;
-	int i = 0;
-	Clients* c = client->c;
-	int entries_restored = 0;
-
-	FUNC_ENTRY;
-	if (c->persistence && (rc = c->persistence->pkeys(c->phandle, &msgkeys, &nkeys)) == 0)
-	{
-		while (rc == 0 && i < nkeys)
-		{
-			char *buffer = NULL;
-			int buflen;
-					
-			if (strncmp(msgkeys[i], PERSISTENCE_QUEUE_KEY, strlen(PERSISTENCE_QUEUE_KEY)) != 0)
-				;
-			else if ((rc = c->persistence->pget(c->phandle, msgkeys[i], &buffer, &buflen)) == 0)
-			{
-				qEntry* qe = MQTTAsync_restoreQueueEntry(buffer, buflen);
-				
-				if (qe)
-				{	
-					qe->seqno = atoi(msgkeys[i]+2);
-					MQTTPersistence_insertInOrder(c->messageQueue, qe, sizeof(qEntry));
-					free(buffer);
-					c->qentry_seqno = max(c->qentry_seqno, qe->seqno);
-					entries_restored++;
-				}
-			}
-			if (msgkeys[i])
-				free(msgkeys[i]);
-			i++;
-		}
-		if (msgkeys != NULL)
-			free(msgkeys);
-	}
-	Log(TRACE_MINIMUM, -1, "%d queued messages restored for client %s", entries_restored, c->clientID);
-	FUNC_EXIT_RC(rc);
-	return rc;
-}
-#endif
 
 
 int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, int topicLen, MQTTAsync_message* mm)
@@ -1973,7 +1818,7 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 		ListAppend(client->messageQueue, qe, sizeof(qe) + sizeof(mm) + mm->payloadlen + strlen(qe->topicName)+1);
 #if !defined(NO_PERSISTENCE)
 		if (client->persistence)
-			MQTTAsync_persistQueueEntry(client, qe);
+			MQTTPersistence_persistQueueEntry(client, (MQTTPersistence_qEntry*)qe);
 #endif
 	}
 	publish->topic = NULL;	

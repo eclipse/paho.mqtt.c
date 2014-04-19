@@ -86,7 +86,7 @@ endif
 
 ifeq ($(OSTYPE),Linux)
 
-CC = gcc
+CC ?= gcc
 
 ifndef INSTALL
 INSTALL = install

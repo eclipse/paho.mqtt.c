@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs - updates for the async client
+ *    Ian Craggs - fix for bug #427028
  *******************************************************************************/
 
 /**
@@ -166,7 +167,7 @@ int Log_initialize(Log_nameValue* info)
 	{
 		while (info->name)
 		{
-			sprintf(msg_buf, "%s: %s", info->name, info->value);
+			snprintf(msg_buf, sizeof(msg_buf), "%s: %s", info->name, info->value);
 			Log_output(TRACE_MINIMUM, msg_buf);
 			info++;
 		}

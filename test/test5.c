@@ -1466,7 +1466,7 @@ int test5a(struct Options options)
 
  Test5b: Anonymous ciphers - server auth enabled
 
- /********************************************************************/
+ ********************************************************************/
 
 void test5bOnConnectFailure(void* context, MQTTAsync_failureData* response)
 {

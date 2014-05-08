@@ -662,34 +662,36 @@ int keysUnix(char *dirname, char ***keys, int *nkeys)
 		goto exit;
 	}
 
-	if (nfkeys != 0 )
+	if (nfkeys != 0)
+	{
 		fkeys = (char **)malloc(nfkeys * sizeof(char *));
 
-	/* copy the keys */
-	if((dp = opendir(dirname)) != NULL)
-	{
-		i = 0;
-		while((dir_entry = readdir(dp)) != NULL)
+		/* copy the keys */
+		if((dp = opendir(dirname)) != NULL)
 		{
-			char* temp = malloc(strlen(dirname)+strlen(dir_entry->d_name)+2);
-
-			sprintf(temp, "%s/%s", dirname, dir_entry->d_name);
-			if (lstat(temp, &stat_info) == 0 && S_ISREG(stat_info.st_mode))
+			i = 0;
+			while((dir_entry = readdir(dp)) != NULL)
 			{
-				fkeys[i] = malloc(strlen(dir_entry->d_name) + 1);
-				strcpy(fkeys[i], dir_entry->d_name);
-				ptraux = strstr(fkeys[i], MESSAGE_FILENAME_EXTENSION);
-				if ( ptraux != NULL )
-					*ptraux = '\0' ;
-				i++;
+				char* temp = malloc(strlen(dirname)+strlen(dir_entry->d_name)+2);
+	
+				sprintf(temp, "%s/%s", dirname, dir_entry->d_name);
+				if (lstat(temp, &stat_info) == 0 && S_ISREG(stat_info.st_mode))
+				{
+					fkeys[i] = malloc(strlen(dir_entry->d_name) + 1);
+					strcpy(fkeys[i], dir_entry->d_name);
+					ptraux = strstr(fkeys[i], MESSAGE_FILENAME_EXTENSION);
+					if ( ptraux != NULL )
+						*ptraux = '\0' ;
+					i++;
+				}
+				free(temp);
 			}
-			free(temp);
+			closedir(dp);
+		} else
+		{
+			rc = MQTTCLIENT_PERSISTENCE_ERROR;
+			goto exit;
 		}
-		closedir(dp);
-	} else
-	{
-		rc = MQTTCLIENT_PERSISTENCE_ERROR;
-		goto exit;
 	}
 
 	*nkeys = nfkeys;

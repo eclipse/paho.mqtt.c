@@ -616,6 +616,9 @@ int Socket_new(char* addr, int port, int* sock)
 			res = res->ai_next;
 		}
 
+		if (result == NULL)
+			rc = -1;
+		else
 #if defined(AF_INET6)
 		if (result->ai_family == AF_INET6)
 		{

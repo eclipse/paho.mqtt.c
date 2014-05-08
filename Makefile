@@ -232,7 +232,7 @@ MQTTLIB_A_TARGET = ${blddir}/lib${MQTTLIB_A}.so.${VERSION}
 MQTTLIB_AS_TARGET = ${blddir}/lib${MQTTLIB_AS}.so.${VERSION}
 MQTTVERSION_TARGET = ${blddir}/MQTTVersion
 
-CCFLAGS_SO = -g -fPIC -Os -Wall -fvisibility=hidden -Wno-deprecated-declarations
+CCFLAGS_SO = -g -fPIC -Os -Wall -fvisibility=hidden -Wno-deprecated-declarations -DUSE_NAMED_SEMAPHORES
 FLAGS_EXE = -I ${srcdir} -lpthread -L ${blddir}
 
 LDFLAGS_C = -shared -Wl,-install_name,lib$(MQTTLIB_C).so.${MAJOR_VERSION} -Wl,-init,_MQTTClient_init -lpthread 

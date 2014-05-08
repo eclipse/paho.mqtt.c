@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include "Log.h"
+#include "Thread.h"
 
 #if defined(NOSTACKTRACE)
 #define FUNC_ENTRY
@@ -65,6 +66,6 @@ void StackTrace_entry(const char* name, int line, int trace);
 void StackTrace_exit(const char* name, int line, void* return_value, int trace);
 
 void StackTrace_printStack(FILE* dest);
-char* StackTrace_get(unsigned long);
+char* StackTrace_get(thread_id_type);
 
 #endif /* STACKTRACE_H_ */

@@ -104,7 +104,7 @@ void StackTrace_entry(const char* name, int line, int trace_level)
 	if (!setStack(1))
 		goto exit;
 	if (trace_level != -1)
-		Log_stackTrace(trace_level, 9, cur_thread->id, cur_thread->current_depth, name, line, NULL);
+		Log_stackTrace(trace_level, 9, (int)cur_thread->id, cur_thread->current_depth, name, line, NULL);
 	strncpy(cur_thread->callstack[cur_thread->current_depth].name, name, sizeof(cur_thread->callstack[0].name)-1);
 	cur_thread->callstack[(cur_thread->current_depth)++].line = line;
 	if (cur_thread->current_depth > cur_thread->maxdepth)
@@ -128,9 +128,9 @@ void StackTrace_exit(const char* name, int line, void* rc, int trace_level)
 	if (trace_level != -1)
 	{
 		if (rc == NULL)
-			Log_stackTrace(trace_level, 10, cur_thread->id, cur_thread->current_depth, name, line, NULL);
+			Log_stackTrace(trace_level, 10, (int)cur_thread->id, cur_thread->current_depth, name, line, NULL);
 		else
-			Log_stackTrace(trace_level, 11, cur_thread->id, cur_thread->current_depth, name, line, (int*)rc);
+			Log_stackTrace(trace_level, 11, (int)cur_thread->id, cur_thread->current_depth, name, line, (int*)rc);
 	}
 exit:
 	Thread_unlock_mutex(stack_mutex);
@@ -152,14 +152,14 @@ void StackTrace_printStack(FILE* dest)
 		{
 			int i = cur_thread->current_depth - 1;
 
-			fprintf(file, "=========== Start of stack trace for thread %lu ==========\n", cur_thread->id);
+			fprintf(file, "=========== Start of stack trace for thread %lu ==========\n", (unsigned long)cur_thread->id);
 			if (i >= 0)
 			{
 				fprintf(file, "%s (%d)\n", cur_thread->callstack[i].name, cur_thread->callstack[i].line);
 				while (--i >= 0)
 					fprintf(file, "   at %s (%d)\n", cur_thread->callstack[i].name, cur_thread->callstack[i].line);
 			}
-			fprintf(file, "=========== End of stack trace for thread %lu ==========\n\n", cur_thread->id);
+			fprintf(file, "=========== End of stack trace for thread %lu ==========\n\n", (unsigned long)cur_thread->id);
 		}
 	}
 	if (file != stdout && file != stderr && file != NULL)
@@ -167,7 +167,7 @@ void StackTrace_printStack(FILE* dest)
 }
 
 
-char* StackTrace_get(unsigned long threadid)
+char* StackTrace_get(thread_id_type threadid)
 {
 	int bufsize = 256;
 	char* buf = NULL;

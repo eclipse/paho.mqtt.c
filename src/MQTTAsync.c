@@ -2619,7 +2619,7 @@ exit:
 
 void MQTTAsync_setTraceLevel(enum MQTTASYNC_TRACE_LEVELS level)
 {
-	Log_setTraceLevel(level);
+	Log_setTraceLevel((enum LOG_LEVELS)level);
 }
 
 

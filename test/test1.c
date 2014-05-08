@@ -606,7 +606,7 @@ int test3(struct Options options)
 	/* authorization failure (RC = 5) */
 	opts.username = "Admin";
 	opts.password = "Admin";
-	/*opts.will = &wopts; /* "Admin" not authorized to publish to Will topic by default 
+	/*opts.will = &wopts;    "Admin" not authorized to publish to Will topic by default 
 	opts.will->message = "will message";
 	opts.will->qos = 1;
 	opts.will->retained = 0;

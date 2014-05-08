@@ -49,6 +49,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/uio.h>
 #endif
 
 /** socket operation completed successfully */

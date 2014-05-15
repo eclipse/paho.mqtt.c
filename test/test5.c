@@ -424,12 +424,12 @@ void sendAndReceive(MQTTAsync* c, int qos, char* test_topic)
  *********************************************************************/
 
 //static mutex_type client_mutex = NULL;
-static pthread_mutex_t client_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-static mutex_type client_mutex = &client_mutex_store;
+//static pthread_mutex_t client_mutex_store = PTHREAD_MUTEX_INITIALIZER;
+//static mutex_type client_mutex = &client_mutex_store;
 
 void asyncTestOnDisconnect(void* context, MQTTAsync_successData* response)
 {
-	int rc;
+	//int rc;
 
 	AsyncTestClient* tc = (AsyncTestClient*) context;
 	MyLog(LOGA_DEBUG, "In asyncTestOnDisconnect callback, %s", tc->clientid);
@@ -442,7 +442,7 @@ void asyncTestOnDisconnect(void* context, MQTTAsync_successData* response)
 void asyncTestOnSend(void* context, MQTTAsync_successData* response)
 {
 	AsyncTestClient* tc = (AsyncTestClient*) context;
-	int rc;
+	//int rc;
 	int qos = response->alt.pub.message.qos;
 	MyLog(LOGA_DEBUG, "In asyncTestOnSend callback, %s", tc->clientid);
 	//rc = Thread_lock_mutex(client_mutex);
@@ -469,7 +469,7 @@ void asyncTestOnUnsubscribe(void* context, MQTTAsync_successData* response)
 	opts.onSuccess = asyncTestOnDisconnect;
 	opts.context = tc;
 
-	MQTTAsync_disconnect(tc->client, &opts);
+	rc = MQTTAsync_disconnect(tc->client, &opts);
 }
 
 void asyncTestOnSubscribe(void* context, MQTTAsync_successData* response)
@@ -616,7 +616,6 @@ int test1(struct Options options)
 	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
 	int rc = 0;
 	char* test_topic = "C client SSL test1";
-	char url[100];
 	int count = 0;
 
 	test1Finished = 0;
@@ -712,7 +711,6 @@ int test2a(struct Options options)
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
 	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
 	int rc = 0;
-	int i;
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 2a - Mutual SSL authentication");
@@ -1711,7 +1709,7 @@ void test6OnPublishFailure(void* context, MQTTAsync_failureData* response)
 int test6(struct Options options)
 {
 	char* testname = "test6";
-	const int num_clients = 10;
+#define num_clients 10
 	int subsqos = 2;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
@@ -1799,7 +1797,8 @@ int test6(struct Options options)
 	for (i = 0; i < num_clients; ++i)
 		MQTTAsync_destroy(&tc[i].client);
 
-exit: MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
+//exit:
+	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 		(failures == 0) ? "passed" : "failed", testname, tests, failures);
 	write_test_result();
 	return failures;
@@ -2032,7 +2031,6 @@ int main(int argc, char** argv)
 {
 	int* numtests = &tests;
 	int rc = 0;
-	int i;
 	int (*tests[])() =
 	{ NULL, test1, test2a, test2b, test2c, test3a, test3b, test4, /* test5a,
 			test5b, test5c, */ test6, test7 };

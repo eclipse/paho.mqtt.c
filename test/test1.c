@@ -42,6 +42,7 @@
 #define EWOULDBLOCK WSAEWOULDBLOCK
 #define ENOTCONN WSAENOTCONN
 #define ECONNRESET WSAECONNRESET
+#define setenv(a, b, c) _putenv_s(a, b)
 #endif
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
@@ -928,7 +929,9 @@ int test6_socket_error(char* aString, int sock)
 	return errno;
 }
 
+#if !defined(SOCKET_ERROR)
 #define SOCKET_ERROR -1
+#endif
 
 int test6_socket_close(int socket)
 {

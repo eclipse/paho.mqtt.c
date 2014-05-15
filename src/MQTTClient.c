@@ -55,7 +55,7 @@
 #define URI_TCP "tcp://"
 
 #define BUILD_TIMESTAMP "##MQTTCLIENT_BUILD_TAG##"
-#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##" 
+#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##"
 
 char* client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;

@@ -33,7 +33,6 @@
 #include <errno.h>
 
 #if defined(WIN32) || defined(WIN64)
-	#include <windows.h>
 	#include <direct.h>
 	/* Windows doesn't have strtok_r, so remap it to strtok */
 	#define strtok_r( A, B, C ) strtok( A, B )

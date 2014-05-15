@@ -1593,7 +1593,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 	}
 	receiveThread_state = STOPPED;
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
-#if !defined(WIN32) || !defined(WIN64)
+#if !defined(WIN32) && !defined(WIN64)
 	if (sendThread_state != STOPPED)
 		Thread_signal_cond(send_cond);
 #else

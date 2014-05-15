@@ -69,11 +69,18 @@
   </target>
 
   <target name="runAtest">
-    <exec executable="./${aTest}" failonerror="true" dir="${output.folder}/test" > 
+    <if>
+    <os family="windows"/>
+    <then> 
+       <property name="program_extension" value=".exe" />
+    </then>
+    </if>
+    <exec executable="${output.folder}/test/${aTest}${program_extension}" failonerror="true" dir="${output.folder}/test" > 
       <arg value="--connection" />
       <arg value="tcp://${test.hostname}:${test.port}" />
       <env key="LD_LIBRARY_PATH" path="${output.folder}" />
       <env key="DYLD_LIBRARY_PATH" path="${output.folder}" />
+      <env key="PATH" path=".;${output.folder}" />
     </exec>
   </target>
 
@@ -83,6 +90,7 @@
       <arg value="${test.hostname}" />
       <env key="LD_LIBRARY_PATH" path="${output.folder}" />
       <env key="DYLD_LIBRARY_PATH" path="${output.folder}" />
+      <env key="PATH" path="${output.folder}" />
     </exec>
   </target>
 
@@ -135,16 +143,11 @@
     <!-- display gcc version -->
     <exec executable="cl" failonerror="true">
     </exec>
-    <if>
-      <available file="msbuild.exe"/>
-      <then>
-        <exec executable="msbuild" dir=".">
-           <arg line="Windows Build\Paho C MQTT APIs.sln"/>
+    <exec executable="msbuild" dir=".">
+           <arg line='"Windows Build\Paho C MQTT APIs.sln"'/>
            <arg line="/p:Configuration=Release"/>
-        </exec>
-      </then>
-    </if>
-    </then>
+    </exec>
+     </then>
     </if>
   </target>
 

@@ -19,7 +19,7 @@
 #define SOCKETBUFFER_H
 
 #if defined(WIN32) || defined(WIN64)
-#include "winsock2.h"
+#include <winsock2.h>
 #else
 #include <sys/socket.h>
 #endif

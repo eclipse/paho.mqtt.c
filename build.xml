@@ -195,6 +195,25 @@
        <fileset dir="." includes="paho-mqtt-c-unix-${release.version}.tar.gz"/>
     </delete>
 
+   <if>
+    <os family="windows"/>
+    <then>
+    <exec executable="c:\cygwin\bin\zip.exe" failonerror="true" dir="${output.folder}">
+      <arg value="-r"/>
+      <arg value="eclipse-paho-mqtt-c-unix-incubation-${release.version}"/>
+      <arg value="about.html"/>
+      <arg value="notice.html"/>
+      <arg value="README.md"/>
+      <arg value="CONTRIBUTING.md"/>
+      <arg value="epl-v10"/>
+      <arg value="edl-v10"/>
+      <arg value="include"/>
+	  <arg value="samples"/>
+      <arg value="lib"/>
+      <arg value="bin"/>
+    </exec>
+    </then>
+    <else>
     <exec executable="tar" failonerror="true" dir="${output.folder}">
       <arg value="acf"/>
       <arg value="eclipse-paho-mqtt-c-unix-incubation-${release.version}.tar.gz"/>
@@ -209,6 +228,8 @@
       <arg value="lib"/>
       <arg value="bin"/>
     </exec>
+    </else> 
+    </if>
   </target>
 
   <target name="copy">

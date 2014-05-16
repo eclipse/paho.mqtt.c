@@ -75,7 +75,7 @@
        <property name="program_extension" value=".exe" />
     </then>
     </if>
-    <exec executable="${output.folder}/test/${aTest}${program_extension}" failonerror="true" dir="${output.folder}/test" > 
+    <exec executable="./${aTest}${program_extension}" failonerror="true" dir="${output.folder}/test" > 
       <arg value="--connection" />
       <arg value="tcp://${test.hostname}:${test.port}" />
       <env key="LD_LIBRARY_PATH" path="${output.folder}" />
@@ -85,7 +85,13 @@
   </target>
 
   <target name="runSSLtest">
-    <exec executable="./${aTest}" failonerror="true" dir="${output.folder}/test" > 
+    <if>
+    <os family="windows"/>
+    <then> 
+       <property name="program_extension" value=".exe" />
+    </then>
+    </if>
+    <exec executable="${output.folder}/test/${aTest}${program_extension}" failonerror="true" dir="${output.folder}/test" > 
       <arg value="--hostname" />
       <arg value="${test.hostname}" />
       <env key="LD_LIBRARY_PATH" path="${output.folder}" />

@@ -70,7 +70,7 @@
 
   <target name="runAtest">
     <if>
-    <os family="windows"/>
+      <os family="windows"/>
     <then> 
       <exec executable="cmd.exe" failonerror="true" dir="${output.folder}/test" > 
         <arg value="/c" />
@@ -88,11 +88,12 @@
         <env key="DYLD_LIBRARY_PATH" path="${output.folder}" />
       </exec>
     </else>
+    </if>
   </target>
 
   <target name="runSSLtest">
     <if>
-    <os family="windows"/>
+      <os family="windows"/>
     <then> 
       <exec executable="cmd.exe" failonerror="true" dir="${output.folder}/test" > 
         <arg value="/c" />
@@ -110,6 +111,7 @@
         <env key="DYLD_LIBRARY_PATH" path="${output.folder}" />
       </exec>
     </else>
+    </if>
   </target>
 
   <target name="doc" >

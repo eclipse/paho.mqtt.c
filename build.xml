@@ -33,6 +33,23 @@
   <property name="ssl" value="yes" />
   <property name="test.hostname" value="m2m.eclipse.org"/>
   <property name="test.port" value="18883"/>
+  <if>
+    <os family="windows"/>
+    <then>
+      <property name="os.family" value="windows" />
+    </then>
+    <else>
+      <if>
+      <os family="unix"/>
+      <then>
+        <property name="os.family" value="unix" />
+      </then>
+      <else>
+        <property name="os.family" value="mac" />
+      </else>
+      </if>
+    </else>
+  </if>
 	
   <target name="init">
     <tstamp>

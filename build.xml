@@ -72,32 +72,44 @@
     <if>
     <os family="windows"/>
     <then> 
-       <property name="program_extension" value=".exe" />
+      <exec executable="cmd.exe" failonerror="true" dir="${output.folder}/test" > 
+        <arg value="/c" />
+        <arg value="${aTest}.exe" />
+        <arg value="--connection" />
+        <arg value="tcp://${test.hostname}:${test.port}" />
+        <env key="PATH" path="${output.folder}" />
+      </exec>
     </then>
-    </if>
-    <exec executable="./${aTest}${program_extension}" failonerror="true" dir="${output.folder}/test" > 
-      <arg value="--connection" />
-      <arg value="tcp://${test.hostname}:${test.port}" />
-      <env key="LD_LIBRARY_PATH" path="${output.folder}" />
-      <env key="DYLD_LIBRARY_PATH" path="${output.folder}" />
-      <env key="PATH" path=".;${output.folder}" />
-    </exec>
+    <else> 
+      <exec executable="./${aTest}" failonerror="true" dir="${output.folder}/test" > 
+        <arg value="--connection" />
+        <arg value="tcp://${test.hostname}:${test.port}" />
+        <env key="LD_LIBRARY_PATH" path="${output.folder}" />
+        <env key="DYLD_LIBRARY_PATH" path="${output.folder}" />
+      </exec>
+    </else>
   </target>
 
   <target name="runSSLtest">
     <if>
     <os family="windows"/>
     <then> 
-       <property name="program_extension" value=".exe" />
+      <exec executable="cmd.exe" failonerror="true" dir="${output.folder}/test" > 
+        <arg value="/c" />
+        <arg value="${aTest}.exe" />
+        <arg value="--hostname" />
+        <arg value="${test.hostname}" />
+        <env key="PATH" path="${output.folder}" />
+      </exec>
     </then>
-    </if>
-    <exec executable="${output.folder}/test/${aTest}${program_extension}" failonerror="true" dir="${output.folder}/test" > 
-      <arg value="--hostname" />
-      <arg value="${test.hostname}" />
-      <env key="LD_LIBRARY_PATH" path="${output.folder}" />
-      <env key="DYLD_LIBRARY_PATH" path="${output.folder}" />
-      <env key="PATH" path="${output.folder}" />
-    </exec>
+    <else> 
+      <exec executable="./${aTest}" failonerror="true" dir="${output.folder}/test" > 
+        <arg value="--hostname" />
+        <arg value="${test.hostname}" />
+        <env key="LD_LIBRARY_PATH" path="${output.folder}" />
+        <env key="DYLD_LIBRARY_PATH" path="${output.folder}" />
+      </exec>
+    </else>
   </target>
 
   <target name="doc" >

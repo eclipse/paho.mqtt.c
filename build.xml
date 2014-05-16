@@ -181,7 +181,7 @@
     </copy>
     <mkdir dir="${output.folder}/lib"/>
     <move overwrite="true" todir="${output.folder}/lib">
-      <fileset dir="${output.folder}" includes="*libpaho*"/>
+      <fileset dir="${output.folder}" includes="*paho*"/>
     </move>
     <mkdir dir="${output.folder}/bin"/>
     <move overwrite="true" todir="${output.folder}/bin">
@@ -192,7 +192,8 @@
       <fileset dir="src/samples" includes="*"/>
     </copy> 
     <delete>
-       <fileset dir="." includes="paho-mqtt-c-unix-${release.version}.tar.gz"/>
+       <fileset dir="." includes="eclipse-paho-mqtt-c-windows-incubation-${release.version}.zip"/>
+       <fileset dir="." includes="eclipse-paho-mqtt-c-${os.family}-incubation-${release.version}.tar.gz"/>
     </delete>
 
    <if>

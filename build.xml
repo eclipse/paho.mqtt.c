@@ -40,16 +40,17 @@
     </then>
     <else>
       <if>
-      <os family="unix"/>
+      <os family="mac"/>
       <then>
-        <property name="os.family" value="unix" />
+        <property name="os.family" value="mac" />
       </then>
       <else>
-        <property name="os.family" value="mac" />
+        <property name="os.family" value="unix" />
       </else>
       </if>
     </else>
   </if>
+  <echo message="os.family is '${os.family}'" />
 	
   <target name="init">
     <tstamp>

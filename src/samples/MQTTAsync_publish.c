@@ -19,6 +19,10 @@
 #include "string.h"
 #include "MQTTAsync.h"
 
+#if !defined(WIN32)
+#include <unistd.h>
+#endif
+
 #define ADDRESS     "tcp://m2m.eclipse.org:1883"
 #define CLIENTID    "ExampleClientPub"
 #define TOPIC       "MQTT Examples"

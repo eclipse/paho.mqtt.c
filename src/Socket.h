@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2014 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,7 @@
 
 #include <sys/types.h>
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #define MAXHOSTNAMELEN 256
@@ -48,6 +48,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <unistd.h>
+#include <sys/uio.h>
 #endif
 
 /** socket operation completed successfully */

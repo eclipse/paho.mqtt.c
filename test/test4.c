@@ -648,7 +648,6 @@ void test3_onFailure(void* context, MQTTAsync_failureData* response)
 {
 	client_data* cd = (client_data*)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	int rc;
 	
 	assert("Should have connected", 0, "%s failed to connect\n", cd->clientid);
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, \"%s\" rc %d\n", cd->clientid, response ? response->code : -999);
@@ -666,7 +665,7 @@ Test3: More than one client object - simultaneous working.
 *********************************************************************/
 int test3(struct Options options)
 {
-	const int num_clients = 10;
+	#define num_clients 10
 	int subsqos = 2;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
@@ -728,7 +727,7 @@ int test3(struct Options options)
 	for (i = 0; i < num_clients; ++i)
 		MQTTAsync_destroy(&clientdata[i].c);
 
-exit:
+//exit:
 	MyLog(LOGA_INFO, "TEST3: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 	write_test_result();
@@ -925,7 +924,6 @@ void test5_onConnectFailure(void* context, MQTTAsync_failureData* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	int rc;
 	
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
 
@@ -939,7 +937,6 @@ void test5_onConnect(void* context, MQTTAsync_successData* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	int rc;
 	
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
 

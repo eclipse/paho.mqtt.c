@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
+ *    Ian Craggs - fix for buffer overflow in addressPort bug #433290
  *    Ian Craggs - MQTT 3.1.1 support
  *******************************************************************************/
 
@@ -35,43 +36,40 @@ extern ClientStates* bstate;
 
 /**
  * Separates an address:port into two separate values
- * @param ip_address the input string
+ * @param uri the input string - hostname:port
  * @param port the returned port integer
  * @return the address string
  */
-char* MQTTProtocol_addressPort(char* ip_address, int* port)
+char* MQTTProtocol_addressPort(char* uri, int* port)
 {
-	static char buf[INET6_ADDRSTRLEN+1];
-	char* pos = strrchr(ip_address, ':'); /* reverse find to allow for ':' in IPv6 addresses */
+	char* colon_pos = strrchr(uri, ':'); /* reverse find to allow for ':' in IPv6 addresses */
+	char* buf = uri;
 	int len;
 
 	FUNC_ENTRY;
-	if (ip_address[0] == '[')
+	if (uri[0] == '[')
 	{  /* ip v6 */
-		if (pos < strrchr(ip_address, ']'))
-			pos = NULL;  /* means it was an IPv6 separator, not for host:port */
+		if (colon_pos < strrchr(uri, ']'))
+			colon_pos = NULL;  /* means it was an IPv6 separator, not for host:port */
 	}
 
-	if (pos)
+	if (colon_pos)
 	{
-		int len = pos - ip_address;
-		*port = atoi(pos+1);
-		strncpy(buf, ip_address, len);
-		buf[len] = '\0';
-		pos = buf;
+		int addr_len = colon_pos - uri;
+		buf = malloc(addr_len + 1);
+		*port = atoi(colon_pos + 1);
+		strncpy(buf, uri, addr_len);
+		buf[addr_len] = '\0';
 	}
 	else
-	{
 		*port = DEFAULT_PORT;
-	  pos = ip_address;
-	}
 
 	len = strlen(buf);
 	if (buf[len - 1] == ']')
 		buf[len - 1] = '\0';
 
 	FUNC_EXIT;
-	return pos;
+	return buf;
 }
 
 
@@ -124,6 +122,8 @@ int MQTTProtocol_connect(char* ip_address, Clients* aClient, int ssl, int MQTTVe
 				aClient->connect_state = 0;
 		}
 	}
+	if (addr != ip_address)
+		free(addr);
 
 	FUNC_EXIT_RC(rc);
 	return rc;

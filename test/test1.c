@@ -47,6 +47,7 @@
 #define EWOULDBLOCK WSAEWOULDBLOCK
 #define ENOTCONN WSAENOTCONN
 #define ECONNRESET WSAECONNRESET
+#define setenv(a, b, c) _putenv_s(a, b)
 #endif
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
@@ -266,7 +267,7 @@ void myassert(char* filename, int lineno, char* description, int value, char* fo
 		va_list args;
 
 		++failures;
-		printf("Assertion failed, file %s, line %d, description: %s\n", filename, lineno, description);
+		MyLog(LOGA_INFO, "Assertion failed, file %s, line %d, description: %s\n", filename, lineno, description);
 
 		va_start(args, format);
 		vprintf(format, args);
@@ -634,7 +635,7 @@ int test3(struct Options options)
 	/* authorization failure (RC = 5) */
 	opts.username = "Admin";
 	opts.password = "Admin";
-	/*opts.will = &wopts; /* "Admin" not authorized to publish to Will topic by default 
+	/*opts.will = &wopts;    "Admin" not authorized to publish to Will topic by default 
 	opts.will->message = "will message";
 	opts.will->qos = 1;
 	opts.will->retained = 0;
@@ -958,7 +959,9 @@ int test6_socket_error(char* aString, int sock)
 	return errno;
 }
 
+#if !defined(SOCKET_ERROR)
 #define SOCKET_ERROR -1
+#endif
 
 int test6_socket_close(int socket)
 {

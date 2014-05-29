@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2014 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -44,7 +44,7 @@ void SSLSocket_addPendingRead(int sock);
 static ssl_mutex_type* sslLocks = NULL;
 static ssl_mutex_type sslCoreMutex;
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 #define iov_len len
 #define iov_base buf
 #endif
@@ -305,7 +305,7 @@ int SSL_create_mutex(ssl_mutex_type* mutex)
 	int rc = 0;
 
 	FUNC_ENTRY;
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	*mutex = CreateMutex(NULL, 0, NULL);
 #else
 	rc = pthread_mutex_init(mutex, NULL);
@@ -319,7 +319,7 @@ int SSL_lock_mutex(ssl_mutex_type* mutex)
 	int rc = -1;
 
 	/* don't add entry/exit trace points, as trace gets lock too, and it might happen quite frequently  */
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	if (WaitForSingleObject(*mutex, INFINITE) != WAIT_FAILED)
 #else
 	if ((rc = pthread_mutex_lock(mutex)) == 0)
@@ -334,7 +334,7 @@ int SSL_unlock_mutex(ssl_mutex_type* mutex)
 	int rc = -1;
 
 	/* don't add entry/exit trace points, as trace gets lock too, and it might happen quite frequently  */
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	if (ReleaseMutex(*mutex) != 0)
 #else
 	if ((rc = pthread_mutex_unlock(mutex)) == 0)
@@ -349,7 +349,7 @@ void SSL_destroy_mutex(ssl_mutex_type* mutex)
 	int rc = 0;
 
 	FUNC_ENTRY;
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	rc = CloseHandle(*mutex);
 #else
 	rc = pthread_mutex_destroy(mutex);
@@ -363,7 +363,7 @@ void SSL_destroy_mutex(ssl_mutex_type* mutex)
 #if (OPENSSL_VERSION_NUMBER >= 0x010000000)
 extern void SSLThread_id(CRYPTO_THREADID *id)
 {
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	CRYPTO_THREADID_set_numeric(id, (unsigned long)GetCurrentThreadId());
 #else
 	CRYPTO_THREADID_set_numeric(id, (unsigned long)pthread_self());
@@ -372,7 +372,7 @@ extern void SSLThread_id(CRYPTO_THREADID *id)
 #else
 extern unsigned long SSLThread_id(void)
 {
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	return (unsigned long)GetCurrentThreadId();
 #else
 	return (unsigned long)pthread_self();

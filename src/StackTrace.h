@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2014 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include "Log.h"
+#include "Thread.h"
 
 #if defined(NOSTACKTRACE)
 #define FUNC_ENTRY
@@ -33,7 +34,7 @@
 #define FUNC_EXIT_MED_RC(x)
 #define FUNC_EXIT_MAX_RC(x)
 #else
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 #define inline __inline
 #define FUNC_ENTRY StackTrace_entry(__FUNCTION__, __LINE__, TRACE_MINIMUM)
 #define FUNC_ENTRY_NOLOG StackTrace_entry(__FUNCTION__, __LINE__, -1)
@@ -65,6 +66,6 @@ void StackTrace_entry(const char* name, int line, int trace);
 void StackTrace_exit(const char* name, int line, void* return_value, int trace);
 
 void StackTrace_printStack(FILE* dest);
-char* StackTrace_get(unsigned long);
+char* StackTrace_get(thread_id_type);
 
 #endif /* STACKTRACE_H_ */

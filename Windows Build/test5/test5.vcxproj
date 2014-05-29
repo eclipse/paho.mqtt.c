@@ -11,23 +11,23 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{B479B6EF-787D-4716-912A-E0F6F7BDA7A9}</ProjectGuid>
+    <ProjectGuid>{B8A895EA-C8DE-4235-B4B4-06889BBBDC93}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>pahomqtt3a</RootNamespace>
+    <RootNamespace>test1</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -44,7 +44,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)..\build\output\</OutDir>
+    <OutDir>$(SolutionDir)..\build\output\test\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -52,13 +52,12 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;PAHOMQTT3A_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -69,64 +68,26 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;PAHOMQTT3A_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;_WINDOWS;WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\src</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\build\output\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ws2_32.lib;paho-mqtt3as.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\Clients.c" />
-    <ClCompile Include="..\..\src\Heap.c" />
-    <ClCompile Include="..\..\src\LinkedList.c" />
-    <ClCompile Include="..\..\src\Log.c" />
-    <ClCompile Include="..\..\src\Messages.c" />
-    <ClCompile Include="..\..\src\MQTTAsync.c" />
-    <ClCompile Include="..\..\src\MQTTPacket.c" />
-    <ClCompile Include="..\..\src\MQTTPacketOut.c" />
-    <ClCompile Include="..\..\src\MQTTPersistence.c" />
-    <ClCompile Include="..\..\src\MQTTPersistenceDefault.c" />
-    <ClCompile Include="..\..\src\MQTTProtocolClient.c" />
-    <ClCompile Include="..\..\src\MQTTProtocolOut.c" />
-    <ClCompile Include="..\..\src\MQTTVersion.c" />
-    <ClCompile Include="..\..\src\Socket.c" />
-    <ClCompile Include="..\..\src\SocketBuffer.c" />
-    <ClCompile Include="..\..\src\SSLSocket.c" />
-    <ClCompile Include="..\..\src\StackTrace.c" />
-    <ClCompile Include="..\..\src\Thread.c" />
-    <ClCompile Include="..\..\src\Tree.c" />
-    <ClCompile Include="..\..\src\utf-8.c" />
+    <ClInclude Include="..\..\src\MQTTAsync.h" />
+    <ClInclude Include="..\..\src\MQTTClientPersistence.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\Clients.h" />
-    <ClInclude Include="..\..\src\Heap.h" />
-    <ClInclude Include="..\..\src\LinkedList.h" />
-    <ClInclude Include="..\..\src\Log.h" />
-    <ClInclude Include="..\..\src\Messages.h" />
-    <ClInclude Include="..\..\src\MQTTAsync.h" />
-    <ClInclude Include="..\..\src\MQTTClient.h" />
-    <ClInclude Include="..\..\src\MQTTClientPersistence.h" />
-    <ClInclude Include="..\..\src\MQTTPacket.h" />
-    <ClInclude Include="..\..\src\MQTTPacketOut.h" />
-    <ClInclude Include="..\..\src\MQTTPersistence.h" />
-    <ClInclude Include="..\..\src\MQTTPersistenceDefault.h" />
-    <ClInclude Include="..\..\src\MQTTProtocol.h" />
-    <ClInclude Include="..\..\src\MQTTProtocolClient.h" />
-    <ClInclude Include="..\..\src\MQTTProtocolOut.h" />
-    <ClInclude Include="..\..\src\Socket.h" />
-    <ClInclude Include="..\..\src\SocketBuffer.h" />
-    <ClInclude Include="..\..\src\SSLSocket.h" />
-    <ClInclude Include="..\..\src\StackTrace.h" />
-    <ClInclude Include="..\..\src\Thread.h" />
-    <ClInclude Include="..\..\src\Tree.h" />
-    <ClInclude Include="..\..\src\utf-8.h" />
-    <ClInclude Include="..\paho-mqtt3c\stdafx.h" />
-    <ClInclude Include="..\paho-mqtt3c\targetver.h" />
+    <ClCompile Include="..\..\test\test5.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

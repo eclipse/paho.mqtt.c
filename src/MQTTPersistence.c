@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs - async client updates
+ *    Ian Craggs - fix for bug 432903 - queue persistence
  *******************************************************************************/
 
 /**
@@ -462,3 +463,181 @@ void MQTTPersistence_wrapMsgID(Clients *client)
 	}
 	FUNC_EXIT;
 }
+
+
+#if !defined(NO_PERSISTENCE)
+int MQTTPersistence_unpersistQueueEntry(Clients* client, MQTTPersistence_qEntry* qe)
+{
+	int rc = 0;
+	char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
+	
+	FUNC_ENTRY;
+	sprintf(key, "%s%d", PERSISTENCE_QUEUE_KEY, qe->seqno);
+	if ((rc = client->persistence->premove(client->phandle, key)) != 0)
+		Log(LOG_ERROR, 0, "Error %d removing qEntry from persistence", rc);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+int MQTTPersistence_persistQueueEntry(Clients* aclient, MQTTPersistence_qEntry* qe)
+{
+	int rc = 0;
+	int nbufs = 8;
+	int bufindex = 0;
+	char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
+	int* lens = NULL;
+	void** bufs = NULL;
+		
+	FUNC_ENTRY;
+	lens = (int*)malloc(nbufs * sizeof(int));
+	bufs = malloc(nbufs * sizeof(char *));
+						
+	bufs[bufindex] = &qe->msg->payloadlen;
+	lens[bufindex++] = sizeof(qe->msg->payloadlen);
+				
+	bufs[bufindex] = qe->msg->payload;
+	lens[bufindex++] = qe->msg->payloadlen;
+		
+	bufs[bufindex] = &qe->msg->qos;
+	lens[bufindex++] = sizeof(qe->msg->qos);
+		
+	bufs[bufindex] = &qe->msg->retained;
+	lens[bufindex++] = sizeof(qe->msg->retained);
+		
+	bufs[bufindex] = &qe->msg->dup;
+	lens[bufindex++] = sizeof(qe->msg->dup);
+				
+	bufs[bufindex] = &qe->msg->msgid;
+	lens[bufindex++] = sizeof(qe->msg->msgid);
+						
+	bufs[bufindex] = qe->topicName;
+	lens[bufindex++] = strlen(qe->topicName) + 1;
+				
+	bufs[bufindex] = &qe->topicLen;
+	lens[bufindex++] = sizeof(qe->topicLen);			
+		
+	sprintf(key, "%s%d", PERSISTENCE_QUEUE_KEY, ++aclient->qentry_seqno);	
+	qe->seqno = aclient->qentry_seqno;
+
+	if ((rc = aclient->persistence->pput(aclient->phandle, key, nbufs, (char**)bufs, lens)) != 0)
+		Log(LOG_ERROR, 0, "Error persisting queue entry, rc %d", rc);
+
+	free(lens);
+	free(bufs);
+
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, int buflen)
+{
+	MQTTPersistence_qEntry* qe = NULL;
+	char* ptr = buffer;
+	int data_size;
+	
+	FUNC_ENTRY;
+	qe = malloc(sizeof(MQTTPersistence_qEntry));
+	memset(qe, '\0', sizeof(MQTTPersistence_qEntry));
+	
+	qe->msg = malloc(sizeof(MQTTPersistence_message));
+	memset(qe->msg, '\0', sizeof(MQTTPersistence_message));
+	
+	qe->msg->payloadlen = *(int*)ptr;
+	ptr += sizeof(int);
+	
+	data_size = qe->msg->payloadlen;
+	qe->msg->payload = malloc(data_size);
+	memcpy(qe->msg->payload, ptr, data_size);
+	ptr += data_size;
+	
+	qe->msg->qos = *(int*)ptr;
+	ptr += sizeof(int);
+	
+	qe->msg->retained = *(int*)ptr;
+	ptr += sizeof(int);
+	
+	qe->msg->dup = *(int*)ptr;
+	ptr += sizeof(int);
+	
+	qe->msg->msgid = *(int*)ptr;
+	ptr += sizeof(int);
+	
+	data_size = strlen(ptr) + 1;	
+	qe->topicName = malloc(data_size);
+	strcpy(qe->topicName, ptr);
+	ptr += data_size;
+	
+	qe->topicLen = *(int*)ptr;
+	ptr += sizeof(int);
+
+	FUNC_EXIT;
+	return qe;
+}
+
+
+void MQTTPersistence_insertInSeqOrder(List* list, MQTTPersistence_qEntry* qEntry, int size)
+{
+	ListElement* index = NULL;
+	ListElement* current = NULL;
+
+	FUNC_ENTRY;
+	while (ListNextElement(list, &current) != NULL && index == NULL)
+	{
+		if (qEntry->seqno < ((MQTTPersistence_qEntry*)current->content)->seqno)
+			index = current;
+	}
+	ListInsert(list, qEntry, size, index);
+	FUNC_EXIT;
+}
+
+
+/**
+ * Restores a queue of messages from persistence to memory
+ * @param c the client as ::Clients - the client object to restore the messages to
+ * @return return code, 0 if successful
+ */
+int MQTTPersistence_restoreMessageQueue(Clients* c)
+{
+	int rc = 0;
+	char **msgkeys;
+	int nkeys;
+	int i = 0;
+	int entries_restored = 0;
+
+	FUNC_ENTRY;
+	if (c->persistence && (rc = c->persistence->pkeys(c->phandle, &msgkeys, &nkeys)) == 0)
+	{
+		while (rc == 0 && i < nkeys)
+		{
+			char *buffer = NULL;
+			int buflen;
+					
+			if (strncmp(msgkeys[i], PERSISTENCE_QUEUE_KEY, strlen(PERSISTENCE_QUEUE_KEY)) != 0)
+				;
+			else if ((rc = c->persistence->pget(c->phandle, msgkeys[i], &buffer, &buflen)) == 0)
+			{
+				MQTTPersistence_qEntry* qe = MQTTPersistence_restoreQueueEntry(buffer, buflen);
+				
+				if (qe)
+				{	
+					qe->seqno = atoi(msgkeys[i]+2);
+					MQTTPersistence_insertInSeqOrder(c->messageQueue, qe, sizeof(MQTTPersistence_qEntry));
+					free(buffer);
+					c->qentry_seqno = max(c->qentry_seqno, qe->seqno);
+					entries_restored++;
+				}
+			}
+			if (msgkeys[i])
+				free(msgkeys[i]);
+			i++;
+		}
+		if (msgkeys != NULL)
+			free(msgkeys);
+	}
+	Log(TRACE_MINIMUM, -1, "%d queued messages restored for client %s", entries_restored, c->clientID);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+#endif

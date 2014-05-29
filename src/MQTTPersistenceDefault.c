@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2014 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -32,8 +32,7 @@
 #include <string.h>
 #include <errno.h>
 
-#if defined(WIN32)
-	#include <windows.h>
+#if defined(WIN32) || defined(WIN64)
 	#include <direct.h>
 	/* Windows doesn't have strtok_r, so remap it to strtok */
 	#define strtok_r( A, B, C ) strtok( A, B )
@@ -122,7 +121,7 @@ int pstmkdir( char *pPathname )
 	int rc = 0;
 
 	FUNC_ENTRY;
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	if ( _mkdir( pPathname ) != 0 )
 	{
 #else
@@ -262,7 +261,7 @@ int pstremove(void* handle, char* key)
 	file = malloc(strlen(clientDir) + strlen(key) + strlen(MESSAGE_FILENAME_EXTENSION) + 2);
 	sprintf(file, "%s/%s%s", clientDir, key, MESSAGE_FILENAME_EXTENSION);
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	if ( _unlink(file) != 0 )
 	{
 #else
@@ -296,7 +295,7 @@ int pstclose(void* handle)
 		goto exit;
 	}
 
-#if defined (WIN32)
+#if defined(WIN32) || defined(WIN64)
 	if ( _rmdir(clientDir) != 0 )
 	{
 #else
@@ -330,7 +329,7 @@ int pstcontainskey(void *handle, char *key)
 		goto exit;
 	}
 
-#if defined (WIN32)
+#if defined(WIN32) || defined(WIN64)
 	rc = containskeyWin32(clientDir, key);
 #else
 	rc = containskeyUnix(clientDir, key);
@@ -342,7 +341,7 @@ exit:
 }
 
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 int containskeyWin32(char *dirname, char *key)
 {
 	int notFound = MQTTCLIENT_PERSISTENCE_ERROR;
@@ -440,7 +439,7 @@ int pstclear(void *handle)
 		goto exit;
 	}
 
-#if defined (WIN32)
+#if defined(WIN32) || defined(WIN64)
 	rc = clearWin32(clientDir);
 #else
 	rc = clearUnix(clientDir);
@@ -452,7 +451,7 @@ exit:
 }
 
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 int clearWin32(char *dirname)
 {
 	int rc = 0;
@@ -540,7 +539,7 @@ int pstkeys(void *handle, char ***keys, int *nkeys)
 		goto exit;
 	}
 
-#if defined (WIN32)
+#if defined(WIN32) || defined(WIN64)
 	rc = keysWin32(clientDir, keys, nkeys);
 #else
 	rc = keysUnix(clientDir, keys, nkeys);
@@ -552,7 +551,7 @@ exit:
 }
 
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 int keysWin32(char *dirname, char ***keys, int *nkeys)
 {
 	int rc = 0;
@@ -662,34 +661,36 @@ int keysUnix(char *dirname, char ***keys, int *nkeys)
 		goto exit;
 	}
 
-	if (nfkeys != 0 )
+	if (nfkeys != 0)
+	{
 		fkeys = (char **)malloc(nfkeys * sizeof(char *));
 
-	/* copy the keys */
-	if((dp = opendir(dirname)) != NULL)
-	{
-		i = 0;
-		while((dir_entry = readdir(dp)) != NULL)
+		/* copy the keys */
+		if((dp = opendir(dirname)) != NULL)
 		{
-			char* temp = malloc(strlen(dirname)+strlen(dir_entry->d_name)+2);
-
-			sprintf(temp, "%s/%s", dirname, dir_entry->d_name);
-			if (lstat(temp, &stat_info) == 0 && S_ISREG(stat_info.st_mode))
+			i = 0;
+			while((dir_entry = readdir(dp)) != NULL)
 			{
-				fkeys[i] = malloc(strlen(dir_entry->d_name) + 1);
-				strcpy(fkeys[i], dir_entry->d_name);
-				ptraux = strstr(fkeys[i], MESSAGE_FILENAME_EXTENSION);
-				if ( ptraux != NULL )
-					*ptraux = '\0' ;
-				i++;
+				char* temp = malloc(strlen(dirname)+strlen(dir_entry->d_name)+2);
+	
+				sprintf(temp, "%s/%s", dirname, dir_entry->d_name);
+				if (lstat(temp, &stat_info) == 0 && S_ISREG(stat_info.st_mode))
+				{
+					fkeys[i] = malloc(strlen(dir_entry->d_name) + 1);
+					strcpy(fkeys[i], dir_entry->d_name);
+					ptraux = strstr(fkeys[i], MESSAGE_FILENAME_EXTENSION);
+					if ( ptraux != NULL )
+						*ptraux = '\0' ;
+					i++;
+				}
+				free(temp);
 			}
-			free(temp);
+			closedir(dp);
+		} else
+		{
+			rc = MQTTCLIENT_PERSISTENCE_ERROR;
+			goto exit;
 		}
-		closedir(dp);
-	} else
-	{
-		rc = MQTTCLIENT_PERSISTENCE_ERROR;
-		goto exit;
 	}
 
 	*nkeys = nfkeys;

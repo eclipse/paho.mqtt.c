@@ -40,6 +40,7 @@
 #define ENOTCONN WSAENOTCONN
 #define ECONNRESET WSAECONNRESET
 #define snprintf _snprintf
+#define setenv(a, b, c) _putenv_s(a, b)
 #endif
 
 #if defined(IOS)
@@ -581,8 +582,8 @@ int test1(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"SSL connect fail to nonSSL MQTT server\"");
 	global_start_time = start_clock();
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.connection, "test1",
-		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d \n", rc)))
+	rc = MQTTClient_create(&c, options.connection, "test1",	MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
+	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d \n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -601,7 +602,8 @@ int test1(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
-	if (!(assert("Connect should fail", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_FAILURE, "rc was %d ", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Connect should fail", rc == MQTTCLIENT_FAILURE, "rc was %d ", rc)))
 		goto exit;
 
 exit:
@@ -635,8 +637,8 @@ int test2a_s(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 2a_s\"");
 	global_start_time = start_clock();
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, "test2a_s",
-		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	rc = MQTTClient_create(&c, options.server_auth_connection, "test2a_s", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
+	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -660,10 +662,12 @@ int test2a_s(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
-	if (!(assert("Good rc from connect", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Good rc from connect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
-	if (!(assert("Good rc from subscribe", (rc = MQTTClient_subscribe(c, test_topic, subsqos)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_subscribe(c, test_topic, subsqos);
+	if (!(assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 	singleThread_sendAndReceive(c, 0, test_topic);
@@ -672,16 +676,19 @@ int test2a_s(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Stopping\n");
 
-	if (!(assert("Unsubscribe successful", (rc = MQTTClient_unsubscribe(c, test_topic)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_unsubscribe(c, test_topic);
+	if (!(assert("Unsubscribe successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
-	if (!(assert("Disconnect successful", (rc = MQTTClient_disconnect(c, 0)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_disconnect(c, 0);
+	if (!(assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 	/* Just to make sure we can connect again */
-
-	if (!(assert("Connect successful", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Connect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
-	if (!(assert("Disconnect successful", (rc = MQTTClient_disconnect(c, 0)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_disconnect(c, 0);
+	if (!(assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 exit:
@@ -715,8 +722,8 @@ int test2a_m(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 2a_m\"");
 	global_start_time = start_clock();
 
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.mutual_auth_connection, "test2a_m",
-		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	rc = MQTTClient_create(&c, options.mutual_auth_connection, "test2a_m", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
+	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -740,16 +747,18 @@ int test2a_m(struct Options options)
 	//opts.ssl->enabledCipherSuites = "DEFAULT";
 	//opts.ssl->enabledServerCertAuth = 1;
 
-	if (!(assert("Good rc from setCallbacks", (rc = MQTTClient_setCallbacks(c, NULL, NULL, multiThread_messageArrived,
-		multiThread_deliveryComplete)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_setCallbacks(c, NULL, NULL, multiThread_messageArrived, multiThread_deliveryComplete);
+	if (!(assert("Good rc from setCallbacks", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
-	if (!(assert("Good rc from connect", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Good rc from connect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
-	if (!(assert("Good rc from subscribe", (rc = MQTTClient_subscribe(c, test_topic, subsqos)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_subscribe(c, test_topic, subsqos);
+	if (!(assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 	multiThread_sendAndReceive(c, 0, test_topic);
@@ -758,9 +767,11 @@ int test2a_m(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Stopping");
 
-	if (!(assert("Unsubscribe successful", (rc = MQTTClient_unsubscribe(c, test_topic)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_unsubscribe(c, test_topic);
+	if (!(assert("Unsubscribe successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
-	if (!(assert("Disconnect successful", (rc = MQTTClient_disconnect(c, 0)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_disconnect(c, 0);
+	if (!(assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 exit:
@@ -792,8 +803,8 @@ int test2b(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 2b\"");
 	global_start_time = start_clock();
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.nocert_mutual_auth_connection, "test2b",
-		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	rc = MQTTClient_create(&c, options.nocert_mutual_auth_connection, "test2b", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
+	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -819,8 +830,8 @@ int test2b(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
-	if (!(assert("Bad rc from connect", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_FAILURE, 
-		"rc was %d\n", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Bad rc from connect", rc == MQTTCLIENT_FAILURE, "rc was %d\n", rc)))
 		goto exit;
 
 exit:
@@ -852,8 +863,8 @@ int test2c(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 2c\"");
 	global_start_time = start_clock();
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.mutual_auth_connection, "test2c", 
-		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	rc = MQTTClient_create(&c, options.mutual_auth_connection, "test2c", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
+	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -879,7 +890,8 @@ int test2c(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
-	if (!(assert("Good rc from connect", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_FAILURE, "rc was %d", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Good rc from connect", rc == MQTTCLIENT_FAILURE, "rc was %d", rc)))
 		goto exit;
 
 exit:
@@ -912,8 +924,8 @@ int test3a_s(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 3a_s\"");
 	global_start_time = start_clock();
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, "test3a_s", 
-		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	rc = MQTTClient_create(&c, options.server_auth_connection, "test3a_s", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
+	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -932,10 +944,12 @@ int test3a_s(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
-	if (!(assert("Good rc from connect", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Good rc from connect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
-	if (!(assert("Good rc from subscribe", (rc = MQTTClient_subscribe(c, test_topic, subsqos)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_subscribe(c, test_topic, subsqos);
+	if (!(assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 
 	singleThread_sendAndReceive(c, 0, test_topic);
 	singleThread_sendAndReceive(c, 1, test_topic);
@@ -943,16 +957,20 @@ int test3a_s(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Stopping\n");
 
-	if (!(assert("Unsubscribe successful", (rc = MQTTClient_unsubscribe(c, test_topic)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_unsubscribe(c, test_topic);
+	if (!(assert("Unsubscribe successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
-	if (!(assert("Disconnect successful", (rc = MQTTClient_disconnect(c, 0)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_disconnect(c, 0);
+	if (!(assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 	/* Just to make sure we can connect again */
 
-	if (!(assert("Connect successful", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Connect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
-	if (!(assert("Disconnect successful", (rc = MQTTClient_disconnect(c, 0)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_disconnect(c, 0);
+	if (!(assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 exit:
@@ -985,8 +1003,8 @@ int test3a_m(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 3a_m\"");
 	global_start_time = start_clock();
 
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, "test3a_m", 
-		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	rc = MQTTClient_create(&c, options.server_auth_connection, "test3a_m", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
+	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -1003,15 +1021,18 @@ int test3a_m(struct Options options)
 	if (options.server_key_file != NULL) 
 		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
 
-	if (!(assert("Good rc from setCallbacks", (rc = MQTTClient_setCallbacks(c, NULL, NULL, multiThread_messageArrived,
-		multiThread_deliveryComplete)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_setCallbacks(c, NULL, NULL, multiThread_messageArrived,	multiThread_deliveryComplete);
+	if (!(assert("Good rc from setCallbacks", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+		goto exit;
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
-	if (!(assert("Good rc from connect", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Good rc from connect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
-	if (!(assert("Good rc from subscribe", (rc = MQTTClient_subscribe(c, test_topic, subsqos)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_subscribe(c, test_topic, subsqos);
+	if (!(assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 	multiThread_sendAndReceive(c, 0, test_topic);
@@ -1020,9 +1041,11 @@ int test3a_m(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Stopping\n");
 
-	if (!(assert("Unsubscribe successful", (rc = MQTTClient_unsubscribe(c, test_topic)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_unsubscribe(c, test_topic);
+	if (!(assert("Unsubscribe successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
-	if (!(assert("Disconnect successful", (rc = MQTTClient_disconnect(c, 0)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_disconnect(c, 0);
+	if (!(assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 exit:
@@ -1054,8 +1077,8 @@ int test3b(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 3b\"");
 	global_start_time = start_clock();
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, "test3b", 
-		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	rc = MQTTClient_create(&c, options.server_auth_connection, "test3b", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
+	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -1072,7 +1095,8 @@ int test3b(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
-	if (!(assert("Good rc from connect", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_FAILURE, "rc was %d", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Good rc from connect", rc == MQTTCLIENT_FAILURE, "rc was %d", rc)))
 		goto exit;
 
 exit:
@@ -1105,8 +1129,8 @@ int test4_s(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 4_s\"");
 	global_start_time = start_clock();
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, "test4_s", 
-		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	rc = MQTTClient_create(&c, options.server_auth_connection, "test4_s", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
+	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -1124,9 +1148,11 @@ int test4_s(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
-	if (!(assert("Good rc from connect", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Good rc from connect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
-	if (!(assert("Good rc from subscribe", (rc = MQTTClient_subscribe(c, test_topic, subsqos)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_subscribe(c, test_topic, subsqos);
+	if (!(assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 	singleThread_sendAndReceive(c, 0, test_topic);
@@ -1135,16 +1161,19 @@ int test4_s(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Stopping\n");
 
-	if (!(assert("Unsubscribe successful", (rc = MQTTClient_unsubscribe(c, test_topic)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_unsubscribe(c, test_topic);
+	if (!(assert("Unsubscribe successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
-	if (!(assert("Disconnect successful", (rc = MQTTClient_disconnect(c, 0)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_disconnect(c, 0);
+	if (!(assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 	/* Just to make sure we can connect again */
-
-	if (!(assert("Connect successful", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Connect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
-	if (!(assert("Disconnect successful", (rc = MQTTClient_disconnect(c, 0)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_disconnect(c, 0);
+	if (!(assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 exit:
@@ -1177,8 +1206,8 @@ int test4_m(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 4_m\"");
 	global_start_time = start_clock();
 
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.server_auth_connection, 
-		"test4_m", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	rc = MQTTClient_create(&c, options.server_auth_connection, "test4_m", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
+	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -1194,14 +1223,17 @@ int test4_m(struct Options options)
 	opts.ssl = &sslopts;
 	opts.ssl->enableServerCertAuth = 0;
 
-	if (!(assert("Good rc from setCallbacks", (rc = MQTTClient_setCallbacks(c, NULL, NULL, multiThread_messageArrived, multiThread_deliveryComplete)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_setCallbacks(c, NULL, NULL, multiThread_messageArrived, multiThread_deliveryComplete);
+	if (!(assert("Good rc from setCallbacks", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
-	if (!(assert("Good rc from connect", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Good rc from connect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
-	if (!(assert("Good rc from subscribe", (rc = MQTTClient_subscribe(c, test_topic, subsqos)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_subscribe(c, test_topic, subsqos);
+	if (!(assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 	multiThread_sendAndReceive(c, 0, test_topic);
@@ -1210,9 +1242,11 @@ int test4_m(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Stopping");
 
-	if (!(assert("Unsubscribe successful", (rc = MQTTClient_unsubscribe(c, test_topic)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_unsubscribe(c, test_topic);
+	if (!(assert("Unsubscribe successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
-	if (!(assert("Disconnect successful", (rc = MQTTClient_disconnect(c, 0)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_disconnect(c, 0);
+	if (!(assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 exit:
@@ -1246,8 +1280,8 @@ int test5a(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 5a\"");
 	global_start_time = start_clock();
 	
-	if (!(assert("good rc from create",	(rc = MQTTClient_create(&c, options.anon_connection, "test5a", 
-		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	rc = MQTTClient_create(&c, options.anon_connection, "test5a", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
+	if (!(assert("good rc from create",	rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -1266,9 +1300,11 @@ int test5a(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
-	if (!(assert("Good rc from connect", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Good rc from connect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
-	if (!(assert("Good rc from subscribe", (rc = MQTTClient_subscribe(c, test_topic, subsqos)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_subscribe(c, test_topic, subsqos);
+	if (!(assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 	singleThread_sendAndReceive(c, 0, test_topic);
@@ -1277,16 +1313,20 @@ int test5a(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Stopping\n");
 
-	if (!(assert("Unsubscribe successful", (rc = MQTTClient_unsubscribe(c, test_topic)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_unsubscribe(c, test_topic);
+	if (!(assert("Unsubscribe successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
-	if (!(assert("Disconnect successful", (rc = MQTTClient_disconnect(c, 0)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_disconnect(c, 0);
+	if (!(assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 	/* Just to make sure we can connect again */
 
-	if (!(assert("Connect successful", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Connect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
-	if (!(assert("Disconnect successful", (rc = MQTTClient_disconnect(c, 0)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_disconnect(c, 0);
+	if (!(assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 exit:
@@ -1319,8 +1359,8 @@ int test5b(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 5b\"");
 	global_start_time = start_clock();
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.anon_connection, "test5b", 
-		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	rc = MQTTClient_create(&c, options.anon_connection, "test5b", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
+	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -1342,9 +1382,11 @@ int test5b(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
-	if (!(assert("Good rc from connect", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Good rc from connect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
-	if (!(assert("Good rc from subscribe", (rc = MQTTClient_subscribe(c, test_topic, subsqos)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_subscribe(c, test_topic, subsqos);
+	if (!(assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 	singleThread_sendAndReceive(c, 0, test_topic);
@@ -1353,16 +1395,19 @@ int test5b(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Stopping\n");
 
-	if (!(assert("Unsubscribe successful", (rc = MQTTClient_unsubscribe(c, test_topic)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_unsubscribe(c, test_topic);
+	if (!(assert("Unsubscribe successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
-	if (!(assert("Disconnect successful", (rc = MQTTClient_disconnect(c, 0)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_disconnect(c, 0);
+	if (!(assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 	/* Just to make sure we can connect again */
-
-	if (!(assert("Connect successful", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Connect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
-	if (!(assert("Disconnect successful", (rc = MQTTClient_disconnect(c, 0)) == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+	rc = MQTTClient_disconnect(c, 0);
+	if (!(assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 exit:
@@ -1396,8 +1441,8 @@ int test5c(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 5c\"");
 	global_start_time = start_clock();
 	
-	if (!(assert("good rc from create", (rc = MQTTClient_create(&c, options.anon_connection, "test5c", 
-		MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore)) == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+	rc = MQTTClient_create(&c, options.anon_connection, "test5c", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
+	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
 
 	opts.keepAliveInterval = 20;
@@ -1419,7 +1464,8 @@ int test5c(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
-	if (!(assert("Good rc from connect", (rc = MQTTClient_connect(c, &opts)) == MQTTCLIENT_FAILURE, "rc was %d", rc)))
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Good rc from connect", rc == MQTTCLIENT_FAILURE, "rc was %d", rc)))
 		goto exit;
 
 exit:
@@ -1478,7 +1524,7 @@ int main(int argc, char** argv)
 	int* numtests = &tests;
 	int rc = 0;
  	int (*tests[])() = {NULL, test1, test2a_s, test2a_m, test2b, test2c, test3a_s, test3a_m, test3b, test4_s, test4_m, /*test5a, test5b,test5c */};
-	MQTTClient_nameValue* info;
+	//MQTTClient_nameValue* info;
 
 	xml = fopen("TEST-test3.xml", "w");
 	fprintf(xml, "<testsuite name=\"test3\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));

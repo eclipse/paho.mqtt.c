@@ -19,7 +19,8 @@
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
  *    Ian Craggs - fix for bug 421103 - trying to write to same socket, in publish/retries
  *    Ian Craggs - fix for bug 419233 - mutexes not reporting errors
- *    Ian Craggs - fix for bug #420851
+ *    Ian Craggs - fix for bug 420851
+ *    Ian Craggs - fix for bug 432903 - queue persistence
  *    Ian Craggs - MQTT 3.1.1 support
  *******************************************************************************/
 
@@ -31,14 +32,15 @@
 
 #define _GNU_SOURCE /* for pthread_mutexattr_settype */
 #include <stdlib.h>
-#if !defined(WIN32)
+#if !defined(WIN32) && !defined(WIN64)
 	#include <sys/time.h>
 #endif
 
+#include "MQTTClient.h"
 #if !defined(NO_PERSISTENCE)
 #include "MQTTPersistence.h"
 #endif
-#include "MQTTClient.h"
+
 #include "utf-8.h"
 #include "MQTTProtocol.h"
 #include "MQTTProtocolOut.h"
@@ -54,7 +56,7 @@
 #define URI_TCP "tcp://"
 
 #define BUILD_TIMESTAMP "##MQTTCLIENT_BUILD_TAG##"
-#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##" 
+#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##"
 
 char* client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
@@ -69,7 +71,7 @@ ClientStates* bstate = &ClientState;
 
 MQTTProtocol state;
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 static mutex_type mqttclient_mutex = NULL;
 extern mutex_type stack_mutex;
 extern mutex_type heap_mutex;
@@ -136,6 +138,7 @@ typedef struct
 	MQTTClient_message* msg;
 	char* topicName;
 	int topicLen;
+	unsigned int seqno; /* only used on restore */
 } qEntry;
 
 
@@ -163,7 +166,7 @@ typedef struct
 void MQTTClient_sleep(long milliseconds)
 {
 	FUNC_ENTRY;
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 	Sleep(milliseconds);
 #else
 	usleep(milliseconds*1000);
@@ -172,7 +175,7 @@ void MQTTClient_sleep(long milliseconds)
 }
 
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 #define START_TIME_TYPE DWORD
 START_TIME_TYPE MQTTClient_start_clock(void)
 {
@@ -197,7 +200,7 @@ START_TIME_TYPE MQTTClient_start_clock(void)
 #endif
 
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(WIN64)
 long MQTTClient_elapsed(DWORD milliseconds)
 {
 	return GetTickCount() - milliseconds;
@@ -292,7 +295,11 @@ int MQTTClient_create(MQTTClient* handle, char* serverURI, char* clientId,
 #if !defined(NO_PERSISTENCE)
 	rc = MQTTPersistence_create(&(m->c->persistence), persistence_type, persistence_context);
 	if (rc == 0)
+	{
 		rc = MQTTPersistence_initialize(m->c, m->serverURI);
+		if (rc == 0)
+			MQTTPersistence_restoreMessageQueue(m->c);
+	}
 #endif
 	ListAppend(bstate->clients, m->c, sizeof(Clients) + 3*sizeof(List));
 
@@ -419,6 +426,10 @@ int MQTTClient_deliverMessage(int rc, MQTTClients* m, char** topicName, int* top
 	if (strlen(*topicName) != *topicLen)
 		rc = MQTTCLIENT_TOPICNAME_TRUNCATED;
 	ListRemove(m->c->messageQueue, m->c->messageQueue->first->content);
+#if !defined(NO_PERSISTENCE)
+	if (m->c->persistence)
+		MQTTPersistence_unpersistQueueEntry(m->c, (MQTTPersistence_qEntry*)qe);
+#endif
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -738,6 +749,10 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 	mm->msgid = publish->msgId;
 
 	ListAppend(client->messageQueue, qe, sizeof(qe) + sizeof(mm) + mm->payloadlen + strlen(qe->topicName)+1);
+#if !defined(NO_PERSISTENCE)
+	if (client->persistence)
+		MQTTPersistence_persistQueueEntry(client, (MQTTPersistence_qEntry*)qe);
+#endif
 	FUNC_EXIT;
 }
 

@@ -19,6 +19,10 @@
 #include "string.h"
 #include "MQTTAsync.h"
 
+#if !defined(WIN32)
+#include <unistd.h>
+#endif
+
 #define ADDRESS     "tcp://localhost:1883"
 #define CLIENTID    "ExampleClientSub"
 #define TOPIC       "MQTT Examples"

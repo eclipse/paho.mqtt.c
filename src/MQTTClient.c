@@ -762,6 +762,7 @@ int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* o
 {
 	MQTTClients* m = handle;
 	int rc = SOCKET_ERROR;
+	int sessionPresent = 0;
 
 	FUNC_ENTRY;
 	if (m->ma && !running)
@@ -890,6 +891,8 @@ int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* o
 				m->c->connected = 1;
 				m->c->good = 1;
 				m->c->connect_state = 0;
+				if (MQTTVersion == 4)
+					sessionPresent = connack->flags.bits.sessionPresent;
 				if (m->c->cleansession)
 					rc = MQTTClient_cleanSession(m->c);
 				if (m->c->outboundMsgs->count > 0)
@@ -910,9 +913,17 @@ int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* o
 			m->pack = NULL;
 		}
 	}
-
 exit:
-	if (rc != MQTTCLIENT_SUCCESS)
+	if (rc == MQTTCLIENT_SUCCESS)
+	{
+		if (options->struct_version == 4) /* means we have to fill out return values */
+		{			
+			options->returned.serverURI = serverURI;
+			options->returned.MQTTVersion = MQTTVersion;    
+			options->returned.sessionPresent = sessionPresent;
+		}
+	}
+	else
 	{
 		Thread_unlock_mutex(mqttclient_mutex);
 		MQTTClient_disconnect1(handle, 0, 0, (MQTTVersion == 3)); /* not "internal" because we don't want to call connection lost */
@@ -1046,7 +1057,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 
 	if (strncmp(options->struct_id, "MQTC", 4) != 0 || 
 		(options->struct_version != 0 && options->struct_version != 1 && options->struct_version != 2
-			&& options->struct_version != 3))
+			&& options->struct_version != 3 && options->struct_version != 4))
 	{
 		rc = MQTTCLIENT_BAD_STRUCTURE;
 		goto exit;
@@ -1298,6 +1309,8 @@ int MQTTClient_subscribe(MQTTClient handle, char* topic, int qos)
 
 	FUNC_ENTRY;
 	rc = MQTTClient_subscribeMany(handle, 1, &topic, &qos);
+	if (qos == MQTT_BAD_SUBSCRIBE) /* addition for MQTT 3.1.1 - error code from subscribe */
+		rc = MQTT_BAD_SUBSCRIBE;
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

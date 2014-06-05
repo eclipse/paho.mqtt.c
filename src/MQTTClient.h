@@ -38,7 +38,7 @@
  * @endcond
  * @cond MQTTClient_main
  * @mainpage MQTT Client library for C
- * &copy; Copyright IBM Corp. 2009, 2013
+ * &copy; Copyright IBM Corp. 2009, 2014
  * 
  * @brief An MQTT client library in C.
  *
@@ -173,6 +173,10 @@
  * MQTT version to connect with: 3.1.1
  */
 #define MQTTVERSION_3_1_1 4
+/**
+ * Bad return code from subscribe, as defined in the 3.1.1 specification
+ */
+#define MQTT_BAD_SUBSCRIBE 0x80
 
 /**
  * A handle representing an MQTT client. A valid client handle is available
@@ -504,11 +508,12 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1, 2 or 3.  
-	  * 0 signifies no SSL options and no serverURIs
-	  * 1 signifies no serverURIs 
-      * 2 signifies no MQTTVersion
-	  */
+	/** The version number of this structure.  Must be 0, 1, 2, 3 or 4.  
+	 * 0 signifies no SSL options and no serverURIs
+	 * 1 signifies no serverURIs 
+	 * 2 signifies no MQTTVersion
+	 * 3 signifies no returned values
+	 */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
    * that should pass without communication between the client and the server
@@ -599,15 +604,24 @@ typedef struct
    */    
 	char** serverURIs;
 	/**
-      * Sets the version of MQTT to be used on the connect.
-      * MQTTVERSION_DEFAULT (0) = default: start with 3.1.1, and if that fails, fall back to 3.1
-      * MQTTVERSION_3_1 (3) = only try version 3.1
-      * MQTTVERSION_3_1_1 (4) = only try version 3.1.1
-	  */
+	 * Sets the version of MQTT to be used on the connect.
+	 * MQTTVERSION_DEFAULT (0) = default: start with 3.1.1, and if that fails, fall back to 3.1
+	 * MQTTVERSION_3_1 (3) = only try version 3.1
+	 * MQTTVERSION_3_1_1 (4) = only try version 3.1.1
+	 */
 	int MQTTVersion;
+	/**
+	 * Returned from the connect when the MQTT version used to connect is 3.1.1
+	 */
+	struct 
+	{
+		char* serverURI;     /**< the serverURI connected to */
+		int MQTTVersion;     /**< the MQTT version used to connect with */
+		int sessionPresent;  /**< if the MQTT version is 3.1.1, the value of sessionPresent returned in the connack */
+	} returned;
 } MQTTClient_connectOptions;
 
-#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 3, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, 0}
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 4, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, 0}
 
 /**
   * MQTTClient_libraryInfo is used to store details relating to the currently used

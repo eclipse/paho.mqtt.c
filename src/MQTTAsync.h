@@ -158,6 +158,10 @@
  * MQTT version to connect with: 3.1.1
  */
 #define MQTTVERSION_3_1_1 4
+/**
+ * Bad return code from subscribe, as defined in the 3.1.1 specification
+ */
+#define MQTT_BAD_SUBSCRIBE 0x80
 
 /**
  * A handle representing an MQTT client. A valid client handle is available

@@ -1511,8 +1511,16 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 						MQTTAsync_freeConnect(m->connect);
 						if (m->connect.onSuccess)
 						{
+							MQTTAsync_successData data;
+							memset(&data, '\0', sizeof(data));
 							Log(TRACE_MIN, -1, "Calling connect success for client %s", m->c->clientID);
-							(*(m->connect.onSuccess))(m->connect.context, NULL);
+							if (m->connect.details.conn.serverURIcount > 0)
+								data.alt.connect.serverURI = m->connect.details.conn.serverURIs[m->connect.details.conn.currentURI];
+							else
+								data.alt.connect.serverURI = m->serverURI;
+							data.alt.connect.MQTTVersion = m->connect.details.conn.MQTTVersion;
+							data.alt.connect.sessionPresent = ((Connack*)pack)->flags.bits.sessionPresent;
+							(*(m->connect.onSuccess))(m->connect.context, &data);
 						}
 					}
 					else

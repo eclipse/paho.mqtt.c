@@ -68,7 +68,7 @@ struct Options
 	int iterations;
 } options =
 {
-	"tcp://m2m.eclipse.org:1883",
+	"m2m.eclipse.org:1883",
 	NULL,
 	0,
 	0,
@@ -289,7 +289,7 @@ void test1_onConnect3(void* context, MQTTAsync_successData* response)
 	opts.onSuccess = test1_onDisconnect3;
 	opts.context = c;
 
-	assert("Correct serverURI returned", strcmp(response->alt.connect.serverURI, options.connection) == 0,
+	assert("Correct serverURI returned", strstr(response->alt.connect.serverURI, options.connection) != NULL,
 			"serverURI was %s", response->alt.connect.serverURI);
 	assert("Correct MQTTVersion returned", response->alt.connect.MQTTVersion == 4,
 			"MQTTVersion was %d", response->alt.connect.MQTTVersion);
@@ -383,8 +383,6 @@ void test1_onConnect1(void* context, MQTTAsync_successData* response)
 	opts.onSuccess = test1_onDisconnect1;
 	opts.context = c;
 
-	printf("response %p\n", response);
-
 	assert("Correct serverURI returned", strcmp(response->alt.connect.serverURI, options.connection) == 0,
 			"serverURI was %s", response->alt.connect.serverURI);
 	assert("Correct MQTTVersion returned", response->alt.connect.MQTTVersion == 4,
@@ -457,105 +455,147 @@ exit:
 	return failures;
 }
 
-#if 0
+
+void test2_onDisconnect(void* context, MQTTAsync_successData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+
+	MyLog(LOGA_DEBUG, "In onDisconnect callback %p", c);
+	test_finished = 1;
+}
+
+
+void test2_onSubscribe2(void* context, MQTTAsync_failureData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
+	int rc;
+
+	MyLog(LOGA_DEBUG, "In subscribe onFailure callback, context %p", context);
+
+	assert("Correct subscribe return code", response->code == MQTT_BAD_SUBSCRIBE,
+			"qos was %d", response->code);
+
+	opts.onSuccess = test2_onDisconnect;
+	rc = MQTTAsync_disconnect(c, &opts);
+	assert("Disconnect successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+}
+
+
+void test2_onSubscribe1(void* context, MQTTAsync_successData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	int rc;
+
+	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback, context %p", context);
+
+	assert("Correct subscribe return code", response->alt.qos == 2,
+			"qos was %d", response->alt.qos);
+}
+
+
+void test2_onConnect1(void* context, MQTTAsync_successData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	int rc;
+
+	MyLog(LOGA_DEBUG, "In connect onSuccess callback 1, context %p", context);
+
+	assert("Correct serverURI returned", strcmp(response->alt.connect.serverURI, options.connection) == 0,
+			"serverURI was %s", response->alt.connect.serverURI);
+	assert("Correct MQTTVersion returned", response->alt.connect.MQTTVersion == 4,
+			"MQTTVersion was %d", response->alt.connect.MQTTVersion);
+	assert("Correct sessionPresent returned", response->alt.connect.sessionPresent == 0,
+			"sessionPresent was %d", response->alt.connect.sessionPresent);
+
+	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
+	opts.context = c;
+
+	opts.onSuccess = test2_onSubscribe1;
+	rc = MQTTAsync_subscribe(c, "a topic I can subscribe to", 2, &opts);
+	assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		test_finished = 1;
+
+	opts.onSuccess = NULL;
+	opts.onFailure = test2_onSubscribe2;
+	rc = MQTTAsync_subscribe(c, "nosubscribe", 2, &opts);
+	assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		test_finished = 1;
+}
+
+
+
 /*********************************************************************
 
-Test2: 0x80 return code from subscribe
+Test1: 0x80 from subscribe
 
 *********************************************************************/
-volatile int test2_arrivedcount = 0;
-int test2_deliveryCompleted = 0;
-MQTTClient_message test2_pubmsg = MQTTClient_message_initializer;
-
-void test2_deliveryComplete(void* context, MQTTClient_deliveryToken dt)
-{
-	++test2_deliveryCompleted;
-}
-
-int test2_messageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* m)
-{
-	++test2_arrivedcount;
-	MyLog(LOGA_DEBUG, "Callback: %d message received on topic %s is %.*s.",
-					test2_arrivedcount, topicName, m->payloadlen, (char*)(m->payload));
-	MQTTClient_free(topicName);
-	MQTTClient_freeMessage(&m);
-	return 1;
-}
-
 int test2(struct Options options)
 {
-	char* testname = "test2";
-	int subsqos = 2;
-	MQTTClient c;
-	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
 	int rc = 0;
-	char* test_topic = "C client test2";
-	char* topics[2] = {"test_topic", "nosubscribe"};
-	int qoss[2] = {2, 2};
+	char* test_topic = "C client test1";
 
-	fprintf(xml, "<testcase classname=\"test1\" name=\"bad return code from subscribe\"");
-	MyLog(LOGA_INFO, "Starting test 2 - bad return code from subscribe");
+	fprintf(xml, "<testcase classname=\"test2\" name=\"bad subscribe\"");
 	global_start_time = start_clock();
-	failures = 0;
+	test_finished = failures = 0;
+	MyLog(LOGA_INFO, "Starting test 2 - bad subscribe");
 
-	MQTTClient_create(&c, options.connection, "multi_threaded_sample", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	rc = MQTTAsync_create(&c, options.connection, "badSubscribe test",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
 
-	opts.keepAliveInterval = 20;
-	opts.cleansession = 1;
 	opts.MQTTVersion = 4;
 	if (options.haconnections != NULL)
 	{
 		opts.serverURIs = options.haconnections;
 		opts.serverURIcount = options.hacount;
 	}
+	opts.onSuccess = test2_onConnect1;
+	opts.onFailure = NULL;
+	opts.context = c;
 
-	rc = MQTTClient_setCallbacks(c, NULL, NULL, test2_messageArrived, test2_deliveryComplete);
-	assert("Good rc from setCallbacks", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
-
+	/* Connect cleansession */
+	opts.cleansession = 1;
 	MyLog(LOGA_DEBUG, "Connecting");
-	rc = MQTTClient_connect(c, &opts);
-	assert("Good rc from connect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
-	if (rc != MQTTCLIENT_SUCCESS)
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
 		goto exit;
 
-	assert("Correct serverURI returned", strcmp(opts.returned.serverURI, options.connection) == 0, "serverURI was %s",
-		opts.returned.serverURI);
-	assert("Correct MQTTVersion returned", opts.returned.MQTTVersion == 4, "MQTTVersion was %d",
-		opts.returned.MQTTVersion);
-	assert("Correct sessionPresent returned", opts.returned.sessionPresent == 0, "sessionPresent was %d",
-		opts.returned.sessionPresent);
+	while (!test_finished)
+		#if defined(WIN32)
+			Sleep(100);
+		#else
+			usleep(10000L);
+		#endif
 
-	rc = MQTTClient_subscribe(c, test_topic, subsqos);
-	assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
-
-	rc = MQTTClient_subscribe(c, "nosubscribe", 2);
-	assert("0x80 from subscribe", rc == 0x80, "rc was %d", rc);
-
-	rc = MQTTClient_subscribeMany(c, 2, topics, qoss);
-	assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
-	assert("Correct returned qos from subscribe", qoss[0] == 2, "qos 0 was %d", qoss[0]);
-	assert("Correct returned qos from subscribe", qoss[1] == 0x80, "qos 0 was %d", qoss[0]);
-
-	rc = MQTTClient_unsubscribe(c, test_topic);
-	assert("Unsubscribe successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
-	rc = MQTTClient_disconnect(c, 0);
-	assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
-
-	MQTTClient_destroy(&c);
+	MQTTAsync_destroy(&c);
 
 exit:
-	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
-			(failures == 0) ? "passed" : "failed", testname, tests, failures);
+	MyLog(LOGA_INFO, "TEST2: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
 	write_test_result();
 	return failures;
 }
-#endif
+
+
 
 
 int main(int argc, char** argv)
 {
 	int rc = 0;
- 	int (*tests[])() = {NULL, test1};
+ 	int (*tests[])() = {NULL, test1, test2};
 	int i;
 	
 	xml = fopen("TEST-MQTT4sync.xml", "w");

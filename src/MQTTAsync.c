@@ -1558,7 +1558,6 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 				else if (pack->header.bits.type == SUBACK)
 				{
 					ListElement* current = NULL;
-					int handleCalled = 0;
 									
 					/* use the msgid to find the callback to be called */
 					while (ListNextElement(m->responses, &current))
@@ -1566,12 +1565,30 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 						MQTTAsync_queuedCommand* command = (MQTTAsync_queuedCommand*)(current->content);
 						if (command->command.token == ((Suback*)pack)->msgId)
 						{	
+							Suback* sub = (Suback*)pack;
 							if (!ListDetach(m->responses, command)) /* remove the response from the list */
 								Log(LOG_ERROR, -1, "Subscribe command not removed from command list");
-							if (command->command.onSuccess)
+
+							/* Call the failure callback if there is one subscribe in the MQTT packet and
+							 * the return code is 0x80 (failure).  If the MQTT packet contains >1 subscription
+							 * request, then we call onSuccess with the list of returned QoSs, which inelegantly,
+							 * could include some failures, or worse, the whole list could have failed.
+							 */
+							if (sub->qoss->count == 1 && *(int*)(sub->qoss->first->content) == MQTT_BAD_SUBSCRIBE)
+							{
+								if (command->command.onFailure)
+								{
+									MQTTAsync_failureData data;
+
+									data.token = command->command.token;
+									data.code = *(int*)(sub->qoss->first->content);
+									Log(TRACE_MIN, -1, "Calling subscribe failure for client %s", m->c->clientID);
+									(*(command->command.onFailure))(command->command.context, &data);
+								}
+							}
+							else if (command->command.onSuccess)
 							{
 								MQTTAsync_successData data;
-								Suback* sub = (Suback*)pack;
 								int* array = NULL;
 								
 								if (sub->qoss->count == 1)
@@ -1584,9 +1601,6 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 										*element++ = *(int*)(cur_qos->content);
 								} 
 								data.token = command->command.token;
-								
-								rc = MQTTProtocol_handleSubacks(pack, m->c->net.socket);
-								handleCalled = 1;
 								Log(TRACE_MIN, -1, "Calling subscribe success for client %s", m->c->clientID);
 								(*(command->command.onSuccess))(command->command.context, &data);
 								if (array)
@@ -1596,8 +1610,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 							break;
 						}
 					}
-					if (!handleCalled)
-						rc = MQTTProtocol_handleSubacks(pack, m->c->net.socket);
+					rc = MQTTProtocol_handleSubacks(pack, m->c->net.socket);
 				}
 				else if (pack->header.bits.type == UNSUBACK)
 				{

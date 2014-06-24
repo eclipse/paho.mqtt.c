@@ -31,7 +31,7 @@
   <property name="libname.async" value="mqttv3a" />
   <property name="libname.async.ssl" value="mqttv3as" />
   <property name="ssl" value="yes" />
-  <property name="test.hostname" value="m2m.eclipse.org"/>
+  <property name="test.hostname" value="iot.eclipse.org"/>
   <property name="test.port" value="18883"/>
   <if>
     <os family="windows"/>
@@ -210,8 +210,8 @@
       <fileset dir="src/samples" includes="*"/>
     </copy> 
     <delete>
-       <fileset dir="." includes="eclipse-paho-mqtt-c-windows-incubation-${release.version}.zip"/>
-       <fileset dir="." includes="eclipse-paho-mqtt-c-${os.family}-incubation-${release.version}.tar.gz"/>
+       <fileset dir="." includes="eclipse-paho-mqtt-c-windows-${release.version}.zip"/>
+       <fileset dir="." includes="eclipse-paho-mqtt-c-${os.family}-${release.version}.tar.gz"/>
     </delete>
 
    <if>
@@ -219,7 +219,7 @@
     <then>
     <exec executable="c:\cygwin\bin\zip.exe" failonerror="true" dir="${output.folder}">
       <arg value="-r"/>
-      <arg value="eclipse-paho-mqtt-c-windows-incubation-${release.version}.zip"/>
+      <arg value="eclipse-paho-mqtt-c-windows-${release.version}.zip"/>
       <arg value="about.html"/>
       <arg value="notice.html"/>
       <arg value="README.md"/>
@@ -235,7 +235,7 @@
     <else>
     <exec executable="tar" failonerror="true" dir="${output.folder}">
       <arg value="czf"/>
-      <arg value="eclipse-paho-mqtt-c-${os.family}-incubation-${release.version}.tar.gz"/>
+      <arg value="eclipse-paho-mqtt-c-${os.family}-${release.version}.tar.gz"/>
       <arg value="about.html"/>
       <arg value="notice.html"/>
       <arg value="README.md"/>
@@ -255,7 +255,7 @@
     <then>
     <exec executable="tar" failonerror="true" dir=".">
       <arg value="czf"/>
-      <arg value="${output.folder}/eclipse-paho-mqtt-c-src-incubation-${release.version}.tar.gz"/>
+      <arg value="${output.folder}/eclipse-paho-mqtt-c-src-${release.version}.tar.gz"/>
       <arg value="about.html"/>
       <arg value="notice.html"/>
       <arg value="README.md"/>

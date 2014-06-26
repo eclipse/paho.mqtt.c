@@ -22,6 +22,7 @@
  *    Ian Craggs - fix for bug 420851
  *    Ian Craggs - fix for bug 432903 - queue persistence
  *    Ian Craggs - MQTT 3.1.1 support
+ *    Ian Craggs - fix for bug 438176 - MQTT version selection
  *******************************************************************************/
 
 /**
@@ -1023,14 +1024,14 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 	m->c->password = options->password;
 	m->c->retryInterval = options->retryInterval;
 
-	if (options->struct_version == 3)
+	if (options->struct_version >= 3)
 		MQTTVersion = options->MQTTVersion;
 	else
 		MQTTVersion = MQTTVERSION_DEFAULT;
 
 	if (MQTTVersion == MQTTVERSION_DEFAULT)
 	{
-		if ((rc = MQTTClient_connectURIVersion(handle, options, serverURI, 4	, start, millisecsTimeout)) != MQTTCLIENT_SUCCESS)
+		if ((rc = MQTTClient_connectURIVersion(handle, options, serverURI, 4, start, millisecsTimeout)) != MQTTCLIENT_SUCCESS)
 			rc = MQTTClient_connectURIVersion(handle, options, serverURI, 3, start, millisecsTimeout);
 	}
 	else

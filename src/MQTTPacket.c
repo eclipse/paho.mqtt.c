@@ -97,6 +97,7 @@ void* MQTTPacket_Factory(networkHandles* net, int* error)
 	char* data = NULL;
 	static Header header;
 	int remaining_length, ptype;
+	size_t remaining_length_new;
 	void* pack = NULL;
 	int actual_len = 0;
 
@@ -147,8 +148,9 @@ void* MQTTPacket_Factory(networkHandles* net, int* error)
 				char *buf = malloc(10);
 				buf[0] = header.byte;
 				buf0len = 1 + MQTTPacket_encode(&buf[1], remaining_length);
+				remaining_length_new = remaining_length;
 				*error = MQTTPersistence_put(net->socket, buf, buf0len, 1,
-					&data, &remaining_length, header.bits.type, ((Publish *)pack)->msgId, 1);
+					&data, &remaining_length_new, header.bits.type, ((Publish *)pack)->msgId, 1);
 				free(buf);
 			}
 #endif
@@ -168,7 +170,7 @@ exit:
  * @param buflen the length of the data in buffer to be written
  * @return the completion code (TCPSOCKET_COMPLETE etc)
  */
-int MQTTPacket_send(networkHandles* net, Header header, char* buffer, int buflen, int free)
+int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buflen, int free)
 {
 	int rc, buf0len;
 	char *buf;
@@ -214,7 +216,7 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, int buflen
  * @param buflens the lengths of the data in the array of buffers to be written
  * @return the completion code (TCPSOCKET_COMPLETE etc)
  */
-int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffers, int* buflens, int* frees)
+int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffers, size_t* buflens, int* frees)
 {
 	int i, rc, buf0len, total = 0;
 	char *buf;
@@ -423,7 +425,7 @@ void writeInt(char** pptr, int anInt)
  * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
  * @param string the C string to write
  */
-void writeUTF(char** pptr, char* string)
+void writeUTF(char** pptr, const char* string)
 {
 	int len = strlen(string);
 	writeInt(pptr, len);
@@ -439,7 +441,7 @@ void writeUTF(char** pptr, char* string)
  * @param datalen the length of the rest of the packet
  * @return pointer to the packet structure
  */
-void* MQTTPacket_header_only(unsigned char aHeader, char* data, int datalen)
+void* MQTTPacket_header_only(unsigned char aHeader, char* data, size_t datalen)
 {
 	static unsigned char header = 0;
 	header = aHeader;
@@ -452,7 +454,7 @@ void* MQTTPacket_header_only(unsigned char aHeader, char* data, int datalen)
  * @param socket the open socket to send the data to
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-int MQTTPacket_send_disconnect(networkHandles *net, char* clientID)
+int MQTTPacket_send_disconnect(networkHandles *net, const char* clientID)
 {
 	Header header;
 	int rc = 0;
@@ -474,7 +476,7 @@ int MQTTPacket_send_disconnect(networkHandles *net, char* clientID)
  * @param datalen the length of the rest of the packet
  * @return pointer to the packet structure
  */
-void* MQTTPacket_publish(unsigned char aHeader, char* data, int datalen)
+void* MQTTPacket_publish(unsigned char aHeader, char* data, size_t datalen)
 {
 	Publish* pack = malloc(sizeof(Publish));
 	char* curdata = data;
@@ -550,7 +552,7 @@ int MQTTPacket_send_ack(int type, int msgid, int dup, networkHandles *net)
  * @param clientID the string client identifier, only used for tracing
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-int MQTTPacket_send_puback(int msgid, networkHandles* net, char* clientID)
+int MQTTPacket_send_puback(int msgid, networkHandles* net, const char* clientID)
 {
 	int rc = 0;
 
@@ -583,7 +585,7 @@ void MQTTPacket_freeSuback(Suback* pack)
  * @param clientID the string client identifier, only used for tracing
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-int MQTTPacket_send_pubrec(int msgid, networkHandles* net, char* clientID)
+int MQTTPacket_send_pubrec(int msgid, networkHandles* net, const char* clientID)
 {
 	int rc = 0;
 
@@ -603,7 +605,7 @@ int MQTTPacket_send_pubrec(int msgid, networkHandles* net, char* clientID)
  * @param clientID the string client identifier, only used for tracing
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-int MQTTPacket_send_pubrel(int msgid, int dup, networkHandles* net, char* clientID)
+int MQTTPacket_send_pubrel(int msgid, int dup, networkHandles* net, const char* clientID)
 {
 	int rc = 0;
 
@@ -622,7 +624,7 @@ int MQTTPacket_send_pubrel(int msgid, int dup, networkHandles* net, char* client
  * @param clientID the string client identifier, only used for tracing
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-int MQTTPacket_send_pubcomp(int msgid, networkHandles* net, char* clientID)
+int MQTTPacket_send_pubcomp(int msgid, networkHandles* net, const char* clientID)
 {
 	int rc = 0;
 
@@ -641,7 +643,7 @@ int MQTTPacket_send_pubcomp(int msgid, networkHandles* net, char* clientID)
  * @param datalen the length of the rest of the packet
  * @return pointer to the packet structure
  */
-void* MQTTPacket_ack(unsigned char aHeader, char* data, int datalen)
+void* MQTTPacket_ack(unsigned char aHeader, char* data, size_t datalen)
 {
 	Ack* pack = malloc(sizeof(Ack));
 	char* curdata = data;
@@ -664,7 +666,7 @@ void* MQTTPacket_ack(unsigned char aHeader, char* data, int datalen)
  * @param clientID the string client identifier, only used for tracing
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, networkHandles* net, char* clientID)
+int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, networkHandles* net, const char* clientID)
 {
 	Header header;
 	char *topiclen;
@@ -682,7 +684,7 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 		char *buf = malloc(2);
 		char *ptr = buf;
 		char* bufs[4] = {topiclen, pack->topic, buf, pack->payload};
-		int lens[4] = {2, strlen(pack->topic), 2, pack->payloadlen};
+		size_t lens[4] = {2, strlen(pack->topic), 2, pack->payloadlen};
 		int frees[4] = {1, 0, 1, 0};
 
 		writeInt(&ptr, pack->msgId);
@@ -696,7 +698,7 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 	{
 		char* ptr = topiclen;
 		char* bufs[3] = {topiclen, pack->topic, pack->payload};
-		int lens[3] = {2, strlen(pack->topic), pack->payloadlen};
+		size_t lens[3] = {2, strlen(pack->topic), pack->payloadlen};
 		int frees[3] = {1, 0, 0};
 
 		writeInt(&ptr, lens[1]);

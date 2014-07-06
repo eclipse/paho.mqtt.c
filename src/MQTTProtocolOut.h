@@ -29,11 +29,11 @@
 
 #define DEFAULT_PORT 1883
 
-void MQTTProtocol_reconnect(char* ip_address, Clients* client);
+void MQTTProtocol_reconnect(const char* ip_address, Clients* client);
 #if defined(OPENSSL)
-int MQTTProtocol_connect(char* ip_address, Clients* acClients, int ssl, int MQTTVersion);
+int MQTTProtocol_connect(const char* ip_address, Clients* acClients, int ssl, int MQTTVersion);
 #else
-int MQTTProtocol_connect(char* ip_address, Clients* acClients, int MQTTVersion);
+int MQTTProtocol_connect(const char* ip_address, Clients* acClients, int MQTTVersion);
 #endif
 int MQTTProtocol_handlePingresps(void* pack, int sock);
 int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss);

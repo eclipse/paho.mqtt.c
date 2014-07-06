@@ -102,7 +102,7 @@ int MQTTPersistence_create(MQTTClient_persistence** persistence, int type, void*
  * @param serverURI the URI of the remote end.
  * @return 0 if success, #MQTTCLIENT_PERSISTENCE_ERROR otherwise.
  */
-int MQTTPersistence_initialize(Clients *c, char *serverURI)
+int MQTTPersistence_initialize(Clients *c, const char *serverURI)
 {
 	int rc = 0;
 
@@ -264,7 +264,7 @@ int MQTTPersistence_restore(Clients *c)
  * @param buffer the persisted data.
  * @param buflen the number of bytes of the data buffer.
  */
-void* MQTTPersistence_restorePacket(char* buffer, int buflen)
+void* MQTTPersistence_restorePacket(char* buffer, size_t buflen)
 {
 	void* pack = NULL;
 	Header header;
@@ -302,7 +302,7 @@ void* MQTTPersistence_restorePacket(char* buffer, int buflen)
  * @param content the message to add.
  * @param size size of the message.
  */
-void MQTTPersistence_insertInOrder(List* list, void* content, int size)
+void MQTTPersistence_insertInOrder(List* list, void* content, size_t size)
 {
 	ListElement* index = NULL;
 	ListElement* current = NULL;
@@ -333,8 +333,8 @@ void MQTTPersistence_insertInOrder(List* list, void* content, int size)
  * receiving direction.
  * @return 0 if success, #MQTTCLIENT_PERSISTENCE_ERROR otherwise.
  */
-int MQTTPersistence_put(int socket, char* buf0, int buf0len, int count,
-								 char** buffers, int* buflens, int htype, int msgId, int scr )
+int MQTTPersistence_put(int socket, char* buf0, size_t buf0len, int count,
+								 char** buffers, size_t* buflens, int htype, int msgId, int scr )
 {
 	int rc = 0;
 	extern ClientStates* bstate;
@@ -531,7 +531,7 @@ int MQTTPersistence_persistQueueEntry(Clients* aclient, MQTTPersistence_qEntry* 
 }
 
 
-MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, int buflen)
+MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t buflen)
 {
 	MQTTPersistence_qEntry* qe = NULL;
 	char* ptr = buffer;
@@ -577,7 +577,7 @@ MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, int bufl
 }
 
 
-void MQTTPersistence_insertInSeqOrder(List* list, MQTTPersistence_qEntry* qEntry, int size)
+void MQTTPersistence_insertInSeqOrder(List* list, MQTTPersistence_qEntry* qEntry, size_t size)
 {
 	ListElement* index = NULL;
 	ListElement* current = NULL;

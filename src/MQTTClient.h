@@ -97,6 +97,9 @@
  */
 
 /// @cond EXCLUDE
+#if defined(__cplusplus)
+ extern "C" {
+#endif
 #if !defined(MQTTCLIENT_H)
 #define MQTTCLIENT_H
 
@@ -401,7 +404,7 @@ DLLExport int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTClie
  * @return ::MQTTCLIENT_SUCCESS if the client is successfully created, otherwise
  * an error code is returned.
  */
-DLLExport int MQTTClient_create(MQTTClient* handle, char* serverURI, char* clientId,
+DLLExport int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context);
 
 /**
@@ -419,13 +422,13 @@ DLLExport int MQTTClient_create(MQTTClient* handle, char* serverURI, char* clien
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTW. */
-	char struct_id[4];
+	const char struct_id[4];
 	/** The version number of this structure.  Must be 0 */
 	int struct_version;
 	/** The LWT topic to which the LWT message will be published. */
-	char* topicName;
+	const char* topicName;
 	/** The LWT payload. */
-	char* message;
+	const char* message;
 	/**
       * The retained flag for the LWT message (see MQTTClient_message.retained).
       */
@@ -454,7 +457,7 @@ typedef struct
 typedef struct 
 {
 	/** The eyecatcher for this structure.  Must be MQTS */
-	char struct_id[4];
+	const char struct_id[4];
 	/** The version number of this structure.  Must be 0 */
 	int struct_version;	
 	
@@ -507,7 +510,7 @@ typedef struct
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
-	char struct_id[4];
+	const char struct_id[4];
 	/** The version number of this structure.  Must be 0, 1, 2, 3 or 4.  
 	 * 0 signifies no SSL options and no serverURIs
 	 * 1 signifies no serverURIs 
@@ -568,13 +571,13 @@ typedef struct
    * and authorisation by user name and password. This is the user name 
    * parameter. 
    */
-	char* username;	
+	const char* username;	
 	/** 
    * MQTT servers that support the MQTT v3.1 protocol provide authentication
    * and authorisation by user name and password. This is the password 
    * parameter.
    */
-	char* password;
+	const char* password;
 	/**
    * The time interval in seconds to allow a connect to complete.
    */
@@ -602,7 +605,7 @@ typedef struct
    * If this list is empty (the default), the server URI specified on MQTTClient_create()
    * is used.
    */    
-	char** serverURIs;
+	char* const* serverURIs;
 	/**
 	 * Sets the version of MQTT to be used on the connect.
 	 * MQTTVERSION_DEFAULT (0) = default: start with 3.1.1, and if that fails, fall back to 3.1
@@ -615,7 +618,7 @@ typedef struct
 	 */
 	struct 
 	{
-		char* serverURI;     /**< the serverURI connected to */
+		const char* serverURI;     /**< the serverURI connected to */
 		int MQTTVersion;     /**< the MQTT version used to connect with */
 		int sessionPresent;  /**< if the MQTT version is 3.1.1, the value of sessionPresent returned in the connack */
 	} returned;
@@ -711,7 +714,7 @@ DLLExport int MQTTClient_isConnected(MQTTClient handle);
   * An error code is returned if there was a problem registering the 
   * subscription. 
   */
-DLLExport int MQTTClient_subscribe(MQTTClient handle, char* topic, int qos);
+DLLExport int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos);
 
 /**
   * This function attempts to subscribe a client to a list of topics, which may
@@ -729,7 +732,7 @@ DLLExport int MQTTClient_subscribe(MQTTClient handle, char* topic, int qos);
   * An error code is returned if there was a problem registering the 
   * subscriptions. 
   */
-DLLExport int MQTTClient_subscribeMany(MQTTClient handle, int count, char** topic, int* qos);
+DLLExport int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, int* qos);
 
 /** 
   * This function attempts to remove an existing subscription made by the 
@@ -742,7 +745,7 @@ DLLExport int MQTTClient_subscribeMany(MQTTClient handle, int count, char** topi
   * An error code is returned if there was a problem removing the 
   * subscription. 
   */
-DLLExport int MQTTClient_unsubscribe(MQTTClient handle, char* topic);
+DLLExport int MQTTClient_unsubscribe(MQTTClient handle, const char* topic);
 
 /** 
   * This function attempts to remove existing subscriptions to a list of topics
@@ -755,7 +758,7 @@ DLLExport int MQTTClient_unsubscribe(MQTTClient handle, char* topic);
   * @return ::MQTTCLIENT_SUCCESS if the subscriptions are removed. 
   * An error code is returned if there was a problem removing the subscriptions.
   */
-DLLExport int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char** topic);
+DLLExport int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic);
 
 /** 
   * This function attempts to publish a message to a given topic (see also
@@ -778,7 +781,7 @@ DLLExport int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char** to
   * @return ::MQTTCLIENT_SUCCESS if the message is accepted for publication. 
   * An error code is returned if there was a problem accepting the message.
   */
-DLLExport int MQTTClient_publish(MQTTClient handle, char* topicName, int payloadlen, void* payload, int qos, int retained,
+DLLExport int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, void* payload, int qos, int retained,
 																 MQTTClient_deliveryToken* dt);
 /** 
   * This function attempts to publish a message to a given topic (see also
@@ -799,7 +802,7 @@ DLLExport int MQTTClient_publish(MQTTClient handle, char* topicName, int payload
   * @return ::MQTTCLIENT_SUCCESS if the message is accepted for publication. 
   * An error code is returned if there was a problem accepting the message.
   */
-DLLExport int MQTTClient_publishMessage(MQTTClient handle, char* topicName, MQTTClient_message* msg, MQTTClient_deliveryToken* dt);
+DLLExport int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClient_message* msg, MQTTClient_deliveryToken* dt);
 
 
 /**
@@ -913,6 +916,9 @@ DLLExport void MQTTClient_free(void* ptr);
   */
 DLLExport void MQTTClient_destroy(MQTTClient* handle);
 
+#endif
+#ifdef __cplusplus
+     }
 #endif
 
 /**

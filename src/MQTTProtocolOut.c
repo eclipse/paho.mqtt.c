@@ -40,10 +40,10 @@ extern ClientStates* bstate;
  * @param port the returned port integer
  * @return the address string
  */
-char* MQTTProtocol_addressPort(char* uri, int* port)
+char* MQTTProtocol_addressPort(const char* uri, int* port)
 {
 	char* colon_pos = strrchr(uri, ':'); /* reverse find to allow for ':' in IPv6 addresses */
-	char* buf = uri;
+	char* buf;
 	int len;
 
 	FUNC_ENTRY;
@@ -58,11 +58,17 @@ char* MQTTProtocol_addressPort(char* uri, int* port)
 		int addr_len = colon_pos - uri;
 		buf = malloc(addr_len + 1);
 		*port = atoi(colon_pos + 1);
-		strncpy(buf, uri, addr_len);
+		MQTTStrncpy(buf, uri, addr_len+1);
 		buf[addr_len] = '\0';
 	}
 	else
+	{
+		int addr_len = strlen(uri)+1;
 		*port = DEFAULT_PORT;
+		buf = malloc(addr_len);
+	    MQTTStrncpy(buf, uri, addr_len+1);
+		buf[addr_len] = '\0';
+	}
 
 	len = strlen(buf);
 	if (buf[len - 1] == ']')
@@ -82,9 +88,9 @@ char* MQTTProtocol_addressPort(char* uri, int* port)
  * @return return code
  */
 #if defined(OPENSSL)
-int MQTTProtocol_connect(char* ip_address, Clients* aClient, int ssl, int MQTTVersion)
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int MQTTVersion)
 #else
-  int MQTTProtocol_connect(char* ip_address, Clients* aClient, int MQTTVersion)
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int MQTTVersion)
 #endif
 {
 	int rc, port;

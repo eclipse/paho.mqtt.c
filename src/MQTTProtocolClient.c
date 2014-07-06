@@ -714,3 +714,30 @@ void MQTTProtocol_freeMessageList(List* msgList)
 	FUNC_EXIT;
 }
 
+
+/**
+* Copy not more than dest_size characters from the string pointed to by src to the array pointed to by dest. 
+* @param dest the array which characters copy to
+* @param src the source string which characters copy from
+* @param dest_size the length of characters need copy
+* @return the destination string pointer
+*/
+
+char *MQTTStrncpy(char *dest, const char *src, size_t dest_size)
+{
+  size_t count = dest_size;
+  char *temp = dest;
+
+  FUNC_ENTRY; 
+  if (dest_size < strlen(src))
+    Log(TRACE_MIN, -1, "the src string is truncated");
+
+  /* We must copy only the first (dest_size - 1) bytes */
+  while (count > 1 && (*temp++ = *src++))
+    count--;
+
+  *temp = '\0';
+
+  FUNC_EXIT;
+  return dest;
+}

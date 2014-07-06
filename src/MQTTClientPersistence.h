@@ -106,7 +106,7 @@
   * @return Return 0 if the function completes successfully, otherwise return
   * ::MQTTCLIENT_PERSISTENCE_ERROR.
   */
-typedef int (*Persistence_open)(void** handle, char* clientID, char* serverURI, void* context);
+typedef int (*Persistence_open)(void** handle, const char* clientID, const char* serverURI, void* context);
 
 /**
   * @brief Close the persistent store referred to by the handle.

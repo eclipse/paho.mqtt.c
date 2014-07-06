@@ -289,7 +289,7 @@ typedef struct
 
 void MQTTAsync_freeCommand(MQTTAsync_queuedCommand *command);
 void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command);
-int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, int topicLen, MQTTAsync_message* mm);
+int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, size_t topicLen, MQTTAsync_message* mm);
 #if !defined(NO_PERSISTENCE)
 int MQTTAsync_restoreCommands(MQTTAsyncs* client);
 #endif
@@ -347,7 +347,7 @@ int MQTTAsync_checkConn(MQTTAsync_command* command, MQTTAsyncs* client)
 }
 
 
-int MQTTAsync_create(MQTTAsync* handle, char* serverURI, char* clientId,
+int MQTTAsync_create(MQTTAsync* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context)
 {
 	int rc = 0;
@@ -397,7 +397,7 @@ int MQTTAsync_create(MQTTAsync* handle, char* serverURI, char* clientId,
 	}
 #endif
 	m->serverURI = malloc(strlen(serverURI)+1);
-	strcpy(m->serverURI, serverURI);
+	MQTTStrncpy(m->serverURI, serverURI,strlen(serverURI)+1);
 	m->responses = ListInitialize();
 	ListAppend(handles, m, sizeof(MQTTAsyncs));
 
@@ -408,7 +408,7 @@ int MQTTAsync_create(MQTTAsync* handle, char* serverURI, char* clientId,
 	m->c->inboundMsgs = ListInitialize();
 	m->c->messageQueue = ListInitialize();
 	m->c->clientID = malloc(strlen(clientId)+1);
-	strcpy(m->c->clientID, clientId);
+	MQTTStrncpy(m->c->clientID, clientId,strlen(clientId)+1);
 
 #if !defined(NO_PERSISTENCE)
 	rc = MQTTPersistence_create(&(m->c->persistence), persistence_type, persistence_context);
@@ -1349,7 +1349,7 @@ void MQTTAsync_destroy(MQTTAsync* handle)
 	{
 		int saved_socket = m->c->net.socket;
 		char* saved_clientid = malloc(strlen(m->c->clientID)+1);
-		strcpy(saved_clientid, m->c->clientID);
+		MQTTStrncpy(saved_clientid, m->c->clientID,strlen(m->c->clientID)+1);
 #if !defined(NO_PERSISTENCE)
 		MQTTPersistence_close(m->c);
 #endif
@@ -1802,7 +1802,7 @@ int MQTTAsync_cleanSession(Clients* client)
 
 
 
-int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, int topicLen, MQTTAsync_message* mm)
+int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, size_t topicLen, MQTTAsync_message* mm)
 {
 	int rc;
 					
@@ -1877,7 +1877,7 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 }
 
 
-int MQTTAsync_connect(MQTTAsync handle, MQTTAsync_connectOptions* options)
+int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 {
 	MQTTAsyncs* m = handle;
 	int rc = MQTTASYNC_SUCCESS;
@@ -1965,11 +1965,11 @@ int MQTTAsync_connect(MQTTAsync handle, MQTTAsync_connectOptions* options)
 	{
 		m->c->will = malloc(sizeof(willMessages));
 		m->c->will->msg = malloc(strlen(options->will->message) + 1); 
-		strcpy(m->c->will->msg, options->will->message);
+		MQTTStrncpy(m->c->will->msg, options->will->message,strlen(options->will->message) + 1);
 		m->c->will->qos = options->will->qos;
 		m->c->will->retained = options->will->retained;
 		m->c->will->topic = malloc(strlen(options->will->topicName) + 1);
-		strcpy(m->c->will->topic, options->will->topicName);
+		MQTTStrncpy(m->c->will->topic, options->will->topicName,strlen(options->will->topicName) + 1);
 	}
 	
 #if defined(OPENSSL)
@@ -2046,7 +2046,7 @@ int MQTTAsync_connect(MQTTAsync handle, MQTTAsync_connectOptions* options)
 			for (i = 0; i < options->serverURIcount; ++i)
 			{
 				conn->command.details.conn.serverURIs[i] = malloc(strlen(options->serverURIs[i]) + 1);
-				strcpy(conn->command.details.conn.serverURIs[i], options->serverURIs[i]);
+				MQTTStrncpy(conn->command.details.conn.serverURIs[i], options->serverURIs[i],strlen(options->serverURIs[i]) + 1);
 			}
 			conn->command.details.conn.currentURI = 0;
 		}
@@ -2060,7 +2060,7 @@ exit:
 }
 
 
-int MQTTAsync_disconnect1(MQTTAsync handle, MQTTAsync_disconnectOptions* options, int internal)
+int MQTTAsync_disconnect1(MQTTAsync handle, const MQTTAsync_disconnectOptions* options, int internal)
 {
 	MQTTAsyncs* m = handle;
 	int rc = MQTTASYNC_SUCCESS;
@@ -2114,7 +2114,7 @@ void MQTTProtocol_closeSession(Clients* c, int sendwill)
 }
 
 
-int MQTTAsync_disconnect(MQTTAsync handle, MQTTAsync_disconnectOptions* options)
+int MQTTAsync_disconnect(MQTTAsync handle, const MQTTAsync_disconnectOptions* options)
 {	
 	return MQTTAsync_disconnect1(handle, options, 0);
 }
@@ -2135,10 +2135,10 @@ int MQTTAsync_isConnected(MQTTAsync handle)
 }
 
 
-int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char** topic, int* qos, MQTTAsync_responseOptions* response)
+int MQTTAsync_subscribeMany(MQTTAsync handle, size_t count, char* const* topic, int* qos, MQTTAsync_responseOptions* response)
 {
 	MQTTAsyncs* m = handle;
-	int i = 0;
+	size_t i = 0;
 	int rc = MQTTASYNC_FAILURE;
 	MQTTAsync_queuedCommand* sub;
 
@@ -2189,7 +2189,7 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char** topic, int* qos,
 	for (i = 0; i < count; ++i)
 	{
 		sub->command.details.sub.topics[i] = malloc(strlen(topic[i]) + 1);
-		strcpy(sub->command.details.sub.topics[i], topic[i]);
+		MQTTStrncpy(sub->command.details.sub.topics[i], topic[i],strlen(topic[i]) + 1);
 		sub->command.details.sub.qoss[i] = qos[i];	
 	}
 	rc = MQTTAsync_addCommand(sub, sizeof(sub));
@@ -2200,21 +2200,21 @@ exit:
 }
 
 
-int MQTTAsync_subscribe(MQTTAsync handle, char* topic, int qos, MQTTAsync_responseOptions* response)
+int MQTTAsync_subscribe(MQTTAsync handle, const char* topic, int qos, MQTTAsync_responseOptions* response)
 {
 	int rc = 0;
-
+	char *const topics[] = {(char*)topic};
 	FUNC_ENTRY;
-	rc = MQTTAsync_subscribeMany(handle, 1, &topic, &qos, response);
+	rc = MQTTAsync_subscribeMany(handle, 1, topics, &qos, response);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
 
-int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char** topic, MQTTAsync_responseOptions* response)
+int MQTTAsync_unsubscribeMany(MQTTAsync handle, size_t count, char* const* topic, MQTTAsync_responseOptions* response)
 {
 	MQTTAsyncs* m = handle;
-	int i = 0;
+	size_t i = 0;
 	int rc = SOCKET_ERROR;
 	MQTTAsync_queuedCommand* unsub;
 
@@ -2259,7 +2259,7 @@ int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char** topic, MQTTAsy
 	for (i = 0; i < count; ++i)
 	{
 		unsub->command.details.unsub.topics[i] = malloc(strlen(topic[i]) + 1);
-		strcpy(unsub->command.details.unsub.topics[i], topic[i]);
+		MQTTStrncpy(unsub->command.details.unsub.topics[i], topic[i],strlen(topic[i]) + 1);
 	}
 	rc = MQTTAsync_addCommand(unsub, sizeof(unsub));
 
@@ -2269,18 +2269,18 @@ exit:
 }
 
 
-int MQTTAsync_unsubscribe(MQTTAsync handle, char* topic, MQTTAsync_responseOptions* response)
+int MQTTAsync_unsubscribe(MQTTAsync handle, const char* topic, MQTTAsync_responseOptions* response)
 {
 	int rc = 0;
-
+	char *const topics[] = {(char*)topic};
 	FUNC_ENTRY;
-	rc = MQTTAsync_unsubscribeMany(handle, 1, &topic, response);
+	rc = MQTTAsync_unsubscribeMany(handle, 1, topics, response);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
 
-int MQTTAsync_send(MQTTAsync handle, char* destinationName, int payloadlen, void* payload,
+int MQTTAsync_send(MQTTAsync handle, const char* destinationName, size_t payloadlen, void* payload,
 							 int qos, int retained, MQTTAsync_responseOptions* response)
 {
 	int rc = MQTTASYNC_SUCCESS;
@@ -2314,7 +2314,7 @@ int MQTTAsync_send(MQTTAsync handle, char* destinationName, int payloadlen, void
 		pub->command.context = response->context;
 	}
 	pub->command.details.pub.destinationName = malloc(strlen(destinationName) + 1);
-	strcpy(pub->command.details.pub.destinationName, destinationName);
+	MQTTStrncpy(pub->command.details.pub.destinationName, destinationName,strlen(destinationName) + 1);
 	pub->command.details.pub.payloadlen = payloadlen;
 	pub->command.details.pub.payload = malloc(payloadlen);
 	memcpy(pub->command.details.pub.payload, payload, payloadlen);
@@ -2329,7 +2329,7 @@ exit:
 
 
 
-int MQTTAsync_sendMessage(MQTTAsync handle, char* destinationName, MQTTAsync_message* message,
+int MQTTAsync_sendMessage(MQTTAsync handle, const char* destinationName, const MQTTAsync_message* message,
 													 MQTTAsync_responseOptions* response)
 {
 	int rc = MQTTASYNC_SUCCESS;

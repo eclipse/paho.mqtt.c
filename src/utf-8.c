@@ -69,12 +69,12 @@ valid_ranges[] =
  * @param data the bytes to check for a valid UTF-8 char
  * @return pointer to the start of the next UTF-8 character in "data"
  */
-char* UTF8_char_validate(int len, char* data)
+const char* UTF8_char_validate(int len, const char* data)
 {
 	int good = 0;
 	int charlen = 2;
 	int i, j;
-	char *rc = NULL;
+	const char *rc = NULL;
 
 	FUNC_ENTRY;
 	/* first work out how many bytes this char is encoded in */
@@ -121,9 +121,9 @@ char* UTF8_char_validate(int len, char* data)
  * @param data the bytes to check for valid UTF-8 characters
  * @return 1 (true) if the string has only UTF-8 characters, 0 (false) otherwise
  */
-int UTF8_validate(int len, char* data)
+int UTF8_validate(int len, const char* data)
 {
-	char* curdata = NULL;
+	const char* curdata = NULL;
 	int rc = 0;
 
 	FUNC_ENTRY;
@@ -148,7 +148,7 @@ exit:
  * @param string the string to check for valid UTF-8 characters
  * @return 1 (true) if the string has only UTF-8 characters, 0 (false) otherwise
  */
-int UTF8_validateString(char* string)
+int UTF8_validateString(const char* string)
 {
 	int rc = 0;
 

@@ -28,7 +28,6 @@
 #define MAX_MSG_ID 65535
 #define MAX_CLIENTID_LEN 65535
 
-int MQTTProtocol_assignMsgId(Clients* client);
 int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int retained, Messages** m);
 Messages* MQTTProtocol_createMessage(Publish* publish, Messages** mm, int qos, int retained);
 Publications* MQTTProtocol_storePublication(Publish* publish, int* len);
@@ -48,4 +47,5 @@ void MQTTProtocol_freeClient(Clients* client);
 void MQTTProtocol_emptyMessageList(List* msgList);
 void MQTTProtocol_freeMessageList(List* msgList);
 
+char *MQTTStrncpy(char *dest, const char *src, size_t num);
 #endif

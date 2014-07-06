@@ -18,6 +18,6 @@
 #define UTF8_H
 
 int UTF8_validate(int len, char* data);
-int UTF8_validateString(char* string);
+int UTF8_validateString(const char* string);
 
 #endif

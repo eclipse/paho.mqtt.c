@@ -16,6 +16,10 @@
  *    Ian Craggs - fix for bug 432903 - queue persistence
  *******************************************************************************/
 
+#if defined(__cplusplus)
+ extern "C" {
+#endif
+
 #include "Clients.h"
 
 /** Stem of the key for a sent PUBLISH QoS1 or QoS2 */
@@ -31,14 +35,14 @@
 #define PERSISTENCE_MAX_KEY_LENGTH 8
 
 int MQTTPersistence_create(MQTTClient_persistence** per, int type, void* pcontext);
-int MQTTPersistence_initialize(Clients* c, char* serverURI);
+int MQTTPersistence_initialize(Clients* c, const char* serverURI);
 int MQTTPersistence_close(Clients* c);
 int MQTTPersistence_clear(Clients* c);
 int MQTTPersistence_restore(Clients* c);
-void* MQTTPersistence_restorePacket(char* buffer, int buflen);
-void MQTTPersistence_insertInOrder(List* list, void* content, int size);
-int MQTTPersistence_put(int socket, char* buf0, int buf0len, int count, 
-								 char** buffers, int* buflens, int htype, int msgId, int scr);
+void* MQTTPersistence_restorePacket(char* buffer, size_t buflen);
+void MQTTPersistence_insertInOrder(List* list, void* content, size_t size);
+int MQTTPersistence_put(int socket, char* buf0, size_t buf0len, int count, 
+								 char** buffers, size_t* buflens, int htype, int msgId, int scr);
 int MQTTPersistence_remove(Clients* c, char* type, int qos, int msgId);
 void MQTTPersistence_wrapMsgID(Clients *c);
 
@@ -65,3 +69,6 @@ typedef struct
 int MQTTPersistence_unpersistQueueEntry(Clients* client, MQTTPersistence_qEntry* qe);
 int MQTTPersistence_persistQueueEntry(Clients* aclient, MQTTPersistence_qEntry* qe);
 int MQTTPersistence_restoreMessageQueue(Clients* c);
+#ifdef __cplusplus
+     }
+#endif

@@ -110,9 +110,9 @@ CCFLAGS_SO = -g -fPIC -Os -Wall -fvisibility=hidden
 FLAGS_EXE = -I ${srcdir} -lpthread -L ${blddir}
 
 LDFLAGS_C = -shared -Wl,-soname,lib$(MQTTLIB_C).so.${MAJOR_VERSION} -Wl,-init,MQTTClient_init -lpthread 
-LDFLAGS_CS = -shared -Wl,-soname,lib$(MQTTLIB_CS).so.${MAJOR_VERSION} -lpthread -ldl -lcrypto -lssl -Wl,-no-whole-archive -Wl,-init,MQTTClient_init 
+LDFLAGS_CS = -shared -Wl,-soname,lib$(MQTTLIB_CS).so.${MAJOR_VERSION} -lpthread -ldl -lssl -lcrypto -Wl,-no-whole-archive -Wl,-init,MQTTClient_init 
 LDFLAGS_A = -shared -Wl,-soname,lib${MQTTLIB_A}.so.${MAJOR_VERSION} -Wl,-init,MQTTAsync_init -lpthread
-LDFLAGS_AS = -shared -Wl,-soname,lib${MQTTLIB_AS}.so.${MAJOR_VERSION} -lpthread -ldl -lcrypto -lssl -Wl,-no-whole-archive -Wl,-init,MQTTAsync_init 
+LDFLAGS_AS = -shared -Wl,-soname,lib${MQTTLIB_AS}.so.${MAJOR_VERSION} -lpthread -ldl -lssl -lcrypto -Wl,-no-whole-archive -Wl,-init,MQTTAsync_init 
 
 all: build
 	
@@ -236,9 +236,9 @@ CCFLAGS_SO = -g -fPIC -Os -Wall -fvisibility=hidden -Wno-deprecated-declarations
 FLAGS_EXE = -I ${srcdir} -lpthread -L ${blddir}
 
 LDFLAGS_C = -shared -Wl,-install_name,lib$(MQTTLIB_C).so.${MAJOR_VERSION} -Wl,-init,_MQTTClient_init -lpthread 
-LDFLAGS_CS = -shared -Wl,-install_name,lib$(MQTTLIB_CS).so.${MAJOR_VERSION} -lpthread -ldl -lcrypto -lssl -Wl,-init,_MQTTClient_init 
+LDFLAGS_CS = -shared -Wl,-install_name,lib$(MQTTLIB_CS).so.${MAJOR_VERSION} -lpthread -ldl -lssl -lcrypto -Wl,-init,_MQTTClient_init 
 LDFLAGS_A = -shared -Wl,-install_name,lib${MQTTLIB_A}.so.${MAJOR_VERSION} -Wl,-init,_MQTTAsync_init -lpthread
-LDFLAGS_AS = -shared -Wl,-install_name,lib${MQTTLIB_AS}.so.${MAJOR_VERSION} -lpthread -ldl -lcrypto -lssl -Wl,-init,_MQTTAsync_init 
+LDFLAGS_AS = -shared -Wl,-install_name,lib${MQTTLIB_AS}.so.${MAJOR_VERSION} -lpthread -ldl -lssl -lcrypto -Wl,-init,_MQTTAsync_init 
 
 all: build
 	

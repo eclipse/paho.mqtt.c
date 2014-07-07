@@ -522,7 +522,7 @@ void MQTTProtocol_keepalive(time_t now)
 				{
 					if (MQTTPacket_send_pingreq(&client->net, client->clientID) != TCPSOCKET_COMPLETE)
 					{
-						Log(TRACE_MIN, -1, "Error sending PINGREQ for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
+						Log(TRACE_PROTOCOL, -1, "Error sending PINGREQ for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
 						MQTTProtocol_closeSession(client, 1);
 					}
 					else
@@ -534,7 +534,7 @@ void MQTTProtocol_keepalive(time_t now)
 			}
 			else
 			{
-				Log(TRACE_MIN, -1, "PINGRESP not received in keepalive interval for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
+				Log(TRACE_PROTOCOL, -1, "PINGRESP not received in keepalive interval for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
 				MQTTProtocol_closeSession(client, 1);
 			}
 		}
@@ -578,7 +578,7 @@ void MQTTProtocol_retries(time_t now, Clients* client)
 				if (rc == SOCKET_ERROR)
 				{
 					client->good = 0;
-					Log(TRACE_MIN, 8, NULL, client->clientID, client->net.socket,
+					Log(TRACE_PROTOCOL, 29, NULL, client->clientID, client->net.socket,
 												Socket_getpeer(client->net.socket));
 					MQTTProtocol_closeSession(client, 1);
 					client = NULL;
@@ -596,7 +596,7 @@ void MQTTProtocol_retries(time_t now, Clients* client)
 				if (MQTTPacket_send_pubrel(m->msgid, 1, &client->net, client->clientID) != TCPSOCKET_COMPLETE)
 				{
 					client->good = 0;
-					Log(TRACE_MIN, 8, NULL, client->clientID, client->net.socket,
+					Log(TRACE_PROTOCOL, 29, NULL, client->clientID, client->net.socket,
 							Socket_getpeer(client->net.socket));
 					MQTTProtocol_closeSession(client, 1);
 					client = NULL;

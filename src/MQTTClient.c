@@ -886,7 +886,7 @@ int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* o
 		else
 		{
 			Connack* connack = (Connack*)pack;
-			Log(LOG_PROTOCOL, 1, NULL, m->c->net.socket, m->c->clientID, connack->rc);
+			Log(TRACE_PROTOCOL, 1, NULL, m->c->net.socket, m->c->clientID, connack->rc);
 			if ((rc = connack->rc) == MQTTCLIENT_SUCCESS)
 			{
 				m->c->connected = 1;
@@ -1632,7 +1632,7 @@ MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long
 		else if (packet_type == UNSUBACK)
 			*rc = Thread_wait_sem(m->unsuback_sem, timeout);
 		if (*rc == 0 && packet_type != CONNECT && m->pack == NULL)
-			Log(TRACE_MIN, -1, "waitfor unexpectedly is NULL for client %s, packet_type %d, timeout %ld", m->c->clientID, packet_type, timeout);
+			Log(LOG_ERROR, -1, "waitfor unexpectedly is NULL for client %s, packet_type %d, timeout %ld", m->c->clientID, packet_type, timeout);
 		pack = m->pack;
 	}
 	else

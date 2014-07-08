@@ -1499,6 +1499,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 			{
 				if (pack->header.bits.type == CONNACK)
 				{
+					int sessionPresent = ((Connack*)pack)->flags.bits.sessionPresent;
 					int rc = MQTTAsync_completeConnection(m, pack);
 					
 					if (rc == MQTTASYNC_SUCCESS)
@@ -1517,7 +1518,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 							else
 								data.alt.connect.serverURI = m->serverURI;
 							data.alt.connect.MQTTVersion = m->connect.details.conn.MQTTVersion;
-							data.alt.connect.sessionPresent = ((Connack*)pack)->flags.bits.sessionPresent;
+							data.alt.connect.sessionPresent = sessionPresent;
 							(*(m->connect.onSuccess))(m->connect.context, &data);
 						}
 					}

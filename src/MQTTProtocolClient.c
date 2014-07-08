@@ -15,6 +15,7 @@
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
  *    Ian Craggs - fix for bug 421103 - trying to write to same socket, in retry
+ *    Rong Xiang, Ian Craggs - C++ compatibility
  *******************************************************************************/
 
 /**
@@ -716,14 +717,14 @@ void MQTTProtocol_freeMessageList(List* msgList)
 
 
 /**
-* Copy not more than dest_size characters from the string pointed to by src to the array pointed to by dest. 
+* Copy no more than dest_size -1 characters from the string pointed to by src to the array pointed to by dest.
+* The destination string will always be null-terminated.
 * @param dest the array which characters copy to
 * @param src the source string which characters copy from
-* @param dest_size the length of characters need copy
+* @param dest_size the size of the memory pointed to by dest: copy no more than this -1 (allow for null).  Must be >= 1
 * @return the destination string pointer
 */
-
-char *MQTTStrncpy(char *dest, const char *src, size_t dest_size)
+char* MQTTStrncpy(char *dest, const char *src, size_t dest_size)
 {
   size_t count = dest_size;
   char *temp = dest;
@@ -740,4 +741,18 @@ char *MQTTStrncpy(char *dest, const char *src, size_t dest_size)
 
   FUNC_EXIT;
   return dest;
+}
+
+
+/**
+* Duplicate a string, safely, allocating space on the heap
+* @param src the source string which characters copy from
+* @return the duplicated, allocated string
+*/
+char* MQTTStrdup(const char* src)
+{
+	size_t mlen = strlen(src) + 1;
+	char* temp = malloc(mlen);
+	MQTTStrncpy(temp, src, mlen);
+	return temp;
 }

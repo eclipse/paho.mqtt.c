@@ -20,6 +20,7 @@
  *    Ian Craggs - fix for bug 420851
  *    Ian Craggs - fix for bug 432903 - queue persistence
  *    Ian Craggs - MQTT 3.1.1 support
+ *    Rong Xiang, Ian Craggs - C++ compatibility
  *******************************************************************************/
 
 /**
@@ -396,8 +397,7 @@ int MQTTAsync_create(MQTTAsync* handle, const char* serverURI, const char* clien
 		m->ssl = 1;
 	}
 #endif
-	m->serverURI = malloc(strlen(serverURI)+1);
-	MQTTStrncpy(m->serverURI, serverURI,strlen(serverURI)+1);
+	m->serverURI = MQTTStrdup(serverURI);
 	m->responses = ListInitialize();
 	ListAppend(handles, m, sizeof(MQTTAsyncs));
 
@@ -407,8 +407,7 @@ int MQTTAsync_create(MQTTAsync* handle, const char* serverURI, const char* clien
 	m->c->outboundMsgs = ListInitialize();
 	m->c->inboundMsgs = ListInitialize();
 	m->c->messageQueue = ListInitialize();
-	m->c->clientID = malloc(strlen(clientId)+1);
-	MQTTStrncpy(m->c->clientID, clientId,strlen(clientId)+1);
+	m->c->clientID = MQTTStrdup(clientId);
 
 #if !defined(NO_PERSISTENCE)
 	rc = MQTTPersistence_create(&(m->c->persistence), persistence_type, persistence_context);
@@ -1348,8 +1347,7 @@ void MQTTAsync_destroy(MQTTAsync* handle)
 	if (m->c)
 	{
 		int saved_socket = m->c->net.socket;
-		char* saved_clientid = malloc(strlen(m->c->clientID)+1);
-		MQTTStrncpy(saved_clientid, m->c->clientID,strlen(m->c->clientID)+1);
+		char* saved_clientid = MQTTStrdup(m->c->clientID);
 #if !defined(NO_PERSISTENCE)
 		MQTTPersistence_close(m->c);
 #endif
@@ -1964,12 +1962,10 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	if (options->will && options->will->struct_version == 0)
 	{
 		m->c->will = malloc(sizeof(willMessages));
-		m->c->will->msg = malloc(strlen(options->will->message) + 1); 
-		MQTTStrncpy(m->c->will->msg, options->will->message,strlen(options->will->message) + 1);
+		m->c->will->msg = MQTTStrdup(options->will->message);
 		m->c->will->qos = options->will->qos;
 		m->c->will->retained = options->will->retained;
-		m->c->will->topic = malloc(strlen(options->will->topicName) + 1);
-		MQTTStrncpy(m->c->will->topic, options->will->topicName,strlen(options->will->topicName) + 1);
+		m->c->will->topic = MQTTStrdup(options->will->topicName);
 	}
 	
 #if defined(OPENSSL)
@@ -2044,10 +2040,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 			conn->command.details.conn.serverURIcount = options->serverURIcount;
 			conn->command.details.conn.serverURIs = malloc(options->serverURIcount * sizeof(char*));
 			for (i = 0; i < options->serverURIcount; ++i)
-			{
-				conn->command.details.conn.serverURIs[i] = malloc(strlen(options->serverURIs[i]) + 1);
-				MQTTStrncpy(conn->command.details.conn.serverURIs[i], options->serverURIs[i],strlen(options->serverURIs[i]) + 1);
-			}
+				conn->command.details.conn.serverURIs[i] = MQTTStrdup(options->serverURIs[i]);
 			conn->command.details.conn.currentURI = 0;
 		}
 	}
@@ -2188,8 +2181,7 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, size_t count, char* const* topic, 
 	sub->command.details.sub.qoss = malloc(sizeof(int) * count);
 	for (i = 0; i < count; ++i)
 	{
-		sub->command.details.sub.topics[i] = malloc(strlen(topic[i]) + 1);
-		MQTTStrncpy(sub->command.details.sub.topics[i], topic[i],strlen(topic[i]) + 1);
+		sub->command.details.sub.topics[i] = MQTTStrdup(topic[i]);
 		sub->command.details.sub.qoss[i] = qos[i];	
 	}
 	rc = MQTTAsync_addCommand(sub, sizeof(sub));
@@ -2257,10 +2249,7 @@ int MQTTAsync_unsubscribeMany(MQTTAsync handle, size_t count, char* const* topic
 	unsub->command.details.unsub.count = count;
 	unsub->command.details.unsub.topics = malloc(sizeof(char*) * count);
 	for (i = 0; i < count; ++i)
-	{
-		unsub->command.details.unsub.topics[i] = malloc(strlen(topic[i]) + 1);
-		MQTTStrncpy(unsub->command.details.unsub.topics[i], topic[i],strlen(topic[i]) + 1);
-	}
+		unsub->command.details.unsub.topics[i] = MQTTStrdup(topic[i]);
 	rc = MQTTAsync_addCommand(unsub, sizeof(unsub));
 
 exit:
@@ -2313,8 +2302,7 @@ int MQTTAsync_send(MQTTAsync handle, const char* destinationName, size_t payload
 		pub->command.onFailure = response->onFailure;
 		pub->command.context = response->context;
 	}
-	pub->command.details.pub.destinationName = malloc(strlen(destinationName) + 1);
-	MQTTStrncpy(pub->command.details.pub.destinationName, destinationName,strlen(destinationName) + 1);
+	pub->command.details.pub.destinationName = MQTTStrdup(destinationName);
 	pub->command.details.pub.payloadlen = payloadlen;
 	pub->command.details.pub.payload = malloc(payloadlen);
 	memcpy(pub->command.details.pub.payload, payload, payloadlen);

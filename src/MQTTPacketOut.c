@@ -14,6 +14,7 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - MQTT 3.1.1 support
+ *    Rong Xiang, Ian Craggs - C++ compatibility
  *******************************************************************************/
 
 /**
@@ -214,7 +215,7 @@ void* MQTTPacket_suback(unsigned char aHeader, char* data, size_t datalen)
 	pack->header.byte = aHeader;
 	pack->msgId = readInt(&curdata);
 	pack->qoss = ListInitialize();
-	while (curdata - data < datalen)
+	while ((size_t)(curdata - data) < datalen)
 	{
 		int* newint;
 		newint = malloc(sizeof(int));

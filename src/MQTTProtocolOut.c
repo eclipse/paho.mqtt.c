@@ -15,6 +15,7 @@
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - fix for buffer overflow in addressPort bug #433290
  *    Ian Craggs - MQTT 3.1.1 support
+ *    Rong Xiang, Ian Craggs - C++ compatibility
  *******************************************************************************/
 
 /**
@@ -43,7 +44,7 @@ extern ClientStates* bstate;
 char* MQTTProtocol_addressPort(const char* uri, int* port)
 {
 	char* colon_pos = strrchr(uri, ':'); /* reverse find to allow for ':' in IPv6 addresses */
-	char* buf;
+	char* buf = (char*)uri;
 	int len;
 
 	FUNC_ENTRY;
@@ -59,16 +60,9 @@ char* MQTTProtocol_addressPort(const char* uri, int* port)
 		buf = malloc(addr_len + 1);
 		*port = atoi(colon_pos + 1);
 		MQTTStrncpy(buf, uri, addr_len+1);
-		buf[addr_len] = '\0';
 	}
 	else
-	{
-		int addr_len = strlen(uri)+1;
 		*port = DEFAULT_PORT;
-		buf = malloc(addr_len);
-	    MQTTStrncpy(buf, uri, addr_len+1);
-		buf[addr_len] = '\0';
-	}
 
 	len = strlen(buf);
 	if (buf[len - 1] == ']')

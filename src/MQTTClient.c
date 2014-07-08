@@ -23,6 +23,7 @@
  *    Ian Craggs - fix for bug 432903 - queue persistence
  *    Ian Craggs - MQTT 3.1.1 support
  *    Ian Craggs - fix for bug 438176 - MQTT version selection
+ *    Rong Xiang, Ian Craggs - C++ compatibility
  *******************************************************************************/
 
 /**
@@ -276,8 +277,7 @@ int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* cli
 		m->ssl = 1;
 	}
 #endif
-	m->serverURI = malloc(strlen(serverURI)+1);
-	MQTTStrncpy(m->serverURI, serverURI,strlen(serverURI)+1);
+	m->serverURI = MQTTStrdup(serverURI);
 	ListAppend(handles, m, sizeof(MQTTClients));
 
 	m->c = malloc(sizeof(Clients));
@@ -286,8 +286,7 @@ int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* cli
 	m->c->outboundMsgs = ListInitialize();
 	m->c->inboundMsgs = ListInitialize();
 	m->c->messageQueue = ListInitialize();
-	m->c->clientID = malloc(strlen(clientId)+1);
-	MQTTStrncpy(m->c->clientID, clientId,strlen(clientId)+1);
+	m->c->clientID = MQTTStrdup(clientId);
 	m->connect_sem = Thread_create_sem();
 	m->connack_sem = Thread_create_sem();
 	m->suback_sem = Thread_create_sem();
@@ -367,8 +366,7 @@ void MQTTClient_destroy(MQTTClient* handle)
 	if (m->c)
 	{
 		int saved_socket = m->c->net.socket;
-		char* saved_clientid = malloc(strlen(m->c->clientID)+1);
-		MQTTStrncpy(saved_clientid, m->c->clientID,strlen(m->c->clientID)+1);
+		char* saved_clientid = MQTTStrdup(m->c->clientID);
 #if !defined(NO_PERSISTENCE)
 		MQTTPersistence_close(m->c);
 #endif
@@ -962,12 +960,10 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 	if (options->will && options->will->struct_version == 0)
 	{
 		m->c->will = malloc(sizeof(willMessages));
-		m->c->will->msg = malloc(strlen(options->will->message) + 1); 
-		MQTTStrncpy(m->c->will->msg , options->will->message,strlen(options->will->message) + 1);
+		m->c->will->msg = MQTTStrdup(options->will->message);
 		m->c->will->qos = options->will->qos;
 		m->c->will->retained = options->will->retained;
-		m->c->will->topic = malloc(strlen(options->will->topicName) + 1);
-		MQTTStrncpy(m->c->will->topic , options->will->topicName,strlen(options->will->topicName) + 1);
+		m->c->will->topic = MQTTStrdup(options->will->topicName);
 	}
 	
 #if defined(OPENSSL)
@@ -992,30 +988,15 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 		m->c->sslopts = malloc(sizeof(MQTTClient_SSLOptions));
 		memset(m->c->sslopts, '\0', sizeof(MQTTClient_SSLOptions));
 		if (options->ssl->trustStore)
-		{
-			m->c->sslopts->trustStore = malloc(strlen(options->ssl->trustStore) + 1);
-			MQTTStrncpy(m->c->sslopts->trustStore , options->ssl->trustStore,strlen(options->ssl->trustStore)+1);
-		}
+			m->c->sslopts->trustStore = MQTTStrdup(options->ssl->trustStore);
 		if (options->ssl->keyStore)
-		{
-			m->c->sslopts->keyStore = malloc(strlen(options->ssl->keyStore) + 1);
-			MQTTStrncpy(m->c->sslopts->keyStore , options->ssl->keyStore,strlen(options->ssl->keyStore)+1);
-		}
+			m->c->sslopts->keyStore = MQTTStrdup(options->ssl->keyStore);
 		if (options->ssl->privateKey)
-		{
-			m->c->sslopts->privateKey = malloc(strlen(options->ssl->privateKey) + 1);
-			MQTTStrncpy(m->c->sslopts->privateKey , options->ssl->privateKey,strlen(options->ssl->privateKey)+1);
-		}
+			m->c->sslopts->privateKey = MQTTStrdup(options->ssl->privateKey);
 		if (options->ssl->privateKeyPassword)
-		{
-			m->c->sslopts->privateKeyPassword = malloc(strlen(options->ssl->privateKeyPassword) + 1);
-			MQTTStrncpy(m->c->sslopts->privateKeyPassword , options->ssl->privateKeyPassword,strlen(options->ssl->privateKeyPassword)+1);
-		}
+			m->c->sslopts->privateKeyPassword = MQTTStrdup(options->ssl->privateKeyPassword);
 		if (options->ssl->enabledCipherSuites)
-		{
-			m->c->sslopts->enabledCipherSuites = malloc(strlen(options->ssl->enabledCipherSuites) + 1);
-			MQTTStrncpy(m->c->sslopts->enabledCipherSuites , options->ssl->enabledCipherSuites,strlen(options->ssl->enabledCipherSuites)+1);
-		}
+			m->c->sslopts->enabledCipherSuites = MQTTStrdup(options->ssl->enabledCipherSuites);
 		m->c->sslopts->enableServerCertAuth = options->ssl->enableServerCertAuth;
 	}
 #endif

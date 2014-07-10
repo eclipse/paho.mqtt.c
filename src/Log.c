@@ -439,6 +439,7 @@ void Log_stackTrace(int log_level, int msgno, int thread_id, int current_depth, 
 	if (log_level < trace_settings.trace_level)
 		return;
 
+	Thread_lock_mutex(log_mutex);
 	cur_entry = Log_pretrace();
 
 	memcpy(&(cur_entry->ts), &ts, sizeof(ts));
@@ -458,6 +459,7 @@ void Log_stackTrace(int log_level, int msgno, int thread_id, int current_depth, 
 	}
 
 	Log_posttrace(log_level, cur_entry);
+	Thread_unlock_mutex(log_mutex);
 }
 
 

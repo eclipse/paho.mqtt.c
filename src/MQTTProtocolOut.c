@@ -163,7 +163,7 @@ int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss)
 
 	FUNC_ENTRY;
 	/* we should stack this up for retry processing too */
-	rc = MQTTPacket_send_subscribe(topics, qoss, MQTTProtocol_assignMsgId(client), 0, &client->net, client->clientID);
+	rc = MQTTPacket_send_subscribe(topics, qoss, client->msgID, 0, &client->net, client->clientID);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -202,7 +202,7 @@ int MQTTProtocol_unsubscribe(Clients* client, List* topics)
 
 	FUNC_ENTRY;
 	/* we should stack this up for retry processing too? */
-	rc = MQTTPacket_send_unsubscribe(topics, MQTTProtocol_assignMsgId(client), 0, &client->net, client->clientID);
+	rc = MQTTPacket_send_unsubscribe(topics, client->msgID, 0, &client->net, client->clientID);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

@@ -1235,12 +1235,18 @@ int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, i
 			goto exit;
 		}
 	}
+	if (MQTTProtocol_assignMsgId(m->c) == 0)
+	{
+		rc = MQTTCLIENT_MAX_MESSAGES_INFLIGHT;
+		goto exit;
+	}
 
 	for (i = 0; i < count; i++)
 	{
 		ListAppend(topics, topic[i], strlen(topic[i]));
 		ListAppend(qoss, &qos[i], sizeof(int));
 	}
+
 	rc = MQTTProtocol_subscribe(m->c, topics, qoss);
 	ListFreeNoContent(topics);
 	ListFreeNoContent(qoss);
@@ -1319,7 +1325,6 @@ int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic)
 		rc = MQTTCLIENT_DISCONNECTED;
 		goto exit;
 	}
-
 	for (i = 0; i < count; i++)
 	{
 		if (!UTF8_validateString(topic[i]))
@@ -1327,6 +1332,11 @@ int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic)
 			rc = MQTTCLIENT_BAD_UTF8_STRING;
 			goto exit;
 		}
+	}
+	if (MQTTProtocol_assignMsgId(m->c) == 0)
+	{
+		rc = MQTTCLIENT_MAX_MESSAGES_INFLIGHT;
+		goto exit;
 	}
 
 	for (i = 0; i < count; i++)
@@ -1416,6 +1426,11 @@ int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen,
 	}
 	if (blocked == 1)
 		Log(TRACE_MIN, -1, "Resuming publish now queue not full for client %s", m->c->clientID);
+	if (MQTTProtocol_assignMsgId(m->c) == 0)
+	{	/* this should never happen as we've waited for spaces in the queue */
+		rc = MQTTCLIENT_MAX_MESSAGES_INFLIGHT;
+		goto exit;
+	}
 
 	p = malloc(sizeof(Publish));
 

@@ -486,13 +486,16 @@ int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 	switch (command->type)
 	{
 		case SUBSCRIBE:
-			nbufs = 2 + (command->details.sub.count * 2);
+			nbufs = 3 + (command->details.sub.count * 2);
 				
 			lens = (int*)malloc(nbufs * sizeof(int));
 			bufs = malloc(nbufs * sizeof(char *));
 				
 			bufs[bufindex] = &command->type;
 			lens[bufindex++] = sizeof(command->type);
+
+			bufs[bufindex] = &command->token;
+			lens[bufindex++] = sizeof(command->token);
 				
 			bufs[bufindex] = &command->details.sub.count;
 			lens[bufindex++] = sizeof(command->details.sub.count);		
@@ -508,13 +511,16 @@ int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 			break;
 				
 		case UNSUBSCRIBE:
-			nbufs = 2 + command->details.unsub.count;
+			nbufs = 3 + command->details.unsub.count;
 			
 			lens = (int*)malloc(nbufs * sizeof(int));
 			bufs = malloc(nbufs * sizeof(char *));
 				
 			bufs[bufindex] = &command->type;
 			lens[bufindex++] = sizeof(command->type);
+
+			bufs[bufindex] = &command->token;
+			lens[bufindex++] = sizeof(command->token);
 				
 			bufs[bufindex] = &command->details.unsub.count;
 			lens[bufindex++] = sizeof(command->details.unsub.count);		
@@ -528,13 +534,16 @@ int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 			break;	
 			
 		case PUBLISH:
-			nbufs = 6;
+			nbufs = 7;
 				
 			lens = (int*)malloc(nbufs * sizeof(int));
 			bufs = malloc(nbufs * sizeof(char *));
 				
 			bufs[bufindex] = &command->type;
 			lens[bufindex++] = sizeof(command->type);
+
+			bufs[bufindex] = &command->token;
+			lens[bufindex++] = sizeof(command->token);
 				
 			bufs[bufindex] = command->details.pub.destinationName;
 			lens[bufindex++] = strlen(command->details.pub.destinationName) + 1;
@@ -584,6 +593,9 @@ MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int buflen)
 	command->type = *(int*)ptr;
 	ptr += sizeof(int);
 	
+	command->token = *(MQTTAsync_token*)ptr;
+	ptr += sizeof(MQTTAsync_token);
+
 	switch (command->type)
 	{
 		case SUBSCRIBE:
@@ -1146,12 +1158,8 @@ void MQTTAsync_processCommand()
 			MQTTAsync_freeCommand(command);  /* free up the command if necessary */
 		}
 	}
-	else
-	{
-		/* put the command into a waiting for response queue for each client, indexed by msgid */	
-		command->command.token = command->client->c->msgID;
+	else /* put the command into a waiting for response queue for each client, indexed by msgid */
 		ListAppend(command->client->responses, command, sizeof(command));
-	}
 
 exit:
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
@@ -2147,7 +2155,7 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, size_t count, char* const* topic, 
 		rc = MQTTASYNC_DISCONNECTED;
 		goto exit;
 	}
-	if (m->c->outboundMsgs->count >= MAX_MSG_ID - 1)
+	if (MQTTProtocol_assignMsgId(m->c) == 0)
 	{
 		rc = MQTTASYNC_NO_MORE_MSGIDS;
 		goto exit;
@@ -2170,11 +2178,13 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, size_t count, char* const* topic, 
 	sub = malloc(sizeof(MQTTAsync_queuedCommand));
 	memset(sub, '\0', sizeof(MQTTAsync_queuedCommand));
 	sub->client = m;
+	sub->command.token = m->c->msgID;
 	if (response)
 	{
 		sub->command.onSuccess = response->onSuccess;
 		sub->command.onFailure = response->onFailure;
 		sub->command.context = response->context;
+		response->token = sub->command.token;
 	}
 	sub->command.type = SUBSCRIBE;
 	sub->command.details.sub.count = count;
@@ -2222,7 +2232,7 @@ int MQTTAsync_unsubscribeMany(MQTTAsync handle, size_t count, char* const* topic
 		rc = MQTTASYNC_DISCONNECTED;
 		goto exit;
 	}
-	if (m->c->outboundMsgs->count >= MAX_MSG_ID - 1)
+	if (MQTTProtocol_assignMsgId(m->c) == 0)
 	{
 		rc = MQTTASYNC_NO_MORE_MSGIDS;
 		goto exit;
@@ -2241,11 +2251,13 @@ int MQTTAsync_unsubscribeMany(MQTTAsync handle, size_t count, char* const* topic
 	memset(unsub, '\0', sizeof(MQTTAsync_queuedCommand));
 	unsub->client = m;
 	unsub->command.type = UNSUBSCRIBE;
+	unsub->command.token = m->c->msgID;
 	if (response)
 	{
 		unsub->command.onSuccess = response->onSuccess;
 		unsub->command.onFailure = response->onFailure;
 		unsub->command.context = response->context;
+		response->token = unsub->command.token;
 	}
 	unsub->command.details.unsub.count = count;
 	unsub->command.details.unsub.topics = malloc(sizeof(char*) * count);
@@ -2286,7 +2298,7 @@ int MQTTAsync_send(MQTTAsync handle, const char* destinationName, size_t payload
 		rc = MQTTASYNC_BAD_UTF8_STRING;
 	else if (qos < 0 || qos > 2)
 		rc = MQTTASYNC_BAD_QOS;
-	else if (m->c->outboundMsgs->count >= MAX_MSG_ID - 1)
+	else if (MQTTProtocol_assignMsgId(m->c) == 0)
 		rc = MQTTASYNC_NO_MORE_MSGIDS;
 
 	if (rc != MQTTASYNC_SUCCESS)
@@ -2297,11 +2309,13 @@ int MQTTAsync_send(MQTTAsync handle, const char* destinationName, size_t payload
 	memset(pub, '\0', sizeof(MQTTAsync_queuedCommand));
 	pub->client = m;
 	pub->command.type = PUBLISH;
+	pub->command.token = m->c->msgID;
 	if (response)
 	{
 		pub->command.onSuccess = response->onSuccess;
 		pub->command.onFailure = response->onFailure;
 		pub->command.context = response->context;
+		response->token = pub->command.token;
 	}
 	pub->command.details.pub.destinationName = MQTTStrdup(destinationName);
 	pub->command.details.pub.payloadlen = payloadlen;

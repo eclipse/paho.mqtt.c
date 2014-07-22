@@ -146,7 +146,6 @@ int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int
 	FUNC_ENTRY;
 	if (qos > 0)
 	{
-		p.msgId = publish->msgId = pubclient->msgID;
 		*mm = MQTTProtocol_createMessage(publish, mm, qos, retained);
 		ListAppend(pubclient->outboundMsgs, *mm, (*mm)->len);
 		/* we change these pointers to the saved message location just in case the packet could not be written

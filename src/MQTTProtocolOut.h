@@ -36,9 +36,9 @@ int MQTTProtocol_connect(const char* ip_address, Clients* acClients, int ssl, in
 int MQTTProtocol_connect(const char* ip_address, Clients* acClients, int MQTTVersion);
 #endif
 int MQTTProtocol_handlePingresps(void* pack, int sock);
-int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss);
+int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss, int msgID);
 int MQTTProtocol_handleSubacks(void* pack, int sock);
-int MQTTProtocol_unsubscribe(Clients* client, List* topics);
+int MQTTProtocol_unsubscribe(Clients* client, List* topics, int msgID);
 int MQTTProtocol_handleUnsubacks(void* pack, int sock);
 
 #endif

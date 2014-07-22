@@ -2298,7 +2298,7 @@ int MQTTAsync_send(MQTTAsync handle, const char* destinationName, size_t payload
 		rc = MQTTASYNC_BAD_UTF8_STRING;
 	else if (qos < 0 || qos > 2)
 		rc = MQTTASYNC_BAD_QOS;
-	else if (MQTTProtocol_assignMsgId(m->c) == 0)
+	else if (qos > 0 && MQTTProtocol_assignMsgId(m->c) == 0)
 		rc = MQTTASYNC_NO_MORE_MSGIDS;
 
 	if (rc != MQTTASYNC_SUCCESS)

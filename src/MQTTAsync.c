@@ -1315,6 +1315,7 @@ void MQTTAsync_removeResponsesAndCommands(MQTTAsyncs* m)
 			count++;
 		}
 	}
+	ListEmpty(m->responses);
 	Log(TRACE_MINIMUM, -1, "%d responses removed for client %s", count, m->c->clientID);
 	
 	/* remove commands in the command queue relating to this client */

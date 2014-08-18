@@ -2647,6 +2647,8 @@ int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens)
 	int rc = MQTTASYNC_SUCCESS;
 	MQTTAsyncs* m = handle;
 	*tokens = NULL;
+	ListElement* current = NULL;
+	int count = 0;
 
 	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttasync_mutex);
@@ -2657,22 +2659,135 @@ int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens)
 		goto exit;
 	}
 
+	/* calculate the number of pending tokens - commands plus inflight */
+	while (ListNextElement(commands, &current))
+	{
+		MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)(current->content);
+
+		if (cmd->client == m)
+			count++;
+	}
+	if (m->c)
+		count += m->c->outboundMsgs->count;
+	if (count == 0)
+		goto exit; /* no tokens to return */
+	*tokens = malloc(sizeof(MQTTAsync_token) * (count + 1));  /* add space for sentinel at end of list */
+
+	/* First add the unprocessed commands to the pending tokens */
+	current = NULL;
+	count = 0;
+	while (ListNextElement(commands, &current))
+	{
+		MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)(current->content);
+
+		if (cmd->client == m)
+			(*tokens)[count++] = cmd->command.token;
+	}
+
+	/* Now add the inflight messages */
 	if (m->c && m->c->outboundMsgs->count > 0)
 	{
-		ListElement* current = NULL;
-		int count = 0;
-
-		*tokens = malloc(sizeof(MQTTAsync_token) * (m->c->outboundMsgs->count + 1));
+		current = NULL;
 		while (ListNextElement(m->c->outboundMsgs, &current))
 		{
 			Messages* m = (Messages*)(current->content);
 			(*tokens)[count++] = m->msgid;
 		}
-		(*tokens)[count] = -1;
 	}
+	(*tokens)[count] = -1; /* indicate end of list */
 
 exit:
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+int MQTTAsync_isComplete(MQTTAsync handle, MQTTAsync_token dt)
+{
+	int rc = MQTTASYNC_SUCCESS;
+	MQTTAsyncs* m = handle;
+	ListElement* current = NULL;
+
+	FUNC_ENTRY;
+	MQTTAsync_lock_mutex(mqttasync_mutex);
+
+	if (m == NULL)
+	{
+		rc = MQTTASYNC_FAILURE;
+		goto exit;
+	}
+
+	/* First check unprocessed commands */
+	current = NULL;
+	while (ListNextElement(commands, &current))
+	{
+		MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)(current->content);
+
+		if (cmd->client == m && cmd->command.token == dt)
+			goto exit;
+	}
+
+	/* Now check the inflight messages */
+	if (m->c && m->c->outboundMsgs->count > 0)
+	{
+		current = NULL;
+		while (ListNextElement(m->c->outboundMsgs, &current))
+		{
+			Messages* m = (Messages*)(current->content);
+			if (m->msgid == dt)
+				goto exit;
+		}
+	}
+	rc = MQTTASYNC_TRUE; /* Can't find it, so it must be complete */
+
+exit:
+	MQTTAsync_unlock_mutex(mqttasync_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+int MQTTAsync_waitForCompletion(MQTTAsync handle, MQTTAsync_token dt, unsigned long timeout)
+{
+	int rc = MQTTASYNC_FAILURE;
+	START_TIME_TYPE start = MQTTAsync_start_clock();
+	unsigned long elapsed = 0L;
+	MQTTAsyncs* m = handle;
+
+	FUNC_ENTRY;
+	MQTTAsync_lock_mutex(mqttasync_mutex);
+
+	if (m == NULL || m->c == NULL)
+	{
+		rc = MQTTASYNC_FAILURE;
+		goto exit;
+	}
+	if (m->c->connected == 0)
+	{
+		rc = MQTTASYNC_DISCONNECTED;
+		goto exit;
+	}
+	MQTTAsync_unlock_mutex(mqttasync_mutex);
+
+	if (MQTTAsync_isComplete(handle, dt) == 1)
+	{
+		rc = MQTTASYNC_SUCCESS; /* well we couldn't find it */
+		goto exit;
+	}
+
+	elapsed = MQTTAsync_elapsed(start);
+	while (elapsed < timeout)
+	{
+		MQTTAsync_sleep(100);
+		if (MQTTAsync_isComplete(handle, dt) == 1)
+		{
+			rc = MQTTASYNC_SUCCESS; /* well we couldn't find it */
+			goto exit;
+		}
+		elapsed = MQTTAsync_elapsed(start);
+	}
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

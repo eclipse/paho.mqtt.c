@@ -908,6 +908,11 @@ DLLExport int MQTTAsync_sendMessage(MQTTAsync handle, const char* destinationNam
   */
 DLLExport int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens);
 
+#define MQTTASYNC_TRUE 1
+DLLExport int MQTTAsync_isComplete(MQTTAsync handle, MQTTAsync_token dt);
+
+DLLExport int MQTTAsync_waitForCompletion(MQTTAsync handle, MQTTAsync_token dt, unsigned long timeout);
+
 
 /**
   * This function frees memory allocated to an MQTT message, including the 

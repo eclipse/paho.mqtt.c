@@ -114,7 +114,7 @@ void Socket_outTerminate(void);
 int Socket_getReadySocket(int more_work, struct timeval *tp);
 int Socket_getch(int socket, char* c);
 char *Socket_getdata(int socket, int bytes, int* actual_len);
-int Socket_putdatas(int socket, char* buf0, int buf0len, int count, char** buffers, int* buflens, int* frees);
+int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens, int* frees);
 void Socket_close(int socket);
 int Socket_new(char* addr, int port, int* socket);
 

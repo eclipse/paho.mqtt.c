@@ -15,6 +15,7 @@
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
  *    Ian Craggs - fix for bug 421103 - trying to write to same socket, in retry
+ *    Rong Xiang, Ian Craggs - C++ compatibility
  *******************************************************************************/
 
 /**
@@ -145,7 +146,6 @@ int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int
 	FUNC_ENTRY;
 	if (qos > 0)
 	{
-		p.msgId = publish->msgId = MQTTProtocol_assignMsgId(pubclient);
 		*mm = MQTTProtocol_createMessage(publish, mm, qos, retained);
 		ListAppend(pubclient->outboundMsgs, *mm, (*mm)->len);
 		/* we change these pointers to the saved message location just in case the packet could not be written
@@ -714,3 +714,44 @@ void MQTTProtocol_freeMessageList(List* msgList)
 	FUNC_EXIT;
 }
 
+
+/**
+* Copy no more than dest_size -1 characters from the string pointed to by src to the array pointed to by dest.
+* The destination string will always be null-terminated.
+* @param dest the array which characters copy to
+* @param src the source string which characters copy from
+* @param dest_size the size of the memory pointed to by dest: copy no more than this -1 (allow for null).  Must be >= 1
+* @return the destination string pointer
+*/
+char* MQTTStrncpy(char *dest, const char *src, size_t dest_size)
+{
+  size_t count = dest_size;
+  char *temp = dest;
+
+  FUNC_ENTRY; 
+  if (dest_size < strlen(src))
+    Log(TRACE_MIN, -1, "the src string is truncated");
+
+  /* We must copy only the first (dest_size - 1) bytes */
+  while (count > 1 && (*temp++ = *src++))
+    count--;
+
+  *temp = '\0';
+
+  FUNC_EXIT;
+  return dest;
+}
+
+
+/**
+* Duplicate a string, safely, allocating space on the heap
+* @param src the source string which characters copy from
+* @return the duplicated, allocated string
+*/
+char* MQTTStrdup(const char* src)
+{
+	size_t mlen = strlen(src) + 1;
+	char* temp = malloc(mlen);
+	MQTTStrncpy(temp, src, mlen);
+	return temp;
+}

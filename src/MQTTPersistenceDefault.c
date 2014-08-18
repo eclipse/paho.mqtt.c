@@ -58,7 +58,7 @@
  *  See ::Persistence_open
  */
 
-int pstopen(void **handle, char* clientID, char* serverURI, void* context)
+int pstopen(void **handle, const char* clientID, const char* serverURI, void* context)
 {
 	int rc = 0;
 	char *dataDir = context;

@@ -23,6 +23,7 @@
  *    Ian Craggs - fix for bug 432903 - queue persistence
  *    Ian Craggs - MQTT 3.1.1 support
  *    Ian Craggs - fix for bug 438176 - MQTT version selection
+ *    Rong Xiang, Ian Craggs - C++ compatibility
  *******************************************************************************/
 
 /**
@@ -228,7 +229,7 @@ long MQTTClient_elapsed(struct timeval start)
 #endif
 
 
-int MQTTClient_create(MQTTClient* handle, char* serverURI, char* clientId,
+int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context)
 {
 	int rc = 0;
@@ -276,8 +277,7 @@ int MQTTClient_create(MQTTClient* handle, char* serverURI, char* clientId,
 		m->ssl = 1;
 	}
 #endif
-	m->serverURI = malloc(strlen(serverURI)+1);
-	strcpy(m->serverURI, serverURI);
+	m->serverURI = MQTTStrdup(serverURI);
 	ListAppend(handles, m, sizeof(MQTTClients));
 
 	m->c = malloc(sizeof(Clients));
@@ -286,8 +286,7 @@ int MQTTClient_create(MQTTClient* handle, char* serverURI, char* clientId,
 	m->c->outboundMsgs = ListInitialize();
 	m->c->inboundMsgs = ListInitialize();
 	m->c->messageQueue = ListInitialize();
-	m->c->clientID = malloc(strlen(clientId)+1);
-	strcpy(m->c->clientID, clientId);
+	m->c->clientID = MQTTStrdup(clientId);
 	m->connect_sem = Thread_create_sem();
 	m->connack_sem = Thread_create_sem();
 	m->suback_sem = Thread_create_sem();
@@ -367,8 +366,7 @@ void MQTTClient_destroy(MQTTClient* handle)
 	if (m->c)
 	{
 		int saved_socket = m->c->net.socket;
-		char* saved_clientid = malloc(strlen(m->c->clientID)+1);
-		strcpy(saved_clientid, m->c->clientID);
+		char* saved_clientid = MQTTStrdup(m->c->clientID);
 #if !defined(NO_PERSISTENCE)
 		MQTTPersistence_close(m->c);
 #endif
@@ -758,7 +756,7 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 }
 
 
-int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* options, char* serverURI, int MQTTVersion,
+int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* options, const char* serverURI, int MQTTVersion,
 	START_TIME_TYPE start, long millisecsTimeout)
 {
 	MQTTClients* m = handle;
@@ -935,7 +933,7 @@ exit:
 }
 
 
-int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options, char* serverURI)
+int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options, const char* serverURI)
 {
 	MQTTClients* m = handle;
 	START_TIME_TYPE start;
@@ -962,12 +960,10 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 	if (options->will && options->will->struct_version == 0)
 	{
 		m->c->will = malloc(sizeof(willMessages));
-		m->c->will->msg = malloc(strlen(options->will->message) + 1); 
-		strcpy(m->c->will->msg, options->will->message);
+		m->c->will->msg = MQTTStrdup(options->will->message);
 		m->c->will->qos = options->will->qos;
 		m->c->will->retained = options->will->retained;
-		m->c->will->topic = malloc(strlen(options->will->topicName) + 1);
-		strcpy(m->c->will->topic, options->will->topicName);
+		m->c->will->topic = MQTTStrdup(options->will->topicName);
 	}
 	
 #if defined(OPENSSL)
@@ -992,30 +988,15 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 		m->c->sslopts = malloc(sizeof(MQTTClient_SSLOptions));
 		memset(m->c->sslopts, '\0', sizeof(MQTTClient_SSLOptions));
 		if (options->ssl->trustStore)
-		{
-			m->c->sslopts->trustStore = malloc(strlen(options->ssl->trustStore) + 1);
-			strcpy(m->c->sslopts->trustStore, options->ssl->trustStore); 
-		}
+			m->c->sslopts->trustStore = MQTTStrdup(options->ssl->trustStore);
 		if (options->ssl->keyStore)
-		{
-			m->c->sslopts->keyStore = malloc(strlen(options->ssl->keyStore) + 1);
-			strcpy(m->c->sslopts->keyStore, options->ssl->keyStore);
-		}
+			m->c->sslopts->keyStore = MQTTStrdup(options->ssl->keyStore);
 		if (options->ssl->privateKey)
-		{
-			m->c->sslopts->privateKey = malloc(strlen(options->ssl->privateKey) + 1);
-			strcpy(m->c->sslopts->privateKey, options->ssl->privateKey);
-		}
+			m->c->sslopts->privateKey = MQTTStrdup(options->ssl->privateKey);
 		if (options->ssl->privateKeyPassword)
-		{
-			m->c->sslopts->privateKeyPassword = malloc(strlen(options->ssl->privateKeyPassword) + 1);
-			strcpy(m->c->sslopts->privateKeyPassword, options->ssl->privateKeyPassword);
-		}
+			m->c->sslopts->privateKeyPassword = MQTTStrdup(options->ssl->privateKeyPassword);
 		if (options->ssl->enabledCipherSuites)
-		{
-			m->c->sslopts->enabledCipherSuites = malloc(strlen(options->ssl->enabledCipherSuites) + 1);
-			strcpy(m->c->sslopts->enabledCipherSuites, options->ssl->enabledCipherSuites);
-		}
+			m->c->sslopts->enabledCipherSuites = MQTTStrdup(options->ssl->enabledCipherSuites);
 		m->c->sslopts->enableServerCertAuth = options->ssl->enableServerCertAuth;
 	}
 #endif
@@ -1219,13 +1200,14 @@ int MQTTClient_isConnected(MQTTClient handle)
 }
 
 
-int MQTTClient_subscribeMany(MQTTClient handle, int count, char** topic, int* qos)
+int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, int* qos)
 {
 	MQTTClients* m = handle;
 	List* topics = ListInitialize();
 	List* qoss = ListInitialize();
 	int i = 0;
 	int rc = MQTTCLIENT_FAILURE;
+	int msgid = 0;
 
 	FUNC_ENTRY;
 	Thread_lock_mutex(mqttclient_mutex);
@@ -1254,13 +1236,19 @@ int MQTTClient_subscribeMany(MQTTClient handle, int count, char** topic, int* qo
 			goto exit;
 		}
 	}
+	if ((msgid = MQTTProtocol_assignMsgId(m->c)) == 0)
+	{
+		rc = MQTTCLIENT_MAX_MESSAGES_INFLIGHT;
+		goto exit;
+	}
 
 	for (i = 0; i < count; i++)
 	{
 		ListAppend(topics, topic[i], strlen(topic[i]));
 		ListAppend(qoss, &qos[i], sizeof(int));
 	}
-	rc = MQTTProtocol_subscribe(m->c, topics, qoss);
+
+	rc = MQTTProtocol_subscribe(m->c, topics, qoss, msgid);
 	ListFreeNoContent(topics);
 	ListFreeNoContent(qoss);
 
@@ -1304,12 +1292,13 @@ exit:
 }
 
 
-int MQTTClient_subscribe(MQTTClient handle, char* topic, int qos)
+int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos)
 {
 	int rc = 0;
+	char *const topics[] = {(char*)topic};
 
 	FUNC_ENTRY;
-	rc = MQTTClient_subscribeMany(handle, 1, &topic, &qos);
+	rc = MQTTClient_subscribeMany(handle, 1, topics, &qos);
 	if (qos == MQTT_BAD_SUBSCRIBE) /* addition for MQTT 3.1.1 - error code from subscribe */
 		rc = MQTT_BAD_SUBSCRIBE;
 	FUNC_EXIT_RC(rc);
@@ -1317,12 +1306,13 @@ int MQTTClient_subscribe(MQTTClient handle, char* topic, int qos)
 }
 
 
-int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char** topic)
+int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic)
 {
 	MQTTClients* m = handle;
 	List* topics = ListInitialize();
 	int i = 0;
 	int rc = SOCKET_ERROR;
+	int msgid = 0;
 
 	FUNC_ENTRY;
 	Thread_lock_mutex(mqttclient_mutex);
@@ -1337,7 +1327,6 @@ int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char** topic)
 		rc = MQTTCLIENT_DISCONNECTED;
 		goto exit;
 	}
-
 	for (i = 0; i < count; i++)
 	{
 		if (!UTF8_validateString(topic[i]))
@@ -1346,10 +1335,15 @@ int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char** topic)
 			goto exit;
 		}
 	}
+	if ((msgid = MQTTProtocol_assignMsgId(m->c)) == 0)
+	{
+		rc = MQTTCLIENT_MAX_MESSAGES_INFLIGHT;
+		goto exit;
+	}
 
 	for (i = 0; i < count; i++)
 		ListAppend(topics, topic[i], strlen(topic[i]));
-	rc = MQTTProtocol_unsubscribe(m->c, topics);
+	rc = MQTTProtocol_unsubscribe(m->c, topics, msgid);
 	ListFreeNoContent(topics);
 
 	if (rc == TCPSOCKET_COMPLETE)
@@ -1382,18 +1376,18 @@ exit:
 }
 
 
-int MQTTClient_unsubscribe(MQTTClient handle, char* topic)
+int MQTTClient_unsubscribe(MQTTClient handle, const char* topic)
 {
 	int rc = 0;
-
+	char *const topics[] = {(char*)topic};
 	FUNC_ENTRY;
-	rc = MQTTClient_unsubscribeMany(handle, 1, &topic);
+	rc = MQTTClient_unsubscribeMany(handle, 1, topics);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
 
-int MQTTClient_publish(MQTTClient handle, char* topicName, int payloadlen, void* payload,
+int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, void* payload,
 							 int qos, int retained, MQTTClient_deliveryToken* deliveryToken)
 {
 	int rc = MQTTCLIENT_SUCCESS;
@@ -1401,6 +1395,7 @@ int MQTTClient_publish(MQTTClient handle, char* topicName, int payloadlen, void*
 	Messages* msg = NULL;
 	Publish* p = NULL;
 	int blocked = 0;
+	int msgid = 0;
 
 	FUNC_ENTRY;
 	Thread_lock_mutex(mqttclient_mutex);
@@ -1434,13 +1429,18 @@ int MQTTClient_publish(MQTTClient handle, char* topicName, int payloadlen, void*
 	}
 	if (blocked == 1)
 		Log(TRACE_MIN, -1, "Resuming publish now queue not full for client %s", m->c->clientID);
+	if (qos > 0 && (msgid = MQTTProtocol_assignMsgId(m->c)) == 0)
+	{	/* this should never happen as we've waited for spaces in the queue */
+		rc = MQTTCLIENT_MAX_MESSAGES_INFLIGHT;
+		goto exit;
+	}
 
 	p = malloc(sizeof(Publish));
 
 	p->payload = payload;
 	p->payloadlen = payloadlen;
-	p->topic = topicName;
-	p->msgId = -1;
+	p->topic = (char*)topicName;
+	p->msgId = msgid;
 
 	rc = MQTTProtocol_startPublish(m->c, p, qos, retained, &msg);
 
@@ -1482,7 +1482,7 @@ exit:
 
 
 
-int MQTTClient_publishMessage(MQTTClient handle, char* topicName, MQTTClient_message* message,
+int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClient_message* message,
 															 MQTTClient_deliveryToken* deliveryToken)
 {
 	int rc = MQTTCLIENT_SUCCESS;

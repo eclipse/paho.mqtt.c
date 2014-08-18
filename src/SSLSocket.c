@@ -703,7 +703,7 @@ int SSLSocket_close(networkHandles* net)
 
 
 /* No SSL_writev() provided by OpenSSL. Boo. */  
-int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, int buf0len, int count, char** buffers, int* buflens, int* frees)
+int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens, int* frees)
 {
 	int rc = 0;
 	int i;

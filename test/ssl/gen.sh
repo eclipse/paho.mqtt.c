@@ -64,6 +64,8 @@ openssl ca -config openssl.cnf -name CA_signing -revoke client-revoked.crt
 openssl ca -config openssl.cnf -name CA_signing -gencrl -out crl.pem
 
 cat test-signing-ca.crt test-root-ca.crt > all-ca.crt
+
+cat client.crt client.key all-ca.crt > client.pem
 #mkdir certs
 #cp test-signing-ca.crt certs/test-signing-ca.pem
 #cp test-root-ca.crt certs/test-root.ca.pem

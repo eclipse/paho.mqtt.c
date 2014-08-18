@@ -76,6 +76,10 @@
  
  
 /// @cond EXCLUDE
+#if defined(__cplusplus)
+ extern "C" {
+#endif
+
 #if !defined(MQTTASYNC_H)
 #define MQTTASYNC_H
 
@@ -476,7 +480,7 @@ DLLExport int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_
  * @return ::MQTTASYNC_SUCCESS if the client is successfully created, otherwise
  * an error code is returned.
  */
-DLLExport int MQTTAsync_create(MQTTAsync* handle, char* serverURI, char* clientId,
+DLLExport int MQTTAsync_create(MQTTAsync* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context);
 
 /**
@@ -494,13 +498,13 @@ DLLExport int MQTTAsync_create(MQTTAsync* handle, char* serverURI, char* clientI
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTW. */
-	char struct_id[4];
+	const char struct_id[4];
 	/** The version number of this structure.  Must be 0 */
 	int struct_version;
 	/** The LWT topic to which the LWT message will be published. */
-	char* topicName;
+	const char* topicName;
 	/** The LWT payload. */
-	char* message;
+	const char* message;
 	/**
       * The retained flag for the LWT message (see MQTTAsync_message.retained).
       */
@@ -529,24 +533,24 @@ typedef struct
 typedef struct 
 {
 	/** The eyecatcher for this structure.  Must be MQTS */
-	char struct_id[4];
+	const char struct_id[4];
 	/** The version number of this structure.  Must be 0 */
 	int struct_version;	
 	
 	/** The file in PEM format containing the public digital certificates trusted by the client. */
-	char* trustStore;
+	const char* trustStore;
 
 	/** The file in PEM format containing the public certificate chain of the client. It may also include
 	* the client's private key. 
 	*/
-	char* keyStore;
+	const char* keyStore;
 	
 	/** If not included in the sslKeyStore, this setting points to the file in PEM format containing
 	* the client's private key.
 	*/
-	char* privateKey;
+	const char* privateKey;
 	/** The password to load the client's privateKey if encrypted. */
-	char* privateKeyPassword;
+	const char* privateKeyPassword;
  
 	/**
 	* The list of cipher suites that the client will present to the server during the SSL handshake. For a 
@@ -556,7 +560,7 @@ typedef struct
 	* those offering no encryption- will be considered.
 	* This setting can be used to set an SSL anonymous connection ("aNULL" string value, for instance).
 	*/
-	char* enabledCipherSuites;    
+	const char* enabledCipherSuites;    
 
     /** True/False option to enable verification of the server certificate **/
     int enableServerCertAuth;
@@ -573,8 +577,8 @@ typedef struct
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
-	char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1, 2 or 3.  
+	const char struct_id[4];
+	/** The version number of this structure.  Must be 0, 1 or 2.  
 	  * 0 signifies no SSL options and no serverURIs
 	  * 1 signifies no serverURIs 
       * 2 signifies no MQTTVersion
@@ -628,13 +632,13 @@ typedef struct
       * and authorisation by user name and password. This is the user name 
       * parameter. 
       */
-	char* username;	
+	const char* username;	
 	/** 
       * MQTT servers that support the MQTT v3.1 protocol provide authentication
       * and authorisation by user name and password. This is the password 
       * parameter.
       */
-	char* password;
+	const char* password;
 	/**
       * The time interval in seconds to allow a connect to complete.
       */
@@ -678,7 +682,7 @@ typedef struct
       * a server running on the local machines with the default MQTT port, specify
       * <i>tcp://localhost:1883</i>.
       */    
-	char** serverURIs;
+	char* const* serverURIs;
 	/**
       * Sets the version of MQTT to be used on the connect.
       * MQTTVERSION_DEFAULT (0) = default: start with 3.1.1, and if that fails, fall back to 3.1
@@ -711,13 +715,13 @@ typedef struct
   * <b>5</b>: Connection refused: Not authorized<br>
   * <b>6-255</b>: Reserved for future use<br>
   */
-DLLExport int MQTTAsync_connect(MQTTAsync handle, MQTTAsync_connectOptions* options);
+DLLExport int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options);
 
 
 typedef struct
 {
 	/** The eyecatcher for this structure. Must be MQTD. */
-	char struct_id[4];
+	const char struct_id[4];
 	/** The version number of this structure.  Must be 0 or 1.  0 signifies no SSL options */
 	int struct_version;
 	/**
@@ -766,7 +770,7 @@ typedef struct
   * the server. An error code is returned if the client was unable to disconnect
   * from the server
   */
-DLLExport int MQTTAsync_disconnect(MQTTAsync handle, MQTTAsync_disconnectOptions* options);
+DLLExport int MQTTAsync_disconnect(MQTTAsync handle, const MQTTAsync_disconnectOptions* options);
 
 
 /**
@@ -793,7 +797,7 @@ DLLExport int MQTTAsync_isConnected(MQTTAsync handle);
   * An error code is returned if there was a problem registering the 
   * subscription. 
   */
-DLLExport int MQTTAsync_subscribe(MQTTAsync handle, char* topic, int qos, MQTTAsync_responseOptions* response);
+DLLExport int MQTTAsync_subscribe(MQTTAsync handle, const char* topic, int qos, MQTTAsync_responseOptions* response);
 
 
 /**
@@ -813,7 +817,7 @@ DLLExport int MQTTAsync_subscribe(MQTTAsync handle, char* topic, int qos, MQTTAs
   * An error code is returned if there was a problem registering the 
   * subscriptions. 
   */
-DLLExport int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char** topic, int* qos, MQTTAsync_responseOptions* response); 
+DLLExport int MQTTAsync_subscribeMany(MQTTAsync handle, size_t count, char* const* topic, int* qos, MQTTAsync_responseOptions* response); 
 
 /** 
   * This function attempts to remove an existing subscription made by the 
@@ -827,7 +831,7 @@ DLLExport int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char** topic,
   * An error code is returned if there was a problem removing the 
   * subscription. 
   */
-DLLExport int MQTTAsync_unsubscribe(MQTTAsync handle, char* topic, MQTTAsync_responseOptions* response);
+DLLExport int MQTTAsync_unsubscribe(MQTTAsync handle, const char* topic, MQTTAsync_responseOptions* response);
 
 /** 
   * This function attempts to remove existing subscriptions to a list of topics
@@ -841,7 +845,7 @@ DLLExport int MQTTAsync_unsubscribe(MQTTAsync handle, char* topic, MQTTAsync_res
   * @return ::MQTTASYNC_SUCCESS if the subscriptions are removed. 
   * An error code is returned if there was a problem removing the subscriptions.
   */
-DLLExport int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char** topic, MQTTAsync_responseOptions* response);
+DLLExport int MQTTAsync_unsubscribeMany(MQTTAsync handle, size_t count, char* const* topic, MQTTAsync_responseOptions* response);
 
 
 /** 
@@ -862,7 +866,7 @@ DLLExport int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char** topi
   * @return ::MQTTASYNC_SUCCESS if the message is accepted for publication. 
   * An error code is returned if there was a problem accepting the message.
   */
-DLLExport int MQTTAsync_send(MQTTAsync handle, char* destinationName, int payloadlen, void* payload, int qos, int retained,
+DLLExport int MQTTAsync_send(MQTTAsync handle, const char* destinationName, size_t payloadlen, void* payload, int qos, int retained,
 																 MQTTAsync_responseOptions* response);
 
 
@@ -881,7 +885,7 @@ DLLExport int MQTTAsync_send(MQTTAsync handle, char* destinationName, int payloa
   * @return ::MQTTASYNC_SUCCESS if the message is accepted for publication. 
   * An error code is returned if there was a problem accepting the message.
   */
-DLLExport int MQTTAsync_sendMessage(MQTTAsync handle, char* destinationName, MQTTAsync_message* msg, MQTTAsync_responseOptions* response);
+DLLExport int MQTTAsync_sendMessage(MQTTAsync handle, const char* destinationName, const MQTTAsync_message* msg, MQTTAsync_responseOptions* response);
 
 
 /**
@@ -1505,4 +1509,8 @@ exit:
   */
 
 
+#endif
+
+#ifdef __cplusplus
+     }
 #endif

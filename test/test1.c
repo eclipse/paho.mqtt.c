@@ -1095,12 +1095,16 @@ int test6(struct Options options)
 
 	MyLog(LOGA_INFO, "Waiting to receive the will message");
 	count = 0;
-	while (test6_will_message_arrived != 1 && test6_connection_lost_called != 1 && ++count < 40)
+	while (++count < 40)
+	{
 		#if defined(WIN32)
 			Sleep(1000L);
 		#else
 			sleep(1);
 		#endif
+		if (test6_will_message_arrived == 1 && test6_connection_lost_called == 1)
+			break;
+	}
 	assert("will message arrived", test6_will_message_arrived == 1,
 							"will_message_arrived was %d\n", test6_will_message_arrived);
 	assert("connection lost called", test6_connection_lost_called == 1,

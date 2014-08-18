@@ -162,8 +162,8 @@ typedef struct
 typedef struct
 {
 	char* clientID;					/**< the string id of the client */
-	char* username;					/**< MQTT v3.1 user name */
-	char* password;					/**< MQTT v3.1 password */
+	const char* username;					/**< MQTT v3.1 user name */
+	const char* password;					/**< MQTT v3.1 password */
 	unsigned int cleansession : 1;	/**< MQTT clean session flag */
 	unsigned int connected : 1;		/**< whether it is currently connected */
 	unsigned int good : 1; 			/**< if we have an error on the socket we turn this off */
@@ -197,7 +197,7 @@ int clientSocketCompare(void* a, void* b);
  */
 typedef struct
 {
-	char* version;
+	const char* version;
 	List* clients;
 } ClientStates;
 

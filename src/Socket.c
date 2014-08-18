@@ -433,7 +433,7 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
  *  @param buflens an array of corresponding buffer lengths
  *  @return completion code, especially TCPSOCKET_INTERRUPTED
  */
-int Socket_putdatas(int socket, char* buf0, int buf0len, int count, char** buffers, int* buflens, int* frees)
+int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens, int* frees)
 {
 	unsigned long bytes = 0L;
 	iobuf iovecs[5];

@@ -24,7 +24,7 @@
   </taskdef>
 
   <property name="output.folder" value="build/output" /> 
-  <property name="release.version" value="1.0.0" />
+  <property name="release.version" value="1.0.1" />
 
   <property name="libname" value="mqttv3c" />
   <property name="libname.ssl" value="mqttv3cs" />

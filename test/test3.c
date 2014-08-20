@@ -428,7 +428,7 @@ void singleThread_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 
 		if (qos > 0)
 		{
-			rc = MQTTClient_waitForCompletion(c, dt, 10000L);
+			rc = MQTTClient_waitForCompletion(c, dt, 20000L);
 			assert("Good rc from waitforCompletion", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 		}
 
@@ -525,7 +525,7 @@ void multiThread_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 			usleep(100000L);
 		#endif
 
-		wait_seconds = 10;
+		wait_seconds = 20;
 		while ((multiThread_arrivedcount < i) && (wait_seconds-- > 0))
 		{
 			MyLog(LOGA_DEBUG, "Arrived %d count %d", multiThread_arrivedcount, i);

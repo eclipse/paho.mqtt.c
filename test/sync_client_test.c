@@ -1036,7 +1036,7 @@ int subscribe_failure_test()
 	int i, rc, count = 0;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	MQTTClient aclient;
-	unsigned int subqos = 2;
+	int subqos = 2;
 
 	MyLog(LOGA_INFO, "Starting subscribe failure test");
   

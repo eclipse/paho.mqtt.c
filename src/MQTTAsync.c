@@ -49,8 +49,8 @@
 
 #define URI_TCP "tcp://"
 
-#define BUILD_TIMESTAMP "##MQTTCLIENT_BUILD_TAG##"
-#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##"
+#define BUILD_TIMESTAMP "201408221458"
+#define CLIENT_VERSION  "1.0.0"
 
 char* client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
@@ -1257,14 +1257,17 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
 	while (!tostop)
 	{
-		/*int rc;*/
+		int rc;
 		
 		while (commands->count > 0)
 			MQTTAsync_processCommand();
 #if !defined(WIN32) && !defined(WIN64)
-		/*rc =*/ Thread_wait_cond(send_cond, 1);
+		rc =  Thread_wait_cond(send_cond, 1);
+		if ((rc = Thread_wait_cond(send_cond, 1)) != 0 && rc != ETIMEDOUT)
+			Log(LOG_ERROR, -1, "Error %d waiting for condition variable", rc);
 #else
-		/*rc =*/ Thread_wait_sem(send_sem, 1000);
+		if ((rc = Thread_wait_sem(send_sem, 1000)) != 0 && rc != ETIMEDOUT)
+			Log(LOG_ERROR, -1, "Error %d waiting for semaphore", rc);
 #endif
 			
 		MQTTAsync_checkTimeouts();
@@ -1459,23 +1462,32 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 			break;
 		timeout = 1000L;
 
+		if (sock == 0)
+			continue;
 		/* find client corresponding to socket */
 		if (ListFindItem(handles, &sock, clientSockCompare) == NULL)
 		{
-			/* assert: should not happen */
+			Log(LOG_ERROR, -1, "Could not find client corresponding to socket %d - removing socket", sock);
+			Socket_close(sock);
 			continue;
 		}
 		m = (MQTTAsyncs*)(handles->current->content);
 		if (m == NULL)
 		{
-			/* assert: should not happen */
+			Log(LOG_ERROR, -1, "Client structure was NULL for socket %d - removing socket", sock);
+			Socket_close(sock);
 			continue;
 		}
 		if (rc == SOCKET_ERROR)
 		{
-			MQTTAsync_unlock_mutex(mqttasync_mutex);
-			MQTTAsync_disconnect_internal(m, 0);
-			MQTTAsync_lock_mutex(mqttasync_mutex);
+			if (m->c->connected == 1)
+			{
+				MQTTAsync_unlock_mutex(mqttasync_mutex);
+				MQTTAsync_disconnect_internal(m, 0);
+				MQTTAsync_lock_mutex(mqttasync_mutex);
+			}
+			else /* calling disconnect_internal won't have any effect if we're already disconnected */
+				MQTTAsync_closeOnly(m->c);
 		}
 		else
 		{
@@ -2535,19 +2547,19 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 				*rc = MQTTAsync_connecting(m);
 			else
 				pack = MQTTPacket_Factory(&m->c->net, rc);
-			if ((m->c->connect_state == 3) && (*rc == SOCKET_ERROR))
+			if (m->c->connect_state == 3 && *rc == SOCKET_ERROR)
 			{
 				Log(TRACE_MINIMUM, -1, "CONNECT sent but MQTTPacket_Factory has returned SOCKET_ERROR");
 				if (MQTTAsync_checkConn(&m->connect, m))
 				{
 					MQTTAsync_queuedCommand* conn;
-				
+
 					MQTTAsync_closeOnly(m->c);
 					/* put the connect command back to the head of the command queue, using the next serverURI */
 					conn = malloc(sizeof(MQTTAsync_queuedCommand));
 					memset(conn, '\0', sizeof(MQTTAsync_queuedCommand));
 					conn->client = m;
-					conn->command = m->connect; 
+					conn->command = m->connect;
 					Log(TRACE_MIN, -1, "Connect failed, more to try");
 					MQTTAsync_addCommand(conn, sizeof(m->connect));
 				}

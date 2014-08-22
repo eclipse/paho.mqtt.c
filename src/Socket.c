@@ -559,7 +559,7 @@ void Socket_close(int socket)
 	if (ListRemoveItem(s.clientsds, &socket, intcompare))
 		Log(TRACE_MIN, -1, "Removed socket %d", socket);
 	else
-		Log(TRACE_MIN, -1, "Failed to remove socket %d", socket);
+		Log(LOG_ERROR, -1, "Failed to remove socket %d", socket);
 	if (socket + 1 >= s.maxfdp1)
 	{
 		/* now we have to reset s.maxfdp1 */

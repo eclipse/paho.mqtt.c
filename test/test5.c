@@ -89,7 +89,7 @@ struct Options
 	NULL,
 	"../../../test/ssl/test-root-ca.crt",
 	NULL,
-	0,
+	1,
 	0,
 	5000000
 };
@@ -2050,7 +2050,7 @@ int main(int argc, char** argv)
 		for (options.test_no = 1; options.test_no < ARRAY_SIZE(tests); ++options.test_no)
 		{
 			failures = 0;
-			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_PROTOCOL);
 			rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */
 		}
 	}

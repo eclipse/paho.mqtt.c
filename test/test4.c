@@ -68,7 +68,7 @@ struct Options
 } options =
 {
 	"m2m.eclipse.org:1883",
-	0,
+	1,
 	-1,
 	10000,
 	MQTTVERSION_DEFAULT,
@@ -1052,7 +1052,7 @@ int test6(struct Options options)
 	char* uris[2] = {options.connection, options.connection};
 
 	failures = 0;
-	MyLog(LOGA_INFO, "Starting test 7 - HA connections");
+	MyLog(LOGA_INFO, "Starting test 6 - HA connections");
 	fprintf(xml, "<testcase classname=\"test4\" name=\"HA connections\"");
 	global_start_time = start_clock();
 	
@@ -1231,7 +1231,7 @@ int test7(struct Options options)
 	int msg_count = 6;
 
 	MyLog(LOGA_INFO, "Starting test 7 - pending tokens");
-	fprintf(xml, "<testcase classname=\"test4\" name=\"asynchronous connect\"");
+	fprintf(xml, "<testcase classname=\"test4\" name=\"pending tokens\"");
 	global_start_time = start_clock();
 	test_finished = 0;
 

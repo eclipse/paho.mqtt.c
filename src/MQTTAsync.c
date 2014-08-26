@@ -21,6 +21,7 @@
  *    Ian Craggs - fix for bug 432903 - queue persistence
  *    Ian Craggs - MQTT 3.1.1 support
  *    Rong Xiang, Ian Craggs - C++ compatibility
+ *    Ian Craggs - fix for bug 442400: reconnecting after network cable unplugged
  *******************************************************************************/
 
 /**

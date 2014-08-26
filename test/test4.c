@@ -68,7 +68,7 @@ struct Options
 } options =
 {
 	"m2m.eclipse.org:1883",
-	1,
+	0,
 	-1,
 	10000,
 	MQTTVERSION_DEFAULT,

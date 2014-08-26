@@ -2424,8 +2424,11 @@ int MQTTAsync_connecting(MQTTAsyncs* m)
 					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)
 						Log(TRACE_MIN, -1, "Failed to set SSL session with stored data, non critical");
 				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket);
-				if (rc == -1)
+				if (rc == TCPSOCKET_INTERRUPTED)
+				{
+					rc = MQTTCLIENT_SUCCESS; /* the connect is still in progress */
 					m->c->connect_state = 2;
+				}
 				else if (rc == SSL_FATAL)
 				{
 					rc = SOCKET_ERROR;

@@ -1473,8 +1473,8 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 		/* find client corresponding to socket */
 		if (ListFindItem(handles, &sock, clientSockCompare) == NULL)
 		{
-			Log(LOG_ERROR, -1, "Could not find client corresponding to socket %d - removing socket", sock);
-			Socket_close(sock);
+			Log(TRACE_MINIMUM, -1, "Could not find client corresponding to socket %d", sock);
+			/* Socket_close(sock); - removing socket in this case is not necessary (Bug 442400) */
 			continue;
 		}
 		m = (MQTTAsyncs*)(handles->current->content);

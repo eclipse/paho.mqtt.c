@@ -896,6 +896,7 @@ int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* o
 					rc = MQTTClient_cleanSession(m->c);
 				if (m->c->outboundMsgs->count > 0)
 				{
+					time_t now;
 					ListElement* outcurrent = NULL;
 
 					while (ListNextElement(m->c->outboundMsgs, &outcurrent))
@@ -903,7 +904,8 @@ int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* o
 						Messages* m = (Messages*)(outcurrent->content);
 						m->lastTouch = 0;
 					}
-					MQTTProtocol_retry(m->c->net.lastContact, 1);
+					time(&(now));
+					MQTTProtocol_retry(now, 1);
 					if (m->c->connected != 1)
 						rc = MQTTCLIENT_DISCONNECTED;
 				}
@@ -1957,7 +1959,7 @@ void MQTTClient_writeComplete(int socket)
 	{
 		MQTTClients* m = (MQTTClients*)(found->content);
 		
-		time(&(m->c->net.lastContact));			
+		time(&(m->c->net.lastSent));
 	}
 	FUNC_EXIT;
 }

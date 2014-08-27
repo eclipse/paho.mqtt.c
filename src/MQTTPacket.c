@@ -156,6 +156,8 @@ void* MQTTPacket_Factory(networkHandles* net, int* error)
 #endif
 		}
 	}
+	if (pack)
+		time(&(net->lastReceived));
 exit:
 	FUNC_EXIT_RC(*error);
 	return pack;
@@ -197,7 +199,7 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 		rc = Socket_putdatas(net->socket, buf, buf0len, 1, &buffer, &buflen, &free);
 		
 	if (rc == TCPSOCKET_COMPLETE)
-		time(&(net->lastContact));
+		time(&(net->lastSent));
 	
 	if (rc != TCPSOCKET_INTERRUPTED)
 	  free(buf);
@@ -244,7 +246,7 @@ int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffe
 		rc = Socket_putdatas(net->socket, buf, buf0len, count, buffers, buflens, frees);
 		
 	if (rc == TCPSOCKET_COMPLETE)
-		time(&(net->lastContact));
+		time(&(net->lastSent));
 	
 	if (rc != TCPSOCKET_INTERRUPTED)
 	  free(buf);

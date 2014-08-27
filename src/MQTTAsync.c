@@ -886,7 +886,7 @@ void MQTTAsync_writeComplete(int socket)
 	{
 		MQTTAsyncs* m = (MQTTAsyncs*)(found->content);
 		
-		time(&(m->c->net.lastContact));
+		time(&(m->c->net.lastSent));
 				
 		/* see if there is a pending write flagged */
 		if (m->pending_write)
@@ -1428,13 +1428,16 @@ int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack)
 				rc = MQTTAsync_cleanSession(m->c);
 			if (m->c->outboundMsgs->count > 0)
 			{
+				time_t now;
 				ListElement* outcurrent = NULL;
+
 				while (ListNextElement(m->c->outboundMsgs, &outcurrent))
 				{
 					Messages* m = (Messages*)(outcurrent->content);
 					m->lastTouch = 0;
 				}
-				MQTTProtocol_retry(m->c->net.lastContact, 1);
+				time(&(now));
+				MQTTProtocol_retry(now, 1);
 				if (m->c->connected != 1)
 					rc = MQTTASYNC_DISCONNECTED;
 			}
@@ -2533,11 +2536,13 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 		if (!tostop && *sock == 0 && (tp.tv_sec > 0L || tp.tv_usec > 0L))
 		{
 			MQTTAsync_sleep(100L);
+#if 0
 			if (s.clientsds->count == 0)
 			{
 				if (++nosockets_count == 50) /* 5 seconds with no sockets */
 					tostop = 1;
 			}
+#endif
 		}
 		else
 			nosockets_count = 0;

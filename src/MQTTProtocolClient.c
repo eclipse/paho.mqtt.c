@@ -514,7 +514,9 @@ void MQTTProtocol_keepalive(time_t now)
 	{
 		Clients* client =	(Clients*)(current->content);
 		ListNextElement(bstate->clients, &current); 
-		if (client->connected && client->keepAliveInterval > 0 && (difftime(now, client->net.lastContact) >= client->keepAliveInterval))
+		if (client->connected && client->keepAliveInterval > 0 &&
+			(difftime(now, client->net.lastSent) >= client->keepAliveInterval ||
+					difftime(now, client->net.lastReceived) >= client->keepAliveInterval))
 		{
 			if (client->ping_outstanding == 0)
 			{
@@ -527,7 +529,7 @@ void MQTTProtocol_keepalive(time_t now)
 					}
 					else
 					{
-						client->net.lastContact = now;
+						client->net.lastSent = now;
 						client->ping_outstanding = 1;
 					}
 				}

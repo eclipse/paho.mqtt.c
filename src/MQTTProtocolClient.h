@@ -43,7 +43,7 @@ int MQTTProtocol_handlePubrels(void* pack, int sock);
 int MQTTProtocol_handlePubcomps(void* pack, int sock);
 
 void MQTTProtocol_keepalive(time_t);
-void MQTTProtocol_retry(time_t, int);
+void MQTTProtocol_retry(time_t, int, int);
 void MQTTProtocol_freeClient(Clients* client);
 void MQTTProtocol_emptyMessageList(List* msgList);
 void MQTTProtocol_freeMessageList(List* msgList);

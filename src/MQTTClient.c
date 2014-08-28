@@ -903,7 +903,7 @@ int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* o
 						Messages* m = (Messages*)(outcurrent->content);
 						m->lastTouch = 0;
 					}
-					MQTTProtocol_retry((time_t)0, 1);
+					MQTTProtocol_retry((time_t)0, 1, 1);
 					if (m->c->connected != 1)
 						rc = MQTTCLIENT_DISCONNECTED;
 				}
@@ -1518,10 +1518,10 @@ void MQTTClient_retry(void)
 	{
 		time(&(last));
 		MQTTProtocol_keepalive(now);
-		MQTTProtocol_retry(now, 1);
+		MQTTProtocol_retry(now, 1, 0);
 	}
 	else
-		MQTTProtocol_retry(now, 0);
+		MQTTProtocol_retry(now, 0, 0);
 	FUNC_EXIT;
 }
 

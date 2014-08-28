@@ -549,14 +549,15 @@ void MQTTProtocol_keepalive(time_t now)
  * MQTT retry processing per client
  * @param now current time
  * @param client - the client to which to apply the retry processing
+ * @param regardless boolean - retry packets regardless of retry interval (used on reconnect)
  */
-void MQTTProtocol_retries(time_t now, Clients* client)
+void MQTTProtocol_retries(time_t now, Clients* client, int regardless)
 {
 	ListElement* outcurrent = NULL;
 
 	FUNC_ENTRY;
 
-	if (now > (time_t)0 && client->retryInterval <= 0) /* 0 or -ive retryInterval turns off retry except on reconnect */
+	if (!regardless && client->retryInterval <= 0) /* 0 or -ive retryInterval turns off retry except on reconnect */
 		goto exit;
 
 	while (client && ListNextElement(client->outboundMsgs, &outcurrent) &&
@@ -564,7 +565,7 @@ void MQTTProtocol_retries(time_t now, Clients* client)
 		   Socket_noPendingWrites(client->net.socket)) /* there aren't any previous packets still stacked up on the socket */
 	{
 		Messages* m = (Messages*)(outcurrent->content);
-		if (difftime(now, m->lastTouch) > max(client->retryInterval, 10))
+		if (regardless || difftime(now, m->lastTouch) > max(client->retryInterval, 10))
 		{
 			if (m->qos == 1 || (m->qos == 2 && m->nextMessageType == PUBREC))
 			{
@@ -618,8 +619,9 @@ exit:
  * MQTT retry protocol and socket pending writes processing.
  * @param now current time
  * @param doRetry boolean - retries as well as pending writes?
+ * @param regardless boolean - retry packets regardless of retry interval (used on reconnect)
  */
-void MQTTProtocol_retry(time_t now, int doRetry)
+void MQTTProtocol_retry(time_t now, int doRetry, int regardless)
 {
 	ListElement* current = NULL;
 
@@ -640,7 +642,7 @@ void MQTTProtocol_retry(time_t now, int doRetry)
 		if (Socket_noPendingWrites(client->net.socket) == 0)
 			continue;
 		if (doRetry)
-			MQTTProtocol_retries(now, client);
+			MQTTProtocol_retries(now, client, regardless);
 	}
 	FUNC_EXIT;
 }

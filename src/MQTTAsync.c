@@ -1428,7 +1428,6 @@ int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack)
 				rc = MQTTAsync_cleanSession(m->c);
 			if (m->c->outboundMsgs->count > 0)
 			{
-				time_t now;
 				ListElement* outcurrent = NULL;
 
 				while (ListNextElement(m->c->outboundMsgs, &outcurrent))
@@ -1436,8 +1435,7 @@ int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack)
 					Messages* m = (Messages*)(outcurrent->content);
 					m->lastTouch = 0;
 				}
-				time(&(now));
-				MQTTProtocol_retry(now, 1);
+				MQTTProtocol_retry((time_t)0, 1);
 				if (m->c->connected != 1)
 					rc = MQTTASYNC_DISCONNECTED;
 			}

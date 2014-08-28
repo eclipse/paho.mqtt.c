@@ -896,7 +896,6 @@ int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* o
 					rc = MQTTClient_cleanSession(m->c);
 				if (m->c->outboundMsgs->count > 0)
 				{
-					time_t now;
 					ListElement* outcurrent = NULL;
 
 					while (ListNextElement(m->c->outboundMsgs, &outcurrent))
@@ -904,8 +903,7 @@ int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* o
 						Messages* m = (Messages*)(outcurrent->content);
 						m->lastTouch = 0;
 					}
-					time(&(now));
-					MQTTProtocol_retry(now, 1);
+					MQTTProtocol_retry((time_t)0, 1);
 					if (m->c->connected != 1)
 						rc = MQTTCLIENT_DISCONNECTED;
 				}

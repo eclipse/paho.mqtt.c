@@ -556,7 +556,7 @@ void MQTTProtocol_retries(time_t now, Clients* client)
 
 	FUNC_ENTRY;
 
-	if (client->retryInterval <= 0) /* 0 or -ive retryInterval turns off retry */
+	if (now > (time_t)0 && client->retryInterval <= 0) /* 0 or -ive retryInterval turns off retry except on reconnect */
 		goto exit;
 
 	while (client && ListNextElement(client->outboundMsgs, &outcurrent) &&

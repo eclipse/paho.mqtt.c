@@ -14,14 +14,14 @@ Paho reflects the inherent physical and cost constraints of device connectivity.
 Source
 ------
 
-The Paho Python code is stored in a git repository. The URLs to access it are:
+The Paho C client is stored in a git repository. The URLs to access it are:
 
-ssh://<username>@git.eclipse.org:29418/paho/org.eclipse.paho.mqtt.python
-https://<username>@git.eclipse.org/r/paho/org.eclipse.paho.mqtt.python
+ssh://<username>@git.eclipse.org:29418/paho/org.eclipse.paho.mqtt.c
+https://<username>@git.eclipse.org/r/paho/org.eclipse.paho.mqtt.c
 
 A web browsable repository is available at
 
-http://git.eclipse.org/c/paho/org.eclipse.paho.mqtt.python.git
+http://git.eclipse.org/c/paho/org.eclipse.paho.mqtt.c.git
 
 Contributing a patch
 --------------------
@@ -51,7 +51,7 @@ which allows you to amend commits and have Gerrit track them as the same
 change.
 
 What happens next depends on the content of the patch. If it is 100% authored
-by the contributor and is less than 250 lines (and meets the needs of the
+by the contributor and is less than 1000 lines (and meets the needs of the
 project), then it can be committed to the main repository. If not, more steps
 are required. These are detailed in the legal process poster:
 

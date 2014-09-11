@@ -9,7 +9,7 @@ Project description:
 The Paho project has been created to provide scalable open-source implementations of open and standard messaging protocols aimed at new, existing, and emerging applications for Machine-to-Machine (M2M) and Internet of Things (IoT).
 Paho reflects the inherent physical and cost constraints of device connectivity. Its objectives include effective levels of decoupling between devices and applications, designed to keep markets open and encourage the rapid growth of scalable Web and Enterprise middleware and applications. Paho is being kicked off with MQTT publish/subscribe client implementations for use on embedded platforms, along with corresponding server support as determined by the community.
 
-- https://projects.eclipse.org/projects/technology.paho
+- https://projects.eclipse.org/projects/iot.paho
 
 Source
 ------
@@ -32,14 +32,14 @@ changes and push them back for review and eventual acceptance into the project.
 
 To do this, you must follow a few steps. The first of these are described at
 
-- https://wiki.eclipse.org/Development_Resources/Contributing_via_Git
+- [Contributing via git](https://wiki.eclipse.org/Development_Resources/Contributing_via_Git)
 
 * Sign the Eclipse CLA
 * Use a valid commit record, including a signed-off-by entry.
 
 There are further details at
 
-- https://wiki.eclipse.org/Development_Resources/Handling_Git_Contributions
+- [Handling Git Contributions](https://wiki.eclipse.org/Development_Resources/Handling_Git_Contributions)
 
 Once the patch is pushed back to Gerrit, the project committers will be
 informed and they will undertake a review of the code. The patch may need
@@ -62,7 +62,7 @@ Developer resources:
 
 Information regarding source code management, builds, coding standards, and more.
 
-- https://projects.eclipse.org/projects/technology.paho/developer
+- https://projects.eclipse.org/projects/iot.paho/developer
 
 Contributor License Agreement:
 ------------------------------

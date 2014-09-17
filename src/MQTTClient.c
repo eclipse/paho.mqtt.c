@@ -24,6 +24,7 @@
  *    Ian Craggs - MQTT 3.1.1 support
  *    Ian Craggs - fix for bug 438176 - MQTT version selection
  *    Rong Xiang, Ian Craggs - C++ compatibility
+ *    Ian Craggs - fix for bug 443724 - stack corruption
  *******************************************************************************/
 
 /**
@@ -57,8 +58,8 @@
 
 #define URI_TCP "tcp://"
 
-#define BUILD_TIMESTAMP "201408221458"
-#define CLIENT_VERSION  "1.0.0"
+#define BUILD_TIMESTAMP "##MQTTCLIENT_BUILD_TAG##"
+#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##"
 
 char* client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
@@ -424,11 +425,11 @@ int MQTTClient_deliverMessage(int rc, MQTTClients* m, char** topicName, int* top
 	*topicLen = qe->topicLen;
 	if (strlen(*topicName) != *topicLen)
 		rc = MQTTCLIENT_TOPICNAME_TRUNCATED;
-	ListRemove(m->c->messageQueue, m->c->messageQueue->first->content);
 #if !defined(NO_PERSISTENCE)
 	if (m->c->persistence)
 		MQTTPersistence_unpersistQueueEntry(m->c, (MQTTPersistence_qEntry*)qe);
 #endif
+	ListRemove(m->c->messageQueue, m->c->messageQueue->first->content);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

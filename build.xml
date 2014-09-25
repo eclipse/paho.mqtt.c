@@ -104,7 +104,6 @@
         <arg value="tcp://${test.hostname}:1883" />
         <env key="LD_LIBRARY_PATH" path="${output.folder}" />
         <env key="DYLD_LIBRARY_PATH" path="${output.folder}" />
-        <arg value="--verbose" />
       </exec>
     </else>
     </if>

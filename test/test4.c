@@ -67,7 +67,7 @@ struct Options
 	int iterations;
 } options =
 {
-	"m2m.eclipse.org:1883",
+	"iot.eclipse.org:1883",
 	0,
 	-1,
 	10000,
@@ -1331,6 +1331,7 @@ int test7(struct Options options)
 		goto exit;
 	}
 
+	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_MINIMUM);
 	rc = MQTTAsync_getPendingTokens(c, &tokens);
 	assert("getPendingTokens rc == 0", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
@@ -1371,6 +1372,7 @@ int test7(struct Options options)
 
 	assertions fail against Mosquitto - needs testing */
 
+	dopts.timeout = 1000;
 	MQTTAsync_disconnect(c, &dopts);
 
 	while (!test_finished)

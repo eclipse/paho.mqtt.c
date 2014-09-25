@@ -101,7 +101,7 @@
     <else> 
       <exec executable="./${aTest}" failonerror="true" dir="${output.folder}/test" > 
         <arg value="--connection" />
-        <arg value="tcp://${test.hostname}:${test.port}" />
+        <arg value="tcp://${test.hostname}:1883" />
         <env key="LD_LIBRARY_PATH" path="${output.folder}" />
         <env key="DYLD_LIBRARY_PATH" path="${output.folder}" />
         <arg value="--verbose" />

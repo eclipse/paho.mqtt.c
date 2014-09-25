@@ -1487,7 +1487,8 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 		}
 		if (rc == SOCKET_ERROR)
 		{
-			Log(TRACE_MINIMUM, -1, "Error from MQTTAsync_cycle() - removing socket %d", sock);
+			Log(TRACE_MINIMUM, -1, "Error from MQTTAsync_cycle() - not removing socket %d", sock);
+#if 0
 			if (m->c->connected == 1)
 			{
 				MQTTAsync_unlock_mutex(mqttasync_mutex);
@@ -1496,6 +1497,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 			}
 			else /* calling disconnect_internal won't have any effect if we're already disconnected */
 				MQTTAsync_closeOnly(m->c);
+#endif
 		}
 		else
 		{

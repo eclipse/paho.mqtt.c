@@ -970,15 +970,15 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 	if (m->c->sslopts)
 	{
 		if (m->c->sslopts->trustStore)
-			free(m->c->sslopts->trustStore);
+			free((void*)m->c->sslopts->trustStore);
 		if (m->c->sslopts->keyStore)
-			free(m->c->sslopts->keyStore);
+			free((void*)m->c->sslopts->keyStore);
 		if (m->c->sslopts->privateKey)
-			free(m->c->sslopts->privateKey);
+			free((void*)m->c->sslopts->privateKey);
 		if (m->c->sslopts->privateKeyPassword)
-			free(m->c->sslopts->privateKeyPassword);
+			free((void*)m->c->sslopts->privateKeyPassword);
 		if (m->c->sslopts->enabledCipherSuites)
-			free(m->c->sslopts->enabledCipherSuites);
+			free((void*)m->c->sslopts->enabledCipherSuites);
 		free(m->c->sslopts);
 		m->c->sslopts = NULL;
 	}

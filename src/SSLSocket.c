@@ -449,7 +449,7 @@ void SSLSocket_terminate()
 int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 {
 	int rc = 1;
-	char* ciphers = NULL;
+	const char* ciphers = NULL;
 	
 	FUNC_ENTRY;
 	if (net->ctx == NULL)

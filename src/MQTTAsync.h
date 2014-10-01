@@ -817,7 +817,7 @@ DLLExport int MQTTAsync_subscribe(MQTTAsync handle, const char* topic, int qos, 
   * An error code is returned if there was a problem registering the 
   * subscriptions. 
   */
-DLLExport int MQTTAsync_subscribeMany(MQTTAsync handle, size_t count, char* const* topic, int* qos, MQTTAsync_responseOptions* response); 
+DLLExport int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int* qos, MQTTAsync_responseOptions* response);
 
 /** 
   * This function attempts to remove an existing subscription made by the 
@@ -845,7 +845,7 @@ DLLExport int MQTTAsync_unsubscribe(MQTTAsync handle, const char* topic, MQTTAsy
   * @return ::MQTTASYNC_SUCCESS if the subscriptions are removed. 
   * An error code is returned if there was a problem removing the subscriptions.
   */
-DLLExport int MQTTAsync_unsubscribeMany(MQTTAsync handle, size_t count, char* const* topic, MQTTAsync_responseOptions* response);
+DLLExport int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* const* topic, MQTTAsync_responseOptions* response);
 
 
 /** 
@@ -866,7 +866,7 @@ DLLExport int MQTTAsync_unsubscribeMany(MQTTAsync handle, size_t count, char* co
   * @return ::MQTTASYNC_SUCCESS if the message is accepted for publication. 
   * An error code is returned if there was a problem accepting the message.
   */
-DLLExport int MQTTAsync_send(MQTTAsync handle, const char* destinationName, size_t payloadlen, void* payload, int qos, int retained,
+DLLExport int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen, void* payload, int qos, int retained,
 																 MQTTAsync_responseOptions* response);
 
 

@@ -1982,16 +1982,16 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	if (m->c->sslopts)
 	{
 		if (m->c->sslopts->trustStore)
-			free(m->c->sslopts->trustStore);
+			free((void*)m->c->sslopts->trustStore);
 		if (m->c->sslopts->keyStore)
-			free(m->c->sslopts->keyStore);
+			free((void*)m->c->sslopts->keyStore);
 		if (m->c->sslopts->privateKey)
-			free(m->c->sslopts->privateKey);
+			free((void*)m->c->sslopts->privateKey);
 		if (m->c->sslopts->privateKeyPassword)
-			free(m->c->sslopts->privateKeyPassword);
+			free((void*)m->c->sslopts->privateKeyPassword);
 		if (m->c->sslopts->enabledCipherSuites)
-			free(m->c->sslopts->enabledCipherSuites);
-		free(m->c->sslopts);
+			free((void*)m->c->sslopts->enabledCipherSuites);
+		free((void*)m->c->sslopts);
 		m->c->sslopts = NULL;
 	}
 
@@ -2000,30 +2000,15 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		m->c->sslopts = malloc(sizeof(MQTTClient_SSLOptions));
 		memset(m->c->sslopts, '\0', sizeof(MQTTClient_SSLOptions));
 		if (options->ssl->trustStore)
-		{
-			m->c->sslopts->trustStore = malloc(strlen(options->ssl->trustStore) + 1);
-			strcpy(m->c->sslopts->trustStore, options->ssl->trustStore); 
-		}
+			m->c->sslopts->trustStore = MQTTStrdup(options->ssl->trustStore);
 		if (options->ssl->keyStore)
-		{
-			m->c->sslopts->keyStore = malloc(strlen(options->ssl->keyStore) + 1);
-			strcpy(m->c->sslopts->keyStore, options->ssl->keyStore);
-		}
+			m->c->sslopts->keyStore = MQTTStrdup(options->ssl->keyStore);
 		if (options->ssl->privateKey)
-		{
-			m->c->sslopts->privateKey = malloc(strlen(options->ssl->privateKey) + 1);
-			strcpy(m->c->sslopts->privateKey, options->ssl->privateKey);
-		}
+			m->c->sslopts->privateKey = MQTTStrdup(options->ssl->privateKey);
 		if (options->ssl->privateKeyPassword)
-		{
-			m->c->sslopts->privateKeyPassword = malloc(strlen(options->ssl->privateKeyPassword) + 1);
-			strcpy(m->c->sslopts->privateKeyPassword, options->ssl->privateKeyPassword);
-		}
+			m->c->sslopts->privateKeyPassword = MQTTStrdup(options->ssl->privateKeyPassword);
 		if (options->ssl->enabledCipherSuites)
-		{
-			m->c->sslopts->enabledCipherSuites = malloc(strlen(options->ssl->enabledCipherSuites) + 1);
-			strcpy(m->c->sslopts->enabledCipherSuites, options->ssl->enabledCipherSuites);
-		}
+			m->c->sslopts->enabledCipherSuites = MQTTStrdup(options->ssl->enabledCipherSuites);
 		m->c->sslopts->enableServerCertAuth = options->ssl->enableServerCertAuth;
 	}
 #endif
@@ -2138,10 +2123,10 @@ int MQTTAsync_isConnected(MQTTAsync handle)
 }
 
 
-int MQTTAsync_subscribeMany(MQTTAsync handle, size_t count, char* const* topic, int* qos, MQTTAsync_responseOptions* response)
+int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int* qos, MQTTAsync_responseOptions* response)
 {
 	MQTTAsyncs* m = handle;
-	size_t i = 0;
+	int i = 0;
 	int rc = MQTTASYNC_FAILURE;
 	MQTTAsync_queuedCommand* sub;
 	int msgid = 0;
@@ -2216,10 +2201,10 @@ int MQTTAsync_subscribe(MQTTAsync handle, const char* topic, int qos, MQTTAsync_
 }
 
 
-int MQTTAsync_unsubscribeMany(MQTTAsync handle, size_t count, char* const* topic, MQTTAsync_responseOptions* response)
+int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* const* topic, MQTTAsync_responseOptions* response)
 {
 	MQTTAsyncs* m = handle;
-	size_t i = 0;
+	int i = 0;
 	int rc = SOCKET_ERROR;
 	MQTTAsync_queuedCommand* unsub;
 	int msgid = 0;
@@ -2285,7 +2270,7 @@ int MQTTAsync_unsubscribe(MQTTAsync handle, const char* topic, MQTTAsync_respons
 }
 
 
-int MQTTAsync_send(MQTTAsync handle, const char* destinationName, size_t payloadlen, void* payload,
+int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen, void* payload,
 							 int qos, int retained, MQTTAsync_responseOptions* response)
 {
 	int rc = MQTTASYNC_SUCCESS;

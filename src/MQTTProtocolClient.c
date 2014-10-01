@@ -666,15 +666,15 @@ void MQTTProtocol_freeClient(Clients* client)
 	if (client->sslopts)
 	{
 		if (client->sslopts->trustStore)
-			free(client->sslopts->trustStore);
+			free((void*)client->sslopts->trustStore);
 		if (client->sslopts->keyStore)
-			free(client->sslopts->keyStore);
+			free((void*)client->sslopts->keyStore);
 		if (client->sslopts->privateKey)
-			free(client->sslopts->privateKey);
+			free((void*)client->sslopts->privateKey);
 		if (client->sslopts->privateKeyPassword)
-			free(client->sslopts->privateKeyPassword);
+			free((void*)client->sslopts->privateKeyPassword);
 		if (client->sslopts->enabledCipherSuites)
-			free(client->sslopts->enabledCipherSuites);
+			free((void*)client->sslopts->enabledCipherSuites);
 		free(client->sslopts);
 	}
 #endif

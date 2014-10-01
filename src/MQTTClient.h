@@ -462,19 +462,19 @@ typedef struct
 	int struct_version;	
 	
 	/** The file in PEM format containing the public digital certificates trusted by the client. */
-	char* trustStore;
+	const char* trustStore;
 
 	/** The file in PEM format containing the public certificate chain of the client. It may also include
 	* the client's private key. 
 	*/
-	char* keyStore;
+	const char* keyStore;
 	
 	/** If not included in the sslKeyStore, this setting points to the file in PEM format containing
 	* the client's private key.
 	*/
-	char* privateKey;
+	const char* privateKey;
 	/** The password to load the client's privateKey if encrypted. */
-	char* privateKeyPassword;
+	const char* privateKeyPassword;
  
 	/**
 	* The list of cipher suites that the client will present to the server during the SSL handshake. For a 
@@ -484,7 +484,7 @@ typedef struct
 	* those offering no encryption- will be considered.
 	* This setting can be used to set an SSL anonymous connection ("aNULL" string value, for instance).
 	*/
-	char* enabledCipherSuites;    
+	const char* enabledCipherSuites;
 
     /** True/False option to enable verification of the server certificate **/
     int enableServerCertAuth;

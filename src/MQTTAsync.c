@@ -22,6 +22,7 @@
  *    Ian Craggs - MQTT 3.1.1 support
  *    Rong Xiang, Ian Craggs - C++ compatibility
  *    Ian Craggs - fix for bug 442400: reconnecting after network cable unplugged
+ *    Ian Craggs - fix for bug 444934 - incorrect free in freeCommand1
  *******************************************************************************/
 
 /**
@@ -840,21 +841,19 @@ void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command)
 		int i;
 		
 		for (i = 0; i < command->command.details.sub.count; i++)
-		{
 			free(command->command.details.sub.topics[i]);
-			free(command->command.details.sub.topics);
-			free(command->command.details.sub.qoss);
-		}
+
+		free(command->command.details.sub.topics);
+		free(command->command.details.sub.qoss);
 	}
 	else if (command->command.type == UNSUBSCRIBE)
 	{
 		int i;
 		
 		for (i = 0; i < command->command.details.unsub.count; i++)
-		{
 			free(command->command.details.unsub.topics[i]);
-			free(command->command.details.unsub.topics);
-		}
+
+		free(command->command.details.unsub.topics);
 	}
 	else if (command->command.type == PUBLISH)
 	{

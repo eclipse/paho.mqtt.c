@@ -24,6 +24,7 @@
  *    Ian Craggs - MQTT 3.1.1 support
  *    Ian Craggs - fix for bug 438176 - MQTT version selection
  *    Rong Xiang, Ian Craggs - C++ compatibility
+ *    Ian Craggs - fix for bug 443724 - stack corruption
  *******************************************************************************/
 
 /**
@@ -424,11 +425,11 @@ int MQTTClient_deliverMessage(int rc, MQTTClients* m, char** topicName, int* top
 	*topicLen = qe->topicLen;
 	if (strlen(*topicName) != *topicLen)
 		rc = MQTTCLIENT_TOPICNAME_TRUNCATED;
-	ListRemove(m->c->messageQueue, m->c->messageQueue->first->content);
 #if !defined(NO_PERSISTENCE)
 	if (m->c->persistence)
 		MQTTPersistence_unpersistQueueEntry(m->c, (MQTTPersistence_qEntry*)qe);
 #endif
+	ListRemove(m->c->messageQueue, m->c->messageQueue->first->content);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -810,8 +811,8 @@ int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* o
 					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)
 						Log(TRACE_MIN, -1, "Failed to set SSL session with stored data, non critical");
 				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket);
-				if (rc == -1)
-					m->c->connect_state = 2;
+				if (rc == TCPSOCKET_INTERRUPTED)
+					m->c->connect_state = 2;  /* the connect is still in progress */
 				else if (rc == SSL_FATAL)
 				{
 					rc = SOCKET_ERROR;
@@ -884,7 +885,7 @@ int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* o
 		else
 		{
 			Connack* connack = (Connack*)pack;
-			Log(LOG_PROTOCOL, 1, NULL, m->c->net.socket, m->c->clientID, connack->rc);
+			Log(TRACE_PROTOCOL, 1, NULL, m->c->net.socket, m->c->clientID, connack->rc);
 			if ((rc = connack->rc) == MQTTCLIENT_SUCCESS)
 			{
 				m->c->connected = 1;
@@ -903,7 +904,7 @@ int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* o
 						Messages* m = (Messages*)(outcurrent->content);
 						m->lastTouch = 0;
 					}
-					MQTTProtocol_retry(m->c->net.lastContact, 1);
+					MQTTProtocol_retry((time_t)0, 1, 1);
 					if (m->c->connected != 1)
 						rc = MQTTCLIENT_DISCONNECTED;
 				}
@@ -1518,10 +1519,10 @@ void MQTTClient_retry(void)
 	{
 		time(&(last));
 		MQTTProtocol_keepalive(now);
-		MQTTProtocol_retry(now, 1);
+		MQTTProtocol_retry(now, 1, 0);
 	}
 	else
-		MQTTProtocol_retry(now, 0);
+		MQTTProtocol_retry(now, 0, 0);
 	FUNC_EXIT;
 }
 
@@ -1632,7 +1633,7 @@ MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long
 		else if (packet_type == UNSUBACK)
 			*rc = Thread_wait_sem(m->unsuback_sem, timeout);
 		if (*rc == 0 && packet_type != CONNECT && m->pack == NULL)
-			Log(TRACE_MIN, -1, "waitfor unexpectedly is NULL for client %s, packet_type %d, timeout %ld", m->c->clientID, packet_type, timeout);
+			Log(LOG_ERROR, -1, "waitfor unexpectedly is NULL for client %s, packet_type %d, timeout %ld", m->c->clientID, packet_type, timeout);
 		pack = m->pack;
 	}
 	else
@@ -1957,7 +1958,7 @@ void MQTTClient_writeComplete(int socket)
 	{
 		MQTTClients* m = (MQTTClients*)(found->content);
 		
-		time(&(m->c->net.lastContact));			
+		time(&(m->c->net.lastSent));
 	}
 	FUNC_EXIT;
 }

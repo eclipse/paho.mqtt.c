@@ -55,6 +55,7 @@ project), then it can be committed to the main repository. If not, more steps
 are required. These are detailed in the 
 [legal process poster](http://www.eclipse.org/legal/EclipseLegalProcessPoster.pdf).
 
+
 Developer resources:
 --------------------
 

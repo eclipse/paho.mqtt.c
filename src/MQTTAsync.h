@@ -693,7 +693,7 @@ typedef struct
 } MQTTAsync_connectOptions;
 
 
-#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 3, 60, 1, 10, NULL, NULL, NULL, 30, 20, NULL, NULL, 0, NULL, 0}
+#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 3, 60, 1, 10, NULL, NULL, NULL, 30, 0, NULL, NULL, NULL, NULL, 0, NULL, 0}
 
 /**
   * This function attempts to connect a previously-created client (see
@@ -907,6 +907,11 @@ DLLExport int MQTTAsync_sendMessage(MQTTAsync handle, const char* destinationNam
   * pending tokens.
   */
 DLLExport int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens);
+
+#define MQTTASYNC_TRUE 1
+DLLExport int MQTTAsync_isComplete(MQTTAsync handle, MQTTAsync_token dt);
+
+DLLExport int MQTTAsync_waitForCompletion(MQTTAsync handle, MQTTAsync_token dt, unsigned long timeout);
 
 
 /**

@@ -98,7 +98,7 @@ int Socket_error(char* aString, int sock)
 	if (errno != EINTR && errno != EAGAIN && errno != EINPROGRESS && errno != EWOULDBLOCK)
 	{
 		if (strcmp(aString, "shutdown") != 0 || (errno != ENOTCONN && errno != ECONNRESET))
-			Log(TRACE_MIN, -1, "Socket error %s in %s for socket %d", strerror(errno), aString, sock);
+			Log(LOG_ERROR, -1, "Socket error %s in %s for socket %d", strerror(errno), aString, sock);
 	}
 	FUNC_EXIT_RC(errno);
 	return errno;
@@ -170,7 +170,7 @@ int Socket_addSocket(int newSd)
 		rc = Socket_setnonblocking(newSd);
 	}
 	else
-		Log(TRACE_MIN, -1, "addSocket: socket %d already in the list", newSd);
+		Log(LOG_ERROR, -1, "addSocket: socket %d already in the list", newSd);
 
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -559,7 +559,7 @@ void Socket_close(int socket)
 	if (ListRemoveItem(s.clientsds, &socket, intcompare))
 		Log(TRACE_MIN, -1, "Removed socket %d", socket);
 	else
-		Log(TRACE_MIN, -1, "Failed to remove socket %d", socket);
+		Log(LOG_ERROR, -1, "Failed to remove socket %d", socket);
 	if (socket + 1 >= s.maxfdp1)
 	{
 		/* now we have to reset s.maxfdp1 */
@@ -640,10 +640,10 @@ int Socket_new(char* addr, int port, int* sock)
 		else
 			rc = -1;
 
-    freeaddrinfo(result);
+		freeaddrinfo(result);
 	}
-  else
-  	Log(TRACE_MIN, -1, "getaddrinfo failed for addr %s with rc %d", addr, rc);
+	else
+	  	Log(LOG_ERROR, -1, "getaddrinfo failed for addr %s with rc %d", addr, rc);
 
 	if (rc != 0)
 		Log(LOG_ERROR, -1, "%s is not a valid IP address", addr);
@@ -658,7 +658,7 @@ int Socket_new(char* addr, int port, int* sock)
 			int opt = 1;
 
 			if (setsockopt(*sock, SOL_SOCKET, SO_NOSIGPIPE, (void*)&opt, sizeof(opt)) != 0)
-				Log(TRACE_MIN, -1, "Could not set SO_NOSIGPIPE for socket %d", *sock);
+				Log(LOG_ERROR, -1, "Could not set SO_NOSIGPIPE for socket %d", *sock);
 #endif
 
 			Log(TRACE_MIN, -1, "New socket %d for %s, port %d",	*sock, addr, port);

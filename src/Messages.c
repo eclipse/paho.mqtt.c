@@ -66,6 +66,7 @@ static char* protocol_message_list[] =
 	"%d %s <- CONNECT", /* 26 */
 	"%d %s -> PUBLISH qos: 0 retained: %d (%d)", /* 27 */
 	"%d %s -> DISCONNECT (%d)", /* 28 */
+	"Socket error for client identifier %s, socket %d, peer address %s; ending connection", /* 29 */
 };
 
 static char* trace_message_list[] =
@@ -78,7 +79,7 @@ static char* trace_message_list[] =
 	"Packet %s received from client %s for message identifier %d, but message is in wrong state", /* 5 */
 	"%s received from client %s for message id %d - removing publication", /* 6 */
 	"Trying %s again for client %s, socket %d, message identifier %d", /* 7 */
-	"Socket error for client identifier %s, socket %d, peer address %s; ending connection", /* 8 */
+	"", /* 8 */
 	"(%lu) %*s(%d)> %s:%d", /* 9 */
 	"(%lu) %*s(%d)< %s:%d", /* 10 */
 	"(%lu) %*s(%d)< %s:%d (%d)", /* 11 */

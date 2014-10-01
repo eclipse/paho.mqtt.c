@@ -31,6 +31,7 @@
 #define EWOULDBLOCK WSAEWOULDBLOCK
 #define ENOTCONN WSAENOTCONN
 #define ECONNRESET WSAECONNRESET
+#define ETIMEDOUT WAIT_TIMEOUT
 #endif
 #define ioctl ioctlsocket
 #define socklen_t int

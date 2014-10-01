@@ -21,6 +21,7 @@
  *    Ian Craggs - fix for bug 432903 - queue persistence
  *    Ian Craggs - MQTT 3.1.1 support
  *    Rong Xiang, Ian Craggs - C++ compatibility
+ *    Ian Craggs - fix for bug 442400: reconnecting after network cable unplugged
  *******************************************************************************/
 
 /**
@@ -885,7 +886,7 @@ void MQTTAsync_writeComplete(int socket)
 	{
 		MQTTAsyncs* m = (MQTTAsyncs*)(found->content);
 		
-		time(&(m->c->net.lastContact));
+		time(&(m->c->net.lastSent));
 				
 		/* see if there is a pending write flagged */
 		if (m->pending_write)
@@ -1257,14 +1258,22 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
 	while (!tostop)
 	{
-		/*int rc;*/
+		int rc;
 		
 		while (commands->count > 0)
+		{
+			int before = commands->count;
 			MQTTAsync_processCommand();
+			if (before == commands->count)
+				break;  /* no commands were processed, so go into a wait */
+		}
 #if !defined(WIN32) && !defined(WIN64)
-		/*rc =*/ Thread_wait_cond(send_cond, 1);
+		rc =  Thread_wait_cond(send_cond, 1);
+		if ((rc = Thread_wait_cond(send_cond, 1)) != 0 && rc != ETIMEDOUT)
+			Log(LOG_ERROR, -1, "Error %d waiting for condition variable", rc);
 #else
-		/*rc =*/ Thread_wait_sem(send_sem, 1000);
+		if ((rc = Thread_wait_sem(send_sem, 1000)) != 0 && rc != ETIMEDOUT)
+			Log(LOG_ERROR, -1, "Error %d waiting for semaphore", rc);
 #endif
 			
 		MQTTAsync_checkTimeouts();
@@ -1420,12 +1429,13 @@ int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack)
 			if (m->c->outboundMsgs->count > 0)
 			{
 				ListElement* outcurrent = NULL;
+
 				while (ListNextElement(m->c->outboundMsgs, &outcurrent))
 				{
 					Messages* m = (Messages*)(outcurrent->content);
 					m->lastTouch = 0;
 				}
-				MQTTProtocol_retry(m->c->net.lastContact, 1);
+				MQTTProtocol_retry((time_t)0, 1, 1);
 				if (m->c->connected != 1)
 					rc = MQTTASYNC_DISCONNECTED;
 			}
@@ -1459,23 +1469,33 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 			break;
 		timeout = 1000L;
 
+		if (sock == 0)
+			continue;
 		/* find client corresponding to socket */
 		if (ListFindItem(handles, &sock, clientSockCompare) == NULL)
 		{
-			/* assert: should not happen */
+			Log(TRACE_MINIMUM, -1, "Could not find client corresponding to socket %d", sock);
+			/* Socket_close(sock); - removing socket in this case is not necessary (Bug 442400) */
 			continue;
 		}
 		m = (MQTTAsyncs*)(handles->current->content);
 		if (m == NULL)
 		{
-			/* assert: should not happen */
+			Log(LOG_ERROR, -1, "Client structure was NULL for socket %d - removing socket", sock);
+			Socket_close(sock);
 			continue;
 		}
 		if (rc == SOCKET_ERROR)
 		{
-			MQTTAsync_unlock_mutex(mqttasync_mutex);
-			MQTTAsync_disconnect_internal(m, 0);
-			MQTTAsync_lock_mutex(mqttasync_mutex);
+			Log(TRACE_MINIMUM, -1, "Error from MQTTAsync_cycle() - removing socket %d", sock);
+			if (m->c->connected == 1)
+			{
+				MQTTAsync_unlock_mutex(mqttasync_mutex);
+				MQTTAsync_disconnect_internal(m, 0);
+				MQTTAsync_lock_mutex(mqttasync_mutex);
+			}
+			else /* calling disconnect_internal won't have any effect if we're already disconnected */
+				MQTTAsync_closeOnly(m->c);
 		}
 		else
 		{
@@ -2357,10 +2377,10 @@ void MQTTAsync_retry(void)
 	{
 		time(&(last));
 		MQTTProtocol_keepalive(now);
-		MQTTProtocol_retry(now, 1);
+		MQTTProtocol_retry(now, 1, 0);
 	}
 	else
-		MQTTProtocol_retry(now, 0);
+		MQTTProtocol_retry(now, 0, 0);
 	FUNC_EXIT;
 }
 
@@ -2392,8 +2412,11 @@ int MQTTAsync_connecting(MQTTAsyncs* m)
 					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)
 						Log(TRACE_MIN, -1, "Failed to set SSL session with stored data, non critical");
 				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket);
-				if (rc == -1)
+				if (rc == TCPSOCKET_INTERRUPTED)
+				{
+					rc = MQTTCLIENT_SUCCESS; /* the connect is still in progress */
 					m->c->connect_state = 2;
+				}
 				else if (rc == SSL_FATAL)
 				{
 					rc = SOCKET_ERROR;
@@ -2497,11 +2520,13 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 		if (!tostop && *sock == 0 && (tp.tv_sec > 0L || tp.tv_usec > 0L))
 		{
 			MQTTAsync_sleep(100L);
+#if 0
 			if (s.clientsds->count == 0)
 			{
 				if (++nosockets_count == 50) /* 5 seconds with no sockets */
 					tostop = 1;
 			}
+#endif
 		}
 		else
 			nosockets_count = 0;
@@ -2520,19 +2545,19 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 				*rc = MQTTAsync_connecting(m);
 			else
 				pack = MQTTPacket_Factory(&m->c->net, rc);
-			if ((m->c->connect_state == 3) && (*rc == SOCKET_ERROR))
+			if (m->c->connect_state == 3 && *rc == SOCKET_ERROR)
 			{
 				Log(TRACE_MINIMUM, -1, "CONNECT sent but MQTTPacket_Factory has returned SOCKET_ERROR");
 				if (MQTTAsync_checkConn(&m->connect, m))
 				{
 					MQTTAsync_queuedCommand* conn;
-				
+
 					MQTTAsync_closeOnly(m->c);
 					/* put the connect command back to the head of the command queue, using the next serverURI */
 					conn = malloc(sizeof(MQTTAsync_queuedCommand));
 					memset(conn, '\0', sizeof(MQTTAsync_queuedCommand));
 					conn->client = m;
-					conn->command = m->connect; 
+					conn->command = m->connect;
 					Log(TRACE_MIN, -1, "Connect failed, more to try");
 					MQTTAsync_addCommand(conn, sizeof(m->connect));
 				}
@@ -2632,6 +2657,8 @@ int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens)
 	int rc = MQTTASYNC_SUCCESS;
 	MQTTAsyncs* m = handle;
 	*tokens = NULL;
+	ListElement* current = NULL;
+	int count = 0;
 
 	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttasync_mutex);
@@ -2642,22 +2669,135 @@ int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens)
 		goto exit;
 	}
 
+	/* calculate the number of pending tokens - commands plus inflight */
+	while (ListNextElement(commands, &current))
+	{
+		MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)(current->content);
+
+		if (cmd->client == m)
+			count++;
+	}
+	if (m->c)
+		count += m->c->outboundMsgs->count;
+	if (count == 0)
+		goto exit; /* no tokens to return */
+	*tokens = malloc(sizeof(MQTTAsync_token) * (count + 1));  /* add space for sentinel at end of list */
+
+	/* First add the unprocessed commands to the pending tokens */
+	current = NULL;
+	count = 0;
+	while (ListNextElement(commands, &current))
+	{
+		MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)(current->content);
+
+		if (cmd->client == m)
+			(*tokens)[count++] = cmd->command.token;
+	}
+
+	/* Now add the inflight messages */
 	if (m->c && m->c->outboundMsgs->count > 0)
 	{
-		ListElement* current = NULL;
-		int count = 0;
-
-		*tokens = malloc(sizeof(MQTTAsync_token) * (m->c->outboundMsgs->count + 1));
+		current = NULL;
 		while (ListNextElement(m->c->outboundMsgs, &current))
 		{
 			Messages* m = (Messages*)(current->content);
 			(*tokens)[count++] = m->msgid;
 		}
-		(*tokens)[count] = -1;
 	}
+	(*tokens)[count] = -1; /* indicate end of list */
 
 exit:
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+int MQTTAsync_isComplete(MQTTAsync handle, MQTTAsync_token dt)
+{
+	int rc = MQTTASYNC_SUCCESS;
+	MQTTAsyncs* m = handle;
+	ListElement* current = NULL;
+
+	FUNC_ENTRY;
+	MQTTAsync_lock_mutex(mqttasync_mutex);
+
+	if (m == NULL)
+	{
+		rc = MQTTASYNC_FAILURE;
+		goto exit;
+	}
+
+	/* First check unprocessed commands */
+	current = NULL;
+	while (ListNextElement(commands, &current))
+	{
+		MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)(current->content);
+
+		if (cmd->client == m && cmd->command.token == dt)
+			goto exit;
+	}
+
+	/* Now check the inflight messages */
+	if (m->c && m->c->outboundMsgs->count > 0)
+	{
+		current = NULL;
+		while (ListNextElement(m->c->outboundMsgs, &current))
+		{
+			Messages* m = (Messages*)(current->content);
+			if (m->msgid == dt)
+				goto exit;
+		}
+	}
+	rc = MQTTASYNC_TRUE; /* Can't find it, so it must be complete */
+
+exit:
+	MQTTAsync_unlock_mutex(mqttasync_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+int MQTTAsync_waitForCompletion(MQTTAsync handle, MQTTAsync_token dt, unsigned long timeout)
+{
+	int rc = MQTTASYNC_FAILURE;
+	START_TIME_TYPE start = MQTTAsync_start_clock();
+	unsigned long elapsed = 0L;
+	MQTTAsyncs* m = handle;
+
+	FUNC_ENTRY;
+	MQTTAsync_lock_mutex(mqttasync_mutex);
+
+	if (m == NULL || m->c == NULL)
+	{
+		rc = MQTTASYNC_FAILURE;
+		goto exit;
+	}
+	if (m->c->connected == 0)
+	{
+		rc = MQTTASYNC_DISCONNECTED;
+		goto exit;
+	}
+	MQTTAsync_unlock_mutex(mqttasync_mutex);
+
+	if (MQTTAsync_isComplete(handle, dt) == 1)
+	{
+		rc = MQTTASYNC_SUCCESS; /* well we couldn't find it */
+		goto exit;
+	}
+
+	elapsed = MQTTAsync_elapsed(start);
+	while (elapsed < timeout)
+	{
+		MQTTAsync_sleep(100);
+		if (MQTTAsync_isComplete(handle, dt) == 1)
+		{
+			rc = MQTTASYNC_SUCCESS; /* well we couldn't find it */
+			goto exit;
+		}
+		elapsed = MQTTAsync_elapsed(start);
+	}
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

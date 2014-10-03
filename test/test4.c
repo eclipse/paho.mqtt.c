@@ -1180,7 +1180,6 @@ int test7_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 {
 	MQTTAsync c = (MQTTAsync)context;
 	static int message_count = 0;
-	int rc;
 
 	MyLog(LOGA_DEBUG, "Test7: received message id %d", message->msgid);
 

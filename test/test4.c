@@ -1143,6 +1143,16 @@ Test7: Persistence
 char* test7_topic = "C client test7";
 int test7_messageCount = 0;
 
+void test7_onDisconnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MyLog(LOGA_DEBUG, "In onDisconnect failure callback %p", c);
+
+	assert("Successful disconnect", 0, "disconnect failed", 0);
+
+	test_finished = 1;
+}
+
 void test7_onDisconnect(void* context, MQTTAsync_successData* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
@@ -1212,6 +1222,24 @@ void test7_onConnect(void* context, MQTTAsync_successData* response)
 }
 
 
+void test7_onConnectOnly(void* context, MQTTAsync_successData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_disconnectOptions dopts = MQTTAsync_disconnectOptions_initializer;
+	int rc;
+
+	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
+	dopts.context = context;
+	dopts.timeout = 1000;
+	dopts.onSuccess = test7_onDisconnect;
+	MQTTAsync_disconnect(c, &dopts);
+
+	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		test_finished = 1;
+}
+
+
 /*********************************************************************
 
 Test7: Pending tokens
@@ -1248,7 +1276,6 @@ int test7(struct Options options)
 	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	opts.keepAliveInterval = 20;
-	opts.cleansession = 0;
 	opts.username = "testuser";
 	opts.password = "testpassword";
 	opts.MQTTVersion = options.MQTTVersion;
@@ -1259,11 +1286,30 @@ int test7(struct Options options)
 	opts.will->retained = 0;
 	opts.will->topicName = "will topic";
 	opts.will = NULL;
-	opts.onSuccess = test7_onConnect;
+
 	opts.onFailure = NULL;
 	opts.context = c;
 
+	opts.cleansession = 1;
+	opts.onSuccess = test7_onConnectOnly;
+	MyLog(LOGA_DEBUG, "Connecting to clean up");
+	rc = MQTTAsync_connect(c, &opts);
+	rc = 0;
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (!test_finished)
+		#if defined(WIN32)
+			Sleep(100);
+		#else
+			usleep(10000L);
+		#endif
+
+	test_finished = 0;
 	MyLog(LOGA_DEBUG, "Connecting");
+	opts.cleansession = 0;
+	opts.onSuccess = test7_onConnect;
 	rc = MQTTAsync_connect(c, &opts);
 	rc = 0;
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -1304,6 +1350,7 @@ int test7(struct Options options)
 	/* disconnect immediately without receiving the incoming messages */
 	dopts.timeout = 0;
 	dopts.onSuccess = test7_onDisconnect;
+	dopts.context = c;
 	MQTTAsync_disconnect(c, &dopts); /* now there should be "orphaned" publications */
 
 	while (!test_finished)
@@ -1371,6 +1418,8 @@ int test7(struct Options options)
 
 	assertions fail against Mosquitto - needs testing */
 
+	dopts.onFailure = test7_onDisconnectFailure;
+	dopts.onSuccess = test7_onDisconnect;
 	dopts.timeout = 1000;
 	MQTTAsync_disconnect(c, &dopts);
 

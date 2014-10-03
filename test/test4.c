@@ -1232,7 +1232,7 @@ void test7_onConnectOnly(void* context, MQTTAsync_successData* response)
 	dopts.context = context;
 	dopts.timeout = 1000;
 	dopts.onSuccess = test7_onDisconnect;
-	MQTTAsync_disconnect(c, &dopts);
+	rc = MQTTAsync_disconnect(c, &dopts);
 
 	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	if (rc != MQTTASYNC_SUCCESS)

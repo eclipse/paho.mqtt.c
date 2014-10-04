@@ -16,6 +16,7 @@
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
  *    Ian Craggs - fix for bug 421103 - trying to write to same socket, in retry
  *    Rong Xiang, Ian Craggs - C++ compatibility
+ *    Ian Craggs - turn off DUP flag for PUBREL - MQTT 3.1.1
  *******************************************************************************/
 
 /**
@@ -596,7 +597,7 @@ void MQTTProtocol_retries(time_t now, Clients* client, int regardless)
 			else if (m->qos && m->nextMessageType == PUBCOMP)
 			{
 				Log(TRACE_MIN, 7, NULL, "PUBREL", client->clientID, client->net.socket, m->msgid);
-				if (MQTTPacket_send_pubrel(m->msgid, 1, &client->net, client->clientID) != TCPSOCKET_COMPLETE)
+				if (MQTTPacket_send_pubrel(m->msgid, 0, &client->net, client->clientID) != TCPSOCKET_COMPLETE)
 				{
 					client->good = 0;
 					Log(TRACE_PROTOCOL, 29, NULL, client->clientID, client->net.socket,

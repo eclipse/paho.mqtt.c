@@ -98,7 +98,7 @@ int Socket_error(char* aString, int sock)
 	if (errno != EINTR && errno != EAGAIN && errno != EINPROGRESS && errno != EWOULDBLOCK)
 	{
 		if (strcmp(aString, "shutdown") != 0 || (errno != ENOTCONN && errno != ECONNRESET))
-			Log(LOG_ERROR, -1, "Socket error %s in %s for socket %d", strerror(errno), aString, sock);
+			Log(TRACE_MINIMUM, -1, "Socket error %s in %s for socket %d", strerror(errno), aString, sock);
 	}
 	FUNC_EXIT_RC(errno);
 	return errno;

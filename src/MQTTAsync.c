@@ -22,6 +22,8 @@
  *    Ian Craggs - MQTT 3.1.1 support
  *    Rong Xiang, Ian Craggs - C++ compatibility
  *    Ian Craggs - fix for bug 442400: reconnecting after network cable unplugged
+ *    Ian Craggs - fix for bug 444934 - incorrect free in freeCommand1
+ *    Ian Craggs - fix for bug 445891 - assigning msgid is not thread safe
  *******************************************************************************/
 
 /**
@@ -75,6 +77,8 @@ enum MQTTAsync_threadStates
 
 enum MQTTAsync_threadStates sendThread_state = STOPPED;
 enum MQTTAsync_threadStates receiveThread_state = STOPPED;
+static thread_id_type sendThread_id = 0,
+					receiveThread_id = 0;
 
 #if defined(WIN32) || defined(WIN64)
 static mutex_type mqttasync_mutex = NULL;
@@ -325,7 +329,7 @@ void MQTTAsync_lock_mutex(mutex_type amutex)
 {
 	int rc = Thread_lock_mutex(amutex);
 	if (rc != 0)
-		Log(LOG_ERROR, 0, "Error %d locking mutex", rc);
+		Log(LOG_ERROR, 0, "Error %s locking mutex", strerror(rc));
 }
 
 
@@ -333,7 +337,7 @@ void MQTTAsync_unlock_mutex(mutex_type amutex)
 {
 	int rc = Thread_unlock_mutex(amutex);
 	if (rc != 0)
-		Log(LOG_ERROR, 0, "Error %d unlocking mutex", rc);
+		Log(LOG_ERROR, 0, "Error %s unlocking mutex", strerror(rc));
 }
 
 
@@ -840,21 +844,19 @@ void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command)
 		int i;
 		
 		for (i = 0; i < command->command.details.sub.count; i++)
-		{
 			free(command->command.details.sub.topics[i]);
-			free(command->command.details.sub.topics);
-			free(command->command.details.sub.qoss);
-		}
+
+		free(command->command.details.sub.topics);
+		free(command->command.details.sub.qoss);
 	}
 	else if (command->command.type == UNSUBSCRIBE)
 	{
 		int i;
 		
 		for (i = 0; i < command->command.details.unsub.count; i++)
-		{
 			free(command->command.details.unsub.topics[i]);
-			free(command->command.details.unsub.topics);
-		}
+
+		free(command->command.details.unsub.topics);
 	}
 	else if (command->command.type == PUBLISH)
 	{
@@ -1255,6 +1257,7 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttasync_mutex);
 	sendThread_state = RUNNING;
+	sendThread_id = Thread_getid();
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
 	while (!tostop)
 	{
@@ -1281,6 +1284,7 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 	sendThread_state = STOPPING;
 	MQTTAsync_lock_mutex(mqttasync_mutex);
 	sendThread_state = STOPPED;
+	sendThread_id = 0;
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
 	FUNC_EXIT;
 	return 0;
@@ -1455,6 +1459,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttasync_mutex);
 	receiveThread_state = RUNNING;
+	receiveThread_id = Thread_getid();
 	while (!tostop)
 	{
 		int rc = SOCKET_ERROR;
@@ -1671,6 +1676,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 		}
 	}
 	receiveThread_state = STOPPED;
+	receiveThread_id = 0;
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
 #if !defined(WIN32) && !defined(WIN64)
 	if (sendThread_state != STOPPED)
@@ -2143,6 +2149,56 @@ int MQTTAsync_isConnected(MQTTAsync handle)
 }
 
 
+int cmdMessageIDCompare(void* a, void* b)
+{
+	MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)a;
+	return cmd->command.token == *(int*)b;
+}
+
+
+/**
+ * Assign a new message id for a client.  Make sure it isn't already being used and does
+ * not exceed the maximum.
+ * @param m a client structure
+ * @return the next message id to use, or 0 if none available
+ */
+int MQTTAsync_assignMsgId(MQTTAsyncs* m)
+{
+	int start_msgid = m->c->msgID;
+	int msgid = start_msgid;
+	thread_id_type thread_id = 0;
+	int locked = 0;
+
+	/* need to check: commands list and response list for a client */
+	FUNC_ENTRY;
+	/* We might be called in a callback. In which case, this mutex will be already locked. */
+	thread_id = Thread_getid();
+	if (thread_id != sendThread_id && thread_id != receiveThread_id)
+	{
+		MQTTAsync_lock_mutex(mqttasync_mutex);
+		locked = 1;
+	}
+
+	msgid = (msgid == MAX_MSG_ID) ? 1 : msgid + 1;
+	while (ListFindItem(commands, &msgid, cmdMessageIDCompare) ||
+			ListFindItem(m->responses, &msgid, cmdMessageIDCompare))
+	{
+		msgid = (msgid == MAX_MSG_ID) ? 1 : msgid + 1;
+		if (msgid == start_msgid)
+		{ /* we've tried them all - none free */
+			msgid = 0;
+			break;
+		}
+	}
+	if (msgid != 0)
+		m->c->msgID = msgid;
+	if (locked)
+		MQTTAsync_unlock_mutex(mqttasync_mutex);
+	FUNC_EXIT_RC(msgid);
+	return msgid;
+}
+
+
 int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int* qos, MQTTAsync_responseOptions* response)
 {
 	MQTTAsyncs* m = handle;
@@ -2175,7 +2231,7 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int
 			goto exit;
 		}
 	}
-	if ((msgid = MQTTProtocol_assignMsgId(m->c)) == 0)
+	if ((msgid = MQTTAsync_assignMsgId(m)) == 0)
 	{
 		rc = MQTTASYNC_NO_MORE_MSGIDS;
 		goto exit;
@@ -2248,7 +2304,7 @@ int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* const* topic, M
 			goto exit;
 		}
 	}
-	if ((msgid = MQTTProtocol_assignMsgId(m->c)) == 0)
+	if ((msgid = MQTTAsync_assignMsgId(m)) == 0)
 	{
 		rc = MQTTASYNC_NO_MORE_MSGIDS;
 		goto exit;
@@ -2307,7 +2363,7 @@ int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen
 		rc = MQTTASYNC_BAD_UTF8_STRING;
 	else if (qos < 0 || qos > 2)
 		rc = MQTTASYNC_BAD_QOS;
-	else if (qos > 0 && (msgid = MQTTProtocol_assignMsgId(m->c)) == 0)
+	else if (qos > 0 && (msgid = MQTTAsync_assignMsgId(m)) == 0)
 		rc = MQTTASYNC_NO_MORE_MSGIDS;
 
 	if (rc != MQTTASYNC_SUCCESS)

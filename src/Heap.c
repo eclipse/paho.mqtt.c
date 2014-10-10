@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs - use tree data structure instead of list
+ *    Ian Craggs - change roundup to Heap_roundup to avoid macro name clash on MacOSX
  *******************************************************************************/
 
 /**
@@ -74,7 +75,7 @@ static char* errmsg = "Memory allocation error";
  * @param size the size actually needed
  * @return the rounded up size
  */
-int roundup(int size)
+int Heap_roundup(int size)
 {
 	static int multsize = 4*sizeof(int);
 
@@ -142,7 +143,7 @@ void* mymalloc(char* file, int line, size_t size)
 	int filenamelen = strlen(file)+1;
 
 	Thread_lock_mutex(heap_mutex);
-	size = roundup(size);
+	size = Heap_roundup(size);
 	if ((s = malloc(sizeof(storageElement))) == NULL)
 	{
 		Log(LOG_ERROR, 13, errmsg);
@@ -285,7 +286,7 @@ void *myrealloc(char* file, int line, void* p, size_t size)
 		int filenamelen = strlen(file)+1;
 
 		checkEyecatchers(file, line, p, s->size);
-		size = roundup(size);
+		size = Heap_roundup(size);
 		state.current_size += size - s->size;
 		if (state.current_size > state.max_size)
 			state.max_size = state.current_size;

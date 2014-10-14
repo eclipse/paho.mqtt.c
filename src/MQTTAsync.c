@@ -2712,12 +2712,12 @@ int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens)
 {
 	int rc = MQTTASYNC_SUCCESS;
 	MQTTAsyncs* m = handle;
-	*tokens = NULL;
 	ListElement* current = NULL;
 	int count = 0;
 
 	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttasync_mutex);
+	*tokens = NULL;
 
 	if (m == NULL)
 	{

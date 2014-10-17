@@ -25,6 +25,7 @@
  *    Ian Craggs - fix for bug 438176 - MQTT version selection
  *    Rong Xiang, Ian Craggs - C++ compatibility
  *    Ian Craggs - fix for bug 443724 - stack corruption
+ *    Ian Craggs - fix for bug 447672 - simultaneous access to socket structure
  *******************************************************************************/
 
 /**
@@ -76,6 +77,7 @@ MQTTProtocol state;
 
 #if defined(WIN32) || defined(WIN64)
 static mutex_type mqttclient_mutex = NULL;
+static mutex_type socket_mutex = NULL;
 extern mutex_type stack_mutex;
 extern mutex_type heap_mutex;
 extern mutex_type log_mutex;
@@ -93,6 +95,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 				stack_mutex = CreateMutex(NULL, 0, NULL);
 				heap_mutex = CreateMutex(NULL, 0, NULL);
 				log_mutex = CreateMutex(NULL, 0, NULL);
+				socket_mutex = CreateMutex(NULL, 0, NULL);
 			}
 		case DLL_THREAD_ATTACH:
 			Log(TRACE_MAX, -1, "DLL thread attach");
@@ -106,6 +109,8 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #else
 static pthread_mutex_t mqttclient_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 static mutex_type mqttclient_mutex = &mqttclient_mutex_store;
+static pthread_mutex_t socket_mutex_store = PTHREAD_MUTEX_INITIALIZER;
+static mutex_type socket_mutex = &socket_mutex_store;
 
 void MQTTClient_init()
 {
@@ -116,6 +121,8 @@ void MQTTClient_init()
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
 	if ((rc = pthread_mutex_init(mqttclient_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing client_mutex\n", rc);
+	if ((rc = pthread_mutex_init(socket_mutex, &attr)) != 0)
+		printf("MQTTClient: error %d initializing socket_mutex\n", rc);
 }
 
 #define WINAPI
@@ -678,10 +685,12 @@ void MQTTClient_closeSession(Clients* client)
 	{
 		if (client->connected)
 			MQTTPacket_send_disconnect(&client->net, client->clientID);
+		Thread_lock_mutex(socket_mutex);
 #if defined(OPENSSL)
 		SSLSocket_close(&client->net);
 #endif
 		Socket_close(client->net.socket);
+		Thread_unlock_mutex(socket_mutex);
 		client->net.socket = 0;
 #if defined(OPENSSL)
 		client->net.ssl = NULL;
@@ -1545,7 +1554,9 @@ MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
 	{
 		/* 0 from getReadySocket indicates no work to do, -1 == error, but can happen normally */
 #endif
+		Thread_lock_mutex(socket_mutex);
 		*sock = Socket_getReadySocket(0, &tp);
+		Thread_unlock_mutex(socket_mutex);
 #if defined(OPENSSL)
 	}
 #endif

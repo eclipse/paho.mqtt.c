@@ -87,6 +87,9 @@ else
 	OSTYPE ?= $(shell uname -s)
 	MACHINETYPE ?= $(shell uname -m)
 endif # OS
+ifeq ($(OSTYPE),linux)
+	OSTYPE = Linux
+endif
 
 CC ?= gcc
 
@@ -109,22 +112,35 @@ MQTTVERSION_TARGET = ${blddir}/MQTTVersion
 
 CCFLAGS_SO = -g -fPIC $(CFLAGS) -Os -Wall -fvisibility=hidden
 FLAGS_EXE = $(LDFLAGS) -I ${srcdir} -lpthread -L ${blddir}
-FLAGS_EXES = $(LDFLAGS) -I ${srcdir} -Wl,--start-group -lpthread -lssl -lcrypto -Wl,--end-group -L ${blddir}
-LDFLAGS_C = $(LDFLAGS) -shared -Wl,-init,MQTTClient_init -lpthread
-LDFLAGS_CS = $(LDFLAGS) -shared -Wl,--start-group -lpthread $(EXTRA_LIB) -lssl -lcrypto -Wl,--end-group -Wl,-init,MQTTClient_init
-LDFLAGS_A = $(LDFLAGS) -shared -Wl,-init,MQTTAsync_init -lpthread
-LDFLAGS_AS = $(LDFLAGS) -shared -Wl,--start-group -lpthread $(EXTRA_LIB) -lssl -lcrypto -Wl,--end-group -Wl,-init,MQTTAsync_init
+FLAGS_EXES = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread -lssl -lcrypto ${END_GROUP} -L ${blddir}
+
+LDFLAGS_C = $(LDFLAGS) -shared -Wl,-init,$(MQTTCLIENT_INIT) -lpthread
+LDFLAGS_CS = $(LDFLAGS) -shared $(START_GROUP) -lpthread $(EXTRA_LIB) -lssl -lcrypto $(END_GROUP) -Wl,-init,$(MQTTCLIENT_INIT)
+LDFLAGS_A = $(LDFLAGS) -shared -Wl,-init,$(MQTTASYNC_INIT) -lpthread
+LDFLAGS_AS = $(LDFLAGS) -shared $(START_GROUP) -lpthread $(EXTRA_LIB) -lssl -lcrypto $(END_GROUP) -Wl,-init,$(MQTTASYNC_INIT)
 
 ifeq ($(OSTYPE),Linux)
+
+MQTTCLIENT_INIT = MQTTClient_init
+MQTTASYNC_INIT = MQTTAsync_init
+START_GROUP = -Wl,--start-group
+END_GROUP = -Wl,--end-group
+
+EXTRA_LIB = -ldl
 
 LDFLAGS_C += -Wl,-soname,lib$(MQTTLIB_C).so.${MAJOR_VERSION}
 LDFLAGS_CS += -Wl,-soname,lib$(MQTTLIB_CS).so.${MAJOR_VERSION} -Wl,-no-whole-archive
 LDFLAGS_A += -Wl,-soname,lib${MQTTLIB_A}.so.${MAJOR_VERSION}
 LDFLAGS_AS += -Wl,-soname,lib${MQTTLIB_AS}.so.${MAJOR_VERSION} -Wl,-no-whole-archive
 
-EXTRA_LIB =
-
 else ifeq ($(OSTYPE),Darwin)
+
+MQTTCLIENT_INIT = _MQTTClient_init
+MQTTASYNC_INIT = _MQTTAsync_init
+START_GROUP =
+END_GROUP = 
+
+EXTRA_LIB = -ldl
 
 CCFLAGS_SO += -Wno-deprecated-declarations -DUSE_NAMED_SEMAPHORES
 LDFLAGS_C += -Wl,-install_name,lib$(MQTTLIB_C).so.${MAJOR_VERSION}
@@ -132,7 +148,6 @@ LDFLAGS_CS += -Wl,-install_name,lib$(MQTTLIB_CS).so.${MAJOR_VERSION}
 LDFLAGS_A += -Wl,-install_name,lib${MQTTLIB_A}.so.${MAJOR_VERSION}
 LDFLAGS_AS += -Wl,-install_name,lib${MQTTLIB_AS}.so.${MAJOR_VERSION}
 
-EXTRA_LIB = -ld
 endif
 
 all: build
@@ -145,6 +160,7 @@ clean:
 mkdir:
 	-mkdir -p ${blddir}/samples
 	-mkdir -p ${blddir}/test
+	echo OSTYPE is $(OSTYPE)
 
 ${SYNC_TESTS}: ${blddir}/test/%: ${srcdir}/../test/%.c $(MQTTLIB_C_TARGET)
 	${CC} -g -o $@ $< -l${MQTTLIB_C} ${FLAGS_EXE}

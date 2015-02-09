@@ -87,6 +87,9 @@ else
 	OSTYPE ?= $(shell uname -s)
 	MACHINETYPE ?= $(shell uname -m)
 endif # OS
+ifeq ($(OSTYPE),linux)
+	OSTYPE = Linux
+endif
 
 CC ?= gcc
 
@@ -117,20 +120,6 @@ LDFLAGS_A = $(LDFLAGS) -shared -Wl,-init,$(MQTTASYNC_INIT) -lpthread
 LDFLAGS_AS = $(LDFLAGS) -shared $(START_GROUP) -lpthread $(EXTRA_LIB) -lssl -lcrypto $(END_GROUP) -Wl,-init,$(MQTTASYNC_INIT)
 
 ifeq ($(OSTYPE),Linux)
-
-MQTTCLIENT_INIT = MQTTClient_init
-MQTTASYNC_INIT = MQTTAsync_init
-START_GROUP = -Wl,--start-group
-END_GROUP = -Wl,--end-group
-
-EXTRA_LIB = -ldl
-
-LDFLAGS_C += -Wl,-soname,lib$(MQTTLIB_C).so.${MAJOR_VERSION}
-LDFLAGS_CS += -Wl,-soname,lib$(MQTTLIB_CS).so.${MAJOR_VERSION} -Wl,-no-whole-archive
-LDFLAGS_A += -Wl,-soname,lib${MQTTLIB_A}.so.${MAJOR_VERSION}
-LDFLAGS_AS += -Wl,-soname,lib${MQTTLIB_AS}.so.${MAJOR_VERSION} -Wl,-no-whole-archive
-
-else ifeq ($(OSTYPE),linux)
 
 MQTTCLIENT_INIT = MQTTClient_init
 MQTTASYNC_INIT = MQTTAsync_init

@@ -109,7 +109,7 @@ MQTTVERSION_TARGET = ${blddir}/MQTTVersion
 
 CCFLAGS_SO = -g -fPIC $(CFLAGS) -Os -Wall -fvisibility=hidden
 FLAGS_EXE = $(LDFLAGS) -I ${srcdir} -lpthread -L ${blddir}
-FLAGS_EXES = $(LDFLAGS) -I ${srcdir} -Wl,--start-group -lpthread -lssl -lcrypto -Wl,--end-group -L ${blddir}
+FLAGS_EXES = $(LDFLAGS) -I ${srcdir} $(START_GROUP) -lpthread -lssl -lcrypto $(END_GROUP) -L ${blddir}
 
 
 LDFLAGS_C = $(LDFLAGS) -shared -Wl,-init,$(MQTTCLIENT_INIT) -lpthread

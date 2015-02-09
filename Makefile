@@ -129,8 +129,7 @@ endif
 
 CCFLAGS_SO = -g -fPIC $(CFLAGS) -Os -Wall -fvisibility=hidden
 FLAGS_EXE = $(LDFLAGS) -I ${srcdir} -lpthread -L ${blddir}
-FLAGS_EXES = $(LDFLAGS) -I ${srcdir} $(START_GROUP) -lpthread -lssl -lcrypto $(END_GROUP) -L ${blddir}
-
+FLAGS_EXES = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread -lssl -lcrypto ${END_GROUP} -L ${blddir}
 
 LDFLAGS_C = $(LDFLAGS) -shared -Wl,-init,$(MQTTCLIENT_INIT) -lpthread
 LDFLAGS_CS = $(LDFLAGS) -shared $(START_GROUP) -lpthread $(EXTRA_LIB) -lssl -lcrypto $(END_GROUP) -Wl,-init,$(MQTTCLIENT_INIT)
@@ -164,6 +163,7 @@ clean:
 mkdir:
 	-mkdir -p ${blddir}/samples
 	-mkdir -p ${blddir}/test
+	echo OSTYPE is $(OSTYPE)
 
 ${SYNC_TESTS}: ${blddir}/test/%: ${srcdir}/../test/%.c $(MQTTLIB_C_TARGET)
 	${CC} -g -o $@ $< -l${MQTTLIB_C} ${FLAGS_EXE}

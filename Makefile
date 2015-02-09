@@ -110,14 +110,11 @@ MQTTVERSION_TARGET = ${blddir}/MQTTVersion
 CCFLAGS_SO = -g -fPIC $(CFLAGS) -Os -Wall -fvisibility=hidden
 FLAGS_EXE = $(LDFLAGS) -I ${srcdir} -lpthread -L ${blddir}
 FLAGS_EXES = $(LDFLAGS) -I ${srcdir} -Wl,--start-group -lpthread -lssl -lcrypto -Wl,--end-group -L ${blddir}
-LDFLAGS_C = $(LDFLAGS) -shared -Wl,-init,MQTTClient_init -lpthread
-
-LDFLAGS_A = $(LDFLAGS) -shared -Wl,-init,MQTTAsync_init -lpthread
 
 ifeq ($(OSTYPE),Linux)
 
-LDFLAGS_CS = $(LDFLAGS) -shared -Wl,--start-group -lpthread $(EXTRA_LIB) -lssl -lcrypto -Wl,--end-group -Wl,-init,MQTTClient_init
-LDFLAGS_AS = $(LDFLAGS) -shared -Wl,--start-group -lpthread $(EXTRA_LIB) -lssl -lcrypto -Wl,--end-group -Wl,-init,MQTTAsync_init
+MQTTCLIENT_INIT = MQTTClient_init
+MQTTASYNC_INIT = MQTTAsync_init
 LDFLAGS_C += -Wl,-soname,lib$(MQTTLIB_C).so.${MAJOR_VERSION}
 LDFLAGS_CS += -Wl,-soname,lib$(MQTTLIB_CS).so.${MAJOR_VERSION} -Wl,-no-whole-archive
 LDFLAGS_A += -Wl,-soname,lib${MQTTLIB_A}.so.${MAJOR_VERSION}
@@ -127,8 +124,8 @@ EXTRA_LIB =
 
 else ifeq ($(OSTYPE),Darwin)
 
-LDFLAGS_CS = $(LDFLAGS) -shared -Wl,--start-group -lpthread $(EXTRA_LIB) -lssl -lcrypto -Wl,--end-group -Wl,-init,_MQTTClient_init
-LDFLAGS_AS = $(LDFLAGS) -shared -Wl,--start-group -lpthread $(EXTRA_LIB) -lssl -lcrypto -Wl,--end-group -Wl,-init,_MQTTAsync_init
+MQTTCLIENT_INIT = _MQTTClient_init
+MQTTASYNC_INIT = _MQTTAsync_init
 CCFLAGS_SO += -Wno-deprecated-declarations -DUSE_NAMED_SEMAPHORES
 LDFLAGS_C += -Wl,-install_name,lib$(MQTTLIB_C).so.${MAJOR_VERSION}
 LDFLAGS_CS += -Wl,-install_name,lib$(MQTTLIB_CS).so.${MAJOR_VERSION}
@@ -137,6 +134,11 @@ LDFLAGS_AS += -Wl,-install_name,lib${MQTTLIB_AS}.so.${MAJOR_VERSION}
 
 EXTRA_LIB = -ld
 endif
+
+LDFLAGS_C = $(LDFLAGS) -shared -Wl,-init,$(MQTTCLIENT_INIT) -lpthread
+LDFLAGS_A = $(LDFLAGS) -shared -Wl,-init,$(MQTTASYNC_INIT) -lpthread
+LDFLAGS_CS = $(LDFLAGS) -shared -Wl,--start-group -lpthread $(EXTRA_LIB) -lssl -lcrypto -Wl,--end-group -Wl,-init,$(MQTTCLIENT_INIT)
+LDFLAGS_AS = $(LDFLAGS) -shared -Wl,--start-group -lpthread $(EXTRA_LIB) -lssl -lcrypto -Wl,--end-group -Wl,-init,$(MQTTASYNC_INIT)
 
 all: build
 

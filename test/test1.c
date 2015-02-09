@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2015 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -313,11 +313,11 @@ void test1_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 
 		if (qos > 0)
 		{
-			rc = MQTTClient_waitForCompletion(c, dt, 1000L);
+			rc = MQTTClient_waitForCompletion(c, dt, 5000L);
 			assert("Good rc from waitforCompletion", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 		}
 
-		rc = MQTTClient_receive(c, &topicName, &topicLen, &m, 1000);
+		rc = MQTTClient_receive(c, &topicName, &topicLen, &m, 5000);
 		assert("Good rc from receive", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 		if (topicName)
 		{
@@ -337,13 +337,13 @@ void test1_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 	}
 
 	/* receive any outstanding messages */
-	MQTTClient_receive(c, &topicName, &topicLen, &m, 1000);
+	MQTTClient_receive(c, &topicName, &topicLen, &m, 2000);
 	while (topicName)
 	{
 		printf("Message received on topic %s is %.*s.\n", topicName, m->payloadlen, (char*)(m->payload));
 		MQTTClient_free(topicName);
 		MQTTClient_freeMessage(&m);
-		MQTTClient_receive(c, &topicName, &topicLen, &m, 1000);
+		MQTTClient_receive(c, &topicName, &topicLen, &m, 2000);
 	}
 }
 

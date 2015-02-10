@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2015 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -38,7 +38,7 @@
  * @endcond
  * @cond MQTTClient_main
  * @mainpage MQTT Client library for C
- * &copy; Copyright IBM Corp. 2009, 2014
+ * &copy; Copyright IBM Corp. 2009, 2015
  * 
  * @brief An MQTT client library in C.
  *
@@ -370,8 +370,9 @@ DLLExport int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTClie
  * this function.  
  * @param serverURI A null-terminated string specifying the server to
  * which the client will connect. It takes the form <i>protocol://host:port</i>.
- * Currently, <i>protocol</i> must be <i>tcp</i>. For <i>host</i>, you can 
- * specify either an IP address or a domain name. For instance, to connect to
+ * Currently, <i>protocol</i> must be <i>tcp</i> or <i>ssl</i>.
+ * For <i>host</i>, you can
+ * specify either an IP address or a host name. For instance, to connect to
  * a server running on the local machines with the default MQTT port, specify
  * <i>tcp://localhost:1883</i>.
  * @param clientId The client identifier passed to the server when the
@@ -567,13 +568,13 @@ typedef struct
    */
 	MQTTClient_willOptions* will;
 	/** 
-   * MQTT servers that support the MQTT v3.1 protocol provide authentication
+   * MQTT servers that support the MQTT v3.1.1 protocol provide authentication
    * and authorisation by user name and password. This is the user name 
    * parameter. 
    */
 	const char* username;	
 	/** 
-   * MQTT servers that support the MQTT v3.1 protocol provide authentication
+   * MQTT servers that support the MQTT v3.1.1 protocol provide authentication
    * and authorisation by user name and password. This is the password 
    * parameter.
    */

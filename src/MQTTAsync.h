@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2015 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,7 @@
  * @cond MQTTAsync_main
  * @mainpage Asynchronous MQTT client library for C
  * 
- * &copy; Copyright IBM Corp. 2009, 2014
+ * &copy; Copyright IBM Corp. 2009, 2015
  * 
  * @brief An Asynchronous MQTT client library for C.
  *
@@ -447,7 +447,7 @@ DLLExport int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_
  * @param serverURI A null-terminated string specifying the server to
  * which the client will connect. It takes the form <i>protocol://host:port</i>.
  * <i>protocol</i> must be <i>tcp</i> or <i>ssl</i>. For <i>host</i>, you can 
- * specify either an IP address or a domain name. For instance, to connect to
+ * specify either an IP address or a host name. For instance, to connect to
  * a server running on the local machines with the default MQTT port, specify
  * <i>tcp://localhost:1883</i>.
  * @param clientId The client identifier passed to the server when the

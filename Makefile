@@ -23,6 +23,24 @@
 SHELL = /bin/sh
 .PHONY: clean, mkdir, install, uninstall, html
 
+ifndef release.version
+  release.version = 1.0.3
+endif
+
+# determine current platform
+BUILD_TYPE ?= debug
+ifeq ($(OS),Windows_NT)
+	OSTYPE ?= $(OS)
+	MACHINETYPE ?= $(PROCESSOR_ARCHITECTURE)
+else
+	OSTYPE ?= $(shell uname -s)
+	MACHINETYPE ?= $(shell uname -m)
+	build.level = $(shell date)
+endif # OS
+ifeq ($(OSTYPE),linux)
+	OSTYPE = Linux
+endif
+
 # assume this is normally run in the main Paho directory
 ifndef srcdir
   srcdir = src
@@ -77,19 +95,6 @@ MQTTLIB_C = paho-mqtt3c
 MQTTLIB_CS = paho-mqtt3cs
 MQTTLIB_A = paho-mqtt3a
 MQTTLIB_AS = paho-mqtt3as
-
-# determine current platform
-BUILD_TYPE ?= debug
-ifeq ($(OS),Windows_NT)
-	OSTYPE ?= $(OS)
-	MACHINETYPE ?= $(PROCESSOR_ARCHITECTURE)
-else
-	OSTYPE ?= $(shell uname -s)
-	MACHINETYPE ?= $(shell uname -m)
-endif # OS
-ifeq ($(OSTYPE),linux)
-	OSTYPE = Linux
-endif
 
 CC ?= gcc
 
@@ -181,21 +186,25 @@ ${ASYNC_SAMPLES}: ${blddir}/samples/%: ${srcdir}/samples/%.c $(MQTTLIB_A_TARGET)
 	${CC} -o $@ $< -l${MQTTLIB_A} ${FLAGS_EXE}
 
 ${MQTTLIB_C_TARGET}: ${SOURCE_FILES_C} ${HEADERS_C}
+	sed -i "s/##MQTTCLIENT_VERSION_TAG##/${release.version}/g; s/##MQTTCLIENT_BUILD_TAG##/${build.level}/g" $(srcdir)/MQTTClient.c
 	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_C} ${LDFLAGS_C}
 	-ln -s lib$(MQTTLIB_C).so.${VERSION}  ${blddir}/lib$(MQTTLIB_C).so.${MAJOR_VERSION}
 	-ln -s lib$(MQTTLIB_C).so.${MAJOR_VERSION} ${blddir}/lib$(MQTTLIB_C).so
 
 ${MQTTLIB_CS_TARGET}: ${SOURCE_FILES_CS} ${HEADERS_C}
+	sed -i "s/##MQTTCLIENT_VERSION_TAG##/${release.version}/g; s/##MQTTCLIENT_BUILD_TAG##/${build.level}/g" $(srcdir)/MQTTClient.c
 	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_CS} -DOPENSSL ${LDFLAGS_CS}
 	-ln -s lib$(MQTTLIB_CS).so.${VERSION}  ${blddir}/lib$(MQTTLIB_CS).so.${MAJOR_VERSION}
 	-ln -s lib$(MQTTLIB_CS).so.${MAJOR_VERSION} ${blddir}/lib$(MQTTLIB_CS).so
 
 ${MQTTLIB_A_TARGET}: ${SOURCE_FILES_A} ${HEADERS_A}
+	sed -i "s/##MQTTCLIENT_VERSION_TAG##/${release.version}/g; s/##MQTTCLIENT_BUILD_TAG##/${build.level}/g" $(srcdir)/MQTTAsync.c
 	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_A} ${LDFLAGS_A}
 	-ln -s lib$(MQTTLIB_A).so.${VERSION}  ${blddir}/lib$(MQTTLIB_A).so.${MAJOR_VERSION}
 	-ln -s lib$(MQTTLIB_A).so.${MAJOR_VERSION} ${blddir}/lib$(MQTTLIB_A).so
 
 ${MQTTLIB_AS_TARGET}: ${SOURCE_FILES_AS} ${HEADERS_A}
+	sed -i "s/##MQTTCLIENT_VERSION_TAG##/${release.version}/g; s/##MQTTCLIENT_BUILD_TAG##/${build.level}/g" $(srcdir)/MQTTAsync.c
 	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_AS} -DOPENSSL ${LDFLAGS_AS}
 	-ln -s lib$(MQTTLIB_AS).so.${VERSION}  ${blddir}/lib$(MQTTLIB_AS).so.${MAJOR_VERSION}
 	-ln -s lib$(MQTTLIB_AS).so.${MAJOR_VERSION} ${blddir}/lib$(MQTTLIB_AS).so

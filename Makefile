@@ -186,25 +186,29 @@ ${ASYNC_SAMPLES}: ${blddir}/samples/%: ${srcdir}/samples/%.c $(MQTTLIB_A_TARGET)
 	${CC} -o $@ $< -l${MQTTLIB_A} ${FLAGS_EXE}
 
 ${MQTTLIB_C_TARGET}: ${SOURCE_FILES_C} ${HEADERS_C}
-	sed -i -e 's/##MQTTCLIENT_VERSION_TAG##/${release.version}/g' -e 's/##MQTTCLIENT_BUILD_TAG##/${build.level}/g' $(srcdir)/MQTTClient.c
+	sed -i 's/##MQTTCLIENT_VERSION_TAG##/${release.version}/g' $(srcdir)/MQTTClient.c
+	sed -i 's/##MQTTCLIENT_BUILD_TAG##/${build.level}/g' $(srcdir)/MQTTClient.c
 	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_C} ${LDFLAGS_C}
 	-ln -s lib$(MQTTLIB_C).so.${VERSION}  ${blddir}/lib$(MQTTLIB_C).so.${MAJOR_VERSION}
 	-ln -s lib$(MQTTLIB_C).so.${MAJOR_VERSION} ${blddir}/lib$(MQTTLIB_C).so
 
 ${MQTTLIB_CS_TARGET}: ${SOURCE_FILES_CS} ${HEADERS_C}
-	sed -i -e 's/##MQTTCLIENT_VERSION_TAG##/${release.version}/g' -e 's/##MQTTCLIENT_BUILD_TAG##/${build.level}/g' $(srcdir)/MQTTClient.c
+	sed -i 's/##MQTTCLIENT_VERSION_TAG##/${release.version}/g' $(srcdir)/MQTTClient.c
+	sed -i 's/##MQTTCLIENT_BUILD_TAG##/${build.level}/g' $(srcdir)/MQTTClient.c
 	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_CS} -DOPENSSL ${LDFLAGS_CS}
 	-ln -s lib$(MQTTLIB_CS).so.${VERSION}  ${blddir}/lib$(MQTTLIB_CS).so.${MAJOR_VERSION}
 	-ln -s lib$(MQTTLIB_CS).so.${MAJOR_VERSION} ${blddir}/lib$(MQTTLIB_CS).so
 
 ${MQTTLIB_A_TARGET}: ${SOURCE_FILES_A} ${HEADERS_A}
-	sed -i -e "s/##MQTTCLIENT_VERSION_TAG##/${release.version}/g" -e "s/##MQTTCLIENT_BUILD_TAG##/${build.level}/g" $(srcdir)/MQTTAsync.c
+	sed -i "s/##MQTTCLIENT_VERSION_TAG##/${release.version}/g" $(srcdir)/MQTTAsync.c
+	sed -i "s/##MQTTCLIENT_BUILD_TAG##/${build.level}/g" $(srcdir)/MQTTAsync.c
 	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_A} ${LDFLAGS_A}
 	-ln -s lib$(MQTTLIB_A).so.${VERSION}  ${blddir}/lib$(MQTTLIB_A).so.${MAJOR_VERSION}
 	-ln -s lib$(MQTTLIB_A).so.${MAJOR_VERSION} ${blddir}/lib$(MQTTLIB_A).so
 
 ${MQTTLIB_AS_TARGET}: ${SOURCE_FILES_AS} ${HEADERS_A}
-	sed -i -e "s/##MQTTCLIENT_VERSION_TAG##/${release.version}/g" -e "s/##MQTTCLIENT_BUILD_TAG##/${build.level}/g" $(srcdir)/MQTTAsync.c
+	sed -i "s/##MQTTCLIENT_VERSION_TAG##/${release.version}/g" $(srcdir)/MQTTAsync.c 
+	sed -i "s/##MQTTCLIENT_BUILD_TAG##/${build.level}/g" $(srcdir)/MQTTAsync.c
 	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_AS} -DOPENSSL ${LDFLAGS_AS}
 	-ln -s lib$(MQTTLIB_AS).so.${VERSION}  ${blddir}/lib$(MQTTLIB_AS).so.${MAJOR_VERSION}
 	-ln -s lib$(MQTTLIB_AS).so.${MAJOR_VERSION} ${blddir}/lib$(MQTTLIB_AS).so

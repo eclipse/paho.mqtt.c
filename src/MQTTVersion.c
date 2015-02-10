@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 IBM Corp.
+ * Copyright (c) 2012, 2015 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -178,7 +178,7 @@ void printEyecatchers(char* filename)
 int main(int argc, char** argv)
 {
 	printf("MQTTVersion: print the version strings of an MQTT client library\n"); 
-	printf("Copyright (c) 2013 IBM Corp.\n"); 
+	printf("Copyright (c) 2012, 2015 IBM Corp.\n");
 	
 	if (argc == 1)
 	{

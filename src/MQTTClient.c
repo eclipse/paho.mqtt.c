@@ -930,11 +930,7 @@ exit:
 		}
 	}
 	else
-	{
-		Thread_unlock_mutex(mqttclient_mutex);
-		MQTTClient_disconnect1(handle, 0, 0, (MQTTVersion == 3)); /* not "internal" because we don't want to call connection lost */
-		Thread_lock_mutex(mqttclient_mutex);
-	}
+		MQTTClient_disconnect1(handle, 0, 0, (MQTTVersion == 3)); /* don't want to call connection lost */
 	FUNC_EXIT_RC(rc);
   return rc;
 }
@@ -1115,7 +1111,10 @@ exit:
 }
 
 
-int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal, int stop)
+/**
+ * mqttclient_mutex must be locked when you call this function, if multi threaded
+ */
+int MQTTClient_disconnect1(MQTTClient handle, int timeout, int call_connection_lost, int stop)
 {
 	MQTTClients* m = handle;
 	START_TIME_TYPE start;
@@ -1123,9 +1122,6 @@ int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal, int sto
 	int was_connected = 0;
 
 	FUNC_ENTRY;
-	if (!internal)
-		Thread_lock_mutex(mqttclient_mutex);
-
 	if (m == NULL || m->c == NULL)
 	{
 		rc = MQTTCLIENT_FAILURE;
@@ -1164,24 +1160,28 @@ int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal, int sto
 exit:
 	if (stop)
 		MQTTClient_stop();
-	if (internal && m->cl && was_connected)
+	if (call_connection_lost && m->cl && was_connected)
 	{
 		Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
 		Thread_start(connectionLost_call, m);
 	}
-	if (!internal)
-		Thread_unlock_mutex(mqttclient_mutex);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
 
+/**
+ * mqttclient_mutex must be locked when you call this function, if multi threaded
+ */
 int MQTTClient_disconnect_internal(MQTTClient handle, int timeout)
 {
 	return MQTTClient_disconnect1(handle, timeout, 1, 1);
 }
 
 
+/**
+ * mqttclient_mutex must be locked when you call this function, if multi threaded
+ */
 void MQTTProtocol_closeSession(Clients* c, int sendwill)
 {
 	MQTTClient_disconnect_internal((MQTTClient)c->context, 0);
@@ -1190,7 +1190,12 @@ void MQTTProtocol_closeSession(Clients* c, int sendwill)
 
 int MQTTClient_disconnect(MQTTClient handle, int timeout)
 {
-	return MQTTClient_disconnect1(handle, timeout, 0, 1);
+	int rc = 0;
+
+	Thread_lock_mutex(mqttclient_mutex);
+	rc = MQTTClient_disconnect1(handle, timeout, 0, 1);
+	Thread_unlock_mutex(mqttclient_mutex);
+	return rc;
 }
 
 

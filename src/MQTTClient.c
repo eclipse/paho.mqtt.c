@@ -26,6 +26,7 @@
  *    Rong Xiang, Ian Craggs - C++ compatibility
  *    Ian Craggs - fix for bug 443724 - stack corruption
  *    Ian Craggs - fix for bug 447672 - simultaneous access to socket structure
+ *    Ian Craggs - fix for bug 459791 - deadlock in WaitForCompletion for bad client
  *******************************************************************************/
 
 /**
@@ -509,11 +510,7 @@ thread_return_type WINAPI MQTTClient_run(void* n)
 		if (rc == SOCKET_ERROR)
 		{
 			if (m->c->connected)
-			{
-				Thread_unlock_mutex(mqttclient_mutex);
 				MQTTClient_disconnect_internal(m, 0);
-				Thread_lock_mutex(mqttclient_mutex);
-			}
 			else 
 			{
 				if (m->c->connect_state == 2 && !Thread_check_sem(m->connect_sem))
@@ -1126,7 +1123,8 @@ int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal, int sto
 	int was_connected = 0;
 
 	FUNC_ENTRY;
-	Thread_lock_mutex(mqttclient_mutex);
+	if (!internal)
+		Thread_lock_mutex(mqttclient_mutex);
 
 	if (m == NULL || m->c == NULL)
 	{
@@ -1171,7 +1169,8 @@ exit:
 		Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
 		Thread_start(connectionLost_call, m);
 	}
-	Thread_unlock_mutex(mqttclient_mutex);
+	if (!internal)
+		Thread_unlock_mutex(mqttclient_mutex);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -1287,11 +1286,7 @@ int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, i
 	}
 
 	if (rc == SOCKET_ERROR)
-	{
-		Thread_unlock_mutex(mqttclient_mutex);
 		MQTTClient_disconnect_internal(handle, 0);
-		Thread_lock_mutex(mqttclient_mutex);
-	}
 	else if (rc == TCPSOCKET_COMPLETE)
 		rc = MQTTCLIENT_SUCCESS;
 
@@ -1373,11 +1368,7 @@ int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic)
 	}
 
 	if (rc == SOCKET_ERROR)
-	{
-		Thread_unlock_mutex(mqttclient_mutex);
 		MQTTClient_disconnect_internal(handle, 0);
-		Thread_lock_mutex(mqttclient_mutex);
-	}
 
 exit:
 	Thread_unlock_mutex(mqttclient_mutex);
@@ -1477,9 +1468,7 @@ int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen,
 
 	if (rc == SOCKET_ERROR)
 	{
-		Thread_unlock_mutex(mqttclient_mutex);
 		MQTTClient_disconnect_internal(handle, 0);
-		Thread_lock_mutex(mqttclient_mutex);
 		/* Return success for qos > 0 as the send will be retried automatically */
 		rc = (qos > 0) ? MQTTCLIENT_SUCCESS : MQTTCLIENT_FAILURE;
 	}
@@ -1786,12 +1775,14 @@ void MQTTClient_yield(void)
 	{
 		int sock = -1;
 		MQTTClient_cycle(&sock, (timeout > elapsed) ? timeout - elapsed : 0L, &rc);
+		Thread_lock_mutex(mqttclient_mutex);
 		if (rc == SOCKET_ERROR && ListFindItem(handles, &sock, clientSockCompare))
 		{
 			MQTTClients* m = (MQTTClient)(handles->current->content);
 			if (m->c->connect_state != -2)
 				MQTTClient_disconnect_internal(m, 0);
 		}
+		Thread_unlock_mutex(mqttclient_mutex);
 		elapsed = MQTTClient_elapsed(start);
 	}
 	while (elapsed < timeout);

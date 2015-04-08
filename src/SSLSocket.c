@@ -14,6 +14,7 @@
  *    Ian Craggs, Allan Stockdill-Mander - initial implementation
  *    Ian Craggs - fix for bug #409702
  *    Ian Craggs - allow compilation for OpenSSL < 1.0
+ *    Ian Craggs - fix for bug #453883
  *******************************************************************************/
 
 /**
@@ -353,7 +354,6 @@ void SSL_destroy_mutex(ssl_mutex_type* mutex)
 	rc = CloseHandle(*mutex);
 #else
 	rc = pthread_mutex_destroy(mutex);
-	free(mutex);
 #endif
 	FUNC_EXIT_RC(rc);
 }
@@ -382,10 +382,13 @@ extern unsigned long SSLThread_id(void)
 
 extern void SSLLocks_callback(int mode, int n, const char *file, int line)
 {
-	if (mode & CRYPTO_LOCK)
-		SSL_lock_mutex(&sslLocks[n]);
-	else
-		SSL_unlock_mutex(&sslLocks[n]);
+	if (sslLocks)
+	{
+		if (mode & CRYPTO_LOCK)
+			SSL_lock_mutex(&sslLocks[n]);
+		else
+			SSL_unlock_mutex(&sslLocks[n]);
+	}
 }
 
 int SSLSocket_initialize()   
@@ -442,7 +445,18 @@ exit:
 void SSLSocket_terminate()
 {
 	FUNC_ENTRY;
-	free(sslLocks);
+	EVP_cleanup();
+	ERR_free_strings();
+	if (sslLocks)
+	{
+		int i = 0;
+
+		for (i = 0; i < CRYPTO_num_locks(); i++)
+		{
+			SSL_destroy_mutex(&sslLocks[i]);
+		}
+		free(sslLocks);
+	}
 	FUNC_EXIT;
 }
 

@@ -15,6 +15,7 @@
  *    Ian Craggs, Allan Stockdill-Mander - SSL connections
  *    Ian Craggs - multiple server connection support
  *    Ian Craggs - MQTT 3.1.1 support
+ *    Ian Craggs - fix for bug 444103 - success/failure callbacks not invoked
  *******************************************************************************/
 
 /********************************************************************/
@@ -149,6 +150,10 @@
  * Return code: All 65535 MQTT msgids are being used
  */
 #define MQTTASYNC_NO_MORE_MSGIDS -10
+ /**
+  * Return code: the request is being discarded when not complete
+  */
+#define MQTTASYNC_OPERATION_INCOMPLETE -11
 
 /**
  * Default MQTT version to connect with.  Use 3.1.1 then fall back to 3.1

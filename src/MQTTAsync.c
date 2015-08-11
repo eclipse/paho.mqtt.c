@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2015 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@
  *    Ian Craggs - fix for bug 444934 - incorrect free in freeCommand1
  *    Ian Craggs - fix for bug 445891 - assigning msgid is not thread safe
  *    Ian Craggs - fix for bug 465369 - longer latency than expected
+ *    Ian Craggs - fix for bug 444103 - success/failure callbacks not invoked
  *******************************************************************************/
 
 /**
@@ -1327,11 +1328,25 @@ void MQTTAsync_removeResponsesAndCommands(MQTTAsyncs* m)
 	FUNC_ENTRY;
 	if (m->responses)
 	{
-		ListElement* elem = NULL;
+		ListElement* cur_response = NULL;
 
-		while (ListNextElement(m->responses, &elem))
+		while (ListNextElement(m->responses, &cur_response))
 		{
-			MQTTAsync_freeCommand1((MQTTAsync_queuedCommand*) (elem->content));
+			MQTTAsync_queuedCommand* command = (MQTTAsync_queuedCommand*)(cur_response->content);
+
+			if (command->command.onFailure)
+			{
+				MQTTAsync_failureData data;
+
+				data.token = command->command.token;
+				data.code = MQTTASYNC_OPERATION_INCOMPLETE; /* interrupted return code */
+
+				Log(TRACE_MIN, -1, "Calling %s failure for client %s",
+						MQTTPacket_name(command->command.type), m->c->clientID);
+				(*(command->command.onFailure))(command->command.context, &data);
+			}
+
+			MQTTAsync_freeCommand1(command);
 			count++;
 		}
 	}
@@ -1344,12 +1359,25 @@ void MQTTAsync_removeResponsesAndCommands(MQTTAsyncs* m)
 	ListNextElement(commands, &next);
 	while (current)
 	{
-		MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)(current->content);
+		MQTTAsync_queuedCommand* command = (MQTTAsync_queuedCommand*)(current->content);
 		
-		if (cmd->client == m)
+		if (command->client == m)
 		{
-			ListDetach(commands, cmd);
-			MQTTAsync_freeCommand(cmd);
+			ListDetach(commands, command);
+
+			if (command->command.onFailure)
+			{
+				MQTTAsync_failureData data;
+
+				data.token = command->command.token;
+				data.code = MQTTASYNC_OPERATION_INCOMPLETE; /* interrupted return code */
+
+				Log(TRACE_MIN, -1, "Calling %s failure for client %s",
+							MQTTPacket_name(command->command.type), m->c->clientID);
+					(*(command->command.onFailure))(command->command.context, &data);
+			}
+
+			MQTTAsync_freeCommand(command);
 			count++;
 		}
 		current = next;

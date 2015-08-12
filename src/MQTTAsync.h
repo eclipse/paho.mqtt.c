@@ -913,10 +913,29 @@ DLLExport int MQTTAsync_sendMessage(MQTTAsync handle, const char* destinationNam
   */
 DLLExport int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens);
 
+/**
+ * Tests whether a request corresponding to a token is complete.
+ *
+ * @param handle A valid client handle from a successful call to
+ * MQTTAsync_create().
+ * @param token An ::MQTTAsync_token associated with a request.
+ * @return 1 if the request has been completed, 0 if not.
+ */
 #define MQTTASYNC_TRUE 1
-DLLExport int MQTTAsync_isComplete(MQTTAsync handle, MQTTAsync_token dt);
+DLLExport int MQTTAsync_isComplete(MQTTAsync handle, MQTTAsync_token token);
 
-DLLExport int MQTTAsync_waitForCompletion(MQTTAsync handle, MQTTAsync_token dt, unsigned long timeout);
+
+/**
+ * Waits for a request corresponding to a token to complete.
+ *
+ * @param handle A valid client handle from a successful call to
+ * MQTTAsync_create().
+ * @param token An ::MQTTAsync_token associated with a request.
+ * @param timeout the maximum time to wait for completion, in milliseconds
+ * @return ::MQTTASYNC_SUCCESS if the request has been completed in the time allocated,
+ *  ::MQTTASYNC_FAILURE if not.
+ */
+DLLExport int MQTTAsync_waitForCompletion(MQTTAsync handle, MQTTAsync_token token, unsigned long timeout);
 
 
 /**
@@ -1012,10 +1031,20 @@ DLLExport MQTTAsync_nameValue* MQTTAsync_getVersionInfo();
   * The client application runs on several threads.
   * Processing of handshaking and maintaining
   * the network connection is performed in the background.
+  * This API is thread safe: functions may be called by multiple application
+  * threads.
   * Notifications of status and message reception are provided to the client
   * application using callbacks registered with the library by the call to
   * MQTTAsync_setCallbacks() (see MQTTAsync_messageArrived(), 
   * MQTTAsync_connectionLost() and MQTTAsync_deliveryComplete()).
+  * In addition, some functions allow success and failure callbacks to be set
+  * for individual requests, in the ::MQTTAsync_responseOptions structure.  Applications
+  * can be written as a chain of callback functions. Note that it is a theoretically
+  * possible but unlikely event, that a success or failure callback could be called
+  * before function requesting the callback has returned.  In this case the token
+  * delivered in the callback would not yet be known to the application program (see
+  * Race condition for MQTTAsync_token in MQTTAsync.c
+  * https://bugs.eclipse.org/bugs/show_bug.cgi?id=444093)
   *
   * @page wildcard Subscription wildcards
   * Every MQTT message includes a topic that classifies it. MQTT servers use 

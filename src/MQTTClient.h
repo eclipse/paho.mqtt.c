@@ -33,7 +33,8 @@
  * 
  * Both libraries are designed to be sparing in the use of threads.  So multiple client objects are
  * handled by one or two threads, with a select call in Socket_getReadySocket(), used to determine 
- * when a socket has incoming data.
+ * when a socket has incoming data.  MQTTClient is not safe to be called from multiple threads,
+ * whereas MQTTAsync is.
  *
  * @endcond
  * @cond MQTTClient_main
@@ -47,6 +48,7 @@
  * totally asynchronous API where no calls block, which is especially suitable
  * for use in windowed environments, see the
  * <a href="../Casync/index.html">MQTT C Client Asynchronous API Documentation</a>.
+ * The MQTTClient API is not thread safe, whereas the MQTTAsync API is.
  *
  * An MQTT client application connects to MQTT-capable servers.
  * A typical client is responsible for collecting information from a telemetry 
@@ -936,7 +938,7 @@ DLLExport void MQTTClient_destroy(MQTTClient* handle);
   * (see @ref qos) message has been successfully delivered, the application
   * must call the MQTTClient_waitForCompletion() function. An example showing
   * synchronous publication is shown in @ref pubsync. Receiving messages in 
-  * synchronous mode uses the MQTTClient_receive() function. Client applicaitons
+  * synchronous mode uses the MQTTClient_receive() function. Client applications
   * must call either MQTTClient_receive() or MQTTClient_yield() relatively 
   * frequently in order to allow processing of acknowledgements and the MQTT
   * "pings" that keep the network connection to the server alive.
@@ -949,6 +951,8 @@ DLLExport void MQTTClient_destroy(MQTTClient* handle);
   * application using callbacks registered with the library by the call to
   * MQTTClient_setCallbacks() (see MQTTClient_messageArrived(), 
   * MQTTClient_connectionLost() and MQTTClient_deliveryComplete()).
+  * This API is not thread safe however - it is not possible to call it from multiple
+  * threads without synchronization.  You can use the MQTTAsync API for that.
   *
   * @page wildcard Subscription wildcards
   * Every MQTT message includes a topic that classifies it. MQTT servers use 

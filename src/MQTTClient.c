@@ -28,6 +28,7 @@
  *    Ian Craggs - fix for bug 447672 - simultaneous access to socket structure
  *    Ian Craggs - fix for bug 459791 - deadlock in WaitForCompletion for bad client
  *    Ian Craggs - fix for bug 474905 - insufficient synchronization for subscribe, unsubscribe, connect
+ *    Ian Craggs - make it clear that yield and receive are not intended for multi-threaded mode (bug 474748)
  *******************************************************************************/
 
 /**
@@ -1747,7 +1748,8 @@ int MQTTClient_receive(MQTTClient handle, char** topicName, int* topicLen, MQTTC
 	MQTTClients* m = handle;
 
 	FUNC_ENTRY;
-	if (m == NULL || m->c == NULL)
+	if (m == NULL || m->c == NULL
+			|| running) /* receive is not meant to be called in a multi-thread environment */
 	{
 		rc = MQTTCLIENT_FAILURE;
 		goto exit;
@@ -1801,7 +1803,7 @@ void MQTTClient_yield(void)
 	int rc = 0;
 
 	FUNC_ENTRY;
-	if (running)
+	if (running) /* yield is not meant to be called in a multi-thread environment */
 	{
 		MQTTClient_sleep(timeout);
 		goto exit;

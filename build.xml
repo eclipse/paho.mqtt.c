@@ -82,7 +82,7 @@
   </target>
 	
   <target name="test" >
-    <foreach target="runAtest" param="aTest" list="test1,test4"/>
+    <foreach target="runAtest" param="aTest" list="test1,test2,test4"/>
     <foreach target="runSSLtest" param="aTest" list="test3,test5"/>
   </target>
 

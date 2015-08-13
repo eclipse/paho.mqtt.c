@@ -78,13 +78,13 @@ SYNC_SAMPLES = ${addprefix ${blddir}/samples/,${SAMPLE_FILES_C}}
 SAMPLE_FILES_A = stdoutsuba MQTTAsync_subscribe MQTTAsync_publish
 ASYNC_SAMPLES = ${addprefix ${blddir}/samples/,${SAMPLE_FILES_A}}
 
-TEST_FILES_C = test1 sync_client_test test_mqtt4sync
+TEST_FILES_C = test1 test2 sync_client_test test_mqtt4sync 
 SYNC_TESTS = ${addprefix ${blddir}/test/,${TEST_FILES_C}}
 
 TEST_FILES_CS = test3
 SYNC_SSL_TESTS = ${addprefix ${blddir}/test/,${TEST_FILES_CS}}
 
-TEST_FILES_A = test4 test_mqtt4async
+TEST_FILES_A = test4 test_mqtt4async MQTTAsync_multi_pub
 ASYNC_TESTS = ${addprefix ${blddir}/test/,${TEST_FILES_A}}
 
 TEST_FILES_AS = test5
@@ -172,7 +172,7 @@ mkdir:
 	echo OSTYPE is $(OSTYPE)
 
 ${SYNC_TESTS}: ${blddir}/test/%: ${srcdir}/../test/%.c $(MQTTLIB_C_TARGET)
-	${CC} -g -o $@ $< -l${MQTTLIB_C} ${FLAGS_EXE}
+	${CC} -DNOSTACKTRACE $(srcdir)/Thread.c -g -o $@ $< -l${MQTTLIB_C} ${FLAGS_EXE}
 
 ${SYNC_SSL_TESTS}: ${blddir}/test/%: ${srcdir}/../test/%.c $(MQTTLIB_CS_TARGET)
 	${CC} -g -o $@ $< -l${MQTTLIB_CS} ${FLAGS_EXES}

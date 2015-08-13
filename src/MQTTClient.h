@@ -33,8 +33,9 @@
  * 
  * Both libraries are designed to be sparing in the use of threads.  So multiple client objects are
  * handled by one or two threads, with a select call in Socket_getReadySocket(), used to determine 
- * when a socket has incoming data.  MQTTClient is not safe to be called from multiple threads,
- * whereas MQTTAsync is.
+ * when a socket has incoming data.  This API is thread safe: functions may be called by multiple application
+ * threads, with the exception of ::MQTTClient_yield and ::MQTTClient_receive, which are intended
+ * for single threaded environments only.
  *
  * @endcond
  * @cond MQTTClient_main

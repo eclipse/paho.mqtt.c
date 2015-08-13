@@ -84,7 +84,7 @@ SYNC_TESTS = ${addprefix ${blddir}/test/,${TEST_FILES_C}}
 TEST_FILES_CS = test3
 SYNC_SSL_TESTS = ${addprefix ${blddir}/test/,${TEST_FILES_CS}}
 
-TEST_FILES_A = test4 test_mqtt4async MQTTAsync_multi_pub
+TEST_FILES_A = test4 test_mqtt4async
 ASYNC_TESTS = ${addprefix ${blddir}/test/,${TEST_FILES_A}}
 
 TEST_FILES_AS = test5

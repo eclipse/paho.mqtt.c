@@ -295,7 +295,6 @@ int test1_messageArrived(void* context, char* topicName, int topicLen, MQTTClien
 	++(test1_arrivedcount_qos[m->qos]);
 	++test1_arrivedcount;
 
-	printf("messageArrived qos %d, count %d\n", m->qos, test1_arrivedcount_qos[m->qos]);
 	MyLog(LOGA_DEBUG, "messageArrived: %d message received on topic %s is %.*s.",
 					test1_arrivedcount, topicName, m->payloadlen, (char*)(m->payload));
 	if (test1_pubmsg_check.payloadlen != m->payloadlen ||
@@ -350,7 +349,6 @@ thread_return_type WINAPI test1_sendAndReceive(void* n)
                    qos, test1_pubmsg.retained, NULL);
 		else
 			rc = MQTTClient_publishMessage(c, test_topic, &test1_pubmsg, &dt);
-		printf("published %d at qos %d %d\n", i, qos, parms->qos);
 		assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
 		#if defined(WIN32)

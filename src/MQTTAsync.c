@@ -489,7 +489,7 @@ int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 	int rc = 0;
 	MQTTAsyncs* aclient = qcmd->client;
 	MQTTAsync_command* command = &qcmd->command;
-	size_t* lens = NULL;
+	int* lens = NULL;
 	void** bufs = NULL;
 	int bufindex = 0, i, nbufs = 0;
 	char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
@@ -500,7 +500,7 @@ int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 		case SUBSCRIBE:
 			nbufs = 3 + (command->details.sub.count * 2);
 				
-			lens = (size_t*)malloc(nbufs * sizeof(int));
+			lens = (int*)malloc(nbufs * sizeof(int));
 			bufs = malloc(nbufs * sizeof(char *));
 				
 			bufs[bufindex] = &command->type;
@@ -515,7 +515,7 @@ int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 			for (i = 0; i < command->details.sub.count; ++i)
 			{
 				bufs[bufindex] = command->details.sub.topics[i];
-				lens[bufindex++] = strlen(command->details.sub.topics[i]) + 1;	
+				lens[bufindex++] = (int)strlen(command->details.sub.topics[i]) + 1;	
 				bufs[bufindex] = &command->details.sub.qoss[i];
 				lens[bufindex++] = sizeof(command->details.sub.qoss[i]);
 			}			
@@ -525,7 +525,7 @@ int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 		case UNSUBSCRIBE:
 			nbufs = 3 + command->details.unsub.count;
 			
-			lens = (size_t*)malloc(nbufs * sizeof(size_t));
+			lens = (int*)malloc(nbufs * sizeof(int));
 			bufs = malloc(nbufs * sizeof(char *));
 				
 			bufs[bufindex] = &command->type;
@@ -540,7 +540,7 @@ int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 			for (i = 0; i < command->details.unsub.count; ++i)
 			{
 				bufs[bufindex] = command->details.unsub.topics[i];
-				lens[bufindex++] = strlen(command->details.unsub.topics[i]) + 1;	
+				lens[bufindex++] = (int)strlen(command->details.unsub.topics[i]) + 1;	
 			}	
 			sprintf(key, "%s%d", PERSISTENCE_COMMAND_KEY, ++aclient->command_seqno);
 			break;	
@@ -548,7 +548,7 @@ int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 		case PUBLISH:
 			nbufs = 7;
 				
-			lens = (size_t*)malloc(nbufs * sizeof(size_t));
+			lens = (int*)malloc(nbufs * sizeof(int));
 			bufs = malloc(nbufs * sizeof(char *));
 				
 			bufs[bufindex] = &command->type;
@@ -558,7 +558,7 @@ int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 			lens[bufindex++] = sizeof(command->token);
 				
 			bufs[bufindex] = command->details.pub.destinationName;
-			lens[bufindex++] = strlen(command->details.pub.destinationName) + 1;
+			lens[bufindex++] = (int)strlen(command->details.pub.destinationName) + 1;
 				
 			bufs[bufindex] = &command->details.pub.payloadlen;
 			lens[bufindex++] = sizeof(command->details.pub.payloadlen);
@@ -577,7 +577,7 @@ int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 	}
 	if (nbufs > 0)
 	{
-		if ((rc = aclient->c->persistence->pput(aclient->c->phandle, key, nbufs, (char**)bufs, (int*)lens)) != 0)
+		if ((rc = aclient->c->persistence->pput(aclient->c->phandle, key, nbufs, (char**)bufs, lens)) != 0)
 			Log(LOG_ERROR, 0, "Error persisting command, rc %d", rc);
 		qcmd->seqno = aclient->command_seqno;
 	}

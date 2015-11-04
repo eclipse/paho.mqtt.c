@@ -67,7 +67,7 @@ List* ListInitialize(void)
  * @param newel the ListElement to be used in adding the new item
  * @param size the size of the element
  */
-void ListAppendNoMalloc(List* aList, void* content, ListElement* newel, int size)
+void ListAppendNoMalloc(List* aList, void* content, ListElement* newel, size_t size)
 { /* for heap use */
 	newel->content = content;
 	newel->next = NULL;
@@ -88,7 +88,7 @@ void ListAppendNoMalloc(List* aList, void* content, ListElement* newel, int size
  * @param content the list item content itself
  * @param size the size of the element
  */
-void ListAppend(List* aList, void* content, int size)
+void ListAppend(List* aList, void* content, size_t size)
 {
 	ListElement* newel = malloc(sizeof(ListElement));
 	ListAppendNoMalloc(aList, content, newel, size);
@@ -103,7 +103,7 @@ void ListAppend(List* aList, void* content, int size)
  * @param index the position in the list. If NULL, this function is equivalent
  * to ListAppend.
  */
-void ListInsert(List* aList, void* content, int size, ListElement* index)
+void ListInsert(List* aList, void* content, size_t size, ListElement* index)
 {
 	ListElement* newel = malloc(sizeof(ListElement));
 
@@ -359,7 +359,8 @@ void ListEmpty(List* aList)
 		aList->first = first->next;
 		free(first);
 	}
-	aList->count = aList->size = 0;
+	aList->count = 0;
+	aList->size = 0;
 	aList->current = aList->first = aList->last = NULL;
 }
 

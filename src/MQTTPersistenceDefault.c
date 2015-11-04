@@ -148,8 +148,8 @@ int pstput(void* handle, char* key, int bufcount, char* buffers[], int buflens[]
 	char *clientDir = handle;
 	char *file;
 	FILE *fp;
-	int bytesWritten = 0;
-	int bytesTotal = 0;
+	size_t bytesWritten = 0,
+	       bytesTotal = 0;
 	int i;
 
 	FUNC_ENTRY;
@@ -169,14 +169,14 @@ int pstput(void* handle, char* key, int bufcount, char* buffers[], int buflens[]
 		for(i=0; i<bufcount; i++)
 		{
 			bytesTotal += buflens[i];
-			bytesWritten += fwrite( buffers[i], sizeof(char), buflens[i], fp );
+			bytesWritten += fwrite(buffers[i], sizeof(char), buflens[i], fp );
 		}
 		fclose(fp);
 		fp = NULL;
 	} else
 		rc = MQTTCLIENT_PERSISTENCE_ERROR;
 
-	if ( bytesWritten != bytesTotal )
+	if (bytesWritten != bytesTotal)
 	{
 		pstremove(handle, key);
 		rc = MQTTCLIENT_PERSISTENCE_ERROR;
@@ -221,7 +221,7 @@ int pstget(void* handle, char* key, char** buffer, int* buflen)
 		fileLen = ftell(fp);
 		fseek(fp, 0, SEEK_SET);
 		buf=(char *)malloc(fileLen);
-		bytesRead = fread(buf, sizeof(char), fileLen, fp);
+		bytesRead = (int)fread(buf, sizeof(char), fileLen, fp);
 		*buffer = buf;
 		*buflen = bytesRead;
 		if ( bytesRead != fileLen )

@@ -153,7 +153,7 @@ int UTF8_validateString(const char* string)
 	int rc = 0;
 
 	FUNC_ENTRY;
-	rc = UTF8_validate(strlen(string), string);
+	rc = UTF8_validate((int)strlen(string), string);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

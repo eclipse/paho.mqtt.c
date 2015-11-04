@@ -62,7 +62,7 @@ typedef struct
 	char* file;		/**< the name of the source file where the storage was allocated */
 	int line;		/**< the line no in the source file where it was allocated */
 	void* ptr;		/**< pointer to the allocated storage */
-	int size;       /**< size of the allocated storage */
+	size_t size;    /**< size of the allocated storage */
 } storageElement;
 
 static Tree heap;	/**< Tree that holds the allocation records */
@@ -75,7 +75,7 @@ static char* errmsg = "Memory allocation error";
  * @param size the size actually needed
  * @return the rounded up size
  */
-int Heap_roundup(int size)
+size_t Heap_roundup(size_t size)
 {
 	static int multsize = 4*sizeof(int);
 
@@ -139,8 +139,8 @@ void Heap_check(char* string, void* ptr)
 void* mymalloc(char* file, int line, size_t size)
 {
 	storageElement* s = NULL;
-	int space = sizeof(storageElement);
-	int filenamelen = strlen(file)+1;
+	size_t space = sizeof(storageElement);
+	size_t filenamelen = strlen(file)+1;
 
 	Thread_lock_mutex(heap_mutex);
 	size = Heap_roundup(size);
@@ -180,7 +180,7 @@ void* mymalloc(char* file, int line, size_t size)
 }
 
 
-void checkEyecatchers(char* file, int line, void* p, int size)
+void checkEyecatchers(char* file, int line, void* p, size_t size)
 {
 	int *sp = (int*)p;
 	char *cp = (char*)p;
@@ -282,8 +282,8 @@ void *myrealloc(char* file, int line, void* p, size_t size)
 		Log(LOG_ERROR, 13, "Failed to reallocate heap item at file %s line %d", file, line);
 	else
 	{
-		int space = sizeof(storageElement);
-		int filenamelen = strlen(file)+1;
+		size_t space = sizeof(storageElement);
+		size_t filenamelen = strlen(file)+1;
 
 		checkEyecatchers(file, line, p, s->size);
 		size = Heap_roundup(size);
@@ -393,7 +393,7 @@ heap_info* Heap_get_info()
 int HeapDumpString(FILE* file, char* str)
 {
 	int rc = 0;
-	int len = str ? strlen(str) + 1 : 0; /* include the trailing null */
+	size_t len = str ? strlen(str) + 1 : 0; /* include the trailing null */
 
 	if (fwrite(&(str), sizeof(char*), 1, file) != 1)
 		rc = -1;

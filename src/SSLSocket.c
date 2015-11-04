@@ -295,7 +295,7 @@ int pem_passwd_cb(char* buf, int size, int rwflag, void* userdata)
 	{
 		strncpy(buf, (char*)(userdata), size);
 		buf[size-1] = '\0';
-		rc = strlen(buf);
+		rc = (int)strlen(buf);
 	}
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -642,7 +642,7 @@ exit:
  *  @param actual_len the actual number of bytes read
  *  @return completion code
  */
-char *SSLSocket_getdata(SSL* ssl, int socket, int bytes, int* actual_len)
+char *SSLSocket_getdata(SSL* ssl, int socket, size_t bytes, size_t* actual_len)
 {
 	int rc;
 	char* buf;
@@ -656,7 +656,7 @@ char *SSLSocket_getdata(SSL* ssl, int socket, int bytes, int* actual_len)
 
 	buf = SocketBuffer_getQueuedData(socket, bytes, actual_len);
 
-	if ((rc = SSL_read(ssl, buf + (*actual_len), (size_t)(bytes - (*actual_len)))) < 0)
+	if ((rc = SSL_read(ssl, buf + (*actual_len), (int)(bytes - (*actual_len)))) < 0)
 	{
 		rc = SSLSocket_error("SSL_read - getdata", ssl, socket, rc);
 		if (rc != SSL_ERROR_WANT_READ && rc != SSL_ERROR_WANT_WRITE)
@@ -728,9 +728,9 @@ int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int cou
 	int sslerror;
 
 	FUNC_ENTRY;
-	iovec.iov_len = buf0len;
+	iovec.iov_len = (ULONG)buf0len;
 	for (i = 0; i < count; i++)
-		iovec.iov_len += buflens[i];
+		iovec.iov_len += (ULONG)buflens[i];
 
 	ptr = iovec.iov_base = (char *)malloc(iovec.iov_len);  
 	memcpy(ptr, buf0, buf0len);

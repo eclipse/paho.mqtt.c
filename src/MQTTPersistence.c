@@ -350,13 +350,13 @@ int MQTTPersistence_put(int socket, char* buf0, size_t buf0len, int count,
 	{
 		key = malloc(MESSAGE_FILENAME_LENGTH + 1);
 		nbufs = 1 + count;
-		lens = (int *) malloc(nbufs * sizeof(int));
+		lens = (int *)malloc(nbufs * sizeof(int));
 		bufs = (char **)malloc(nbufs * sizeof(char *));
-		lens[0] = buf0len;
+		lens[0] = (int)buf0len;
 		bufs[0] = buf0;
 		for (i = 0; i < count; i++)
 		{
-			lens[i+1] = buflens[i];
+			lens[i+1] = (int)buflens[i];
 			bufs[i+1] = buffers[i];
 		}
 
@@ -512,7 +512,7 @@ int MQTTPersistence_persistQueueEntry(Clients* aclient, MQTTPersistence_qEntry* 
 	lens[bufindex++] = sizeof(qe->msg->msgid);
 						
 	bufs[bufindex] = qe->topicName;
-	lens[bufindex++] = strlen(qe->topicName) + 1;
+	lens[bufindex++] = (int)strlen(qe->topicName) + 1;
 				
 	bufs[bufindex] = &qe->topicLen;
 	lens[bufindex++] = sizeof(qe->topicLen);			
@@ -564,7 +564,7 @@ MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t b
 	qe->msg->msgid = *(int*)ptr;
 	ptr += sizeof(int);
 	
-	data_size = strlen(ptr) + 1;	
+	data_size = (int)strlen(ptr) + 1;	
 	qe->topicName = malloc(data_size);
 	strcpy(qe->topicName, ptr);
 	ptr += data_size;

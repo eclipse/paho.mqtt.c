@@ -71,7 +71,7 @@ char* FindString(char* filename, char* eyecatcher_input)
 	memset(value, 0, 100);
 	if ((infile = fopen(filename, "rb")) != NULL)
 	{
-		int buflen = strlen(eyecatcher);
+		size_t buflen = strlen(eyecatcher);
 		char* buffer = (char*) malloc(buflen);
 		int count = 0;
 		int c = fgetc(infile);

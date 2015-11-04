@@ -328,7 +328,7 @@ exit:
  *  @param actual_len the actual number of bytes read
  *  @return completion code
  */
-char *Socket_getdata(int socket, int bytes, int* actual_len)
+char *Socket_getdata(int socket, size_t bytes, size_t* actual_len)
 {
 	int rc;
 	char* buf;
@@ -342,7 +342,7 @@ char *Socket_getdata(int socket, int bytes, int* actual_len)
 
 	buf = SocketBuffer_getQueuedData(socket, bytes, actual_len);
 
-	if ((rc = recv(socket, buf + (*actual_len), (size_t)(bytes - (*actual_len)), 0)) == SOCKET_ERROR)
+	if ((rc = recv(socket, buf + (*actual_len), (int)(bytes - (*actual_len)), 0)) == SOCKET_ERROR)
 	{
 		rc = Socket_error("recv - getdata", socket);
 		if (rc != EAGAIN && rc != EWOULDBLOCK)
@@ -438,7 +438,8 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 	unsigned long bytes = 0L;
 	iobuf iovecs[5];
 	int frees1[5];
-	int rc = TCPSOCKET_INTERRUPTED, i, total = buf0len;
+	int rc = TCPSOCKET_INTERRUPTED, i;
+	size_t total = buf0len;
 
 	FUNC_ENTRY;
 	if (!Socket_noPendingWrites(socket))
@@ -452,12 +453,12 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 		total += buflens[i];
 
 	iovecs[0].iov_base = buf0;
-	iovecs[0].iov_len = buf0len;
+	iovecs[0].iov_len = (ULONG)buf0len;
 	frees1[0] = 1;
 	for (i = 0; i < count; i++)
 	{
 		iovecs[i+1].iov_base = buffers[i];
-		iovecs[i+1].iov_len = buflens[i];
+		iovecs[i+1].iov_len = (ULONG)buflens[i];
 		frees1[i+1] = frees[i];
 	}
 
@@ -649,7 +650,7 @@ int Socket_new(char* addr, int port, int* sock)
 		Log(LOG_ERROR, -1, "%s is not a valid IP address", addr);
 	else
 	{
-		*sock =	socket(family, type, 0);
+		*sock =	(int)socket(family, type, 0);
 		if (*sock == INVALID_SOCKET)
 			rc = Socket_error("socket", *sock);
 		else
@@ -733,8 +734,8 @@ int Socket_continueWrite(int socket)
 		else if (pw->bytes < curbuflen + pw->iovecs[i].iov_len)
 		{ /* if previously written length is in the middle of the buffer we are currently looking at,
 				add some of the buffer */
-			int offset = pw->bytes - curbuflen;
-			iovecs1[++curbuf].iov_len = pw->iovecs[i].iov_len - offset;
+			size_t offset = pw->bytes - curbuflen;
+			iovecs1[++curbuf].iov_len = pw->iovecs[i].iov_len - (ULONG)offset;
 			iovecs1[curbuf].iov_base = pw->iovecs[i].iov_base + offset;
 			break;
 		}

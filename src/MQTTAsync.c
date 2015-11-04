@@ -489,7 +489,7 @@ int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 	int rc = 0;
 	MQTTAsyncs* aclient = qcmd->client;
 	MQTTAsync_command* command = &qcmd->command;
-	int* lens = NULL;
+	size_t* lens = NULL;
 	void** bufs = NULL;
 	int bufindex = 0, i, nbufs = 0;
 	char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
@@ -500,7 +500,7 @@ int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 		case SUBSCRIBE:
 			nbufs = 3 + (command->details.sub.count * 2);
 				
-			lens = (int*)malloc(nbufs * sizeof(int));
+			lens = (size_t*)malloc(nbufs * sizeof(int));
 			bufs = malloc(nbufs * sizeof(char *));
 				
 			bufs[bufindex] = &command->type;
@@ -525,7 +525,7 @@ int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 		case UNSUBSCRIBE:
 			nbufs = 3 + command->details.unsub.count;
 			
-			lens = (int*)malloc(nbufs * sizeof(int));
+			lens = (size_t*)malloc(nbufs * sizeof(size_t));
 			bufs = malloc(nbufs * sizeof(char *));
 				
 			bufs[bufindex] = &command->type;
@@ -548,7 +548,7 @@ int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 		case PUBLISH:
 			nbufs = 7;
 				
-			lens = (int*)malloc(nbufs * sizeof(int));
+			lens = (size_t*)malloc(nbufs * sizeof(size_t));
 			bufs = malloc(nbufs * sizeof(char *));
 				
 			bufs[bufindex] = &command->type;
@@ -577,7 +577,7 @@ int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 	}
 	if (nbufs > 0)
 	{
-		if ((rc = aclient->c->persistence->pput(aclient->c->phandle, key, nbufs, (char**)bufs, lens)) != 0)
+		if ((rc = aclient->c->persistence->pput(aclient->c->phandle, key, nbufs, (char**)bufs, (int*)lens)) != 0)
 			Log(LOG_ERROR, 0, "Error persisting command, rc %d", rc);
 		qcmd->seqno = aclient->command_seqno;
 	}
@@ -595,7 +595,8 @@ MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int buflen)
 	MQTTAsync_command* command = NULL;
 	MQTTAsync_queuedCommand* qcommand = NULL;
 	char* ptr = buffer;
-	int i, data_size;
+	int i;
+	size_t data_size;
 	
 	FUNC_ENTRY;
 	qcommand = malloc(sizeof(MQTTAsync_queuedCommand));
@@ -633,7 +634,7 @@ MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int buflen)
 				
 			for (i = 0; i < command->details.unsub.count; ++i)
 			{
-				int data_size = strlen(ptr) + 1;
+				size_t data_size = strlen(ptr) + 1;
 				
 				command->details.unsub.topics[i] = malloc(data_size);
 				strcpy(command->details.unsub.topics[i], ptr);
@@ -1877,7 +1878,7 @@ int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, size_t topicLen, MQ
 					
 	Log(TRACE_MIN, -1, "Calling messageArrived for client %s, queue depth %d",
 					m->c->clientID, m->c->messageQueue->count);
-	rc = (*(m->ma))(m->context, topicName, topicLen, mm);
+	rc = (*(m->ma))(m->context, topicName, (int)topicLen, mm);
 	/* if 0 (false) is returned by the callback then it failed, so we don't remove the message from
 	 * the queue, and it will be retried later.  If 1 is returned then the message data may have been freed,
 	 * so we must be careful how we use it.

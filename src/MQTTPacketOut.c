@@ -51,13 +51,13 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion)
 	packet.header.byte = 0;
 	packet.header.bits.type = CONNECT;
 
-	len = ((MQTTVersion == 3) ? 12 : 10) + strlen(client->clientID)+2;
+	len = ((MQTTVersion == 3) ? 12 : 10) + (int)strlen(client->clientID)+2;
 	if (client->will)
-		len += strlen(client->will->topic)+2 + strlen(client->will->msg)+2;
+		len += (int)strlen(client->will->topic)+2 + (int)strlen(client->will->msg)+2;
 	if (client->username)
-		len += strlen(client->username)+2;
+		len += (int)strlen(client->username)+2;
 	if (client->password)
-		len += strlen(client->password)+2;
+		len += (int)strlen(client->password)+2;
 
 	ptr = buf = malloc(len);
 	if (MQTTVersion == 3)
@@ -179,7 +179,7 @@ int MQTTPacket_send_subscribe(List* topics, List* qoss, int msgid, int dup, netw
 
 	datalen = 2 + topics->count * 3; // utf length + char qos == 3
 	while (ListNextElement(topics, &elem))
-		datalen += strlen((char*)(elem->content));
+		datalen += (int)strlen((char*)(elem->content));
 	ptr = data = malloc(datalen);
 
 	writeInt(&ptr, msgid);
@@ -252,7 +252,7 @@ int MQTTPacket_send_unsubscribe(List* topics, int msgid, int dup, networkHandles
 
 	datalen = 2 + topics->count * 2; // utf length == 2
 	while (ListNextElement(topics, &elem))
-		datalen += strlen((char*)(elem->content));
+		datalen += (int)strlen((char*)(elem->content));
 	ptr = data = malloc(datalen);
 
 	writeInt(&ptr, msgid);

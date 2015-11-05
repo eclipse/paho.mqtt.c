@@ -21,6 +21,8 @@
 
 #if !defined(WIN32)
 #include <unistd.h>
+#else
+#include <windows.h>
 #endif
 
 #define ADDRESS     "tcp://m2m.eclipse.org:1883"

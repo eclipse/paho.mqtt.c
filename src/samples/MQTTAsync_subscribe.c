@@ -21,6 +21,8 @@
 
 #if !defined(WIN32)
 #include <unistd.h>
+#else
+#include <windows.h>
 #endif
 
 #define ADDRESS     "tcp://localhost:1883"

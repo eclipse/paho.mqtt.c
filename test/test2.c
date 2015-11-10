@@ -310,7 +310,7 @@ MQTTClient_message test1_pubmsg_check = MQTTClient_message_initializer;
 void test1_deliveryComplete(void* context, MQTTClient_deliveryToken dt)
 {
 	lock_mutex(deliveryCompleted_mutex);
-	MyLog(LOGA_INFO, "Delivery complete for token %d", dt);
+	MyLog(LOGA_DEBUG, "Delivery complete for token %d", dt);
 	++test1_deliveryCompleted;
 	unlock_mutex(deliveryCompleted_mutex);
 }
@@ -528,6 +528,7 @@ MQTTClient_message test2_pubmsg = MQTTClient_message_initializer;
 void test2_deliveryComplete(void* context, MQTTClient_deliveryToken dt)
 {
 	lock_mutex(deliveryCompleted_mutex);
+	MyLog(LOGA_DEBUG, "Delivery complete for token %d", dt);
 	++test2_deliveryCompleted;
 	unlock_mutex(deliveryCompleted_mutex);
 }

@@ -495,12 +495,39 @@ Test2: multiple client objects used from multiple threads
 
 *********************************************************************/
 volatile int test2_arrivedcount = 0;
+
 volatile int test2_deliveryCompleted = 0;
+
+#if defined(WIN32) || defined(WIN64)
+mutex_type deliveryCompleted_mutex = NULL;
+#else
+pthread_mutex_t deliveryCompleted_mutex_store = PTHREAD_MUTEX_INITIALIZER;
+mutex_type deliveryCompleted_mutex = &deliveryCompleted_mutex_store;
+#endif
+
 MQTTClient_message test2_pubmsg = MQTTClient_message_initializer;
+
+void lock_mutex(mutex_type amutex)
+{
+	int rc = Thread_lock_mutex(amutex);
+	if (rc != 0)
+		MyLog(LOGA_INFO, "Error %s locking mutex", strerror(rc));
+}
+
+
+void unlock_mutex(mutex_type amutex)
+{
+	int rc = Thread_unlock_mutex(amutex);
+	if (rc != 0)
+		MyLog(LOGA_INFO, "Error %s unlocking mutex", strerror(rc));
+}
+
 
 void test2_deliveryComplete(void* context, MQTTClient_deliveryToken dt)
 {
+	lock_mutex(deliveryCompleted_mutex);
 	++test2_deliveryCompleted;
+	unlock_mutex(deliveryCompleted_mutex);
 }
 
 int test2_messageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* m)
@@ -651,6 +678,10 @@ int main(int argc, char** argv)
 	int rc = 0;
  	int (*tests[])() = {NULL, test1};
 	int i;
+
+	#if defined(WIN32) || defined(WIN64)
+	deliveryCompleted_mutex = CreateMutex(NULL, 0, NULL);
+	#endif
 	
 	xml = fopen("TEST-test2.xml", "w");
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));

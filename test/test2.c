@@ -495,7 +495,7 @@ Test2: multiple client objects used from multiple threads
 
 *********************************************************************/
 volatile int test2_arrivedcount = 0;
-int test2_deliveryCompleted = 0;
+volatile int test2_deliveryCompleted = 0;
 MQTTClient_message test2_pubmsg = MQTTClient_message_initializer;
 
 void test2_deliveryComplete(void* context, MQTTClient_deliveryToken dt)

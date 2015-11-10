@@ -310,6 +310,7 @@ MQTTClient_message test1_pubmsg_check = MQTTClient_message_initializer;
 void test1_deliveryComplete(void* context, MQTTClient_deliveryToken dt)
 {
 	lock_mutex(deliveryCompleted_mutex);
+	MyLog(LOGA_INFO, "Delivery complete for token %d", dt);
 	++test1_deliveryCompleted;
 	unlock_mutex(deliveryCompleted_mutex);
 }
@@ -400,7 +401,7 @@ thread_return_type WINAPI test1_sendAndReceive(void* n)
 		   completed the QoS 2 handshake with the publisher. For QoS 1 and 2,
 		   allow time for the final delivery complete callback before checking
 		   that all expected callbacks have been made */
-		wait_seconds = 10;
+		wait_seconds = 20;
 		while ((test1_deliveryCompleted < iterations*2) && (wait_seconds-- > 0))
 		{
 			MyLog(LOGA_DEBUG, "Delivery Completed %d count %d", test1_deliveryCompleted, i);
@@ -598,7 +599,7 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 		   completed the QoS 2 handshake with the publisher. For QoS 1 and 2,
 		   allow time for the final delivery complete callback before checking
 		   that all expected callbacks have been made */ 
-		wait_seconds = 10;
+		wait_seconds = 20;
 		while ((test2_deliveryCompleted < iterations) && (wait_seconds-- > 0))
 		{
 			MyLog(LOGA_DEBUG, "Delivery Completed %d count %d", test2_deliveryCompleted, i);

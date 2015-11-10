@@ -303,7 +303,7 @@ Test1: multiple threads to single client object
 *********************************************************************/
 volatile int test1_arrivedcount = 0;
 volatile int test1_arrivedcount_qos[3] = {0, 0, 0};
-int test1_deliveryCompleted = 0;
+volatile int test1_deliveryCompleted = 0;
 MQTTClient_message test1_pubmsg_check = MQTTClient_message_initializer;
 
 

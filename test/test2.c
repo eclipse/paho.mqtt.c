@@ -274,6 +274,28 @@ void myassert(char* filename, int lineno, char* description, int value, char* fo
 }
 
 
+#if defined(WIN32) || defined(WIN64)
+mutex_type deliveryCompleted_mutex = NULL;
+#else
+pthread_mutex_t deliveryCompleted_mutex_store = PTHREAD_MUTEX_INITIALIZER;
+mutex_type deliveryCompleted_mutex = &deliveryCompleted_mutex_store;
+#endif
+
+void lock_mutex(mutex_type amutex)
+{
+	int rc = Thread_lock_mutex(amutex);
+	if (rc != 0)
+		MyLog(LOGA_INFO, "Error %s locking mutex", strerror(rc));
+}
+
+void unlock_mutex(mutex_type amutex)
+{
+	int rc = Thread_unlock_mutex(amutex);
+	if (rc != 0)
+		MyLog(LOGA_INFO, "Error %s unlocking mutex", strerror(rc));
+}
+
+
 /*********************************************************************
 
 Test1: multiple threads to single client object
@@ -287,7 +309,9 @@ MQTTClient_message test1_pubmsg_check = MQTTClient_message_initializer;
 
 void test1_deliveryComplete(void* context, MQTTClient_deliveryToken dt)
 {
+	lock_mutex(deliveryCompleted_mutex);
 	++test1_deliveryCompleted;
+	unlock_mutex(deliveryCompleted_mutex);
 }
 
 int test1_messageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* m)
@@ -498,30 +522,7 @@ volatile int test2_arrivedcount = 0;
 
 volatile int test2_deliveryCompleted = 0;
 
-#if defined(WIN32) || defined(WIN64)
-mutex_type deliveryCompleted_mutex = NULL;
-#else
-pthread_mutex_t deliveryCompleted_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-mutex_type deliveryCompleted_mutex = &deliveryCompleted_mutex_store;
-#endif
-
 MQTTClient_message test2_pubmsg = MQTTClient_message_initializer;
-
-void lock_mutex(mutex_type amutex)
-{
-	int rc = Thread_lock_mutex(amutex);
-	if (rc != 0)
-		MyLog(LOGA_INFO, "Error %s locking mutex", strerror(rc));
-}
-
-
-void unlock_mutex(mutex_type amutex)
-{
-	int rc = Thread_unlock_mutex(amutex);
-	if (rc != 0)
-		MyLog(LOGA_INFO, "Error %s unlocking mutex", strerror(rc));
-}
-
 
 void test2_deliveryComplete(void* context, MQTTClient_deliveryToken dt)
 {

@@ -256,3 +256,7 @@ html:
 	cd ${srcdir}; $(DOXYGEN_COMMAND) ../doc/DoxyfileV3ClientAPI
 	cd ${srcdir}; $(DOXYGEN_COMMAND) ../doc/DoxyfileV3AsyncAPI
 	cd ${srcdir}; $(DOXYGEN_COMMAND) ../doc/DoxyfileV3ClientInternal
+
+.PHONY: TAGS
+TAGS:
+	etags `find . -name \*.[hc]`

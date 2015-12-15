@@ -26,6 +26,7 @@
  *    Ian Craggs - fix for bug 445891 - assigning msgid is not thread safe
  *    Ian Craggs - fix for bug 465369 - longer latency than expected
  *    Ian Craggs - fix for bug 444103 - success/failure callbacks not invoked
+ *    Ian Craggs - fix for bug 484363 - segfault in getReadySocket
  *******************************************************************************/
 
 /**
@@ -84,6 +85,7 @@ static thread_id_type sendThread_id = 0,
 
 #if defined(WIN32) || defined(WIN64)
 static mutex_type mqttasync_mutex = NULL;
+static mutex_type socket_mutex = NULL;
 static mutex_type mqttcommand_mutex = NULL;
 static sem_type send_sem = NULL;
 extern mutex_type stack_mutex;
@@ -110,6 +112,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 				stack_mutex = CreateMutex(NULL, 0, NULL);
 				heap_mutex = CreateMutex(NULL, 0, NULL);
 				log_mutex = CreateMutex(NULL, 0, NULL);
+				socket_mutex = CreateMutex(NULL, 0, NULL);
 			}
 		case DLL_THREAD_ATTACH:
 			Log(TRACE_MAX, -1, "DLL thread attach");
@@ -123,8 +126,13 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 #else
 static pthread_mutex_t mqttasync_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 static mutex_type mqttasync_mutex = &mqttasync_mutex_store;
+
+static pthread_mutex_t socket_mutex_store = PTHREAD_MUTEX_INITIALIZER;
+static mutex_type socket_mutex = &socket_mutex_store;
+
 static pthread_mutex_t mqttcommand_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 static mutex_type mqttcommand_mutex = &mqttcommand_mutex_store;
+
 static cond_type_struct send_cond_store = { PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER };
 static cond_type send_cond = &send_cond_store;
 
@@ -139,6 +147,8 @@ void MQTTAsync_init()
 		printf("MQTTAsync: error %d initializing async_mutex\n", rc);
 	if ((rc = pthread_mutex_init(mqttcommand_mutex, &attr)) != 0)
 		printf("MQTTAsync: error %d initializing command_mutex\n", rc);
+	if ((rc = pthread_mutex_init(socket_mutex, &attr)) != 0)
+		printf("MQTTClient: error %d initializing socket_mutex\n", rc);
 
 	if ((rc = pthread_cond_init(&send_cond->cond, NULL)) != 0)
 		printf("MQTTAsync: error %d initializing send_cond cond\n", rc);
@@ -1803,10 +1813,12 @@ void MQTTAsync_closeOnly(Clients* client)
 	{
 		if (client->connected)
 			MQTTPacket_send_disconnect(&client->net, client->clientID);
+		Thread_lock_mutex(socket_mutex);
 #if defined(OPENSSL)
 		SSLSocket_close(&client->net);
 #endif
 		Socket_close(client->net.socket);
+		Thread_unlock_mutex(socket_mutex);
 		client->net.socket = 0;
 #if defined(OPENSSL)
 		client->net.ssl = NULL;
@@ -2607,8 +2619,10 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 	if ((*sock = SSLSocket_getPendingRead()) == -1)
 	{
 #endif
+		Thread_lock_mutex(socket_mutex);
 		/* 0 from getReadySocket indicates no work to do, -1 == error, but can happen normally */
 		*sock = Socket_getReadySocket(0, &tp);
+		Thread_unlock_mutex(socket_mutex);
 		if (!tostop && *sock == 0 && (tp.tv_sec > 0L || tp.tv_usec > 0L))
 		{
 			MQTTAsync_sleep(100L);

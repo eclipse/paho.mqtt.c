@@ -401,7 +401,7 @@ thread_return_type WINAPI test1_sendAndReceive(void* n)
 		   completed the QoS 2 handshake with the publisher. For QoS 1 and 2,
 		   allow time for the final delivery complete callback before checking
 		   that all expected callbacks have been made */
-		wait_seconds = 20;
+		wait_seconds = 40;
 		while ((test1_deliveryCompleted < iterations*2) && (wait_seconds-- > 0))
 		{
 			MyLog(LOGA_DEBUG, "Delivery Completed %d count %d", test1_deliveryCompleted, i);
@@ -411,7 +411,7 @@ thread_return_type WINAPI test1_sendAndReceive(void* n)
 				usleep(100000L);
 			#endif
 		}
-		assert("All Deliveries Complete", wait_seconds > 0,
+		assert("All Deliveries Complete", test1_deliveryCompleted == iterations*2,
 			   "Number of deliveryCompleted callbacks was %d\n",
 			   test1_deliveryCompleted);
 	}

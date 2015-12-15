@@ -600,7 +600,7 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 		   completed the QoS 2 handshake with the publisher. For QoS 1 and 2,
 		   allow time for the final delivery complete callback before checking
 		   that all expected callbacks have been made */ 
-		wait_seconds = 20;
+		wait_seconds = 40;
 		while ((test2_deliveryCompleted < iterations) && (wait_seconds-- > 0))
 		{
 			MyLog(LOGA_DEBUG, "Delivery Completed %d count %d", test2_deliveryCompleted, i);
@@ -610,7 +610,7 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 				usleep(1000000L);
 			#endif
 		}
-		assert("All Deliveries Complete", wait_seconds > 0, 
+		assert("All Deliveries Complete", test2_deliveryCompleted == iterations, 
 			   "Number of deliveryCompleted callbacks was %d\n", 
 			   test2_deliveryCompleted);
 	}

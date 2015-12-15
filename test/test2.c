@@ -341,14 +341,14 @@ struct thread_parms
 	char* test_topic;
 };
 
-
+static int iterations = 50;
+	
 thread_return_type WINAPI test1_sendAndReceive(void* n)
 {
 	MQTTClient_deliveryToken dt;
 	int i = 0;
-	int iterations = 50;
 	int rc = 0;
-	int wait_seconds = 0;
+	int wait_seconds = 30;
 	MQTTClient_message test1_pubmsg = MQTTClient_message_initializer;
 	int subsqos = 2;
 
@@ -365,13 +365,12 @@ thread_return_type WINAPI test1_sendAndReceive(void* n)
 	test1_pubmsg.payloadlen = test1_pubmsg_check.payloadlen;
 	test1_pubmsg.retained = 0;
 	test1_pubmsg.qos = qos;
-	test1_deliveryCompleted = 0;
 
 	for (i = 1; i <= iterations; ++i)
 	{
 		if (i % 10 == 0)
 			rc = MQTTClient_publish(c, test_topic, test1_pubmsg.payloadlen, test1_pubmsg.payload,
-                   qos, test1_pubmsg.retained, NULL);
+                   qos, test1_pubmsg.retained, &dt);
 		else
 			rc = MQTTClient_publishMessage(c, test_topic, &test1_pubmsg, &dt);
 		assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
@@ -382,7 +381,7 @@ thread_return_type WINAPI test1_sendAndReceive(void* n)
 			usleep(100000L);
 		#endif
 
-		wait_seconds = 10;
+		wait_seconds = 30;
 		while ((test1_arrivedcount_qos[qos] < i) && (wait_seconds-- > 0))
 		{
 			MyLog(LOGA_DEBUG, "Arrived %d count %d", test1_arrivedcount_qos[qos], i);
@@ -395,26 +394,7 @@ thread_return_type WINAPI test1_sendAndReceive(void* n)
 		assert("Message Arrived", wait_seconds > 0,
 				"Timed out waiting for message %d\n", i);
 	}
-	if (qos > 0)
-	{
-		/* MQ Telemetry can send a message to a subscriber before the server has
-		   completed the QoS 2 handshake with the publisher. For QoS 1 and 2,
-		   allow time for the final delivery complete callback before checking
-		   that all expected callbacks have been made */
-		wait_seconds = 40;
-		while ((test1_deliveryCompleted < iterations*2) && (wait_seconds-- > 0))
-		{
-			MyLog(LOGA_DEBUG, "Delivery Completed %d count %d", test1_deliveryCompleted, i);
-			#if defined(WIN32)
-				Sleep(100);
-			#else
-				usleep(100000L);
-			#endif
-		}
-		assert("All Deliveries Complete", test1_deliveryCompleted == iterations*2,
-			   "Number of deliveryCompleted callbacks was %d\n",
-			   test1_deliveryCompleted);
-	}
+	
 	return NULL;
 }
 
@@ -470,6 +450,7 @@ int test1(struct Options options)
 
 	test1_pubmsg_check.payload = "a much longer message that we can shorten to the extent that we need to";
 	test1_pubmsg_check.payloadlen = 27;
+	test1_deliveryCompleted = test1_arrivedcount = 0;
 
 	struct thread_parms parms0 = {c, 0, test_topic};
 	Thread_start(test1_sendAndReceive, (void*)&parms0);
@@ -480,8 +461,13 @@ int test1(struct Options options)
 	struct thread_parms parms2 = {c, 2, test_topic};
 	Thread_start(test1_sendAndReceive, (void*)&parms2);
 
+	/* MQTT servers can send a message to a subscriber before the server has
+	   completed the QoS 2 handshake with the publisher. For QoS 1 and 2,
+	   allow time for the final delivery complete callback before checking
+	   that all expected callbacks have been made */
+	
 	int wait_seconds = 90;
-	while ((test1_arrivedcount < 150) && (wait_seconds-- > 0))
+	while (((test1_arrivedcount < iterations*3) || (test1_deliveryCompleted < iterations*2)) && (wait_seconds-- > 0))
 	{
 		#if defined(WIN32)
 			Sleep(1000);
@@ -489,7 +475,9 @@ int test1(struct Options options)
 			usleep(1000000L);
 		#endif
 	}
-	assert("Arrived count == 150", test1_arrivedcount == 150, "arrivedcount was %d", test1_arrivedcount);
+	assert("Arrived count == 150", test1_arrivedcount == iterations*3, "arrivedcount was %d", test1_arrivedcount);
+  assert("All Deliveries Complete", test1_deliveryCompleted == iterations*2,
+			   "Number of deliveryCompleted callbacks was %d\n", test1_deliveryCompleted);
 
 	MyLog(LOGA_DEBUG, "Stopping\n");
 

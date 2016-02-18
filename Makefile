@@ -24,7 +24,7 @@ SHELL = /bin/sh
 .PHONY: clean, mkdir, install, uninstall, html
 
 ifndef release.version
-  release.version = 1.0.3
+  release.version := $(shell git describe)
 endif
 
 # determine current platform
@@ -68,7 +68,7 @@ SOURCE_FILES_CS = $(filter-out $(srcdir)/MQTTAsync.c $(srcdir)/MQTTVersion.c, $(
 SOURCE_FILES_A = $(filter-out $(srcdir)/MQTTClient.c $(srcdir)/MQTTVersion.c $(srcdir)/SSLSocket.c, $(SOURCE_FILES))
 SOURCE_FILES_AS = $(filter-out $(srcdir)/MQTTClient.c $(srcdir)/MQTTVersion.c, $(SOURCE_FILES))
 
-HEADERS = $(srcdir)/*.h
+HEADERS = $(srcdir)/*.h $(srcdir)/buildinfo.h
 HEADERS_C = $(filter-out $(srcdir)/MQTTAsync.h, $(HEADERS))
 HEADERS_A = $(HEADERS)
 
@@ -126,8 +126,6 @@ LDFLAGS_AS = $(LDFLAGS) -shared $(START_GROUP) -lpthread $(EXTRA_LIB) -lssl -lcr
 
 ifeq ($(OSTYPE),Linux)
 
-SED_COMMAND = sed -i "s/\#\#MQTTCLIENT_VERSION_TAG\#\#/${release.version}/g; s/\#\#MQTTCLIENT_BUILD_TAG\#\#/${build.level}/g" 
-
 MQTTCLIENT_INIT = MQTTClient_init
 MQTTASYNC_INIT = MQTTAsync_init
 START_GROUP = -Wl,--start-group
@@ -141,8 +139,6 @@ LDFLAGS_A += -Wl,-soname,lib${MQTTLIB_A}.so.${MAJOR_VERSION}
 LDFLAGS_AS += -Wl,-soname,lib${MQTTLIB_AS}.so.${MAJOR_VERSION} -Wl,-no-whole-archive
 
 else ifeq ($(OSTYPE),Darwin)
-
-SED_COMMAND = sed -i "" -e "s/\#\#MQTTCLIENT_VERSION_TAG\#\#/${release.version}/g" -e "s/\#\#MQTTCLIENT_BUILD_TAG\#\#/${build.level}/g" 
 
 MQTTCLIENT_INIT = _MQTTClient_init
 MQTTASYNC_INIT = _MQTTAsync_init
@@ -165,6 +161,7 @@ build: | mkdir ${MQTTLIB_C_TARGET} ${MQTTLIB_CS_TARGET} ${MQTTLIB_A_TARGET} ${MQ
 
 clean:
 	rm -rf ${blddir}/*
+	rm -f $(srcdir)/buildinfo.h
 
 mkdir:
 	-mkdir -p ${blddir}/samples
@@ -190,25 +187,21 @@ ${ASYNC_SAMPLES}: ${blddir}/samples/%: ${srcdir}/samples/%.c $(MQTTLIB_A_TARGET)
 	${CC} -o $@ $< -l${MQTTLIB_A} ${FLAGS_EXE}
 
 ${MQTTLIB_C_TARGET}: ${SOURCE_FILES_C} ${HEADERS_C}
-	$(SED_COMMAND) $(srcdir)/MQTTClient.c
 	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_C} ${LDFLAGS_C}
 	-ln -s lib$(MQTTLIB_C).so.${VERSION}  ${blddir}/lib$(MQTTLIB_C).so.${MAJOR_VERSION}
 	-ln -s lib$(MQTTLIB_C).so.${MAJOR_VERSION} ${blddir}/lib$(MQTTLIB_C).so
 
 ${MQTTLIB_CS_TARGET}: ${SOURCE_FILES_CS} ${HEADERS_C}
-	$(SED_COMMAND) $(srcdir)/MQTTClient.c
 	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_CS} -DOPENSSL ${LDFLAGS_CS}
 	-ln -s lib$(MQTTLIB_CS).so.${VERSION}  ${blddir}/lib$(MQTTLIB_CS).so.${MAJOR_VERSION}
 	-ln -s lib$(MQTTLIB_CS).so.${MAJOR_VERSION} ${blddir}/lib$(MQTTLIB_CS).so
 
 ${MQTTLIB_A_TARGET}: ${SOURCE_FILES_A} ${HEADERS_A}
-	$(SED_COMMAND) $(srcdir)/MQTTAsync.c
 	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_A} ${LDFLAGS_A}
 	-ln -s lib$(MQTTLIB_A).so.${VERSION}  ${blddir}/lib$(MQTTLIB_A).so.${MAJOR_VERSION}
 	-ln -s lib$(MQTTLIB_A).so.${MAJOR_VERSION} ${blddir}/lib$(MQTTLIB_A).so
 
 ${MQTTLIB_AS_TARGET}: ${SOURCE_FILES_AS} ${HEADERS_A}
-	$(SED_COMMAND) $(srcdir)/MQTTAsync.c 
 	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_AS} -DOPENSSL ${LDFLAGS_AS}
 	-ln -s lib$(MQTTLIB_AS).so.${VERSION}  ${blddir}/lib$(MQTTLIB_AS).so.${MAJOR_VERSION}
 	-ln -s lib$(MQTTLIB_AS).so.${MAJOR_VERSION} ${blddir}/lib$(MQTTLIB_AS).so
@@ -256,3 +249,13 @@ html:
 	cd ${srcdir}; $(DOXYGEN_COMMAND) ../doc/DoxyfileV3ClientAPI
 	cd ${srcdir}; $(DOXYGEN_COMMAND) ../doc/DoxyfileV3AsyncAPI
 	cd ${srcdir}; $(DOXYGEN_COMMAND) ../doc/DoxyfileV3ClientInternal
+
+.PHONY: TAGS
+TAGS:
+	etags `find . -name \*.[hc]`
+
+# Create a header file which provides the build information.
+# Doing this way, we don't need to modify the sources under version control!
+$(srcdir)/buildinfo.h: $(SOURCE_FILES)
+	echo "#define BUILD_TIMESTAMP \"${build.level}\"" > $@
+	echo "#define CLIENT_VERSION  \"${release.version}\"" >> $@

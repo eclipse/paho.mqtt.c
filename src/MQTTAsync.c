@@ -38,7 +38,11 @@
 #define _GNU_SOURCE /* for pthread_mutexattr_settype */
 #include <stdlib.h>
 #if !defined(WIN32) && !defined(WIN64)
-	#include <sys/time.h>
+#	include <sys/time.h>
+#	include "buildinfo.h"
+#else
+#	define BUILD_TIMESTAMP __DATE__ " " __TIME__
+#	define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##"
 #endif
 
 #if !defined(NO_PERSISTENCE)
@@ -54,9 +58,6 @@
 #include "Heap.h"
 
 #define URI_TCP "tcp://"
-
-#define BUILD_TIMESTAMP "##MQTTCLIENT_BUILD_TAG##"
-#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##"
 
 char* client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;

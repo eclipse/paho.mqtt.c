@@ -24,7 +24,7 @@ SHELL = /bin/sh
 .PHONY: clean, mkdir, install, uninstall, html
 
 ifndef release.version
-  release.version = 1.0.3
+  release.version := $(shell git describe)
 endif
 
 # determine current platform

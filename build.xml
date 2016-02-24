@@ -1,5 +1,5 @@
 <!--*******************************************************************************
-  Copyright (c) 2012, 2015 IBM Corp.
+  Copyright (c) 2012, 2016 IBM Corp.
  
   All rights reserved. This program and the accompanying materials
   are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,7 @@
   <property name="libname.async" value="mqttv3a" />
   <property name="libname.async.ssl" value="mqttv3as" />
   <property name="ssl" value="yes" />
+  <property name="windows.openssl.folder" value="c:\openssl\bin" />
   <property name="test.hostname" value="iot.eclipse.org"/>
   <property name="test.port" value="18883"/>
   <if>
@@ -118,7 +119,7 @@
         <arg value="${aTest}.exe" />
         <arg value="--hostname" />
         <arg value="${test.hostname}" />
-        <env key="PATH" path="${output.folder}" />
+        <env key="PATH" path="${output.folder};${windows.openssl.folder}" />
       </exec>
     </then>
     <else> 

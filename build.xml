@@ -12,7 +12,6 @@
  
   Contributors:
      Ian Craggs - initial API and implementation and/or initial documentation
-     Ian Craggs - change Doxygen config file names to match CMake changes
 *******************************************************************************-->
 
 <project name="MQTT C Client" default="full">
@@ -148,10 +147,10 @@
       <then>
         <mkdir dir="${output.folder}/doc"/>
         <exec executable="doxygen" dir="src">
-          <arg value="../doc/DoxyfileV3ClientAPI.in"/>
+          <arg value="../doc/DoxyfileV3ClientAPI"/>
         </exec>
         <exec executable="doxygen" dir="src">
-          <arg value="../doc/DoxyfileV3AsyncAPI.in"/>
+          <arg value="../doc/DoxyfileV3AsyncAPI"/>
         </exec>
         <zip destfile="${output.folder}/MQTTClient_doc.zip">
           <zipfileset dir="${output.folder}/doc/MQTTClient" />

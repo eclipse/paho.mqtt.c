@@ -1,5 +1,5 @@
 <!--*******************************************************************************
-  Copyright (c) 2012, 2015 IBM Corp.
+  Copyright (c) 2012, 2016 IBM Corp.
  
   All rights reserved. This program and the accompanying materials
   are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +12,7 @@
  
   Contributors:
      Ian Craggs - initial API and implementation and/or initial documentation
+     Ian Craggs - change Doxygen config file names to match CMake changes
 *******************************************************************************-->
 
 <project name="MQTT C Client" default="full">
@@ -147,10 +148,10 @@
       <then>
         <mkdir dir="${output.folder}/doc"/>
         <exec executable="doxygen" dir="src">
-          <arg value="../doc/DoxyfileV3ClientAPI"/>
+          <arg value="../doc/DoxyfileV3ClientAPI.in"/>
         </exec>
         <exec executable="doxygen" dir="src">
-          <arg value="../doc/DoxyfileV3AsyncAPI"/>
+          <arg value="../doc/DoxyfileV3AsyncAPI.in"/>
         </exec>
         <zip destfile="${output.folder}/MQTTClient_doc.zip">
           <zipfileset dir="${output.folder}/doc/MQTTClient" />

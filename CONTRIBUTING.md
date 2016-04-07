@@ -56,11 +56,11 @@ Contact the project developers via the project's development
 Search for bugs:
 ----------------
 
-This project currently uses [Bugzilla](https://bugs.eclipse.org/bugs/buglist.cgi?product=Paho) to track ongoing development and issues.
+This project uses GitHub Issues here: [github.com/eclipse/paho.mqtt.c/issues](https://github.com/eclipse/paho.mqtt.c/issues) to track ongoing development and issues.
 
 Create a new bug:
 -----------------
 
 Be sure to search for existing bugs before you create another one. Remember that contributions are always welcome!
 
-- [Create new Paho bug](https://bugs.eclipse.org/bugs/enter_bug.cgi?product=Paho)
+- [Create new Paho bug](https://github.com/eclipse/paho.mqtt.c/issues/new)

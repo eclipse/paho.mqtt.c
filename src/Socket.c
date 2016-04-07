@@ -600,6 +600,9 @@ int Socket_new(char* addr, int port, int* sock)
 	struct addrinfo hints = {0, AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP, 0, NULL, NULL, NULL};
 
 	FUNC_ENTRY;
+#if defined(AF_INET6)
+	memset(&address6,0,sizeof(address6)); // initialize additional fields, e.g. flow label
+#endif
 	*sock = -1;
 
 	if (addr[0] == '[')

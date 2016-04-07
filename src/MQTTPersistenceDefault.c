@@ -73,8 +73,10 @@ int pstopen(void **handle, const char* clientID, const char* serverURI, void* co
 	/* Note that serverURI=address:port, but ":" not allowed in Windows directories */
 	perserverURI = malloc(strlen(serverURI) + 1);
 	strcpy(perserverURI, serverURI);
-	ptraux = strstr(perserverURI, ":");
-	*ptraux = '-' ;
+	do {
+	    ptraux = strstr(perserverURI, ":");
+	    if (ptraux) *ptraux = '-' ;
+	} while (ptraux);
 
 	/* consider '/'  +  '-'  +  '\0' */
 	clientDir = malloc(strlen(dataDir) + strlen(clientID) + strlen(perserverURI) + 3);

@@ -30,6 +30,7 @@
 	--qos 2
 	--delimiter \n
 	--clientid stdout_subscriber
+	--showtopics off
 	
 	--userid none
 	--password none

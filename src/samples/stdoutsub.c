@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial contribution
  *    Ian Craggs - change delimiter option from char to string
+ *    Guilherme Maciel Ferreira - add keep alive option
  *******************************************************************************/
 
 /*
@@ -31,6 +32,7 @@
 	--delimiter \n
 	--clientid stdout_subscriber
 	--showtopics off
+	--keepalive 10
 	
 	--userid none
 	--password none
@@ -68,6 +70,7 @@ void usage()
 	printf("  --username none\n");
 	printf("  --password none\n");
 	printf("  --showtopics <on or off> (default is on if the topic has a wildcard, else off)\n");
+	printf("  --keepalive <seconds> (default is 10 seconds)\n");
 	exit(-1);
 }
 
@@ -101,9 +104,10 @@ struct opts_struct
 	char* host;
 	char* port;
 	int showtopics;
+	int keepalive;
 } opts =
 {
-	"stdout-subscriber", 0, "\n", 2, NULL, NULL, "localhost", "1883", 0
+	"stdout-subscriber", 0, "\n", 2, NULL, NULL, "localhost", "1883", 0, 10
 };
 
 void getopts(int argc, char** argv);
@@ -134,7 +138,7 @@ int main(int argc, char** argv)
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
 
-	conn_opts.keepAliveInterval = 10;
+	conn_opts.keepAliveInterval = opts.keepalive;
 	conn_opts.reliable = 0;
 	conn_opts.cleansession = 1;
 	conn_opts.username = opts.username;
@@ -251,6 +255,13 @@ void getopts(int argc, char** argv)
 				else
 					usage();
 			}
+			else
+				usage();
+		}
+		else if (strcmp(argv[count], "--keepalive") == 0)
+		{
+			if (++count < argc)
+				opts.keepalive = atoi(argv[count]);
 			else
 				usage();
 		}

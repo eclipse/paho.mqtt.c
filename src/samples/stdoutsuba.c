@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial contribution
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
+ *    Guilherme Maciel Ferreira - add keep alive option
  *******************************************************************************/
 
 /*
@@ -31,6 +32,7 @@
 	--delimiter \n
 	--clientid stdout_subscriber
 	--showtopics off
+	--keepalive 10
 	
 	--userid none
 	--password none
@@ -79,9 +81,10 @@ struct
 	char* host;
 	char* port;
 	int showtopics;
+	int keepalive;
 } opts =
 {
-	"stdout-subscriber", 1, '\n', 2, NULL, NULL, "localhost", "1883", 0
+	"stdout-subscriber", 1, '\n', 2, NULL, NULL, "localhost", "1883", 0, 10
 };
 
 
@@ -97,6 +100,7 @@ void usage()
 	printf("  --username none\n");
 	printf("  --password none\n");
 	printf("  --showtopics <on or off> (default is on if the topic has a wildcard, else off)\n");
+	printf("  --keepalive <seconds> (default is 10 seconds)\n");
 	exit(-1);
 }
 
@@ -182,6 +186,13 @@ void getopts(int argc, char** argv)
 				else
 					usage();
 			}
+			else
+				usage();
+		}
+		else if (strcmp(argv[count], "--keepalive") == 0)
+		{
+			if (++count < argc)
+				opts.keepalive = atoi(argv[count]);
 			else
 				usage();
 		}
@@ -297,7 +308,7 @@ int main(int argc, char** argv)
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
 
-	conn_opts.keepAliveInterval = 10;
+	conn_opts.keepAliveInterval = opts.keepalive;
 	conn_opts.cleansession = 1;
 	conn_opts.username = opts.username;
 	conn_opts.password = opts.password;

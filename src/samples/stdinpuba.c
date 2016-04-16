@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial contribution
+ *    Guilherme Maciel Ferreira - add keep alive option
  *******************************************************************************/
  
  /*
@@ -29,6 +30,7 @@
 	--delimiters \n
 	--clientid stdin_publisher
 	--maxdatalen 100
+	--keepalive 10
 	
 	--userid none
 	--password none
@@ -67,6 +69,7 @@ void usage()
 	printf("  --maxdatalen 100\n");
 	printf("  --username none\n");
 	printf("  --password none\n");
+	printf("  --keepalive <seconds> (default is 10 seconds)\n");
 	exit(-1);
 }
 
@@ -91,9 +94,10 @@ struct
 	char* host;
 	char* port;
 	int verbose;
+	int keepalive;
 } opts =
 {
-	"publisher", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", 0
+	"publisher", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", 0, 10
 };
 
 void getopts(int argc, char** argv);
@@ -139,7 +143,7 @@ void myconnect(MQTTAsync* client)
 	int rc = 0;
 
 	printf("Connecting\n");
-	conn_opts.keepAliveInterval = 10;
+	conn_opts.keepAliveInterval = opts.keepalive;
 	conn_opts.cleansession = 1;
 	conn_opts.username = opts.username;
 	conn_opts.password = opts.password;
@@ -481,6 +485,13 @@ void getopts(int argc, char** argv)
 		{
 			if (++count < argc)
 				opts.delimiter = argv[count];
+			else
+				usage();
+		}
+		else if (strcmp(argv[count], "--keepalive") == 0)
+		{
+			if (++count < argc)
+				opts.keepalive = atoi(argv[count]);
 			else
 				usage();
 		}

@@ -70,14 +70,14 @@ void cfinish(int sig)
 struct
 {
 	char* clientid;
-  int nodelimiter;
+	int nodelimiter;
 	char delimiter;
 	int qos;
 	char* username;
 	char* password;
 	char* host;
 	char* port;
-  int showtopics;
+	int showtopics;
 } opts =
 {
 	"stdout-subscriber", 1, '\n', 2, NULL, NULL, "localhost", "1883", 0
@@ -201,7 +201,7 @@ int messageArrived(void *context, char *topicName, int topicLen, MQTTAsync_messa
 	fflush(stdout);
 	MQTTAsync_freeMessage(&message);
 	MQTTAsync_free(topicName);
-  return 1;
+	return 1;
 }
 
 
@@ -247,7 +247,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	if ((rc = MQTTAsync_subscribe(client, topic, opts.qos, &ropts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start subscribe, return code %d\n", rc);
-    		finished = 1;	
+		finished = 1;
 	}
 }
 
@@ -330,10 +330,10 @@ int main(int argc, char** argv)
 	if ((rc = MQTTAsync_disconnect(client, &disc_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start disconnect, return code %d\n", rc);
-    exit(-1);	
+		exit(-1);
 	}
 
-  while	(!disconnected)
+	while	(!disconnected)
 		#if defined(WIN32)
 			Sleep(100);
 		#else

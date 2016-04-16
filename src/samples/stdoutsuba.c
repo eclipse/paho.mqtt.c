@@ -92,11 +92,11 @@ void usage()
 {
 	printf("MQTT stdout subscriber\n");
 	printf("Usage: stdoutsub topicname <options>, where options are:\n");
-	printf("  --host <hostname> (default is localhost)\n");
-	printf("  --port <port> (default is 1883)\n");
-	printf("  --qos <qos> (default is 2)\n");
+	printf("  --host <hostname> (default is %s)\n", opts.host);
+	printf("  --port <port> (default is %s)\n", opts.port);
+	printf("  --qos <qos> (default is %d)\n", opts.qos);
 	printf("  --delimiter <delim> (default is no delimiter)\n");
-	printf("  --clientid <clientid> (default is stdout-subscriber-async)\n");
+	printf("  --clientid <clientid> (default is %s)\n", opts.clientid);
 	printf("  --username none\n");
 	printf("  --password none\n");
 	printf("  --showtopics <on or off> (default is on if the topic has a wildcard, else off)\n");

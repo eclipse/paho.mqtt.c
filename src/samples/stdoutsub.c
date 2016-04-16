@@ -58,19 +58,37 @@
 volatile int toStop = 0;
 
 
+struct opts_struct
+{
+	char* clientid;
+	int nodelimiter;
+	char* delimiter;
+	int qos;
+	char* username;
+	char* password;
+	char* host;
+	char* port;
+	int showtopics;
+	int keepalive;
+} opts =
+{
+	"stdout-subscriber", 0, "\n", 2, NULL, NULL, "localhost", "1883", 0, 10
+};
+
+
 void usage()
 {
 	printf("MQTT stdout subscriber\n");
 	printf("Usage: stdoutsub topicname <options>, where options are:\n");
-	printf("  --host <hostname> (default is localhost)\n");
-	printf("  --port <port> (default is 1883)\n");
-	printf("  --qos <qos> (default is 2)\n");
+	printf("  --host <hostname> (default is %s)\n", opts.host);
+	printf("  --port <port> (default is %s)\n", opts.port);
+	printf("  --qos <qos> (default is %d)\n", opts.qos);
 	printf("  --delimiter <delim> (default is \\n)\n");
-	printf("  --clientid <clientid> (default is stdout-subscriber)\n");
+	printf("  --clientid <clientid> (default is %s)\n", opts.clientid);
 	printf("  --username none\n");
 	printf("  --password none\n");
 	printf("  --showtopics <on or off> (default is on if the topic has a wildcard, else off)\n");
-	printf("  --keepalive <seconds> (default is 10 seconds)\n");
+	printf("  --keepalive <seconds> (default is %d seconds)\n", opts.keepalive);
 	exit(-1);
 }
 
@@ -91,24 +109,6 @@ void cfinish(int sig)
 	signal(SIGINT, NULL);
 	toStop = 1;
 }
-
-
-struct opts_struct
-{
-	char* clientid;
-	int nodelimiter;
-	char* delimiter;
-	int qos;
-	char* username;
-	char* password;
-	char* host;
-	char* port;
-	int showtopics;
-	int keepalive;
-} opts =
-{
-	"stdout-subscriber", 0, "\n", 2, NULL, NULL, "localhost", "1883", 0, 10
-};
 
 void getopts(int argc, char** argv);
 

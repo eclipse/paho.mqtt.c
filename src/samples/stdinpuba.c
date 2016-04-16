@@ -56,32 +56,6 @@
 volatile int toStop = 0;
 
 
-void usage()
-{
-	printf("MQTT stdin publisher\n");
-	printf("Usage: stdinpub topicname <options>, where options are:\n");
-	printf("  --host <hostname> (default is localhost)\n");
-	printf("  --port <port> (default is 1883)\n");
-	printf("  --qos <qos> (default is 0)\n");
-	printf("  --retained (default is off)\n");
-	printf("  --delimiter <delim> (default is \\n)\n");
-	printf("  --clientid <clientid> (default is stdin-publisher-async)\n");
-	printf("  --maxdatalen <bytes> (default is 100)\n");
-	printf("  --username none\n");
-	printf("  --password none\n");
-	printf("  --keepalive <seconds> (default is 10 seconds)\n");
-	exit(-1);
-}
-
-
-
-void cfinish(int sig)
-{
-	signal(SIGINT, NULL);
-	toStop = 1;
-}
-
-
 struct
 {
 	char* clientid;
@@ -99,6 +73,32 @@ struct
 {
 	"stdin-publisher-async", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", 0, 10
 };
+
+
+void usage()
+{
+	printf("MQTT stdin publisher\n");
+	printf("Usage: stdinpub topicname <options>, where options are:\n");
+	printf("  --host <hostname> (default is %s)\n", opts.host);
+	printf("  --port <port> (default is %s)\n", opts.port);
+	printf("  --qos <qos> (default is %d)\n", opts.qos);
+	printf("  --retained (default is %s)\n", opts.retained ? "on" : "off");
+	printf("  --delimiter <delim> (default is \\n)\n");
+	printf("  --clientid <clientid> (default is %s)\n", opts.clientid);
+	printf("  --maxdatalen <bytes> (default is %d)\n", opts.maxdatalen);
+	printf("  --username none\n");
+	printf("  --password none\n");
+	printf("  --keepalive <seconds> (default is 10 seconds)\n");
+	exit(-1);
+}
+
+
+
+void cfinish(int sig)
+{
+	signal(SIGINT, NULL);
+	toStop = 1;
+}
 
 void getopts(int argc, char** argv);
 

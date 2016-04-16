@@ -66,7 +66,7 @@ void usage()
 	printf("  --clientid <clientid> (default is hostname+timestamp)\n");
 	printf("  --username none\n");
 	printf("  --password none\n");
-  printf("  --showtopics <on or off> (default is on if the topic has a wildcard, else off)\n");
+	printf("  --showtopics <on or off> (default is on if the topic has a wildcard, else off)\n");
 	exit(-1);
 }
 
@@ -92,14 +92,14 @@ void cfinish(int sig)
 struct opts_struct
 {
 	char* clientid;
-  int nodelimiter;
+	int nodelimiter;
 	char* delimiter;
 	int qos;
 	char* username;
 	char* password;
 	char* host;
 	char* port;
-  int showtopics;
+	int showtopics;
 } opts =
 {
 	"stdout-subscriber", 0, "\n", 2, NULL, NULL, "localhost", "1883", 0
@@ -120,9 +120,9 @@ int main(int argc, char** argv)
 	
 	topic = argv[1];
 
-  if (strchr(topic, '#') || strchr(topic, '+'))
+	if (strchr(topic, '#') || strchr(topic, '+'))
 		opts.showtopics = 1;
-  if (opts.showtopics)
+	if (opts.showtopics)
 		printf("topic is %s\n", topic);
 
 	getopts(argc, argv);	
@@ -154,7 +154,7 @@ int main(int argc, char** argv)
 		{
 			if (opts.showtopics)
 				printf("%s\t", topicName);
-      if (opts.nodelimiter)
+			if (opts.nodelimiter)
 				printf("%.*s", message->payloadlen, (char*)message->payload);
 			else
 				printf("%.*s%s", message->payloadlen, (char*)message->payload, opts.delimiter);
@@ -170,7 +170,7 @@ int main(int argc, char** argv)
 
 	MQTTClient_disconnect(client, 0);
 
- 	MQTTClient_destroy(&client);
+	MQTTClient_destroy(&client);
 
 	return 0;
 }

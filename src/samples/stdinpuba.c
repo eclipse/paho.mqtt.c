@@ -90,7 +90,7 @@ struct
 	char* password;
 	char* host;
 	char* port;
-  int verbose;
+	int verbose;
 } opts =
 {
 	"publisher", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", 0
@@ -394,7 +394,7 @@ int main(int argc, char** argv)
 	if ((rc = MQTTAsync_disconnect(client, &disc_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start disconnect, return code %d\n", rc);
-	    exit(-1);	
+		exit(-1);
 	}
 
 	while	(!disconnected)
@@ -404,7 +404,7 @@ int main(int argc, char** argv)
 			usleep(10000L);
 		#endif
 
- 	MQTTAsync_destroy(&client);
+	MQTTAsync_destroy(&client);
 
 	return 0;
 }

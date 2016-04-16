@@ -101,7 +101,7 @@ struct
 	char* password;
 	char* host;
 	char* port;
-  int verbose;
+	int verbose;
 } opts =
 {
 	"publisher", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", 0
@@ -130,7 +130,7 @@ int main(int argc, char** argv)
 	getopts(argc, argv);
 	
 	sprintf(url, "%s:%s", opts.host, opts.port);
-  if (opts.verbose)
+	if (opts.verbose)
 		printf("URL is %s\n", url);
 	
 	topic = argv[1];
@@ -188,7 +188,7 @@ int main(int argc, char** argv)
 
 	MQTTClient_disconnect(client, 0);
 
- 	MQTTClient_destroy(&client);
+	MQTTClient_destroy(&client);
 
 	return 0;
 }

@@ -63,7 +63,7 @@ void usage()
 	printf("  --port <port> (default is 1883)\n");
 	printf("  --qos <qos> (default is 0)\n");
 	printf("  --retained (default is off)\n");
-	printf("  --delimiter <delim> (default is \\n)");
+	printf("  --delimiter <delim> (default is \\n)\n");
 	printf("  --clientid <clientid> (default is hostname+timestamp)");
 	printf("  --maxdatalen 100\n");
 	printf("  --username none\n");

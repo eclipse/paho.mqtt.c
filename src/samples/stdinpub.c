@@ -28,7 +28,7 @@
 	--port 1883
 	--qos 0
 	--delimiters \n
-	--clientid stdin_publisher
+	--clientid stdin-publisher
 	--maxdatalen 100
 	--keepalive 10
 	
@@ -66,7 +66,7 @@ void usage()
 	printf("  --qos <qos> (default is 0)\n");
 	printf("  --retained (default is off)\n");
 	printf("  --delimiter <delim> (default is \\n)\n");
-	printf("  --clientid <clientid> (default is hostname+timestamp)");
+	printf("  --clientid <clientid> (default is stdin-publisher)\n");
 	printf("  --maxdatalen 100\n");
 	printf("  --username none\n");
 	printf("  --password none\n");
@@ -108,7 +108,7 @@ struct
 	int keepalive;
 } opts =
 {
-	"publisher", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", 0, 10
+	"stdin-publisher", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", 0, 10
 };
 
 void getopts(int argc, char** argv);

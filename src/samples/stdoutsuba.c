@@ -30,7 +30,7 @@
 	--port 1883
 	--qos 2
 	--delimiter \n
-	--clientid stdout_subscriber
+	--clientid stdout-subscriber-async
 	--showtopics off
 	--keepalive 10
 	
@@ -84,7 +84,7 @@ struct
 	int keepalive;
 } opts =
 {
-	"stdout-subscriber", 1, '\n', 2, NULL, NULL, "localhost", "1883", 0, 10
+	"stdout-subscriber-async", 1, '\n', 2, NULL, NULL, "localhost", "1883", 0, 10
 };
 
 
@@ -96,7 +96,7 @@ void usage()
 	printf("  --port <port> (default is 1883)\n");
 	printf("  --qos <qos> (default is 2)\n");
 	printf("  --delimiter <delim> (default is no delimiter)\n");
-	printf("  --clientid <clientid> (default is hostname+timestamp)\n");
+	printf("  --clientid <clientid> (default is stdout-subscriber-async)\n");
 	printf("  --username none\n");
 	printf("  --password none\n");
 	printf("  --showtopics <on or off> (default is on if the topic has a wildcard, else off)\n");

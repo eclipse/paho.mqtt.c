@@ -66,7 +66,7 @@ void usage()
 	printf("  --retained (default is off)\n");
 	printf("  --delimiter <delim> (default is \\n)\n");
 	printf("  --clientid <clientid> (default is stdin-publisher-async)\n");
-	printf("  --maxdatalen 100\n");
+	printf("  --maxdatalen <bytes> (default is 100)\n");
 	printf("  --username none\n");
 	printf("  --password none\n");
 	printf("  --keepalive <seconds> (default is 10 seconds)\n");

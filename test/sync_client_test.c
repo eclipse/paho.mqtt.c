@@ -72,7 +72,7 @@ struct Options
 void usage(void)
 {
 	printf("options:\n  connection, clientid1, clientid2, username, password, MQTTversion, iterations, verbose\n");
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 void getopts(int argc, char** argv)

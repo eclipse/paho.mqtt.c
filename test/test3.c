@@ -76,7 +76,7 @@ void usage(void)
 	printf("\t--verbose - Enable verbose output \n");
 	printf("\tserver connection URLs should be in the form; (tcp|ssl)://hostname:port\n");
 	printf("\t--help - This help output\n");
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 struct Options

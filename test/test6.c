@@ -41,7 +41,7 @@
 void usage(void)
 {
 	printf("help!!\n");
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 static char pub_topic[200];

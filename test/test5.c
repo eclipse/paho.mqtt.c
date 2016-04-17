@@ -61,7 +61,7 @@ void usage(void)
 	printf("\t--server_key <key_file> - Use <key_file> as the trusted certificate for server\n");
 	printf("\t--verbose - Enable verbose output \n");
 	printf("\t--help - This help output\n");
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 struct Options

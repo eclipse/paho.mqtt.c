@@ -55,7 +55,7 @@
 void usage(void)
 {
 	printf("help!!\n");
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 struct Options

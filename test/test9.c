@@ -51,7 +51,7 @@ char unique[50]; // unique suffix/prefix to add to clientid/topic etc
 void usage(void)
 {
 	printf("help!!\n");
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 struct Options

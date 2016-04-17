@@ -81,7 +81,7 @@ thread_type Thread_start(thread_fn fn, void* parameter)
  * Create a new mutex
  * @return the new mutex
  */
-mutex_type Thread_create_mutex()
+mutex_type Thread_create_mutex(void)
 {
 	mutex_type mutex = NULL;
 	int rc = 0;
@@ -166,7 +166,7 @@ void Thread_destroy_mutex(mutex_type mutex)
  * Get the thread id of the thread from which this function is called
  * @return thread id, type varying according to OS
  */
-thread_id_type Thread_getid()
+thread_id_type Thread_getid(void)
 {
 	#if defined(WIN32) || defined(WIN64)
 		return GetCurrentThreadId();
@@ -194,7 +194,7 @@ static struct
  * Create a new semaphore
  * @return the new condition variable
  */
-sem_type Thread_create_sem()
+sem_type Thread_create_sem(void)
 {
 	sem_type sem = NULL;
 	int rc = 0;
@@ -364,7 +364,7 @@ int Thread_destroy_sem(sem_type sem)
  * Create a new condition variable
  * @return the condition variable struct
  */
-cond_type Thread_create_cond()
+cond_type Thread_create_cond(void)
 {
 	cond_type condvar = NULL;
 	int rc = 0;

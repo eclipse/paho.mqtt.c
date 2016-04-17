@@ -143,7 +143,7 @@ static mutex_type mqttcommand_mutex = &mqttcommand_mutex_store;
 static cond_type_struct send_cond_store = { PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER };
 static cond_type send_cond = &send_cond_store;
 
-void MQTTAsync_init()
+void MQTTAsync_init(void)
 {
 	pthread_mutexattr_t attr;
 	int rc;
@@ -173,7 +173,7 @@ static List* commands = NULL;
 
 MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc);
 int MQTTAsync_cleanSession(Clients* client);
-void MQTTAsync_stop();
+void MQTTAsync_stop(void);
 int MQTTAsync_disconnect_internal(MQTTAsync handle, int timeout);
 void MQTTAsync_closeOnly(Clients* client);
 void MQTTAsync_closeSession(Clients* client);
@@ -932,7 +932,7 @@ void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* command)
  * Cleaning up means removing any publication data that was stored because the write did
  * not originally complete.
  */
-void MQTTProtocol_checkPendingWrites()
+void MQTTProtocol_checkPendingWrites(void)
 {
 	FUNC_ENTRY;
 	if (state.pending_writes.count > 0)
@@ -1056,7 +1056,7 @@ void MQTTAsync_writeComplete(int socket)
 }
 			
 
-int MQTTAsync_processCommand()
+int MQTTAsync_processCommand(void)
 {
 	int rc = 0;
 	MQTTAsync_queuedCommand* command = NULL;
@@ -1302,7 +1302,7 @@ exit:
 }
 
 
-void MQTTAsync_checkTimeouts()
+void MQTTAsync_checkTimeouts(void)
 {
 	ListElement* current = NULL;
 	static time_t last = 0L;
@@ -1888,7 +1888,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 }
 
 
-void MQTTAsync_stop()
+void MQTTAsync_stop(void)
 {
 	int rc = 0;
 
@@ -3129,7 +3129,7 @@ void MQTTAsync_setTraceCallback(MQTTAsync_traceCallback* callback)
 }
 
 
-MQTTAsync_nameValue* MQTTAsync_getVersionInfo()
+MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void)
 {
 	#define MAX_INFO_STRINGS 8
 	static MQTTAsync_nameValue libinfo[MAX_INFO_STRINGS + 1];

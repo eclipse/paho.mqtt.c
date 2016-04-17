@@ -210,7 +210,7 @@ void Log_setTraceLevel(enum LOG_LEVELS level)
 }
 
 
-void Log_terminate()
+void Log_terminate(void)
 {
 	free(trace_queue);
 	trace_queue = NULL;
@@ -232,7 +232,7 @@ void Log_terminate()
 }
 
 
-static traceEntry* Log_pretrace()
+static traceEntry* Log_pretrace(void)
 {
 	traceEntry *cur_entry = NULL;
 

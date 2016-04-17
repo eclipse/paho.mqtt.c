@@ -109,7 +109,7 @@ int Socket_error(char* aString, int sock)
 /**
  * Initialize the socket module
  */
-void Socket_outInitialize()
+void Socket_outInitialize(void)
 {
 #if defined(WIN32) || defined(WIN64)
 	WORD    winsockVer = 0x0202;
@@ -138,7 +138,7 @@ void Socket_outInitialize()
 /**
  * Terminate the socket module
  */
-void Socket_outTerminate()
+void Socket_outTerminate(void)
 {
 	FUNC_ENTRY;
 	ListFree(s.connect_pending);

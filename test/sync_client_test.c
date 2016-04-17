@@ -69,7 +69,7 @@ struct Options
 };
 
 
-void usage()
+void usage(void)
 {
 	printf("options:\n  connection, clientid1, clientid2, username, password, MQTTversion, iterations, verbose\n");
 	exit(-1);
@@ -284,7 +284,7 @@ int messageArrived(void* context, char* topicName, int topicLen, MQTTClient_mess
 }
 
 
-void clearMessages()
+void clearMessages(void)
 {
 	int i;
 
@@ -296,7 +296,7 @@ void clearMessages()
 	messageCount = 0;
 }
 
-void cleanup()
+void cleanup(void)
 {
 	// clean all client state
 	char* clientids[] = {options.clientid1, options.clientid2};
@@ -365,7 +365,7 @@ void cleanup()
 }
 
  
-int basic_test()
+int basic_test(void)
 {
 	int i, rc;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
@@ -428,7 +428,7 @@ int basic_test()
 
 
 
-int offline_message_queueing_test()
+int offline_message_queueing_test(void)
 {
 	int i, rc;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
@@ -505,7 +505,7 @@ int offline_message_queueing_test()
 }
 
 
-int retained_message_test()
+int retained_message_test(void)
 { 
 	int i, rc;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
@@ -674,7 +674,7 @@ typedef struct
 } MQTTClients;
 
  
-int will_message_test()
+int will_message_test(void)
 {
 	int i, rc, count = 0;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
@@ -740,7 +740,7 @@ int will_message_test()
 }
 
 
-int overlapping_subscriptions_test()
+int overlapping_subscriptions_test(void)
 {
   /* overlapping subscriptions. When there is more than one matching subscription for the same client for a topic,
    the server may send back one message with the highest QoS of any matching subscription, or one message for
@@ -806,7 +806,7 @@ int overlapping_subscriptions_test()
 }
 
 
-int keepalive_test()
+int keepalive_test(void)
 {
 	/* keepalive processing.  We should be kicked off by the server if we don't send or receive any data, and don't send
 	any pings either. */
@@ -870,7 +870,7 @@ int keepalive_test()
 
 
 
-int redelivery_on_reconnect_test()
+int redelivery_on_reconnect_test(void)
 {
 	/* redelivery on reconnect. When a QoS 1 or 2 exchange has not been completed, the server should retry the 
 	 appropriate MQTT packets */
@@ -932,7 +932,7 @@ int redelivery_on_reconnect_test()
 
 
 
-int zero_length_clientid_test()
+int zero_length_clientid_test(void)
 {
 	int i, rc, count = 0;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
@@ -971,7 +971,7 @@ int zero_length_clientid_test()
 }
 
 
-int dollar_topics_test()
+int dollar_topics_test(void)
 {
   /* $ topics. The specification says that a topic filter which starts with a wildcard does not match topic names that
    	begin with a $.  Publishing to a topic which starts with a $ may not be allowed on some servers (which is entirely valid),
@@ -1028,7 +1028,7 @@ int dollar_topics_test()
 }
 
 
-int subscribe_failure_test()
+int subscribe_failure_test(void)
 {
   /* Subscribe failure.  A new feature of MQTT 3.1.1 is the ability to send back negative reponses to subscribe
    requests.  One way of doing this is to subscribe to a topic which is not allowed to be subscribed to.

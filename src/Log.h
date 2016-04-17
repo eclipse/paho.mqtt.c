@@ -72,7 +72,7 @@ typedef struct
 } Log_nameValue;
 
 int Log_initialize(Log_nameValue*);
-void Log_terminate();
+void Log_terminate(void);
 
 void Log(int, int, char *, ...);
 void Log_stackTrace(int, int, int, int, const char*, int, int*);

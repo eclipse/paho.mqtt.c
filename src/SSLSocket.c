@@ -393,7 +393,7 @@ extern void SSLLocks_callback(int mode, int n, const char *file, int line)
 	}
 }
 
-int SSLSocket_initialize()   
+int SSLSocket_initialize(void)
 {
 	int rc = 0;
 	/*int prc;*/
@@ -444,7 +444,7 @@ exit:
 	return rc;
 }
 
-void SSLSocket_terminate()
+void SSLSocket_terminate(void)
 {
 	FUNC_ENTRY;
 	EVP_cleanup();
@@ -806,7 +806,7 @@ void SSLSocket_addPendingRead(int sock)
 }
 
 
-int SSLSocket_getPendingRead()
+int SSLSocket_getPendingRead(void)
 {
 	int sock = -1;
 	

@@ -131,7 +131,7 @@ static mutex_type unsubscribe_mutex = &unsubscribe_mutex_store;
 static pthread_mutex_t connect_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 static mutex_type connect_mutex = &connect_mutex_store;
 
-void MQTTClient_init()
+void MQTTClient_init(void)
 {
 	pthread_mutexattr_t attr;
 	int rc;
@@ -163,7 +163,7 @@ static thread_id_type run_id = 0;
 MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long timeout);
 MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc);
 int MQTTClient_cleanSession(Clients* client);
-void MQTTClient_stop();
+void MQTTClient_stop(void);
 int MQTTClient_disconnect_internal(MQTTClient handle, int timeout);
 int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal, int stop);
 void MQTTClient_writeComplete(int socket);
@@ -629,7 +629,7 @@ thread_return_type WINAPI MQTTClient_run(void* n)
 }
 
 
-void MQTTClient_stop()
+void MQTTClient_stop(void)
 {
 	int rc = 0;
 
@@ -1930,7 +1930,7 @@ exit:
 	return rc;
 }
 
-MQTTClient_nameValue* MQTTClient_getVersionInfo()
+MQTTClient_nameValue* MQTTClient_getVersionInfo(void)
 {
 	#define MAX_INFO_STRINGS 8
 	static MQTTClient_nameValue libinfo[MAX_INFO_STRINGS + 1];
@@ -1971,7 +1971,7 @@ MQTTClient_nameValue* MQTTClient_getVersionInfo()
  * Cleaning up means removing any publication data that was stored because the write did
  * not originally complete.
  */
-void MQTTProtocol_checkPendingWrites()
+void MQTTProtocol_checkPendingWrites(void)
 {
 	FUNC_ENTRY;
 	if (state.pending_writes.count > 0)

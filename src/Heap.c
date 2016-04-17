@@ -353,7 +353,7 @@ void HeapScan(int log_level)
 /**
  * Heap initialization.
  */
-int Heap_initialize()
+int Heap_initialize(void)
 {
 	TreeInitializeNoMalloc(&heap, ptrCompare);
 	heap.heap_tracking = 0; /* no recursive heap tracking! */
@@ -364,7 +364,7 @@ int Heap_initialize()
 /**
  * Heap termination.
  */
-void Heap_terminate()
+void Heap_terminate(void)
 {
 	Log(TRACE_MIN, -1, "Maximum heap use was %d bytes", state.max_size);
 	if (state.current_size > 20) /* One log list is freed after this function is called */
@@ -379,7 +379,7 @@ void Heap_terminate()
  * Access to heap state
  * @return pointer to the heap state structure
  */
-heap_info* Heap_get_info()
+heap_info* Heap_get_info(void)
 {
 	return &state;
 }

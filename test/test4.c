@@ -46,7 +46,7 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
-void usage()
+void usage(void)
 {
 	printf("help!!\n");
 	exit(-1);
@@ -222,7 +222,7 @@ START_TIME_TYPE global_start_time;
 char output[3000];
 char* cur_output = output;
 
-void write_test_result()
+void write_test_result(void)
 {
 	long duration = elapsed(global_start_time);
 

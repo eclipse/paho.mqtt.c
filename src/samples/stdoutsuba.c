@@ -88,7 +88,7 @@ struct
 };
 
 
-void usage()
+void usage(void)
 {
 	printf("MQTT stdout subscriber\n");
 	printf("Usage: stdoutsub topicname <options>, where options are:\n");

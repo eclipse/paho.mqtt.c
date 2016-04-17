@@ -90,7 +90,7 @@ void usage(void)
 	printf("  --username none\n");
 	printf("  --password none\n");
 	printf("  --keepalive <seconds> (default is %d seconds)\n", opts.keepalive);
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 
@@ -100,7 +100,7 @@ void myconnect(MQTTClient* client, MQTTClient_connectOptions* opts)
 	if (MQTTClient_connect(*client, opts) != 0)
 	{
 		printf("Failed to connect\n");
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -194,7 +194,7 @@ int main(int argc, char** argv)
 
 	MQTTClient_destroy(&client);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 void getopts(int argc, char** argv)

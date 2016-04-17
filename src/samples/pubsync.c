@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
     if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to connect, return code %d\n", rc);
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
     pubmsg.payload = PAYLOAD;
     pubmsg.payloadlen = strlen(PAYLOAD);

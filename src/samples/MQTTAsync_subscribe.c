@@ -124,7 +124,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	if ((rc = MQTTAsync_subscribe(client, TOPIC, QOS, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start subscribe, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -151,7 +151,7 @@ int main(int argc, char* argv[])
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 
 	while	(!subscribed)
@@ -173,7 +173,7 @@ int main(int argc, char* argv[])
 	if ((rc = MQTTAsync_disconnect(client, &disc_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start disconnect, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
  	while	(!disc_finished)
 		#if defined(WIN32)

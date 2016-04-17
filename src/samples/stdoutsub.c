@@ -89,7 +89,7 @@ void usage(void)
 	printf("  --password none\n");
 	printf("  --showtopics <on or off> (default is on if the topic has a wildcard, else off)\n");
 	printf("  --keepalive <seconds> (default is %d seconds)\n", opts.keepalive);
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 
@@ -99,7 +99,7 @@ void myconnect(MQTTClient* client, MQTTClient_connectOptions* opts)
 	if ((rc = MQTTClient_connect(*client, opts)) != 0)
 	{
 		printf("Failed to connect, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -177,7 +177,7 @@ int main(int argc, char** argv)
 
 	MQTTClient_destroy(&client);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 void getopts(int argc, char** argv)

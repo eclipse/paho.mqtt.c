@@ -101,7 +101,7 @@ void usage(void)
 	printf("  --password none\n");
 	printf("  --showtopics <on or off> (default is on if the topic has a wildcard, else off)\n");
 	printf("  --keepalive <seconds> (default is 10 seconds)\n");
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 
@@ -318,7 +318,7 @@ int main(int argc, char** argv)
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 
 	while (!subscribed)
@@ -342,7 +342,7 @@ int main(int argc, char** argv)
 	if ((rc = MQTTAsync_disconnect(client, &disc_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start disconnect, return code %d\n", rc);
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 
 	while	(!disconnected)
@@ -355,7 +355,7 @@ int main(int argc, char** argv)
 exit:
 	MQTTAsync_destroy(&client);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 

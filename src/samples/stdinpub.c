@@ -76,7 +76,7 @@ struct
 };
 
 
-void usage()
+void usage(void)
 {
 	printf("MQTT stdin publisher\n");
 	printf("Usage: stdinpub topicname <options>, where options are:\n");

@@ -68,8 +68,6 @@ char* client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
-extern Sockets s;
-
 static ClientStates ClientState =
 {
 	CLIENT_VERSION, /* version */

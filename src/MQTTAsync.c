@@ -53,8 +53,8 @@
 
 #define URI_TCP "tcp://"
 
-#define BUILD_TIMESTAMP "Sun Feb 14 19:24:53 GMT 2016"
-#define CLIENT_VERSION  "1.0.3"
+#define BUILD_TIMESTAMP "##MQTTCLIENT_BUILD_TAG##"
+#define CLIENT_VERSION  "##MQTTCLIENT_VERSION_TAG##"
 
 char* client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
@@ -278,6 +278,9 @@ typedef struct MQTTAsync_struct
 	MQTTAsync_messageArrived* ma;
 	MQTTAsync_deliveryComplete* dc;
 	void* context; /* the context to be associated with the main callbacks*/
+
+	MQTTAsync_connected* connected;
+	void* connected_context; /* the context to be associated with the connected callback*/
 	
 	MQTTAsync_command connect;				/* Connect operation properties */
 	MQTTAsync_command disconnect;			/* Disconnect operation properties */
@@ -300,6 +303,7 @@ typedef struct MQTTAsync_struct
 	int currentInterval;
 	START_TIME_TYPE lastConnectionFailedTime;
 	int retrying;
+	int reconnectNow;
 
 } MQTTAsyncs;
 
@@ -442,7 +446,7 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 	if (options)
 	{
 		m->createOptions = malloc(sizeof(MQTTAsync_createOptions));
-		m->createOptions = options;
+		memcpy(m->createOptions, options, sizeof(MQTTAsync_createOptions));
 	}
 
 #if !defined(NO_PERSISTENCE)
@@ -822,6 +826,31 @@ void MQTTAsync_startConnectRetry(MQTTAsyncs* m)
 			m->retrying = 1;
 		}
 	}
+}
+
+
+int MQTTAsync_reconnect(MQTTAsync handle)
+{
+	int rc = MQTTASYNC_FAILURE;
+	MQTTAsyncs* m = handle;
+
+	FUNC_ENTRY;
+	MQTTAsync_lock_mutex(mqttasync_mutex);
+
+	if (m->automaticReconnect && m->shouldBeConnected)
+	{
+		m->reconnectNow = 1;
+		if (m->retrying == 0)
+		{
+			m->currentInterval = m->minRetryInterval;
+			m->retrying = 1;
+		}
+		rc = MQTTASYNC_SUCCESS;
+	}
+
+	MQTTAsync_unlock_mutex(mqttasync_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
 }
 
 
@@ -1308,7 +1337,7 @@ void MQTTAsync_checkTimeouts()
 
 		if (m->automaticReconnect && m->retrying)
 		{
-			if (MQTTAsync_elapsed(m->lastConnectionFailedTime) > (m->currentInterval * 1000))
+			if (m->reconnectNow || MQTTAsync_elapsed(m->lastConnectionFailedTime) > (m->currentInterval * 1000))
 			{
 				/* put the connect command to the head of the command queue, using the next serverURI */
 				MQTTAsync_queuedCommand* conn = malloc(sizeof(MQTTAsync_queuedCommand));
@@ -1317,6 +1346,7 @@ void MQTTAsync_checkTimeouts()
 				conn->command = m->connect;
 				Log(TRACE_MIN, -1, "Automatically attempting to reconnect");
 				MQTTAsync_addCommand(conn, sizeof(m->connect));
+				m->reconnectNow = 0;
 			}
 		}
 	}
@@ -1624,6 +1654,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 							Log(TRACE_MIN, -1, "Connect succeeded to %s", 
 								m->connect.details.conn.serverURIs[m->connect.details.conn.currentURI]);
 						MQTTAsync_freeConnect(m->connect);
+						int onSuccess = (m->connect.onSuccess != NULL); /* save setting of onSuccess callback */
 						if (m->connect.onSuccess)
 						{
 							MQTTAsync_successData data;
@@ -1636,6 +1667,13 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 							data.alt.connect.MQTTVersion = m->connect.details.conn.MQTTVersion;
 							data.alt.connect.sessionPresent = sessionPresent;
 							(*(m->connect.onSuccess))(m->connect.context, &data);
+							m->connect.onSuccess = NULL; /* don't accidentally call it again */
+						}
+						if (m->connected)
+						{
+							Log(TRACE_MIN, -1, "Calling connected for client %s", m->c->clientID);
+							char* reason = (onSuccess) ? "connect onSuccess called" : "automatic reconnect";
+							(*(m->connected))(m->connected_context, reason);
 						}
 					}
 					else
@@ -1841,6 +1879,28 @@ int MQTTAsync_setCallbacks(MQTTAsync handle, void* context,
 }
 
 
+int MQTTAsync_setConnected(MQTTAsync handle, void* context, MQTTAsync_connected* connected)
+{
+	int rc = MQTTASYNC_SUCCESS;
+	MQTTAsyncs* m = handle;
+
+	FUNC_ENTRY;
+	MQTTAsync_lock_mutex(mqttasync_mutex);
+
+	if (m == NULL || m->c->connect_state != 0)
+		rc = MQTTASYNC_FAILURE;
+	else
+	{
+		m->connected_context = context;
+		m->connected = connected;
+	}
+
+	MQTTAsync_unlock_mutex(mqttasync_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
 void MQTTAsync_closeOnly(Clients* client)
 {
 	FUNC_ENTRY;
@@ -1914,9 +1974,6 @@ int MQTTAsync_cleanSession(Clients* client)
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
-
-
-
 
 
 int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, size_t topicLen, MQTTAsync_message* mm)
@@ -2448,7 +2505,7 @@ int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen
 	if (m == NULL || m->c == NULL)
 		rc = MQTTASYNC_FAILURE;
 	else if (m->c->connected == 0 && (m->createOptions == NULL || 
-		m->createOptions->send_while_disconnected == 0 || m->shouldBeConnected == 0))
+		m->createOptions->sendWhileDisconnected == 0 || m->shouldBeConnected == 0))
 		rc = MQTTASYNC_DISCONNECTED;
 	else if (!UTF8_validateString(destinationName))
 		rc = MQTTASYNC_BAD_UTF8_STRING;

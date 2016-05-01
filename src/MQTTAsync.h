@@ -313,6 +313,23 @@ typedef void MQTTAsync_deliveryComplete(void* context, MQTTAsync_token token);
  */
 typedef void MQTTAsync_connectionLost(void* context, char* cause);
 
+
+/**
+ * This is a callback function, which will be called when the client
+ * library successfully connects.  This is superfluous when the connection
+ * is made in response to a MQTTAsync_connect call, because the onSuccess
+ * callback can be used.  It is intended for use when automatic reconnect
+ * is enabled, so that when a reconnection attempt succeeds in the background,
+ * the application is notified and can take any required actions.
+ * @param context A pointer to the <i>context</i> value originally passed to
+ * MQTTAsync_setCallbacks(), which contains any application-specific context.
+ * @param cause The reason for the disconnection.
+ * Currently, <i>cause</i> is always set to NULL.
+ */
+typedef void MQTTAsync_connected(void* context, char* cause);
+
+
+
 /** The data returned on completion of an unsuccessful API call in the response callback onFailure. */
 typedef struct
 {
@@ -436,6 +453,14 @@ typedef struct
  */
 DLLExport int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_connectionLost* cl,
 									MQTTAsync_messageArrived* ma, MQTTAsync_deliveryComplete* dc);
+
+
+
+
+DLLExport int MQTTAsync_setConnected(MQTTAsync handle, void* context, MQTTAsync_connected* co);
+
+
+
 		
 
 /**
@@ -491,9 +516,9 @@ typedef struct
 	/** The version number of this structure.  Must be 0 */
 	int struct_version;
 	/** Whether to allow messages to be sent when the client library is not connected. */
-	int send_while_disconnected;
+	int sendWhileDisconnected;
 	/** the maximum number of messages allowed to be buffered while not connected. */
-	int max_buffered_messages;
+	int maxBufferedMessages;
 } MQTTAsync_createOptions;
 
 #define MQTTAsync_createOptions_initializer { {'M', 'Q', 'C', 'O'}, 0, 0, 100 }

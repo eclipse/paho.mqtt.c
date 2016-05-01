@@ -208,7 +208,7 @@ int main(int argc, char** argv)
 	topic = argv[1];
 	printf("Using topic %s\n", topic);
 
-	create_opts.send_while_disconnected = 1;
+	create_opts.sendWhileDisconnected = 1;
 	rc = MQTTAsync_createWithOptions(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL, &create_opts);
 
 	signal(SIGINT, cfinish);

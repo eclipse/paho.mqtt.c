@@ -614,29 +614,28 @@ int Socket_new(char* addr, int port, int* sock)
 		{
 			if (res->ai_family == AF_INET)
 			{
-				result = res;
 				break;
 			}
 			res = res->ai_next;
 		}
 
-		if (result == NULL)
+		if (res == NULL)
 			rc = -1;
 		else
 #if defined(AF_INET6)
-		if (result->ai_family == AF_INET6)
+		if (res->ai_family == AF_INET6)
 		{
 			address6.sin6_port = htons(port);
 			address6.sin6_family = family = AF_INET6;
-			address6.sin6_addr = ((struct sockaddr_in6*)(result->ai_addr))->sin6_addr;
+			address6.sin6_addr = ((struct sockaddr_in6*)(res->ai_addr))->sin6_addr;
 		}
 		else
 #endif
-		if (result->ai_family == AF_INET)
+		if (res->ai_family == AF_INET)
 		{
 			address.sin_port = htons(port);
 			address.sin_family = family = AF_INET;
-			address.sin_addr = ((struct sockaddr_in*)(result->ai_addr))->sin_addr;
+			address.sin_addr = ((struct sockaddr_in*)(res->ai_addr))->sin_addr;
 		}
 		else
 			rc = -1;

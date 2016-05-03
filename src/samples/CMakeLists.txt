@@ -36,15 +36,25 @@ TARGET_LINK_LIBRARIES(pubsync paho-mqtt3c)
 TARGET_LINK_LIBRARIES(pubasync paho-mqtt3c)
 TARGET_LINK_LIBRARIES(subasync paho-mqtt3c)
 
+ADD_EXECUTABLE(stdinpuba stdinpuba.c)
 ADD_EXECUTABLE(stdoutsuba stdoutsuba.c)
 ADD_EXECUTABLE(MQTTAsync_subscribe MQTTAsync_subscribe.c)
 ADD_EXECUTABLE(MQTTAsync_publish MQTTAsync_publish.c)
 
+TARGET_LINK_LIBRARIES(stdinpuba paho-mqtt3a)
 TARGET_LINK_LIBRARIES(stdoutsuba paho-mqtt3a)
 TARGET_LINK_LIBRARIES(MQTTAsync_subscribe paho-mqtt3a)
 TARGET_LINK_LIBRARIES(MQTTAsync_publish paho-mqtt3a)
 
-INSTALL(TARGETS stdinpub stdoutsub pubsync pubasync subasync stdoutsuba MQTTAsync_subscribe MQTTAsync_publish
+INSTALL(TARGETS stdinpub
+                stdoutsub
+                pubsync
+                pubasync
+                subasync
+                stdinpuba
+                stdoutsuba
+                MQTTAsync_subscribe
+                MQTTAsync_publish
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib)
 

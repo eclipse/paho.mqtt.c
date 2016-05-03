@@ -76,6 +76,22 @@ INSTALL(TARGETS paho-mqtt3c paho-mqtt3a
     LIBRARY DESTINATION lib)
 INSTALL(TARGETS MQTTVersion
     RUNTIME DESTINATION bin)
+
+IF (PAHO_BUILD_STATIC)
+    ADD_LIBRARY(paho-mqtt3c-static STATIC $<TARGET_OBJECTS:common_obj> MQTTClient.c)
+    ADD_LIBRARY(paho-mqtt3a-static STATIC $<TARGET_OBJECTS:common_obj> MQTTAsync.c)
+
+    TARGET_LINK_LIBRARIES(paho-mqtt3c-static ${LIBS_SYSTEM})
+    TARGET_LINK_LIBRARIES(paho-mqtt3a-static ${LIBS_SYSTEM})
+
+    INSTALL(TARGETS paho-mqtt3c-static
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib)
+    INSTALL(TARGETS paho-mqtt3a-static
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib)
+ENDIF()
+
 INSTALL(FILES MQTTAsync.h MQTTClient.h MQTTClientPersistence.h
     DESTINATION include)
 
@@ -107,5 +123,21 @@ IF (PAHO_WITH_SSL)
     INSTALL(TARGETS paho-mqtt3as
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib)
+
+    IF (PAHO_BUILD_STATIC)
+        ADD_LIBRARY(paho-mqtt3cs-static STATIC $<TARGET_OBJECTS:common_ssl_obj> MQTTClient.c SSLSocket.c)
+        ADD_LIBRARY(paho-mqtt3as-static STATIC $<TARGET_OBJECTS:common_ssl_obj> MQTTAsync.c SSLSocket.c)
+
+        TARGET_LINK_LIBRARIES(paho-mqtt3cs-static ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
+        TARGET_LINK_LIBRARIES(paho-mqtt3as-static ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
+
+        INSTALL(TARGETS paho-mqtt3cs-static
+            ARCHIVE DESTINATION lib
+            LIBRARY DESTINATION lib)
+        INSTALL(TARGETS paho-mqtt3as-static
+            ARCHIVE DESTINATION lib
+            LIBRARY DESTINATION lib)
+    ENDIF()
+
 ENDIF()
 

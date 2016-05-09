@@ -72,10 +72,10 @@ HEADERS = $(srcdir)/*.h
 HEADERS_C = $(filter-out $(srcdir)/MQTTAsync.h, $(HEADERS))
 HEADERS_A = $(HEADERS)
 
-SAMPLE_FILES_C = stdinpub stdoutsub pubsync pubasync subasync
+SAMPLE_FILES_C = set4/stdinpub set4/stdoutsub set5/pahopub set5/pahosub pubsync set1/pubasync set1/subasync
 SYNC_SAMPLES = ${addprefix ${blddir}/samples/,${SAMPLE_FILES_C}}
 
-SAMPLE_FILES_A = stdoutsuba MQTTAsync_subscribe MQTTAsync_publish
+SAMPLE_FILES_A = set3/stdoutsuba set2/MQTTAsync_subscribe set2/MQTTAsync_publish
 ASYNC_SAMPLES = ${addprefix ${blddir}/samples/,${SAMPLE_FILES_A}}
 
 TEST_FILES_C = test1 sync_client_test test_mqtt4sync
@@ -168,7 +168,11 @@ clean:
 	rm -rf ${blddir}/*
 
 mkdir:
-	-mkdir -p ${blddir}/samples
+	-mkdir -p ${blddir}/samples/set1
+	-mkdir -p ${blddir}/samples/set2
+	-mkdir -p ${blddir}/samples/set3
+	-mkdir -p ${blddir}/samples/set4
+	-mkdir -p ${blddir}/samples/set5
 	-mkdir -p ${blddir}/test
 	echo OSTYPE is $(OSTYPE)
 

@@ -2558,7 +2558,6 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 	struct timeval tp = {0L, 0L};
 	static Ack ack;
 	MQTTPacket* pack = NULL;
-	static int nosockets_count = 0;
 
 	FUNC_ENTRY;
 	if (timeout > 0L)
@@ -2584,8 +2583,6 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 			}
 #endif
 		}
-		else
-			nosockets_count = 0;
 #if defined(OPENSSL)
 	}
 #endif

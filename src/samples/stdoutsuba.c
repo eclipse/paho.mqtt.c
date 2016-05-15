@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial contribution
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
+ *    Guilherme Maciel Ferreira - add keep alive option
  *******************************************************************************/
 
 /*
@@ -29,7 +30,9 @@
 	--port 1883
 	--qos 2
 	--delimiter \n
-	--clientid stdout_subscriber
+	--clientid stdout-subscriber-async
+	--showtopics off
+	--keepalive 10
 	
 	--userid none
 	--password none
@@ -70,33 +73,35 @@ void cfinish(int sig)
 struct
 {
 	char* clientid;
-  int nodelimiter;
+	int nodelimiter;
 	char delimiter;
 	int qos;
 	char* username;
 	char* password;
 	char* host;
 	char* port;
-  int showtopics;
+	int showtopics;
+	int keepalive;
 } opts =
 {
-	"stdout-subscriber", 1, '\n', 2, NULL, NULL, "localhost", "1883", 0
+	"stdout-subscriber-async", 1, '\n', 2, NULL, NULL, "localhost", "1883", 0, 10
 };
 
 
-void usage()
+void usage(void)
 {
 	printf("MQTT stdout subscriber\n");
 	printf("Usage: stdoutsub topicname <options>, where options are:\n");
-	printf("  --host <hostname> (default is localhost)\n");
-	printf("  --port <port> (default is 1883)\n");
-	printf("  --qos <qos> (default is 2)\n");
+	printf("  --host <hostname> (default is %s)\n", opts.host);
+	printf("  --port <port> (default is %s)\n", opts.port);
+	printf("  --qos <qos> (default is %d)\n", opts.qos);
 	printf("  --delimiter <delim> (default is no delimiter)\n");
-	printf("  --clientid <clientid> (default is hostname+timestamp)\n");
+	printf("  --clientid <clientid> (default is %s)\n", opts.clientid);
 	printf("  --username none\n");
 	printf("  --password none\n");
 	printf("  --showtopics <on or off> (default is on if the topic has a wildcard, else off)\n");
-	exit(-1);
+	printf("  --keepalive <seconds> (default is 10 seconds)\n");
+	exit(EXIT_FAILURE);
 }
 
 
@@ -184,6 +189,13 @@ void getopts(int argc, char** argv)
 			else
 				usage();
 		}
+		else if (strcmp(argv[count], "--keepalive") == 0)
+		{
+			if (++count < argc)
+				opts.keepalive = atoi(argv[count]);
+			else
+				usage();
+		}
 		count++;
 	}
 	
@@ -201,7 +213,7 @@ int messageArrived(void *context, char *topicName, int topicLen, MQTTAsync_messa
 	fflush(stdout);
 	MQTTAsync_freeMessage(&message);
 	MQTTAsync_free(topicName);
-  return 1;
+	return 1;
 }
 
 
@@ -247,7 +259,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	if ((rc = MQTTAsync_subscribe(client, topic, opts.qos, &ropts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start subscribe, return code %d\n", rc);
-    		finished = 1;	
+		finished = 1;
 	}
 }
 
@@ -296,7 +308,7 @@ int main(int argc, char** argv)
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
 
-	conn_opts.keepAliveInterval = 10;
+	conn_opts.keepAliveInterval = opts.keepalive;
 	conn_opts.cleansession = 1;
 	conn_opts.username = opts.username;
 	conn_opts.password = opts.password;
@@ -306,7 +318,7 @@ int main(int argc, char** argv)
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 
 	while (!subscribed)
@@ -330,10 +342,10 @@ int main(int argc, char** argv)
 	if ((rc = MQTTAsync_disconnect(client, &disc_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start disconnect, return code %d\n", rc);
-    exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 
-  while	(!disconnected)
+	while	(!disconnected)
 		#if defined(WIN32)
 			Sleep(100);
 		#else
@@ -343,7 +355,7 @@ int main(int argc, char** argv)
 exit:
 	MQTTAsync_destroy(&client);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 

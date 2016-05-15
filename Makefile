@@ -87,7 +87,7 @@ HEADERS_A = $(HEADERS)
 SAMPLE_FILES_C = stdinpub stdoutsub pubsync pubasync subasync
 SYNC_SAMPLES = ${addprefix ${blddir}/samples/,${SAMPLE_FILES_C}}
 
-SAMPLE_FILES_A = stdoutsuba MQTTAsync_subscribe MQTTAsync_publish
+SAMPLE_FILES_A = stdinpuba stdoutsuba MQTTAsync_subscribe MQTTAsync_publish
 ASYNC_SAMPLES = ${addprefix ${blddir}/samples/,${SAMPLE_FILES_A}}
 
 TEST_FILES_C = test1 test2 sync_client_test test_mqtt4sync 

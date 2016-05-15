@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial contribution
+ *    Guilherme Maciel Ferreira - add keep alive option
  *******************************************************************************/
  
  /*
@@ -27,8 +28,9 @@
 	--port 1883
 	--qos 0
 	--delimiters \n
-	--clientid stdin_publisher
+	--clientid stdin-publisher-async
 	--maxdatalen 100
+	--keepalive 10
 	
 	--userid none
 	--password none
@@ -54,31 +56,6 @@
 volatile int toStop = 0;
 
 
-void usage()
-{
-	printf("MQTT stdin publisher\n");
-	printf("Usage: stdinpub topicname <options>, where options are:\n");
-	printf("  --host <hostname> (default is localhost)\n");
-	printf("  --port <port> (default is 1883)\n");
-	printf("  --qos <qos> (default is 0)\n");
-	printf("  --retained (default is off)\n");
-	printf("  --delimiter <delim> (default is \\n)");
-	printf("  --clientid <clientid> (default is hostname+timestamp)");
-	printf("  --maxdatalen 100\n");
-	printf("  --username none\n");
-	printf("  --password none\n");
-	exit(-1);
-}
-
-
-
-void cfinish(int sig)
-{
-	signal(SIGINT, NULL);
-	toStop = 1;
-}
-
-
 struct
 {
 	char* clientid;
@@ -90,11 +67,38 @@ struct
 	char* password;
 	char* host;
 	char* port;
-  int verbose;
+	int verbose;
+	int keepalive;
 } opts =
 {
-	"publisher", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", 0
+	"stdin-publisher-async", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", 0, 10
 };
+
+
+void usage(void)
+{
+	printf("MQTT stdin publisher\n");
+	printf("Usage: stdinpub topicname <options>, where options are:\n");
+	printf("  --host <hostname> (default is %s)\n", opts.host);
+	printf("  --port <port> (default is %s)\n", opts.port);
+	printf("  --qos <qos> (default is %d)\n", opts.qos);
+	printf("  --retained (default is %s)\n", opts.retained ? "on" : "off");
+	printf("  --delimiter <delim> (default is \\n)\n");
+	printf("  --clientid <clientid> (default is %s)\n", opts.clientid);
+	printf("  --maxdatalen <bytes> (default is %d)\n", opts.maxdatalen);
+	printf("  --username none\n");
+	printf("  --password none\n");
+	printf("  --keepalive <seconds> (default is 10 seconds)\n");
+	exit(EXIT_FAILURE);
+}
+
+
+
+void cfinish(int sig)
+{
+	signal(SIGINT, NULL);
+	toStop = 1;
+}
 
 void getopts(int argc, char** argv);
 
@@ -139,7 +143,7 @@ void myconnect(MQTTAsync* client)
 	int rc = 0;
 
 	printf("Connecting\n");
-	conn_opts.keepAliveInterval = 10;
+	conn_opts.keepAliveInterval = opts.keepalive;
 	conn_opts.cleansession = 1;
 	conn_opts.username = opts.username;
 	conn_opts.password = opts.password;
@@ -152,7 +156,7 @@ void myconnect(MQTTAsync* client)
 	if ((rc = MQTTAsync_connect(*client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 	while	(connected == 0)
 		#if defined(WIN32)
@@ -201,7 +205,7 @@ void connectionLost(void* context, char* cause)
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -394,7 +398,7 @@ int main(int argc, char** argv)
 	if ((rc = MQTTAsync_disconnect(client, &disc_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start disconnect, return code %d\n", rc);
-	    exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 
 	while	(!disconnected)
@@ -404,9 +408,9 @@ int main(int argc, char** argv)
 			usleep(10000L);
 		#endif
 
- 	MQTTAsync_destroy(&client);
+	MQTTAsync_destroy(&client);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 void getopts(int argc, char** argv)
@@ -481,6 +485,13 @@ void getopts(int argc, char** argv)
 		{
 			if (++count < argc)
 				opts.delimiter = argv[count];
+			else
+				usage();
+		}
+		else if (strcmp(argv[count], "--keepalive") == 0)
+		{
+			if (++count < argc)
+				opts.keepalive = atoi(argv[count]);
 			else
 				usage();
 		}

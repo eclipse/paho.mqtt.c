@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial contribution
  *    Ian Craggs - change delimiter option from char to string
+ *    Guilherme Maciel Ferreira - add keep alive option
  *******************************************************************************/
 
 /*
@@ -29,7 +30,9 @@
 	--port 1883
 	--qos 2
 	--delimiter \n
-	--clientid stdout_subscriber
+	--clientid stdout-subscriber
+	--showtopics off
+	--keepalive 10
 	
 	--userid none
 	--password none
@@ -55,19 +58,38 @@
 volatile int toStop = 0;
 
 
-void usage()
+struct opts_struct
+{
+	char* clientid;
+	int nodelimiter;
+	char* delimiter;
+	int qos;
+	char* username;
+	char* password;
+	char* host;
+	char* port;
+	int showtopics;
+	int keepalive;
+} opts =
+{
+	"stdout-subscriber", 0, "\n", 2, NULL, NULL, "localhost", "1883", 0, 10
+};
+
+
+void usage(void)
 {
 	printf("MQTT stdout subscriber\n");
 	printf("Usage: stdoutsub topicname <options>, where options are:\n");
-	printf("  --host <hostname> (default is localhost)\n");
-	printf("  --port <port> (default is 1883)\n");
-	printf("  --qos <qos> (default is 2)\n");
+	printf("  --host <hostname> (default is %s)\n", opts.host);
+	printf("  --port <port> (default is %s)\n", opts.port);
+	printf("  --qos <qos> (default is %d)\n", opts.qos);
 	printf("  --delimiter <delim> (default is \\n)\n");
-	printf("  --clientid <clientid> (default is hostname+timestamp)\n");
+	printf("  --clientid <clientid> (default is %s)\n", opts.clientid);
 	printf("  --username none\n");
 	printf("  --password none\n");
-  printf("  --showtopics <on or off> (default is on if the topic has a wildcard, else off)\n");
-	exit(-1);
+	printf("  --showtopics <on or off> (default is on if the topic has a wildcard, else off)\n");
+	printf("  --keepalive <seconds> (default is %d seconds)\n", opts.keepalive);
+	exit(EXIT_FAILURE);
 }
 
 
@@ -77,7 +99,7 @@ void myconnect(MQTTClient* client, MQTTClient_connectOptions* opts)
 	if ((rc = MQTTClient_connect(*client, opts)) != 0)
 	{
 		printf("Failed to connect, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -87,23 +109,6 @@ void cfinish(int sig)
 	signal(SIGINT, NULL);
 	toStop = 1;
 }
-
-
-struct opts_struct
-{
-	char* clientid;
-  int nodelimiter;
-	char* delimiter;
-	int qos;
-	char* username;
-	char* password;
-	char* host;
-	char* port;
-  int showtopics;
-} opts =
-{
-	"stdout-subscriber", 0, "\n", 2, NULL, NULL, "localhost", "1883", 0
-};
 
 void getopts(int argc, char** argv);
 
@@ -120,9 +125,9 @@ int main(int argc, char** argv)
 	
 	topic = argv[1];
 
-  if (strchr(topic, '#') || strchr(topic, '+'))
+	if (strchr(topic, '#') || strchr(topic, '+'))
 		opts.showtopics = 1;
-  if (opts.showtopics)
+	if (opts.showtopics)
 		printf("topic is %s\n", topic);
 
 	getopts(argc, argv);	
@@ -133,7 +138,7 @@ int main(int argc, char** argv)
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
 
-	conn_opts.keepAliveInterval = 10;
+	conn_opts.keepAliveInterval = opts.keepalive;
 	conn_opts.reliable = 0;
 	conn_opts.cleansession = 1;
 	conn_opts.username = opts.username;
@@ -154,7 +159,7 @@ int main(int argc, char** argv)
 		{
 			if (opts.showtopics)
 				printf("%s\t", topicName);
-      if (opts.nodelimiter)
+			if (opts.nodelimiter)
 				printf("%.*s", message->payloadlen, (char*)message->payload);
 			else
 				printf("%.*s%s", message->payloadlen, (char*)message->payload, opts.delimiter);
@@ -170,9 +175,9 @@ int main(int argc, char** argv)
 
 	MQTTClient_disconnect(client, 0);
 
- 	MQTTClient_destroy(&client);
+	MQTTClient_destroy(&client);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 void getopts(int argc, char** argv)
@@ -250,6 +255,13 @@ void getopts(int argc, char** argv)
 				else
 					usage();
 			}
+			else
+				usage();
+		}
+		else if (strcmp(argv[count], "--keepalive") == 0)
+		{
+			if (++count < argc)
+				opts.keepalive = atoi(argv[count]);
 			else
 				usage();
 		}

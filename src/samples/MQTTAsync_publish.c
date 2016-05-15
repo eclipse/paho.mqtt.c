@@ -77,7 +77,7 @@ void onSend(void* context, MQTTAsync_successData* response)
 	if ((rc = MQTTAsync_disconnect(client, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start sendMessage, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -110,7 +110,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	if ((rc = MQTTAsync_sendMessage(client, TOPIC, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start sendMessage, return code %d\n", rc);
- 		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 
 	printf("Waiting for publication of %s\n"

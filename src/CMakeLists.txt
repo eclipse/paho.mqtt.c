@@ -66,6 +66,8 @@ SET_TARGET_PROPERTIES(
 INSTALL(TARGETS paho-mqtt3c paho-mqtt3a MQTTVersion
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib)
+INSTALL(FILES MQTTAsync.h MQTTClient.h MQTTClientPersistence.h
+    DESTINATION include)
 
 IF (PAHO_WITH_SSL)
     SET(OPENSSL_LIB_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries")

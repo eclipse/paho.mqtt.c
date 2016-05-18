@@ -865,7 +865,7 @@ int sendAndReceive(void)
 
 	while (!stopping)
 	{
-		one_iteration(client);
+		one_iteration();
 	}
 	
 disconnect_exit:

@@ -1,3 +1,16 @@
 /dep/
 /build/
+.deps/
+.libs/
+autom4te.cache/
+config.*
+configure
+libtool
+Makefile
+Makefile.in
+*.la
+*.lo
+*.m4
+*.o
+*.stamp
 *.swp

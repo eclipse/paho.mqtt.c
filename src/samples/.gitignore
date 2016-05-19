@@ -1,0 +1,9 @@
+MQTTAsync_publish
+MQTTAsync_subscribe
+MQTTClient_publish
+MQTTClient_publish_async
+MQTTClient_subscribe
+paho_c_pub
+paho_c_sub
+paho_cs_pub
+paho_cs_sub

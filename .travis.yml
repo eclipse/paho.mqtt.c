@@ -6,3 +6,6 @@ compiler:
 os:
   - linux
   - osx
+  
+script:
+  - make  

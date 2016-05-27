@@ -1,4 +1,5 @@
 language: c
+
 compiler:
   - gcc
   - clang
@@ -8,4 +9,4 @@ os:
   - osx
   
 script:
-  - make  
+  - ant

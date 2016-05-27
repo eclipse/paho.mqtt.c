@@ -47,10 +47,14 @@ SET(common_src
     LinkedList.c
     )
 
-IF (CMAKE_SYSTEM_NAME MATCHES "Windows")
+IF (WIN32)
     SET(LIBS_SYSTEM ws2_32)
-ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    SET(LIBS_SYSTEM dl)
+ELSEIF (UNIX)
+    IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
+        SET(LIBS_SYSTEM c dl)
+    ELSE()
+        SET(LIBS_SYSTEM c)
+    ENDIF()
 ENDIF()
 
 ADD_EXECUTABLE(MQTTVersion MQTTVersion.c)

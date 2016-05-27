@@ -55,6 +55,5 @@ INSTALL(TARGETS stdinpub
                 stdoutsuba
                 MQTTAsync_subscribe
                 MQTTAsync_publish
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib)
+    RUNTIME DESTINATION bin)
 

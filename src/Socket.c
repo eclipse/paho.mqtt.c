@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2016 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial implementation and documentation
  *    Ian Craggs - async client updates
+ *    Ian Craggs - fix for bug 484496
  *******************************************************************************/
 
 /**
@@ -601,6 +602,7 @@ int Socket_new(char* addr, int port, int* sock)
 
 	FUNC_ENTRY;
 	*sock = -1;
+	memset(&address6, '\0', sizeof(address6));
 
 	if (addr[0] == '[')
 	  ++addr;
@@ -609,13 +611,10 @@ int Socket_new(char* addr, int port, int* sock)
 	{
 		struct addrinfo* res = result;
 
-		/* prefer ip4 addresses */
 		while (res)
-		{
-			if (res->ai_family == AF_INET)
-			{
+		{	/* prefer ip4 addresses */
+			if (res->ai_family == AF_INET || res->ai_next == NULL)
 				break;
-			}
 			res = res->ai_next;
 		}
 
@@ -627,7 +626,7 @@ int Socket_new(char* addr, int port, int* sock)
 		{
 			address6.sin6_port = htons(port);
 			address6.sin6_family = family = AF_INET6;
-			address6.sin6_addr = ((struct sockaddr_in6*)(res->ai_addr))->sin6_addr;
+			memcpy(&address6.sin6_addr, &((struct sockaddr_in6*)(res->ai_addr))->sin6_addr, sizeof(address6.sin6_addr));
 		}
 		else
 #endif

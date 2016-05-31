@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2016 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs - async client updates
+ *    Ian Craggs - fix for bug 484496
  *******************************************************************************/
 
 /**
@@ -73,8 +74,8 @@ int pstopen(void **handle, const char* clientID, const char* serverURI, void* co
 	/* Note that serverURI=address:port, but ":" not allowed in Windows directories */
 	perserverURI = malloc(strlen(serverURI) + 1);
 	strcpy(perserverURI, serverURI);
-	ptraux = strstr(perserverURI, ":");
-	*ptraux = '-' ;
+	while ((ptraux = strstr(perserverURI, ":")) != NULL)
+		*ptraux = '-' ;
 
 	/* consider '/'  +  '-'  +  '\0' */
 	clientDir = malloc(strlen(dataDir) + strlen(clientID) + strlen(perserverURI) + 3);

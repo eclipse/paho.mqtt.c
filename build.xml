@@ -31,6 +31,7 @@
   <property name="libname.async" value="mqttv3a" />
   <property name="libname.async.ssl" value="mqttv3as" />
   <property name="ssl" value="yes" />
+  <property name="windows.openssl.folder" value="c:\openssl\bin" />
   <property name="test.hostname" value="iot.eclipse.org"/>
   <property name="test.port" value="18883"/>
   <if>
@@ -127,7 +128,7 @@
         <arg value="${aTest}.exe" />
         <arg value="--hostname" />
         <arg value="${test.hostname}" />
-        <env key="PATH" path="${output.folder}" />
+        <env key="PATH" path="${output.folder};${windows.openssl.folder}" />
       </exec>
     </then>
     <else> 

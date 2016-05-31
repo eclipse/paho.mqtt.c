@@ -28,6 +28,7 @@
  *    Ian Craggs - fix for bug 444103 - success/failure callbacks not invoked
  *    Ian Craggs - fix for bug 484363 - segfault in getReadySocket
  *    Ian Craggs - automatic reconnect and offline buffering (send while disconnected)
+ *    Ian Craggs - fix for bug 472250
  *******************************************************************************/
 
 /**
@@ -1322,8 +1323,13 @@ void MQTTAsync_checkTimeouts()
 				MQTTAsync_freeConnect(m->connect);
 				if (m->connect.onFailure)
 				{
+					MQTTAsync_failureData data;
+						
+  				data.token = 0;
+	  			data.code = MQTTASYNC_FAILURE;
+	  			data.message = "TCP connect timeout";
 					Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
-					(*(m->connect.onFailure))(m->connect.context, NULL);
+					(*(m->connect.onFailure))(m->connect.context, &data);
 				}
 				MQTTAsync_startConnectRetry(m);
 			}
@@ -2739,8 +2745,13 @@ exit:
 			MQTTAsync_freeConnect(m->connect);
 			if (m->connect.onFailure)
 			{
+				MQTTAsync_failureData data;
+						
+				data.token = 0;
+				data.code = MQTTASYNC_FAILURE;
+				data.message = "TCP/TLS connect failure";
 				Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
-				(*(m->connect.onFailure))(m->connect.context, NULL);
+				(*(m->connect.onFailure))(m->connect.context, &data);
 			}
 			MQTTAsync_startConnectRetry(m);
 		}
@@ -2810,8 +2821,13 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 					MQTTAsync_freeConnect(m->connect);
 					if (m->connect.onFailure)
 					{
+						MQTTAsync_failureData data;
+						
+    				data.token = 0;
+		    		data.code = MQTTASYNC_FAILURE;
+		    		data.message = "TCP connect completion failure";
 						Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
-						(*(m->connect.onFailure))(m->connect.context, NULL);
+						(*(m->connect.onFailure))(m->connect.context, &data);
 					}
 					MQTTAsync_startConnectRetry(m);
 				}

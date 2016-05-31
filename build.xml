@@ -1,4 +1,3 @@
-<!--*******************************************************************************
   Copyright (c) 2012, 2016 IBM Corp.
  
   All rights reserved. This program and the accompanying materials
@@ -74,12 +73,11 @@
 
   </target>
 		
-  <target name="version" depends="init" description="replace tags in the source with the right levels">
+  <target name="version" depends="init" description="replace tags with the right levels">
     <property name="build.level" value="${DSTAMP}${TSTAMP}" />	
-    <replace file="src/MQTTClient.c" token="##MQTTCLIENT_BUILD_TAG##" value="${build.level}" />
-    <replace file="src/MQTTClient.c" token="##MQTTCLIENT_VERSION_TAG##" value="${release.version}" />
-    <replace file="src/MQTTAsync.c" token="##MQTTCLIENT_BUILD_TAG##" value="${build.level}" />
-    <replace file="src/MQTTAsync.c" token="##MQTTCLIENT_VERSION_TAG##" value="${release.version}" />
+    <copy file="src/VersionInfo.h.in" tofile="src/VersionInfo.h" />
+    <replace file="src/VersionInfo.h" token="@MQTTCLIENT_BUILD_TAG@" value="${build.level}" />
+    <replace file="src/MQTTClient.c" token="@MQTTCLIENT_VERSION_TAG@" value="${release.version}" />
   </target>
 	
   <target name="test" >

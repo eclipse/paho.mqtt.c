@@ -77,8 +77,8 @@
   <target name="version" depends="init" description="replace tags with the right levels">
     <property name="build.level" value="${DSTAMP}${TSTAMP}" />	
     <copy file="src/VersionInfo.h.in" tofile="src/VersionInfo.h" />
-    <replace file="src/VersionInfo.h" token="@MQTTCLIENT_BUILD_TAG@" value="${build.level}" />
-    <replace file="src/MQTTClient.c" token="@MQTTCLIENT_VERSION_TAG@" value="${release.version}" />
+    <replace file="src/VersionInfo.h" token="@BUILD_TIMESTAMP@" value="${build.level}" />
+    <replace file="src/VersionInfo.h" token="@CLIENT_VERSION@" value="${release.version}" />
   </target>
 	
   <target name="test" >

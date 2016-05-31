@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2015 IBM Corp.
+ * Copyright (c) 2009, 2016 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,6 +16,7 @@
  *    Ian Craggs - multiple server connection support
  *    Ian Craggs - MQTT 3.1.1 support
  *    Ian Craggs - fix for bug 444103 - success/failure callbacks not invoked
+ *    Ian Craggs - automatic reconnect and offline buffering (send while disconnected)
  *******************************************************************************/
 
 /********************************************************************/
@@ -24,7 +25,7 @@
  * @cond MQTTAsync_main
  * @mainpage Asynchronous MQTT client library for C
  * 
- * &copy; Copyright IBM Corp. 2009, 2015
+ * &copy; Copyright IBM Corp. 2009, 2016
  * 
  * @brief An Asynchronous MQTT client library for C.
  *
@@ -317,6 +318,23 @@ typedef void MQTTAsync_deliveryComplete(void* context, MQTTAsync_token token);
  */
 typedef void MQTTAsync_connectionLost(void* context, char* cause);
 
+
+/**
+ * This is a callback function, which will be called when the client
+ * library successfully connects.  This is superfluous when the connection
+ * is made in response to a MQTTAsync_connect call, because the onSuccess
+ * callback can be used.  It is intended for use when automatic reconnect
+ * is enabled, so that when a reconnection attempt succeeds in the background,
+ * the application is notified and can take any required actions.
+ * @param context A pointer to the <i>context</i> value originally passed to
+ * MQTTAsync_setCallbacks(), which contains any application-specific context.
+ * @param cause The reason for the disconnection.
+ * Currently, <i>cause</i> is always set to NULL.
+ */
+typedef void MQTTAsync_connected(void* context, char* cause);
+
+
+
 /** The data returned on completion of an unsuccessful API call in the response callback onFailure. */
 typedef struct
 {
@@ -440,6 +458,14 @@ typedef struct
  */
 DLLExport int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_connectionLost* cl,
 									MQTTAsync_messageArrived* ma, MQTTAsync_deliveryComplete* dc);
+
+
+
+
+DLLExport int MQTTAsync_setConnected(MQTTAsync handle, void* context, MQTTAsync_connected* co);
+
+
+
 		
 
 /**
@@ -487,6 +513,24 @@ DLLExport int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_
  */
 DLLExport int MQTTAsync_create(MQTTAsync* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context);
+
+typedef struct
+{
+	/** The eyecatcher for this structure.  must be MQCO. */
+	const char struct_id[4];
+	/** The version number of this structure.  Must be 0 */
+	int struct_version;
+	/** Whether to allow messages to be sent when the client library is not connected. */
+	int sendWhileDisconnected;
+	/** the maximum number of messages allowed to be buffered while not connected. */
+	int maxBufferedMessages;
+} MQTTAsync_createOptions;
+
+#define MQTTAsync_createOptions_initializer { {'M', 'Q', 'C', 'O'}, 0, 0, 100 }
+
+
+DLLExport int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const char* clientId,
+		int persistence_type, void* persistence_context, MQTTAsync_createOptions* options);
 
 /**
  * MQTTAsync_willOptions defines the MQTT "Last Will and Testament" (LWT) settings for
@@ -583,10 +627,11 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	const char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1 or 2.  
+	/** The version number of this structure.  Must be 0, 1, 2, 3 or 4.  
 	  * 0 signifies no SSL options and no serverURIs
 	  * 1 signifies no serverURIs 
       * 2 signifies no MQTTVersion
+      * 3 signifies no automatic reconnect options
 	  */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -695,10 +740,23 @@ typedef struct
       * MQTTVERSION_3_1_1 (4) = only try version 3.1.1
 	  */
 	int MQTTVersion;
+	/**
+	  * Reconnect automatically in the case of a connection being lost?
+	  */
+	int automaticReconnect;
+	/**
+	  * Minimum retry interval in seconds.  Doubled on each failed retry.
+	  */
+	int minRetryInterval;
+	/**
+	  * Maximum retry interval in seconds.  The doubling stops here on failed retries.
+	  */
+	int maxRetryInterval;
 } MQTTAsync_connectOptions;
 
 
-#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 3, 60, 1, 10, NULL, NULL, NULL, 30, 0, NULL, NULL, NULL, NULL, 0, NULL, 0}
+#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 4, 60, 1, 10, NULL, NULL, NULL, 30, 0, NULL, NULL, NULL, NULL, 0, NULL, 0, \
+	0, 1, 60}
 
 /**
   * This function attempts to connect a previously-created client (see

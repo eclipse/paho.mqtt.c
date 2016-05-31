@@ -29,6 +29,7 @@
  *    Ian Craggs - fix for bug 484363 - segfault in getReadySocket
  *    Ian Craggs - automatic reconnect and offline buffering (send while disconnected)
  *    Ian Craggs - fix for bug 472250
+ *    Ian Craggs - fix for bug 486548
  *******************************************************************************/
 
 /**
@@ -1460,6 +1461,7 @@ void MQTTAsync_removeResponsesAndCommands(MQTTAsyncs* m)
 
 				data.token = command->command.token;
 				data.code = MQTTASYNC_OPERATION_INCOMPLETE; /* interrupted return code */
+				data.message = NULL;
 
 				Log(TRACE_MIN, -1, "Calling %s failure for client %s",
 						MQTTPacket_name(command->command.type), m->c->clientID);
@@ -1491,6 +1493,7 @@ void MQTTAsync_removeResponsesAndCommands(MQTTAsyncs* m)
 
 				data.token = command->command.token;
 				data.code = MQTTASYNC_OPERATION_INCOMPLETE; /* interrupted return code */
+				data.message = NULL;
 
 				Log(TRACE_MIN, -1, "Calling %s failure for client %s",
 							MQTTPacket_name(command->command.type), m->c->clientID);

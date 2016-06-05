@@ -82,8 +82,8 @@
   </target>
 	
   <target name="test" >
-    <exec executable="python3" dir="test" spawn="true"> 
-        <arg value="mqttsas.py" />
+    <exec executable="python" dir="test" spawn="true"> 
+        <arg value="mqttsas2.py" />
         <arg value="${test.hostname}" />
     </exec>
     <if>

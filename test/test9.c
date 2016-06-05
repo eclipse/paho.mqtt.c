@@ -21,11 +21,6 @@
  *
  */
 
-/*
- #if !defined(_RTSHEADER)
- #include <rts.h>
- #endif
- */
 
 #include "MQTTAsync.h"
 #include <string.h>
@@ -33,10 +28,10 @@
 #include "Thread.h"
 
 #if !defined(_WINDOWS)
-#include <sys/time.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <errno.h>
+	#include <sys/time.h>
+  	#include <sys/socket.h>
+	#include <unistd.h>
+  	#include <errno.h>
 #else
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -47,133 +42,58 @@
 #define EWOULDBLOCK WSAEWOULDBLOCK
 #define ENOTCONN WSAENOTCONN
 #define ECONNRESET WSAECONNRESET
-#define snprintf _snprintf
 #endif
+
+char unique[50]; // unique suffix/prefix to add to clientid/topic etc
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
 void usage()
 {
-	printf("Options:\n");
-	printf("\t--test_no <test_no> - Run test number <test_no>\n");
-	printf("\t--server <hostname> - Connect to <hostname> for tests\n");
-	printf("\t--client_key <key_file> - Use <key_file> as the client certificate for SSL authentication\n");
-	printf("\t--client_key_pass <password> - Use <password> to access the private key in the client certificate\n");
-	printf("\t--server_key <key_file> - Use <key_file> as the trusted certificate for server\n");
-	printf("\t--verbose - Enable verbose output \n");
-	printf("\t--help - This help output\n");
+	printf("help!!\n");
 	exit(-1);
 }
 
 struct Options
 {
-	char connection[100]; /**< connection to system under test. */
-	char mutual_auth_connection[100];   /**< connection to system under test. */
-	char nocert_mutual_auth_connection[100];
-	char server_auth_connection[100];
-	char anon_connection[100];
-	char* client_key_file;
-	char* client_key_pass;
-	char* server_key_file;
-	char* client_private_key_file;
+	char* connection;            /**< connection to system under test. */
+	char* proxy_connection;      /**< connection to proxy */
 	int verbose;
 	int test_no;
-	int size;
 } options =
-{ 
-	"ssl://m2m.eclipse.org:18883",
-	"ssl://m2m.eclipse.org:18884",
-	"ssl://m2m.eclipse.org:18887",
-	"ssl://m2m.eclipse.org:18885",
-	"ssl://m2m.eclipse.org:18886",
-	"../../../test/ssl/client.pem",
-	NULL,
-	"../../../test/ssl/test-root-ca.crt",
-	NULL,
-	0,
-	0,
-	5000000
-};
-
-typedef struct
 {
-	MQTTAsync client;
-	char clientid[24];
-	char topic[100];
-	int maxmsgs;
-	int rcvdmsgs[3];
-	int sentmsgs[3];
-	int testFinished;
-	int subscribed;
-} AsyncTestClient;
-
-#define AsyncTestClient_initializer {NULL, "\0", "\0", 0, {0, 0, 0}, {0, 0, 0}, 0, 0}
+	"iot.eclipse.org:1883",
+	"localhost:1883",
+	0,
+	0,
+};
 
 void getopts(int argc, char** argv)
 {
 	int count = 1;
-
+	
 	while (count < argc)
 	{
-		if (strcmp(argv[count], "--help") == 0)
-		{
-			usage();
-		}
-		else if (strcmp(argv[count], "--test_no") == 0)
+		if (strcmp(argv[count], "--test_no") == 0)
 		{
 			if (++count < argc)
 				options.test_no = atoi(argv[count]);
 			else
 				usage();
 		}
-		else if (strcmp(argv[count], "--client_key") == 0)
+		else if (strcmp(argv[count], "--connection") == 0)
 		{
 			if (++count < argc)
-				options.client_key_file = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--client_key_pass") == 0)
-		{
-			if (++count < argc)
-				options.client_key_pass = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--server_key") == 0)
-		{
-			if (++count < argc)
-				options.server_key_file = argv[count];
+				options.connection = argv[count];
 			else
 				usage();
 		}
 		else if (strcmp(argv[count], "--verbose") == 0)
-		{
 			options.verbose = 1;
-			printf("\nSetting verbose on\n");
-		}
-		else if (strcmp(argv[count], "--hostname") == 0)
-		{
-			if (++count < argc)
-			{
-				sprintf(options.connection, "ssl://%s:18883", argv[count]);
-				printf("Setting connection to %s\n", options.connection);
-				sprintf(options.mutual_auth_connection, "ssl://%s:18884", argv[count]);
-				printf("Setting mutual_auth_connection to %s\n", options.mutual_auth_connection);
-				sprintf(options.nocert_mutual_auth_connection, "ssl://%s:18887", argv[count]);
-				printf("Setting nocert_mutual_auth_connection to %s\n",
-					options.nocert_mutual_auth_connection);
-				sprintf(options.server_auth_connection, "ssl://%s:18885", argv[count]);
-				printf("Setting server_auth_connection to %s\n", options.server_auth_connection);
-				sprintf(options.anon_connection, "ssl://%s:18886", argv[count]);
-				printf("Setting anon_connection to %s\n", options.anon_connection);
-			}
-			else
-				usage();
-		}
 		count++;
 	}
 }
+
 
 #if 0
 #include <logaX.h>   /* For general log messages                      */
@@ -328,8 +248,17 @@ void myassert(char* filename, int lineno, char* description, int value,
  Tests: offline buffering - sending messages while disconnected
  
  1. send some messages while disconnected, check that they are sent
- 2. check max-buffered
- 3. check auto-reconnect parms alter behaviour as expected
+ 2. repeat test 1 using serverURIs
+ 3. repeat test 1 using auto reconnect
+ 4. repeast test 2 using auto reconnect
+ 5. check max-buffered
+ 6. check auto-reconnect parms alter behaviour as expected
+ 
+ Tests: automatic reconnect
+ 
+ - check that connected() is called 
+ - check that reconnect() causes reconnect attempt
+ - check that reconnect() fails if no connect has been previously attempted
 
  *********************************************************************/
  
@@ -346,6 +275,28 @@ void myassert(char* filename, int lineno, char* description, int value,
  4. when the client reconnects, check that those messages are sent
 
  *********************************************************************/
+ 
+int test1_will_message_received = 0; 
+int test1_messages_received = 0;
+ 
+int test1_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* message)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	static int message_count = 0;
+	int rc;
+
+	MyLog(LOGA_DEBUG, "Message received on topic %s, \"%.*s\"", topicName, message->payloadlen, message->payload);
+	
+	if (memcmp(message->payload, "will message", message->payloadlen) == 0)
+	  test1_will_message_received = 1;
+	else
+	  test1_messages_received++;
+
+	MQTTAsync_freeMessage(&message);
+	MQTTAsync_free(topicName);
+
+	return 1;
+}
 
 int test1Finished = 0;
 
@@ -359,7 +310,7 @@ void test1cOnFailure(void* context, MQTTAsync_failureData* response)
 	test1Finished = 1;
 }
 
-void test1cOnFailure(void* context, MQTTAsync_failureData* response)
+void test1dOnFailure(void* context, MQTTAsync_failureData* response)
 {
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
 
@@ -369,12 +320,59 @@ void test1cOnFailure(void* context, MQTTAsync_failureData* response)
 
 void test1cOnConnect(void* context, MQTTAsync_successData* response)
 {
-
-	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p\n", context);
-
+	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client d, context %p\n", context);
+	MQTTAsync c = (MQTTAsync)context;
+	int rc;
 	
+	/* send a message to the proxy to break the connection */
+	pubmsg.payload = "TERMINATE";
+	pubmsg.payloadlen = strlen(pubmsg.payload);
+	pubmsg.qos = 0;
+	pubmsg.retained = 0;
+	rc = MQTTAsync_sendMessage(c, "MQTTSAS topic", &pubmsg, NULL);
+	assert("Good rc from sendMessage", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+}
 
-	
+
+int test1dReady = 0;
+char willTopic[100];
+char test_topic[50];
+
+void test1donSubscribe(void* context, MQTTAsync_successData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback for client d, %p granted qos %d", c, response->alt.qos);
+  test1dReady = 1;
+}
+
+
+void test1dOnConnect(void* context, MQTTAsync_successData* response)
+{
+  MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	int rc;
+	int qoss[2] = {2, 2};
+	char* topics[2] = {willTopic, test_topic};
+
+	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client c, context %p\n", context);
+	opts.onSuccess = test1donSubscribe;
+	opts.context = c;
+
+	rc = MQTTAsync_subscribeMany(c, 2, topics, qoss, &opts);
+	assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		test1Finished = 1;
+}
+
+int test1c_connected = 0;
+
+void test1cConnected(void* context, char* cause)
+{
+  MQTTAsync c = (MQTTAsync)context;
+
+	MyLog(LOGA_DEBUG, "In connected callback for client c, context %p\n", context);
+  test1c_connected = 1;
 }
 
 
@@ -385,9 +383,18 @@ int test1(struct Options options)
 	MQTTAsync c, d;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
 	int rc = 0;
-	char* test_topic = "C client offline buffering test";
 	int count = 0;
+	char clientidc[50];
+	char clientidd[50];
+	int i = 0;
+	MQTTAsync_token *tokens;
+	
+	sprintf(willTopic, "paho-test9-1-%s", unique);
+	sprintf(clientidc, "paho-test9-1-c-%s", unique);
+	sprintf(clientidd, "paho-test9-1-d-%s", unique);
+	sprintf(test_topic, "paho-test9-1-test topic %s", unique);
 
 	test1Finished = 0;
 	failures = 0;
@@ -395,8 +402,9 @@ int test1(struct Options options)
 	fprintf(xml, "<testcase classname=\"test1\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	rc = MQTTAsync_create(&c, options.connection, "paho-test9-test1-c", MQTTCLIENT_PERSISTENCE_DEFAULT,
-			NULL);
+  createOptions.sendWhileDisconnected = 1;
+	rc = MQTTAsync_createWithOptions(&c, options.proxy_connection, clientidc, MQTTCLIENT_PERSISTENCE_DEFAULT, 
+	      NULL, &createOptions);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -404,8 +412,7 @@ int test1(struct Options options)
 		goto exit;
 	}
 	
-	rc = MQTTAsync_create(&d, options.connection, "paho-test9-test1-d", MQTTCLIENT_PERSISTENCE_DEFAULT,
-			NULL);
+	rc = MQTTAsync_create(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -415,8 +422,11 @@ int test1(struct Options options)
 
 	opts.keepAliveInterval = 20;
 	opts.cleansession = 1;
-	opts.username = "testuser";
-	opts.password = "testpassword";
+	//opts.username = "testuser";
+	//opts.password = "testpassword";
+	
+	rc = MQTTAsync_setCallbacks(d, d, NULL, test1_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	opts.will = NULL; /* don't need will for this client, as it's going to be connected all the time */
 	opts.context = d;
@@ -437,15 +447,19 @@ int test1(struct Options options)
 		MySleep(100);
 	assert("Count should be less than 10000", count < 10000, "count was %d", count); /* wrong */
 	
-	/* let client c go: connect, publish some messages, and send disconnect command to proxy */
+	rc = MQTTAsync_setConnected(c, c, test1cConnected);
+	assert("Good rc from setConnectedCallback", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	
+	/* let client c go: connect, and send disconnect command to proxy */
 	opts.will = &wopts;
 	opts.will->message = "will message";
 	opts.will->qos = 1;
 	opts.will->retained = 0;
-	opts.will->topicName = "will topic";
+	opts.will->topicName = willTopic;
 	opts.onSuccess = test1cOnConnect;
 	opts.onFailure = test1cOnFailure;
 	opts.context = c;
+	opts.cleansession = 0;
 
 	MyLog(LOGA_DEBUG, "Connecting client c");
 	rc = MQTTAsync_connect(c, &opts);
@@ -455,12 +469,57 @@ int test1(struct Options options)
 		failures++;
 		goto exit;
 	}
+		
+	/* wait for will message */
+	while (!test1_will_message_received && ++count < 10000)
+		MySleep(100);
+	
+	MyLog(LOGA_DEBUG, "Now we can send some messages to be buffered");
+	
+	test1c_connected = 0;
+	/* send some messages.  Then reconnect (check connected callback), and check that those messages are received */
+	for (i = 0; i < 3; ++i)
+	{
+	  char buf[50];
+	  
+	  MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	  MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	  sprintf(buf, "QoS %d message", i);
+	  pubmsg.payload = buf;
+	  pubmsg.payloadlen = strlen(pubmsg.payload) + 1;
+	  pubmsg.qos = i;
+	  pubmsg.retained = 0;
+	  rc = MQTTAsync_sendMessage(c, test_topic, &pubmsg, &opts);
+	  assert("Good rc from sendMessage", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+  }
+
+  rc = MQTTAsync_getPendingTokens(c, &tokens);
+ 	assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+ 	i = 0;
+ 	while (tokens[i] != -1)
+ 	  ++i;
+ 	assert("Number of getPendingTokens should be 3", i == 3, "i was %d ", i);
+  
+  rc = MQTTAsync_reconnect(c);
+ 	assert("Good rc from reconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+	
+	/* wait for client to be reconnected */
+	while (!test1c_connected == 0 && ++count < 10000)
+		MySleep(100);
 	
 	/* wait for success or failure callback */
-	while (!test1Finished && ++count < 10000)
+	while (test1_messages_received < 3 && ++count < 10000)
 		MySleep(100);
+		
+  rc = MQTTAsync_disconnect(c, NULL);
+ 	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+ 	
+  rc = MQTTAsync_disconnect(d, NULL);
+ 	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
 
-	exit: MQTTAsync_destroy(&c);
+exit:
+  MQTTAsync_destroy(&c);
+  MQTTAsync_destroy(&d);
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 	write_test_result();
@@ -473,11 +532,15 @@ void handleTrace(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 	printf("%s\n", message);
 }
 
+
 int main(int argc, char** argv)
 {
 	int* numtests = &tests;
 	int rc = 0;
 	int (*tests[])() = 	{ NULL, test1, };
+	
+	sprintf(unique, "%u", rand());
+	MyLog(LOGA_INFO, "Random prefix/suffix is %s", unique);
 
 	xml = fopen("TEST-test9.xml", "w");
 	fprintf(xml, "<testsuite name=\"test9\" tests=\"%lu\">\n", ARRAY_SIZE(tests) - 1);
@@ -490,7 +553,7 @@ int main(int argc, char** argv)
 		for (options.test_no = 1; options.test_no < ARRAY_SIZE(tests); ++options.test_no)
 		{
 			failures = 0;
-			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_PROTOCOL);
 			rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */
 		}
 	}

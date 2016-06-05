@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2015 IBM Corp.
+ * Copyright (c) 2009, 2016 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - fix thread id display
  *******************************************************************************/
 
 /**
@@ -360,7 +361,7 @@ thread_return_type WINAPI test1_sendAndReceive(void* n)
 	rc = MQTTClient_subscribe(c, test_topic, subsqos);
 	assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
-	MyLog(LOGA_INFO, "Thread %d, %d messages at QoS %d", Thread_getid(), iterations, qos);
+	MyLog(LOGA_INFO, "Thread %u, %d messages at QoS %d", Thread_getid(), iterations, qos);
 	test1_pubmsg.payload = test1_pubmsg_check.payload;
 	test1_pubmsg.payloadlen = test1_pubmsg_check.payloadlen;
 	test1_pubmsg.retained = 0;

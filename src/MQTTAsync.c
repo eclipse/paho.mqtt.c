@@ -858,15 +858,31 @@ int MQTTAsync_reconnect(MQTTAsync handle)
 	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttasync_mutex);
 
-	if (m->automaticReconnect && m->shouldBeConnected)
+	if (m->automaticReconnect) 
 	{
-		m->reconnectNow = 1;
-		if (m->retrying == 0)
-		{
-			m->currentInterval = m->minRetryInterval;
-			m->retrying = 1;
+    if (m->shouldBeConnected)
+    {
+		  m->reconnectNow = 1;
+	  	if (m->retrying == 0)
+	  	{
+	  		m->currentInterval = m->minRetryInterval;
+	  		m->retrying = 1;
+	  	}
+	  	rc = MQTTASYNC_SUCCESS;
 		}
-		rc = MQTTASYNC_SUCCESS;
+	}
+	else
+	{
+    /* to reconnect, put the connect command to the head of the command queue */
+		MQTTAsync_queuedCommand* conn = malloc(sizeof(MQTTAsync_queuedCommand));
+		memset(conn, '\0', sizeof(MQTTAsync_queuedCommand));
+		conn->client = m;
+		conn->command = m->connect;
+		/* make sure that the version attempts are restarted */
+		if (m->c->MQTTVersion == MQTTVERSION_DEFAULT) 
+  		conn->command.details.conn.MQTTVersion = 0;
+		MQTTAsync_addCommand(conn, sizeof(m->connect));
+  	rc = MQTTASYNC_SUCCESS;
 	}
 
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
@@ -1367,11 +1383,14 @@ void MQTTAsync_checkTimeouts()
 		{
 			if (m->reconnectNow || MQTTAsync_elapsed(m->lastConnectionFailedTime) > (m->currentInterval * 1000))
 			{
-				/* put the connect command to the head of the command queue, using the next serverURI */
+				/* to reconnect put the connect command to the head of the command queue */
 				MQTTAsync_queuedCommand* conn = malloc(sizeof(MQTTAsync_queuedCommand));
 				memset(conn, '\0', sizeof(MQTTAsync_queuedCommand));
 				conn->client = m;
 				conn->command = m->connect;
+  			/* make sure that the version attempts are restarted */
+    		if (m->c->MQTTVersion == MQTTVERSION_DEFAULT) 
+      		conn->command.details.conn.MQTTVersion = 0;
 				Log(TRACE_MIN, -1, "Automatically attempting to reconnect");
 				MQTTAsync_addCommand(conn, sizeof(m->connect));
 				m->reconnectNow = 0;

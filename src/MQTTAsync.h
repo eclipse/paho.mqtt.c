@@ -465,7 +465,7 @@ DLLExport int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_
 DLLExport int MQTTAsync_setConnected(MQTTAsync handle, void* context, MQTTAsync_connected* co);
 
 
-
+DLLExport int MQTTAsync_reconnect(MQTTAsync handle);
 		
 
 /**
@@ -755,8 +755,8 @@ typedef struct
 } MQTTAsync_connectOptions;
 
 
-#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 4, 60, 1, 10, NULL, NULL, NULL, 30, 0, NULL, NULL, NULL, NULL, 0, NULL, 0, \
-	0, 1, 60}
+#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 4, 60, 1, 10, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 1, 60}
 
 /**
   * This function attempts to connect a previously-created client (see

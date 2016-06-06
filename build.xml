@@ -82,7 +82,11 @@
   </target>
 	
   <target name="test" >
-    <exec executable="python" dir="test"> 
+    <!-- display Python version -->
+    <exec executable="python" failonerror="true">
+      <arg line="-V"/>	
+    </exec>
+    <exec executable="python" dir="test" spawn="true"> 
         <arg value="mqttsas2.py" />
         <arg value="${test.hostname}" />
     </exec>

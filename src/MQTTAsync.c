@@ -798,7 +798,9 @@ int MQTTAsync_restoreCommands(MQTTAsyncs* client)
 			int buflen;
 					
 			if (strncmp(msgkeys[i], PERSISTENCE_COMMAND_KEY, strlen(PERSISTENCE_COMMAND_KEY)) != 0)
+			{
 				;
+			}
 			else if ((rc = c->persistence->pget(c->phandle, msgkeys[i], &buffer, &buflen)) == 0)
 			{
 				MQTTAsync_queuedCommand* cmd = MQTTAsync_restoreCommand(buffer, buflen);
@@ -1114,7 +1116,9 @@ int MQTTAsync_processCommand(void)
 		{
 			if ((cmd->command.type == PUBLISH || cmd->command.type == SUBSCRIBE || cmd->command.type == UNSUBSCRIBE) &&
 				cmd->client->c->outboundMsgs->count >= MAX_MSG_ID - 1)
+			{
 				; /* no more message ids available */
+			}
 			else
 			{
 				command = cmd;

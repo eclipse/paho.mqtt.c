@@ -41,11 +41,17 @@
 #define min(A,B) ( (A) < (B) ? (A):(B))
 #endif
 
-void Protocol_processPublication(Publish* publish, Clients* client);
-void MQTTProtocol_closeSession(Clients* client, int sendwill);
-
 extern MQTTProtocol state;
 extern ClientStates* bstate;
+
+
+void MQTTProtocol_storeQoS0(Clients* pubclient, Publish* publish);
+int MQTTProtocol_startPublishCommon(
+		Clients* pubclient,
+		Publish* publish,
+		int qos,
+		int retained);
+void MQTTProtocol_retries(time_t now, Clients* client, int regardless);
 
 /**
  * List callback function for comparing Message structures by message id

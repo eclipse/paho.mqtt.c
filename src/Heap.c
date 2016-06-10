@@ -68,6 +68,15 @@ typedef struct
 static Tree heap;	/**< Tree that holds the allocation records */
 static char* errmsg = "Memory allocation error";
 
+
+size_t Heap_roundup(size_t size);
+int ptrCompare(void* a, void* b, int value);
+void Heap_check(char* string, void* ptr);
+void checkEyecatchers(char* file, int line, void* p, size_t size);
+int Internal_heap_unlink(char* file, int line, void* p);
+void HeapScan(int log_level);
+
+
 /**
  * Round allocation size up to a multiple of the size of an int.  Apart from possibly reducing fragmentation,
  * on the old v3 gcc compilers I was hitting some weird behaviour, which might have been errors in

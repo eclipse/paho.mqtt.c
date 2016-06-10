@@ -33,6 +33,9 @@
 #include "Heap.h"
 
 
+int ListUnlink(List* aList, void* content, int(*callback)(void*, void*), int freeContent);
+
+
 /**
  * Sets a list structure to empty - all null values.  Does not remove any items from the list.
  * @param newl a pointer to the list structure to be initialized

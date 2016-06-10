@@ -103,7 +103,13 @@ static int lines_written = 0; /**< number of lines written to the current output
 static int max_lines_per_file = 1000; /**< maximum number of lines to write to one trace file */
 static int trace_output_level = -1;
 static Log_traceCallback* trace_callback = NULL;
+static traceEntry* Log_pretrace(void);
+static char* Log_formatTraceEntry(traceEntry* cur_entry);
 static void Log_output(int log_level, char* msg);
+static void Log_posttrace(int log_level, traceEntry* cur_entry);
+static void Log_trace(int log_level, char* buf);
+FILE* Log_destToFile(char* dest);
+int Log_compareEntries(char* entry1, char* entry2);
 
 static int sametime_count = 0;
 #if defined(GETTIMEOFDAY)
@@ -282,7 +288,6 @@ static traceEntry* Log_pretrace(void)
 
 	return cur_entry;
 }
-
 
 static char* Log_formatTraceEntry(traceEntry* cur_entry)
 {

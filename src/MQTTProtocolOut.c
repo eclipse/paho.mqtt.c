@@ -37,6 +37,7 @@ extern MQTTProtocol state;
 extern ClientStates* bstate;
 
 
+
 /**
  * Separates an address:port into two separate values
  * @param uri the input string - hostname:port

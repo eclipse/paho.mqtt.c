@@ -72,6 +72,9 @@ static mutex_type stack_mutex = &stack_mutex_store;
 #endif
 
 
+int setStack(int create);
+
+
 int setStack(int create)
 {
 	int i = -1;

@@ -31,6 +31,9 @@
 #include "Heap.h"
 
 
+MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t buflen);
+void MQTTPersistence_insertInSeqOrder(List* list, MQTTPersistence_qEntry* qEntry, size_t size);
+
 /**
  * Creates a ::MQTTClient_persistence structure representing a persistence implementation.
  * @param persistence the ::MQTTClient_persistence structure.

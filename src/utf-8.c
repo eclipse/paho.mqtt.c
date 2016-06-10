@@ -23,6 +23,7 @@
  * UTF-8 byte sequences.
  * 
  */
+#include "utf-8.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -61,6 +62,9 @@ valid_ranges[] =
 		{4, { {0xF1, 0xF3}, {0x80, 0xBF}, {0x80, 0xBF}, {0x80, 0xBF} } },
 		{4, { {0xF4, 0xF4}, {0x80, 0x8F}, {0x80, 0xBF}, {0x80, 0xBF} } },
 };
+
+
+const char* UTF8_char_validate(int len, const char* data);
 
 
 /**

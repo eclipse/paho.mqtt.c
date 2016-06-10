@@ -160,14 +160,6 @@ static int running = 0;
 static int tostop = 0;
 static thread_id_type run_id = 0;
 
-MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long timeout);
-MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc);
-int MQTTClient_cleanSession(Clients* client);
-void MQTTClient_stop(void);
-int MQTTClient_disconnect_internal(MQTTClient handle, int timeout);
-int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal, int stop);
-void MQTTClient_writeComplete(int socket);
-
 typedef struct
 {
 	MQTTClient_message* msg;
@@ -260,6 +252,32 @@ long MQTTClient_elapsed(struct timeval start)
 	return (res.tv_sec)*1000 + (res.tv_usec)/1000;
 }
 #endif
+
+void MQTTClient_terminate(void);
+void MQTTClient_emptyMessageQueue(Clients* client);
+int MQTTClient_deliverMessage(
+		int rc, MQTTClients* m,
+		char** topicName, int* topicLen,
+		MQTTClient_message** message);
+int clientSockCompare(void* a, void* b);
+thread_return_type WINAPI connectionLost_call(void* context);
+thread_return_type WINAPI MQTTClient_run(void* n);
+void MQTTClient_stop(void);
+void MQTTClient_closeSession(Clients* client);
+int MQTTClient_cleanSession(Clients* client);
+int MQTTClient_connectURIVersion(
+	MQTTClient handle, MQTTClient_connectOptions* options,
+	const char* serverURI, int MQTTVersion,
+	START_TIME_TYPE start, long millisecsTimeout);
+int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options, const char* serverURI);
+int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal, int stop);
+int MQTTClient_disconnect_internal(MQTTClient handle, int timeout);
+void MQTTClient_retry(void);
+MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc);
+MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long timeout);
+int pubCompare(void* a, void* b);
+void MQTTProtocol_checkPendingWrites(void);
+void MQTTClient_writeComplete(int socket);
 
 
 int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* clientId,
@@ -1994,7 +2012,7 @@ void MQTTProtocol_checkPendingWrites(void)
 }
 
 
-void MQTTClient_writeComplete(int socket)				
+void MQTTClient_writeComplete(int socket)
 {
 	ListElement* found = NULL;
 	

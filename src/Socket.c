@@ -40,8 +40,15 @@
 
 #include "Heap.h"
 
+int Socket_setnonblocking(int sock);
+int Socket_error(char* aString, int sock);
+int Socket_addSocket(int newSd);
+int isReady(int socket, fd_set* read_set, fd_set* write_set);
+int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes);
 int Socket_close_only(int socket);
+int Socket_continueWrite(int socket);
 int Socket_continueWrites(fd_set* pwset);
+char* Socket_getaddrname(struct sockaddr* sa, int sock);
 
 #if defined(WIN32) || defined(WIN64)
 #define iov_len len

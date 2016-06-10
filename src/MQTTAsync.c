@@ -171,14 +171,6 @@ static List* handles = NULL;
 static int tostop = 0;
 static List* commands = NULL;
 
-MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc);
-int MQTTAsync_cleanSession(Clients* client);
-void MQTTAsync_stop(void);
-int MQTTAsync_disconnect_internal(MQTTAsync handle, int timeout);
-void MQTTAsync_closeOnly(Clients* client);
-void MQTTAsync_closeSession(Clients* client);
-void MQTTProtocol_closeSession(Clients* client, int sendwill);
-void MQTTAsync_writeComplete(int socket);
 
 #if defined(WIN32) || defined(WIN64)
 #define START_TIME_TYPE DWORD
@@ -336,12 +328,50 @@ typedef struct
 	unsigned int seqno; /* only used on restore */
 } MQTTAsync_queuedCommand;
 
-void MQTTAsync_freeCommand(MQTTAsync_queuedCommand *command);
-void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command);
-int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, size_t topicLen, MQTTAsync_message* mm);
+
+int clientSockCompare(void* a, void* b);
+void MQTTAsync_lock_mutex(mutex_type amutex);
+void MQTTAsync_unlock_mutex(mutex_type amutex);
+int MQTTAsync_checkConn(MQTTAsync_command* command, MQTTAsyncs* client);
+void MQTTAsync_terminate(void);
 #if !defined(NO_PERSISTENCE)
+int MQTTAsync_unpersistCommand(MQTTAsync_queuedCommand* qcmd);
+int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd);
+MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int buflen);
+void MQTTAsync_insertInOrder(List* list, void* content, int size);
 int MQTTAsync_restoreCommands(MQTTAsyncs* client);
 #endif
+int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size);
+void MQTTAsync_startConnectRetry(MQTTAsyncs* m);
+void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* command);
+void MQTTProtocol_checkPendingWrites(void);
+void MQTTAsync_freeServerURIs(MQTTAsyncs* m);
+void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command);
+void MQTTAsync_freeCommand(MQTTAsync_queuedCommand *command);
+void MQTTAsync_writeComplete(int socket);
+int MQTTAsync_processCommand(void);
+void MQTTAsync_checkTimeouts(void);
+thread_return_type WINAPI MQTTAsync_sendThread(void* n);
+void MQTTAsync_emptyMessageQueue(Clients* client);
+void MQTTAsync_removeResponsesAndCommands(MQTTAsyncs* m);
+int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack);
+thread_return_type WINAPI MQTTAsync_receiveThread(void* n);
+void MQTTAsync_stop(void);
+void MQTTAsync_closeOnly(Clients* client);
+void MQTTAsync_closeSession(Clients* client);
+int clientStructCompare(void* a, void* b);
+int MQTTAsync_cleanSession(Clients* client);
+int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, size_t topicLen, MQTTAsync_message* mm);
+int MQTTAsync_disconnect1(MQTTAsync handle, const MQTTAsync_disconnectOptions* options, int internal);
+int MQTTAsync_disconnect_internal(MQTTAsync handle, int timeout);
+int cmdMessageIDCompare(void* a, void* b);
+int MQTTAsync_assignMsgId(MQTTAsyncs* m);
+int MQTTAsync_countBufferedMessages(MQTTAsyncs* m);
+void MQTTAsync_retry(void);
+int MQTTAsync_connecting(MQTTAsyncs* m);
+MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc);
+int pubCompare(void* a, void* b);
+
 
 void MQTTAsync_sleep(long milliseconds)
 {
@@ -1003,7 +1033,7 @@ void MQTTAsync_freeCommand(MQTTAsync_queuedCommand *command)
 }
 
 
-void MQTTAsync_writeComplete(int socket)				
+void MQTTAsync_writeComplete(int socket)
 {
 	ListElement* found = NULL;
 	

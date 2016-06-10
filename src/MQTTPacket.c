@@ -86,6 +86,9 @@ pf new_packets[] =
 };
 
 
+char* readUTFlen(char** pptr, char* enddata, int* len);
+int MQTTPacket_send_ack(int type, int msgid, int dup, networkHandles *net);
+
 /**
  * Reads one MQTT packet from a socket.
  * @param socket a socket from which to read an MQTT packet

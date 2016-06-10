@@ -40,7 +40,7 @@ enum LOG_LEVELS {
 	LOG_ERROR,
 	LOG_SEVERE,
 	LOG_FATAL,
-} Log_levels;
+};
 
 
 /*BE

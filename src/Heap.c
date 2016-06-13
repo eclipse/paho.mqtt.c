@@ -30,7 +30,10 @@
 #include "Log.h"
 #include "StackTrace.h"
 #include "Thread.h"
+
+#if defined(HEAP_UNIT_TESTS)
 char* Broker_recordFFDC(char* symptoms);
+#endif /* HEAP_UNIT_TESTS */
 
 #include <memory.h>
 #include <stdlib.h>
@@ -477,4 +480,4 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-#endif
+#endif /* HEAP_UNIT_TESTS */

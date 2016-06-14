@@ -2278,7 +2278,6 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		m->serverURIs = malloc(options->serverURIcount * sizeof(char*));
 		for (i = 0; i < options->serverURIcount; ++i)
 			m->serverURIs[i] = MQTTStrdup(options->serverURIs[i]);
-		conn->command.details.conn.currentURI = 0;
 	}
 	
 	/* Add connect request to operation queue */
@@ -2292,6 +2291,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		conn->command.context = options->context;
 	}
 	conn->command.type = CONNECT;
+	conn->command.details.conn.currentURI = 0;
 	rc = MQTTAsync_addCommand(conn, sizeof(conn));
 
 exit:

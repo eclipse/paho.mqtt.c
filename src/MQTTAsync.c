@@ -2574,6 +2574,22 @@ int MQTTAsync_unsubscribe(MQTTAsync handle, const char* topic, MQTTAsync_respons
 }
 
 
+int MQTTAsync_countBufferedMessages(MQTTAsyncs* m)
+{
+	ListElement* current = NULL;
+	int count = 0;
+
+	while (ListNextElement(commands, &current))
+	{
+		MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)(current->content);
+
+		if (cmd->client == m && cmd->command.type == PUBLISH)
+			count++;
+	}
+	return count;
+}
+
+
 int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen, void* payload,
 							 int qos, int retained, MQTTAsync_responseOptions* response)
 {
@@ -2594,6 +2610,8 @@ int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen
 		rc = MQTTASYNC_BAD_QOS;
 	else if (qos > 0 && (msgid = MQTTAsync_assignMsgId(m)) == 0)
 		rc = MQTTASYNC_NO_MORE_MSGIDS;
+	else if (m->createOptions && (MQTTAsync_countBufferedMessages(m) >= m->createOptions->maxBufferedMessages))
+		rc = MQTTASYNC_MAX_BUFFERED_MESSAGES;
 
 	if (rc != MQTTASYNC_SUCCESS)
 		goto exit;

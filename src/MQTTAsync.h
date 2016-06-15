@@ -155,6 +155,10 @@
   * Return code: the request is being discarded when not complete
   */
 #define MQTTASYNC_OPERATION_INCOMPLETE -11
+ /**
+  * Return code: the request is being discarded when not complete
+  */
+#define MQTTASYNC_MAX_BUFFERED_MESSAGES -12
 
 /**
  * Default MQTT version to connect with.  Use 3.1.1 then fall back to 3.1

@@ -166,6 +166,11 @@
   <ItemGroup>
     <ClCompile Include="..\..\test\test3.c" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\paho-mqtt3cs\paho-mqtt3cs.vcxproj">
+      <Project>{17f07f98-aa5f-4373-9877-992a341d650a}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

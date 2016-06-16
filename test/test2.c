@@ -396,7 +396,11 @@ thread_return_type WINAPI test1_sendAndReceive(void* n)
 				"Timed out waiting for message %d\n", i);
 	}
 	
+#if defined(_WINDOWS)
+	return 0;
+#else
 	return NULL;
+#endif
 }
 
 

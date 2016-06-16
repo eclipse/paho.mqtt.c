@@ -21,7 +21,8 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{AF322561-C692-43D3-8502-CC1E6CD2869A}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>stdoutsuba</RootNamespace>
+    <RootNamespace>paho-cs-pub</RootNamespace>
+    <ProjectName>paho-cs-pub</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -92,7 +93,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>paho-mqtt3a.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>paho-mqtt3c.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)\Debug</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -130,7 +131,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>paho-mqtt3a.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>paho-mqtt3c.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)..\build\output\</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -156,7 +157,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\samples\stdoutsuba.c" />
+    <ClCompile Include="..\..\src\samples\paho_cs_pub.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\MQTTAsync.h" />

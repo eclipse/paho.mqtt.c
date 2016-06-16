@@ -277,7 +277,6 @@ int test1_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 {
 	MQTTAsync c = (MQTTAsync)context;
 	static int message_count = 0;
-	int rc;
 
 	MyLog(LOGA_DEBUG, "Message received on topic %s, \"%.*s\"", topicName, message->payloadlen, message->payload);
 	
@@ -554,7 +553,6 @@ int test2_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 {
 	MQTTAsync c = (MQTTAsync)context;
 	static int message_count = 0;
-	int rc;
 
 	MyLog(LOGA_DEBUG, "Message received on topic %s, \"%.*s\"", topicName, message->payloadlen, message->payload);
 	
@@ -831,7 +829,6 @@ int test3_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 {
 	MQTTAsync c = (MQTTAsync)context;
 	static int message_count = 0;
-	int rc;
 
 	MyLog(LOGA_DEBUG, "Message received on topic %s, \"%.*s\"", topicName, message->payloadlen, message->payload);
 	
@@ -1106,7 +1103,6 @@ int test4_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 {
 	MQTTAsync c = (MQTTAsync)context;
 	static int message_count = 0;
-	int rc;
 
 	MyLog(LOGA_DEBUG, "Message received on topic %s, \"%.*s\"", topicName, message->payloadlen, message->payload);
 	
@@ -1382,7 +1378,6 @@ int test5_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 {
 	MQTTAsync c = (MQTTAsync)context;
 	static int message_count = 0;
-	int rc;
 
 	MyLog(LOGA_DEBUG, "Message received on topic %s, \"%.*s\"", topicName, message->payloadlen, message->payload);
 	

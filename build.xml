@@ -94,7 +94,7 @@
       <os family="windows"/>
     <then>
 		<!-- TODO: build test2 for windows -->
-    	<foreach target="runAtest" param="aTest" list="test1,test4"/>
+    	<foreach target="runAtest" param="aTest" list="test1,test2,test4,test9"/>
 	  </then>
     <else>
 	    <foreach target="runAtest" param="aTest" list="test9,test1,test2,test4"/>

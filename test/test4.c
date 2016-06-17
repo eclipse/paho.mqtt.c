@@ -1324,7 +1324,7 @@ int test7(struct Options options)
 	rc = MQTTAsync_send(c, test_topic, pubmsg.payloadlen, pubmsg.payload, pubmsg.qos, pubmsg.retained, &ropts);
 	MyLog(LOGA_DEBUG, "Token was %d", ropts.token);
 	rc = MQTTAsync_isComplete(c, ropts.token);
-	assert("0 rc from isComplete", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	/*assert("0 rc from isComplete", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);*/
 	rc = MQTTAsync_waitForCompletion(c, ropts.token, 5000L);
 	assert("Good rc from waitForCompletion", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	rc = MQTTAsync_isComplete(c, ropts.token);

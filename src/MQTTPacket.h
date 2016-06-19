@@ -216,8 +216,8 @@ typedef Ack Pubrel;
 typedef Ack Pubcomp;
 typedef Ack Unsuback;
 
-int MQTTPacket_encode(char* buf, int length);
-int MQTTPacket_decode(networkHandles* net, int* value);
+int MQTTPacket_encode(char* buf, size_t length);
+int MQTTPacket_decode(networkHandles* net, size_t* value);
 int readInt(char** pptr);
 char* readUTF(char** pptr, char* enddata);
 unsigned char readChar(char** pptr);

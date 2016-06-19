@@ -96,10 +96,10 @@ void* MQTTPacket_Factory(networkHandles* net, int* error)
 {
 	char* data = NULL;
 	static Header header;
-	int remaining_length, ptype;
-	size_t remaining_length_new;
+	size_t remaining_length;
+	int ptype;
 	void* pack = NULL;
-	int actual_len = 0;
+	size_t actual_len = 0;
 
 	FUNC_ENTRY;
 	*error = SOCKET_ERROR;  /* indicate whether an error occurred, or not */
@@ -148,9 +148,8 @@ void* MQTTPacket_Factory(networkHandles* net, int* error)
 				char *buf = malloc(10);
 				buf[0] = header.byte;
 				buf0len = 1 + MQTTPacket_encode(&buf[1], remaining_length);
-				remaining_length_new = remaining_length;
 				*error = MQTTPersistence_put(net->socket, buf, buf0len, 1,
-					&data, &remaining_length_new, header.bits.type, ((Publish *)pack)->msgId, 1);
+					&data, &remaining_length, header.bits.type, ((Publish *)pack)->msgId, 1);
 				free(buf);
 			}
 #endif
@@ -174,7 +173,8 @@ exit:
  */
 int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buflen, int free)
 {
-	int rc, buf0len;
+	int rc;
+	size_t buf0len;
 	char *buf;
 
 	FUNC_ENTRY;
@@ -220,7 +220,8 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
  */
 int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffers, size_t* buflens, int* frees)
 {
-	int i, rc, buf0len, total = 0;
+	int i, rc;
+	size_t buf0len, total = 0;
 	char *buf;
 
 	FUNC_ENTRY;
@@ -261,7 +262,7 @@ int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffe
  * @param length the length to be encoded
  * @return the number of bytes written to buffer
  */
-int MQTTPacket_encode(char* buf, int length)
+int MQTTPacket_encode(char* buf, size_t length)
 {
 	int rc = 0;
 
@@ -286,7 +287,7 @@ int MQTTPacket_encode(char* buf, int length)
  * @param value the decoded length returned
  * @return the number of bytes read from the socket
  */
-int MQTTPacket_decode(networkHandles* net, int* value)
+int MQTTPacket_decode(networkHandles* net, size_t* value)
 {
 	int rc = SOCKET_ERROR;
 	char c;
@@ -429,8 +430,8 @@ void writeInt(char** pptr, int anInt)
  */
 void writeUTF(char** pptr, const char* string)
 {
-	int len = strlen(string);
-	writeInt(pptr, len);
+	size_t len = strlen(string);
+	writeInt(pptr, (int)len);
 	memcpy(*pptr, string, len);
 	*pptr += len;
 }
@@ -497,7 +498,7 @@ void* MQTTPacket_publish(unsigned char aHeader, char* data, size_t datalen)
 	else
 		pack->msgId = 0;
 	pack->payload = curdata;
-	pack->payloadlen = datalen-(curdata-data);
+	pack->payloadlen = (int)(datalen-(curdata-data));
 exit:
 	FUNC_EXIT;
 	return pack;
@@ -691,7 +692,7 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 
 		writeInt(&ptr, pack->msgId);
 		ptr = topiclen;
-		writeInt(&ptr, lens[1]);
+		writeInt(&ptr, (int)lens[1]);
 		rc = MQTTPacket_sends(net, header, 4, bufs, lens, frees);
 		if (rc != TCPSOCKET_INTERRUPTED)
 			free(buf);
@@ -703,7 +704,7 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 		size_t lens[3] = {2, strlen(pack->topic), pack->payloadlen};
 		int frees[3] = {1, 0, 0};
 
-		writeInt(&ptr, lens[1]);
+		writeInt(&ptr, (int)lens[1]);
 		rc = MQTTPacket_sends(net, header, 3, bufs, lens, frees);
 	}
 	if (rc != TCPSOCKET_INTERRUPTED)

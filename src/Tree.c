@@ -189,7 +189,7 @@ void TreeBalanceAfterAdd(Tree* aTree, Node* curnode, int index)
  * @param content the list item content itself
  * @param size the size of the element
  */
-void* TreeAddByIndex(Tree* aTree, void* content, int size, int index)
+void* TreeAddByIndex(Tree* aTree, void* content, size_t size, int index)
 {
 	Node* curparent = NULL;
 	Node* curnode = aTree->index[index].root;
@@ -249,7 +249,7 @@ void* TreeAddByIndex(Tree* aTree, void* content, int size, int index)
 }
 
 
-void* TreeAdd(Tree* aTree, void* content, int size)
+void* TreeAdd(Tree* aTree, void* content, size_t size)
 {
 	void* rc = NULL;
 	int i;
@@ -399,7 +399,7 @@ void* TreeRemoveNodeIndex(Tree* aTree, Node* curnode, int index)
 {
 	Node* redundant = curnode;
 	Node* curchild = NULL;
-	int size = curnode->size;
+	size_t size = curnode->size;
 	void* content = curnode->content;
 
 	/* if the node to remove has 0 or 1 children, it can be removed without involving another node */

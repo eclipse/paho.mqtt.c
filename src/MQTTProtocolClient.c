@@ -210,7 +210,7 @@ Publications* MQTTProtocol_storePublication(Publish* publish, int* len)
 	FUNC_ENTRY;
 	p->refcount = 1;
 
-	*len = strlen(publish->topic)+1;
+	*len = (int)strlen(publish->topic)+1;
 	if (Heap_findItem(publish->topic))
 		p->topic = publish->topic;
 	else

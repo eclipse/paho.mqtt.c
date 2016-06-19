@@ -13,10 +13,13 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs - updates for the async client
+ *    Ian Craggs - change size types from int to size_t
  *******************************************************************************/
 
 #if !defined(LINKEDLIST_H)
 #define LINKEDLIST_H
+
+#include <stdlib.h> // for size_t definition
 
 /*BE
 defm defList(T)
@@ -66,16 +69,16 @@ typedef struct
 	ListElement *first,	/**< first element in the list */
 				*last,	/**< last element in the list */
 				*current;	/**< current element in the list, for iteration */
-	int count,  /**< no of items */
-	    size;  /**< heap storage used */
+	int count;  /**< no of items */
+	size_t size;  /**< heap storage used */
 } List;
 
 void ListZero(List*);
 List* ListInitialize(void);
 
-void ListAppend(List* aList, void* content, int size);
-void ListAppendNoMalloc(List* aList, void* content, ListElement* newel, int size);
-void ListInsert(List* aList, void* content, int size, ListElement* index);
+void ListAppend(List* aList, void* content, size_t size);
+void ListAppendNoMalloc(List* aList, void* content, ListElement* newel, size_t size);
+void ListInsert(List* aList, void* content, size_t size, ListElement* index);
 
 int ListRemove(List* aList, void* content);
 int ListRemoveItem(List* aList, void* content, int(*callback)(void*, void*));

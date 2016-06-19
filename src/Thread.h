@@ -20,7 +20,7 @@
 #define THREAD_H
 
 #if defined(WIN32) || defined(WIN64)
-	#include <Windows.h>
+	#include <windows.h>
 	#define thread_type HANDLE
 	#define thread_id_type DWORD
 	#define thread_return_type DWORD

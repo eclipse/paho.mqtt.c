@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2015 IBM Corp.
+ * Copyright (c) 2009, 2016 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,6 +15,8 @@
  *    Ian Craggs, Allan Stockdill-Mander - SSL connections
  *    Ian Craggs - multiple server connection support
  *    Ian Craggs - MQTT 3.1.1 support
+ *    Ian Craggs - fix for bug 444103 - success/failure callbacks not invoked
+ *    Ian Craggs - automatic reconnect and offline buffering (send while disconnected)
  *******************************************************************************/
 
 /********************************************************************/
@@ -23,7 +25,7 @@
  * @cond MQTTAsync_main
  * @mainpage Asynchronous MQTT client library for C
  * 
- * &copy; Copyright IBM Corp. 2009, 2015
+ * &copy; Copyright IBM Corp. 2009, 2016
  * 
  * @brief An Asynchronous MQTT client library for C.
  *
@@ -149,6 +151,14 @@
  * Return code: All 65535 MQTT msgids are being used
  */
 #define MQTTASYNC_NO_MORE_MSGIDS -10
+/**
+ * Return code: the request is being discarded when not complete
+ */
+#define MQTTASYNC_OPERATION_INCOMPLETE -11
+/**
+ * Return code: no more messages can be buffered
+ */
+#define MQTTASYNC_MAX_BUFFERED_MESSAGES -12
 
 /**
  * Default MQTT version to connect with.  Use 3.1.1 then fall back to 3.1
@@ -312,6 +322,23 @@ typedef void MQTTAsync_deliveryComplete(void* context, MQTTAsync_token token);
  */
 typedef void MQTTAsync_connectionLost(void* context, char* cause);
 
+
+/**
+ * This is a callback function, which will be called when the client
+ * library successfully connects.  This is superfluous when the connection
+ * is made in response to a MQTTAsync_connect call, because the onSuccess
+ * callback can be used.  It is intended for use when automatic reconnect
+ * is enabled, so that when a reconnection attempt succeeds in the background,
+ * the application is notified and can take any required actions.
+ * @param context A pointer to the <i>context</i> value originally passed to
+ * MQTTAsync_setCallbacks(), which contains any application-specific context.
+ * @param cause The reason for the disconnection.
+ * Currently, <i>cause</i> is always set to NULL.
+ */
+typedef void MQTTAsync_connected(void* context, char* cause);
+
+
+
 /** The data returned on completion of an unsuccessful API call in the response callback onFailure. */
 typedef struct
 {
@@ -435,6 +462,32 @@ typedef struct
  */
 DLLExport int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_connectionLost* cl,
 									MQTTAsync_messageArrived* ma, MQTTAsync_deliveryComplete* dc);
+
+
+/**
+ * Sets the MQTTAsync_connected() callback function for a client.
+ * @param handle A valid client handle from a successful call to
+ * MQTTAsync_create(). 
+ * @param context A pointer to any application-specific context. The
+ * the <i>context</i> pointer is passed to each of the callback functions to
+ * provide access to the context information in the callback.
+ * @param co A pointer to an MQTTAsync_connected() callback
+ * function.  NULL removes the callback setting.
+ * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
+ * ::MQTTASYNC_FAILURE if an error occurred.
+ */
+DLLExport int MQTTAsync_setConnected(MQTTAsync handle, void* context, MQTTAsync_connected* co);
+
+
+/**
+ * Reconnects a client with the previously used connect options.  Connect
+ * must have previously been called for this to work.
+ * @param handle A valid client handle from a successful call to
+ * MQTTAsync_create(). 
+ * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
+ * ::MQTTASYNC_FAILURE if an error occurred.
+ */
+DLLExport int MQTTAsync_reconnect(MQTTAsync handle);
 		
 
 /**
@@ -482,6 +535,24 @@ DLLExport int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_
  */
 DLLExport int MQTTAsync_create(MQTTAsync* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context);
+
+typedef struct
+{
+	/** The eyecatcher for this structure.  must be MQCO. */
+	const char struct_id[4];
+	/** The version number of this structure.  Must be 0 */
+	int struct_version;
+	/** Whether to allow messages to be sent when the client library is not connected. */
+	int sendWhileDisconnected;
+	/** the maximum number of messages allowed to be buffered while not connected. */
+	int maxBufferedMessages;
+} MQTTAsync_createOptions;
+
+#define MQTTAsync_createOptions_initializer { {'M', 'Q', 'C', 'O'}, 0, 0, 100 }
+
+
+DLLExport int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const char* clientId,
+		int persistence_type, void* persistence_context, MQTTAsync_createOptions* options);
 
 /**
  * MQTTAsync_willOptions defines the MQTT "Last Will and Testament" (LWT) settings for
@@ -578,10 +649,11 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	const char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1 or 2.  
+	/** The version number of this structure.  Must be 0, 1, 2, 3 or 4.  
 	  * 0 signifies no SSL options and no serverURIs
 	  * 1 signifies no serverURIs 
       * 2 signifies no MQTTVersion
+      * 3 signifies no automatic reconnect options
 	  */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -690,10 +762,23 @@ typedef struct
       * MQTTVERSION_3_1_1 (4) = only try version 3.1.1
 	  */
 	int MQTTVersion;
+	/**
+	  * Reconnect automatically in the case of a connection being lost?
+	  */
+	int automaticReconnect;
+	/**
+	  * Minimum retry interval in seconds.  Doubled on each failed retry.
+	  */
+	int minRetryInterval;
+	/**
+	  * Maximum retry interval in seconds.  The doubling stops here on failed retries.
+	  */
+	int maxRetryInterval;
 } MQTTAsync_connectOptions;
 
 
-#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 3, 60, 1, 10, NULL, NULL, NULL, 30, 0, NULL, NULL, NULL, NULL, 0, NULL, 0}
+#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 4, 60, 1, 10, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 1, 60}
 
 /**
   * This function attempts to connect a previously-created client (see
@@ -908,10 +993,29 @@ DLLExport int MQTTAsync_sendMessage(MQTTAsync handle, const char* destinationNam
   */
 DLLExport int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens);
 
+/**
+ * Tests whether a request corresponding to a token is complete.
+ *
+ * @param handle A valid client handle from a successful call to
+ * MQTTAsync_create().
+ * @param token An ::MQTTAsync_token associated with a request.
+ * @return 1 if the request has been completed, 0 if not.
+ */
 #define MQTTASYNC_TRUE 1
-DLLExport int MQTTAsync_isComplete(MQTTAsync handle, MQTTAsync_token dt);
+DLLExport int MQTTAsync_isComplete(MQTTAsync handle, MQTTAsync_token token);
 
-DLLExport int MQTTAsync_waitForCompletion(MQTTAsync handle, MQTTAsync_token dt, unsigned long timeout);
+
+/**
+ * Waits for a request corresponding to a token to complete.
+ *
+ * @param handle A valid client handle from a successful call to
+ * MQTTAsync_create().
+ * @param token An ::MQTTAsync_token associated with a request.
+ * @param timeout the maximum time to wait for completion, in milliseconds
+ * @return ::MQTTASYNC_SUCCESS if the request has been completed in the time allocated,
+ *  ::MQTTASYNC_FAILURE if not.
+ */
+DLLExport int MQTTAsync_waitForCompletion(MQTTAsync handle, MQTTAsync_token token, unsigned long timeout);
 
 
 /**
@@ -1007,10 +1111,20 @@ DLLExport MQTTAsync_nameValue* MQTTAsync_getVersionInfo();
   * The client application runs on several threads.
   * Processing of handshaking and maintaining
   * the network connection is performed in the background.
+  * This API is thread safe: functions may be called by multiple application
+  * threads.
   * Notifications of status and message reception are provided to the client
   * application using callbacks registered with the library by the call to
   * MQTTAsync_setCallbacks() (see MQTTAsync_messageArrived(), 
   * MQTTAsync_connectionLost() and MQTTAsync_deliveryComplete()).
+  * In addition, some functions allow success and failure callbacks to be set
+  * for individual requests, in the ::MQTTAsync_responseOptions structure.  Applications
+  * can be written as a chain of callback functions. Note that it is a theoretically
+  * possible but unlikely event, that a success or failure callback could be called
+  * before function requesting the callback has returned.  In this case the token
+  * delivered in the callback would not yet be known to the application program (see
+  * Race condition for MQTTAsync_token in MQTTAsync.c
+  * https://bugs.eclipse.org/bugs/show_bug.cgi?id=444093)
   *
   * @page wildcard Subscription wildcards
   * Every MQTT message includes a topic that classifies it. MQTT servers use 

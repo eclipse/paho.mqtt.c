@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2013 IBM Corp.
+ * Copyright (c) 2012, 2016 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial contribution
+ *    Guilherme Maciel Ferreira - add keep alive option
  *******************************************************************************/
  
  /*
@@ -27,8 +28,9 @@
 	--port 1883
 	--qos 0
 	--delimiters \n
-	--clientid stdin_publisher
+	--clientid stdin-publisher-async
 	--maxdatalen 100
+	--keepalive 10
 	
 	--userid none
 	--password none
@@ -54,31 +56,6 @@
 volatile int toStop = 0;
 
 
-void usage()
-{
-	printf("MQTT stdin publisher\n");
-	printf("Usage: stdinpub topicname <options>, where options are:\n");
-	printf("  --host <hostname> (default is localhost)\n");
-	printf("  --port <port> (default is 1883)\n");
-	printf("  --qos <qos> (default is 0)\n");
-	printf("  --retained (default is off)\n");
-	printf("  --delimiter <delim> (default is \\n)");
-	printf("  --clientid <clientid> (default is hostname+timestamp)");
-	printf("  --maxdatalen 100\n");
-	printf("  --username none\n");
-	printf("  --password none\n");
-	exit(-1);
-}
-
-
-
-void cfinish(int sig)
-{
-	signal(SIGINT, NULL);
-	toStop = 1;
-}
-
-
 struct
 {
 	char* clientid;
@@ -90,11 +67,38 @@ struct
 	char* password;
 	char* host;
 	char* port;
-  int verbose;
+	int verbose;
+	int keepalive;
 } opts =
 {
-	"publisher", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", 0
+	"stdin-publisher-async", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", 0, 10
 };
+
+
+void usage(void)
+{
+	printf("MQTT stdin publisher\n");
+	printf("Usage: stdinpub topicname <options>, where options are:\n");
+	printf("  --host <hostname> (default is %s)\n", opts.host);
+	printf("  --port <port> (default is %s)\n", opts.port);
+	printf("  --qos <qos> (default is %d)\n", opts.qos);
+	printf("  --retained (default is %s)\n", opts.retained ? "on" : "off");
+	printf("  --delimiter <delim> (default is \\n)\n");
+	printf("  --clientid <clientid> (default is %s)\n", opts.clientid);
+	printf("  --maxdatalen <bytes> (default is %d)\n", opts.maxdatalen);
+	printf("  --username none\n");
+	printf("  --password none\n");
+	printf("  --keepalive <seconds> (default is 10 seconds)\n");
+	exit(EXIT_FAILURE);
+}
+
+
+
+void cfinish(int sig)
+{
+	signal(SIGINT, NULL);
+	toStop = 1;
+}
 
 void getopts(int argc, char** argv);
 
@@ -114,11 +118,15 @@ void onDisconnect(void* context, MQTTAsync_successData* response)
 
 
 static int connected = 0;
+void myconnect(MQTTAsync* client);
 
 void onConnectFailure(void* context, MQTTAsync_failureData* response)
 {
-	printf("Connect failed, rc %d\n", response ? -1 : response->code);
+	printf("Connect failed, rc %d\n", response ? response->code : -1);
 	connected = -1; 
+
+	MQTTAsync client = (MQTTAsync)context;
+	myconnect(client);
 }
 
 
@@ -131,7 +139,6 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	connected = 1;
 }
 
-
 void myconnect(MQTTAsync* client)
 {
 	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
@@ -139,7 +146,7 @@ void myconnect(MQTTAsync* client)
 	int rc = 0;
 
 	printf("Connecting\n");
-	conn_opts.keepAliveInterval = 10;
+	conn_opts.keepAliveInterval = opts.keepalive;
 	conn_opts.cleansession = 1;
 	conn_opts.username = opts.username;
 	conn_opts.password = opts.password;
@@ -148,18 +155,13 @@ void myconnect(MQTTAsync* client)
 	conn_opts.context = client;
 	ssl_opts.enableServerCertAuth = 0;
 	conn_opts.ssl = &ssl_opts;
+	conn_opts.automaticReconnect = 1;
 	connected = 0;
 	if ((rc = MQTTAsync_connect(*client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
-	while	(connected == 0)
-		#if defined(WIN32)
-			Sleep(100);
-		#else
-			usleep(10000L);
-		#endif
 }
 
 
@@ -201,117 +203,8 @@ void connectionLost(void* context, char* cause)
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
-}
-
-#if !defined(_WINDOWS)
-	#include <sys/time.h>
-  	#include <sys/socket.h>
-	#include <unistd.h>
-  	#include <errno.h>
-#else
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#define MAXHOSTNAMELEN 256
-#define EAGAIN WSAEWOULDBLOCK
-#define EINTR WSAEINTR
-#define EINPROGRESS WSAEINPROGRESS
-#define EWOULDBLOCK WSAEWOULDBLOCK
-#define ENOTCONN WSAENOTCONN
-#define ECONNRESET WSAECONNRESET
-#define setenv(a, b, c) _putenv_s(a, b)
-#endif
-
-
-#if !defined(SOCKET_ERROR)
-#define SOCKET_ERROR -1
-#endif
-
-
-typedef struct
-{
-	int socket;
-	time_t lastContact;
-#if defined(OPENSSL)
-	SSL* ssl;
-	SSL_CTX* ctx;
-#endif
-} networkHandles;
-
-
-typedef struct
-{
-	char* clientID;					/**< the string id of the client */
-	char* username;					/**< MQTT v3.1 user name */
-	char* password;					/**< MQTT v3.1 password */
-	unsigned int cleansession : 1;	/**< MQTT clean session flag */
-	unsigned int connected : 1;		/**< whether it is currently connected */
-	unsigned int good : 1; 			/**< if we have an error on the socket we turn this off */
-	unsigned int ping_outstanding : 1;
-	int connect_state : 4;
-	networkHandles net;
-/* ... */
-} Clients;
-
-
-typedef struct MQTTAsync_struct
-{
-	char* serverURI;
-	int ssl;
-	Clients* c;
-	
-	/* "Global", to the client, callback definitions */
-	MQTTAsync_connectionLost* cl;
-	MQTTAsync_messageArrived* ma;
-	MQTTAsync_deliveryComplete* dc;
-	void* context; /* the context to be associated with the main callbacks*/
-	#if 0
-	MQTTAsync_command connect;				/* Connect operation properties */
-	MQTTAsync_command disconnect;			/* Disconnect operation properties */
-	MQTTAsync_command* pending_write;       /* Is there a socket write pending? */
-	
-	List* responses;
-	unsigned int command_seqno;						
-
-	MQTTPacket* pack;
-#endif
-} MQTTAsyncs;
-
-int test6_socket_error(char* aString, int sock)
-{
-#if defined(WIN32)
-	int errno;
-#endif
-
-#if defined(WIN32)
-	errno = WSAGetLastError();
-#endif
-	if (errno != EINTR && errno != EAGAIN && errno != EINPROGRESS && errno != EWOULDBLOCK)
-	{
-		if (strcmp(aString, "shutdown") != 0 || (errno != ENOTCONN && errno != ECONNRESET))
-			printf("Socket error %d in %s for socket %d", errno, aString, sock);
-	}
-	return errno;
-}
-
-
-int test6_socket_close(int socket)
-{
-	int rc;
-
-#if defined(WIN32)
-	if (shutdown(socket, SD_BOTH) == SOCKET_ERROR)
-		test6_socket_error("shutdown", socket);
-	if ((rc = closesocket(socket)) == SOCKET_ERROR)
-		test6_socket_error("close", socket);
-#else
-	if (shutdown(socket, SHUT_RDWR) == SOCKET_ERROR)
-		test6_socket_error("shutdown", socket);
-	if ((rc = close(socket)) == SOCKET_ERROR)
-		test6_socket_error("close", socket);
-#endif
-	return rc;
 }
 
 
@@ -319,6 +212,7 @@ int main(int argc, char** argv)
 {
 	MQTTAsync_disconnectOptions disc_opts = MQTTAsync_disconnectOptions_initializer;
 	MQTTAsync_responseOptions pub_opts = MQTTAsync_responseOptions_initializer;
+	MQTTAsync_createOptions create_opts = MQTTAsync_createOptions_initializer;
 	MQTTAsync client;
 	char* topic = NULL;
 	char* buffer = NULL;
@@ -337,7 +231,8 @@ int main(int argc, char** argv)
 	topic = argv[1];
 	printf("Using topic %s\n", topic);
 
-	rc = MQTTAsync_create(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+	create_opts.sendWhileDisconnected = 1;
+	rc = MQTTAsync_createWithOptions(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL, &create_opts);
 
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
@@ -371,19 +266,9 @@ int main(int argc, char** argv)
 		pub_opts.onFailure = onPublishFailure;
 		do
 		{
-			published = 0;
 			rc = MQTTAsync_send(client, topic, data_len, buffer, opts.qos, opts.retained, &pub_opts);
-			while (published == 0)
-				#if defined(WIN32)
-				Sleep(100);
-				#else
-				usleep(1000L);
-				#endif
-			if (published == -1)
-				myconnect(&client);
-			test6_socket_close(((MQTTAsyncs*)client)->c->net.socket);
 		}
-		while (published != 1);
+		while (rc != MQTTASYNC_SUCCESS);
 	}
 	
 	printf("Stopping\n");
@@ -394,7 +279,7 @@ int main(int argc, char** argv)
 	if ((rc = MQTTAsync_disconnect(client, &disc_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start disconnect, return code %d\n", rc);
-	    exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 
 	while	(!disconnected)
@@ -404,9 +289,9 @@ int main(int argc, char** argv)
 			usleep(10000L);
 		#endif
 
- 	MQTTAsync_destroy(&client);
+	MQTTAsync_destroy(&client);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 void getopts(int argc, char** argv)
@@ -481,6 +366,13 @@ void getopts(int argc, char** argv)
 		{
 			if (++count < argc)
 				opts.delimiter = argv[count];
+			else
+				usage();
+		}
+		else if (strcmp(argv[count], "--keepalive") == 0)
+		{
+			if (++count < argc)
+				opts.keepalive = atoi(argv[count]);
 			else
 				usage();
 		}

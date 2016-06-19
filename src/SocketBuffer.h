@@ -37,20 +37,22 @@
 typedef struct
 {
 	int socket;
-	int index, headerlen;
+	unsigned int index;
+	size_t headerlen;
 	char fixed_header[5];	/**< header plus up to 4 length bytes */
-	int buflen, 			/**< total length of the buffer */
+	size_t buflen, 			/**< total length of the buffer */
 		datalen; 			/**< current length of data in buf */
 	char* buf;
 } socket_queue;
 
 typedef struct
 {
-	int socket, total, count;
+	int socket, count;
+	size_t total;
 #if defined(OPENSSL)
 	SSL* ssl;
 #endif
-	unsigned long bytes;
+	size_t bytes;
 	iobuf iovecs[5];
 	int frees[5];
 } pending_writes;
@@ -64,16 +66,16 @@ typedef struct
 void SocketBuffer_initialize(void);
 void SocketBuffer_terminate(void);
 void SocketBuffer_cleanup(int socket);
-char* SocketBuffer_getQueuedData(int socket, int bytes, int* actual_len);
+char* SocketBuffer_getQueuedData(int socket, size_t bytes, size_t* actual_len);
 int SocketBuffer_getQueuedChar(int socket, char* c);
-void SocketBuffer_interrupted(int socket, int actual_len);
+void SocketBuffer_interrupted(int socket, size_t actual_len);
 char* SocketBuffer_complete(int socket);
 void SocketBuffer_queueChar(int socket, char c);
 
 #if defined(OPENSSL)
-void SocketBuffer_pendingWrite(int socket, SSL* ssl, int count, iobuf* iovecs, int* frees, int total, int bytes);
+void SocketBuffer_pendingWrite(int socket, SSL* ssl, int count, iobuf* iovecs, int* frees, size_t total, size_t bytes);
 #else
-void SocketBuffer_pendingWrite(int socket, int count, iobuf* iovecs, int* frees, int total, int bytes);
+void SocketBuffer_pendingWrite(int socket, int count, iobuf* iovecs, int* frees, size_t total, size_t bytes);
 #endif
 pending_writes* SocketBuffer_getWrite(int socket);
 int SocketBuffer_writeComplete(int socket);

@@ -73,7 +73,8 @@ void SocketBuffer_newDefQ(void)
 	def_queue = malloc(sizeof(socket_queue));
 	def_queue->buflen = 1000;
 	def_queue->buf = malloc(def_queue->buflen);
-	def_queue->socket = def_queue->index = def_queue->buflen = def_queue->datalen = 0;
+	def_queue->socket = def_queue->index = 0;
+	def_queue->buflen = def_queue->datalen = 0;
 }
 
 
@@ -130,7 +131,10 @@ void SocketBuffer_cleanup(int socket)
 		ListRemove(queues, queues->current->content);
 	}
 	if (def_queue->socket == socket)
-		def_queue->socket = def_queue->index = def_queue->headerlen = def_queue->datalen = 0;
+	{
+		def_queue->socket = def_queue->index = 0;
+		def_queue->headerlen = def_queue->datalen = 0;
+	}
 	FUNC_EXIT;
 }
 
@@ -142,7 +146,7 @@ void SocketBuffer_cleanup(int socket)
  * @param actual_len the actual length returned
  * @return the actual data
  */
-char* SocketBuffer_getQueuedData(int socket, int bytes, int* actual_len)
+char* SocketBuffer_getQueuedData(int socket, size_t bytes, size_t* actual_len)
 {
 	socket_queue* queue = NULL;
 
@@ -215,7 +219,7 @@ exit:
  * @param socket the socket to get queued data for
  * @param actual_len the actual length of data that was read
  */
-void SocketBuffer_interrupted(int socket, int actual_len)
+void SocketBuffer_interrupted(int socket, size_t actual_len)
 {
 	socket_queue* queue = NULL;
 
@@ -249,7 +253,8 @@ char* SocketBuffer_complete(int socket)
 		def_queue = queue;
 		ListDetach(queues, queue);
 	}
-	def_queue->socket = def_queue->index = def_queue->headerlen = def_queue->datalen = 0;
+	def_queue->socket = def_queue->index = 0;
+	def_queue->headerlen = def_queue->datalen = 0;
 	FUNC_EXIT;
 	return def_queue->buf;
 }
@@ -271,7 +276,8 @@ void SocketBuffer_queueChar(int socket, char c)
 	else if (def_queue->socket == 0)
 	{
 		def_queue->socket = socket;
-		def_queue->index = def_queue->datalen = 0;
+		def_queue->index = 0;
+		def_queue->datalen = 0;
 	}
 	else if (def_queue->socket != socket)
 	{
@@ -302,9 +308,9 @@ void SocketBuffer_queueChar(int socket, char c)
  * @param bytes actual data length that was written
  */
 #if defined(OPENSSL)
-void SocketBuffer_pendingWrite(int socket, SSL* ssl, int count, iobuf* iovecs, int* frees, int total, int bytes)
+void SocketBuffer_pendingWrite(int socket, SSL* ssl, int count, iobuf* iovecs, int* frees, size_t total, size_t bytes)
 #else
-void SocketBuffer_pendingWrite(int socket, int count, iobuf* iovecs, int* frees, int total, int bytes)
+void SocketBuffer_pendingWrite(int socket, int count, iobuf* iovecs, int* frees, size_t total, size_t bytes)
 #endif
 {
 	int i = 0;

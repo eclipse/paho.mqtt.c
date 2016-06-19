@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\samples\stdoutsub.c">
+    <ClCompile Include="..\..\src\samples\paho_cs_sub.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

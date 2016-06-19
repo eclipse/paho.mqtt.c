@@ -1,0 +1,5 @@
+[gerrit]
+host=git.eclipse.org
+port=29418
+project=paho/org.eclipse.paho.mqtt.c
+defaultbranch=develop

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2016 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,6 +16,7 @@
  *    Ian Craggs - fix for buffer overflow in addressPort bug #433290
  *    Ian Craggs - MQTT 3.1.1 support
  *    Rong Xiang, Ian Craggs - C++ compatibility
+ *    Ian Craggs - fix for bug 479376
  *******************************************************************************/
 
 /**
@@ -45,7 +46,7 @@ char* MQTTProtocol_addressPort(const char* uri, int* port)
 {
 	char* colon_pos = strrchr(uri, ':'); /* reverse find to allow for ':' in IPv6 addresses */
 	char* buf = (char*)uri;
-	int len;
+	size_t len;
 
 	FUNC_ENTRY;
 	if (uri[0] == '[')
@@ -56,7 +57,7 @@ char* MQTTProtocol_addressPort(const char* uri, int* port)
 
 	if (colon_pos)
 	{
-		int addr_len = colon_pos - uri;
+		size_t addr_len = colon_pos - uri;
 		buf = malloc(addr_len + 1);
 		*port = atoi(colon_pos + 1);
 		MQTTStrncpy(buf, uri, addr_len+1);
@@ -102,7 +103,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int MQTTVersi
 #if defined(OPENSSL)
 		if (ssl)
 		{
-			if (SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts) != 1)
+			if (SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts) == 1)
 			{
 				rc = SSLSocket_connect(aClient->net.ssl, aClient->net.socket);
 				if (rc == -1)

@@ -5,12 +5,12 @@
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.toolchain.gnu.base.2116872643" moduleId="org.eclipse.cdt.core.settings" name="debug-native">
 				<externalSettings/>
 				<extensions>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
@@ -38,6 +38,17 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="cdt.managedbuild.toolchain.gnu.base.2116872643.660980254" name="mqttclient_module.c" rcbsApplicability="disable" resourcePath="test/python/mqttclient_module.c" toolsToInvoke="cdt.managedbuild.tool.gnu.c.compiler.base.919295913.892752676">
+						<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.919295913.892752676" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base.919295913">
+							<option id="gnu.c.compiler.option.include.paths.1043418401" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+								<listOptionValue builtIn="false" value="/usr/include/python2.6"/>
+							</option>
+							<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1471037566" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+						</tool>
+					</fileInfo>
+					<sourceEntries>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src"/>
+					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
@@ -46,12 +57,12 @@
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.toolchain.gnu.base.2116872643.128299804" moduleId="org.eclipse.cdt.core.settings" name="debug-x86-linux">
 				<externalSettings/>
 				<extensions>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
@@ -79,6 +90,14 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="cdt.managedbuild.toolchain.gnu.base.2116872643.128299804.44392871" name="mqttclient_module.c" rcbsApplicability="disable" resourcePath="test/python/mqttclient_module.c" toolsToInvoke="cdt.managedbuild.tool.gnu.c.compiler.base.1542253543.1236301446">
+						<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1542253543.1236301446" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base.1542253543">
+							<option id="gnu.c.compiler.option.include.paths.387085861" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+								<listOptionValue builtIn="false" value="/usr/include/python2.6/"/>
+							</option>
+							<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.912266645" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+						</tool>
+					</fileInfo>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
@@ -87,12 +106,12 @@
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.toolchain.gnu.base.2116872643.1588218084" moduleId="org.eclipse.cdt.core.settings" name="debug-arm-linux-gnueabihf">
 				<externalSettings/>
 				<extensions>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
@@ -120,6 +139,14 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="cdt.managedbuild.toolchain.gnu.base.2116872643.1588218084.1410045178" name="mqttclient_module.c" rcbsApplicability="disable" resourcePath="test/python/mqttclient_module.c" toolsToInvoke="cdt.managedbuild.tool.gnu.c.compiler.base.1805700752.404015131">
+						<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1805700752.404015131" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base.1805700752">
+							<option id="gnu.c.compiler.option.include.paths.253579949" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+								<listOptionValue builtIn="false" value="/usr/include/python2.6/"/>
+							</option>
+							<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.987997893" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+						</tool>
+					</fileInfo>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
@@ -127,9 +154,6 @@
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 		<project id="org.eclipse.paho.mqtt.c.null.1335713239" name="org.eclipse.paho.mqtt.c"/>
-	</storageModule>
-	<storageModule moduleId="scannerConfiguration">
-		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
@@ -144,4 +168,25 @@
 		</configuration>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
+	<storageModule moduleId="scannerConfiguration">
+		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.2116872643.128299804;cdt.managedbuild.toolchain.gnu.base.2116872643.128299804.;cdt.managedbuild.tool.gnu.cpp.compiler.base.1478312340;cdt.managedbuild.tool.gnu.cpp.compiler.input.1918693642">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.2116872643.128299804;cdt.managedbuild.toolchain.gnu.base.2116872643.128299804.;cdt.managedbuild.tool.gnu.c.compiler.base.1542253543;cdt.managedbuild.tool.gnu.c.compiler.input.273102950">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.2116872643.1588218084;cdt.managedbuild.toolchain.gnu.base.2116872643.1588218084.;cdt.managedbuild.tool.gnu.c.compiler.base.1805700752;cdt.managedbuild.tool.gnu.c.compiler.input.892553453">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.2116872643;cdt.managedbuild.toolchain.gnu.base.2116872643.2105697674;cdt.managedbuild.tool.gnu.cpp.compiler.base.2093522624;cdt.managedbuild.tool.gnu.cpp.compiler.input.58852055">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.2116872643.1588218084;cdt.managedbuild.toolchain.gnu.base.2116872643.1588218084.;cdt.managedbuild.tool.gnu.cpp.compiler.base.1005171182;cdt.managedbuild.tool.gnu.cpp.compiler.input.1367844459">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.2116872643;cdt.managedbuild.toolchain.gnu.base.2116872643.2105697674;cdt.managedbuild.tool.gnu.c.compiler.base.919295913;cdt.managedbuild.tool.gnu.c.compiler.input.873628110">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+	</storageModule>
 </cproject>

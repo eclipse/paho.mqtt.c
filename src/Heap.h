@@ -56,8 +56,8 @@
  */
 typedef struct
 {
-	int current_size;	/**< current size of the heap in bytes */
-	int max_size;		/**< max size the heap has reached in bytes */
+	size_t current_size;	/**< current size of the heap in bytes */
+	size_t max_size;		/**< max size the heap has reached in bytes */
 } heap_info;
 
 

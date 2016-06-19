@@ -151,13 +151,13 @@
  * Return code: All 65535 MQTT msgids are being used
  */
 #define MQTTASYNC_NO_MORE_MSGIDS -10
- /**
-  * Return code: the request is being discarded when not complete
-  */
+/**
+ * Return code: the request is being discarded when not complete
+ */
 #define MQTTASYNC_OPERATION_INCOMPLETE -11
- /**
-  * Return code: the request is being discarded when not complete
-  */
+/**
+ * Return code: no more messages can be buffered
+ */
 #define MQTTASYNC_MAX_BUFFERED_MESSAGES -12
 
 /**
@@ -464,11 +464,29 @@ DLLExport int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_
 									MQTTAsync_messageArrived* ma, MQTTAsync_deliveryComplete* dc);
 
 
-
-
+/**
+ * Sets the MQTTAsync_connected() callback function for a client.
+ * @param handle A valid client handle from a successful call to
+ * MQTTAsync_create(). 
+ * @param context A pointer to any application-specific context. The
+ * the <i>context</i> pointer is passed to each of the callback functions to
+ * provide access to the context information in the callback.
+ * @param co A pointer to an MQTTAsync_connected() callback
+ * function.  NULL removes the callback setting.
+ * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
+ * ::MQTTASYNC_FAILURE if an error occurred.
+ */
 DLLExport int MQTTAsync_setConnected(MQTTAsync handle, void* context, MQTTAsync_connected* co);
 
 
+/**
+ * Reconnects a client with the previously used connect options.  Connect
+ * must have previously been called for this to work.
+ * @param handle A valid client handle from a successful call to
+ * MQTTAsync_create(). 
+ * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
+ * ::MQTTASYNC_FAILURE if an error occurred.
+ */
 DLLExport int MQTTAsync_reconnect(MQTTAsync handle);
 		
 

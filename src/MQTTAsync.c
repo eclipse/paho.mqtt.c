@@ -61,8 +61,8 @@
 
 #include "VersionInfo.h"
 
-char* client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
-char* client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
+const char *client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
+const char *client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
 
 #if !defined(min)
 #define min(a, b) (((a) < (b)) ? (a) : (b))

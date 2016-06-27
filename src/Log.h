@@ -75,10 +75,10 @@ typedef struct
 int Log_initialize(Log_nameValue*);
 void Log_terminate(void);
 
-void Log(enum LOG_LEVELS, int, char *, ...);
+void Log(enum LOG_LEVELS, int, const char *, ...);
 void Log_stackTrace(enum LOG_LEVELS, int, int, int, const char*, int, int*);
 
-typedef void Log_traceCallback(enum LOG_LEVELS level, char* message);
+typedef void Log_traceCallback(enum LOG_LEVELS level, const char *message);
 void Log_setTraceCallback(Log_traceCallback* callback);
 void Log_setTraceLevel(enum LOG_LEVELS level);
 

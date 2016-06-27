@@ -19,6 +19,6 @@
 
 #include "Log.h"
 
-char* Messages_get(int, enum LOG_LEVELS);
+const char* Messages_get(int, enum LOG_LEVELS);
 
 #endif

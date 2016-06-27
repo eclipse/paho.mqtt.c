@@ -65,8 +65,8 @@
 
 #include "VersionInfo.h"
 
-char* client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
-char* client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
+const char *client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
+const char *client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
 
 static ClientStates ClientState =
 {

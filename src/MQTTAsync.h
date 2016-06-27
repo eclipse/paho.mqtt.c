@@ -347,7 +347,7 @@ typedef struct
 	/** A numeric code identifying the error. */
 	int code;
 	/** Optional text explaining the error. Can be NULL. */
-	char* message;
+	const char *message;
 } MQTTAsync_failureData;
 
 /** The data returned on completion of a successful API call in the response callback onSuccess. */

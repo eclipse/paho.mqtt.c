@@ -69,7 +69,7 @@ typedef struct
 } storageElement;
 
 static Tree heap;	/**< Tree that holds the allocation records */
-static char* errmsg = "Memory allocation error";
+static const char *errmsg = "Memory allocation error";
 
 
 size_t Heap_roundup(size_t size);
@@ -197,7 +197,7 @@ void checkEyecatchers(char* file, int line, void* p, size_t size)
 	int *sp = (int*)p;
 	char *cp = (char*)p;
 	int us;
-	static char* msg = "Invalid %s eyecatcher %d in heap item at file %s line %d";
+	static const char *msg = "Invalid %s eyecatcher %d in heap item at file %s line %d";
 
 	if ((us = *--sp) != eyecatcher)
 		Log(LOG_ERROR, 13, msg, "start", us, file, line);

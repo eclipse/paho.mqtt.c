@@ -92,7 +92,7 @@ static char* trace_message_list[] =
  * @param log_level the log level, used to determine which message list to use
  * @return the message format string
  */
-char* Messages_get(int index, int log_level)
+char* Messages_get(int index, enum LOG_LEVELS log_level)
 {
 	char* msg = NULL;
 

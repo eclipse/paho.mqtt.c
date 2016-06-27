@@ -101,7 +101,7 @@ int setStack(int create)
 	return cur_thread != NULL; /* good == 1 */
 }
 
-void StackTrace_entry(const char* name, int line, int trace_level)
+void StackTrace_entry(const char* name, int line, enum LOG_LEVELS trace_level)
 {
 	Thread_lock_mutex(stack_mutex);
 	if (!setStack(1))
@@ -119,7 +119,7 @@ exit:
 }
 
 
-void StackTrace_exit(const char* name, int line, void* rc, int trace_level)
+void StackTrace_exit(const char* name, int line, void* rc, enum LOG_LEVELS trace_level)
 {
 	Thread_lock_mutex(stack_mutex);
 	if (!setStack(0))

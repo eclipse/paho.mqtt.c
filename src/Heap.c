@@ -77,7 +77,7 @@ int ptrCompare(void* a, void* b, int value);
 void Heap_check(char* string, void* ptr);
 void checkEyecatchers(char* file, int line, void* p, size_t size);
 int Internal_heap_unlink(char* file, int line, void* p);
-void HeapScan(int log_level);
+void HeapScan(enum LOG_LEVELS log_level);
 
 
 /**
@@ -345,7 +345,7 @@ void* Heap_findItem(void* p)
  * Scans the heap and reports any items currently allocated.
  * To be used at shutdown if any heap items have not been freed.
  */
-void HeapScan(int log_level)
+void HeapScan(enum LOG_LEVELS log_level)
 {
 	Node* current = NULL;
 	
@@ -443,7 +443,7 @@ int HeapDump(FILE* file)
 
 #if defined(HEAP_UNIT_TESTS)
 
-void Log(int log_level, int msgno, char* format, ...)
+void Log(enum LOG_LEVELS log_level, int msgno, char* format, ...)
 {
 	printf("Log %s", format);
 }

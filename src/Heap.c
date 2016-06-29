@@ -72,12 +72,12 @@ static Tree heap;	/**< Tree that holds the allocation records */
 static const char *errmsg = "Memory allocation error";
 
 
-size_t Heap_roundup(size_t size);
-int ptrCompare(void* a, void* b, int value);
-void Heap_check(char* string, void* ptr);
-void checkEyecatchers(char* file, int line, void* p, size_t size);
-int Internal_heap_unlink(char* file, int line, void* p);
-void HeapScan(enum LOG_LEVELS log_level);
+static size_t Heap_roundup(size_t size);
+static int ptrCompare(void* a, void* b, int value);
+static void Heap_check(char* string, void* ptr);
+static void checkEyecatchers(char* file, int line, void* p, size_t size);
+static int Internal_heap_unlink(char* file, int line, void* p);
+static void HeapScan(enum LOG_LEVELS log_level);
 
 
 /**
@@ -87,7 +87,7 @@ void HeapScan(enum LOG_LEVELS log_level);
  * @param size the size actually needed
  * @return the rounded up size
  */
-size_t Heap_roundup(size_t size)
+static size_t Heap_roundup(size_t size)
 {
 	static int multsize = 4*sizeof(int);
 
@@ -103,7 +103,7 @@ size_t Heap_roundup(size_t size)
  * @param b pointer to the memory to free
  * @return boolean indicating whether a and b are equal
  */
-int ptrCompare(void* a, void* b, int value)
+static int ptrCompare(void* a, void* b, int value)
 {
 	a = ((storageElement*)a)->ptr;
 	if (value)
@@ -113,7 +113,7 @@ int ptrCompare(void* a, void* b, int value)
 }
 
 
-void Heap_check(char* string, void* ptr)
+static void Heap_check(char* string, void* ptr)
 {
 	return;
 	/*Node* curnode = NULL;
@@ -192,7 +192,7 @@ void* mymalloc(char* file, int line, size_t size)
 }
 
 
-void checkEyecatchers(char* file, int line, void* p, size_t size)
+static void checkEyecatchers(char* file, int line, void* p, size_t size)
 {
 	int *sp = (int*)p;
 	char *cp = (char*)p;
@@ -215,7 +215,7 @@ void checkEyecatchers(char* file, int line, void* p, size_t size)
  * @param line use the __LINE__ macro to indicate which line this item was allocated at
  * @param p pointer to the item to be removed
  */
-int Internal_heap_unlink(char* file, int line, void* p)
+static int Internal_heap_unlink(char* file, int line, void* p)
 {
 	Node* e = NULL;
 	int rc = 0;
@@ -345,7 +345,7 @@ void* Heap_findItem(void* p)
  * Scans the heap and reports any items currently allocated.
  * To be used at shutdown if any heap items have not been freed.
  */
-void HeapScan(enum LOG_LEVELS log_level)
+static void HeapScan(enum LOG_LEVELS log_level)
 {
 	Node* current = NULL;
 	

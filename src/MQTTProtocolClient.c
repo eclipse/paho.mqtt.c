@@ -45,13 +45,13 @@ extern MQTTProtocol state;
 extern ClientStates* bstate;
 
 
-void MQTTProtocol_storeQoS0(Clients* pubclient, Publish* publish);
-int MQTTProtocol_startPublishCommon(
+static void MQTTProtocol_storeQoS0(Clients* pubclient, Publish* publish);
+static int MQTTProtocol_startPublishCommon(
 		Clients* pubclient,
 		Publish* publish,
 		int qos,
 		int retained);
-void MQTTProtocol_retries(time_t now, Clients* client, int regardless);
+static void MQTTProtocol_retries(time_t now, Clients* client, int regardless);
 
 /**
  * List callback function for comparing Message structures by message id
@@ -95,7 +95,7 @@ int MQTTProtocol_assignMsgId(Clients* client)
 }
 
 
-void MQTTProtocol_storeQoS0(Clients* pubclient, Publish* publish)
+static void MQTTProtocol_storeQoS0(Clients* pubclient, Publish* publish)
 {
 	int len;
 	pending_write* pw = NULL;
@@ -123,7 +123,7 @@ void MQTTProtocol_storeQoS0(Clients* pubclient, Publish* publish)
  * @param retained boolean - whether to set the MQTT retained flag
  * @return the completion code
  */
-int MQTTProtocol_startPublishCommon(Clients* pubclient, Publish* publish, int qos, int retained)
+static int MQTTProtocol_startPublishCommon(Clients* pubclient, Publish* publish, int qos, int retained)
 {
 	int rc = TCPSOCKET_COMPLETE;
 
@@ -558,7 +558,7 @@ void MQTTProtocol_keepalive(time_t now)
  * @param client - the client to which to apply the retry processing
  * @param regardless boolean - retry packets regardless of retry interval (used on reconnect)
  */
-void MQTTProtocol_retries(time_t now, Clients* client, int regardless)
+static void MQTTProtocol_retries(time_t now, Clients* client, int regardless)
 {
 	ListElement* outcurrent = NULL;
 

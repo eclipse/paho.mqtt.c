@@ -31,8 +31,8 @@
 #include "Heap.h"
 
 
-MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t buflen);
-void MQTTPersistence_insertInSeqOrder(List* list, MQTTPersistence_qEntry* qEntry, size_t size);
+static MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t buflen);
+static void MQTTPersistence_insertInSeqOrder(List* list, MQTTPersistence_qEntry* qEntry, size_t size);
 
 /**
  * Creates a ::MQTTClient_persistence structure representing a persistence implementation.
@@ -538,7 +538,7 @@ int MQTTPersistence_persistQueueEntry(Clients* aclient, MQTTPersistence_qEntry* 
 }
 
 
-MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t buflen)
+static MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t buflen)
 {
 	MQTTPersistence_qEntry* qe = NULL;
 	char* ptr = buffer;
@@ -584,7 +584,7 @@ MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t b
 }
 
 
-void MQTTPersistence_insertInSeqOrder(List* list, MQTTPersistence_qEntry* qEntry, size_t size)
+static void MQTTPersistence_insertInSeqOrder(List* list, MQTTPersistence_qEntry* qEntry, size_t size)
 {
 	ListElement* index = NULL;
 	ListElement* current = NULL;

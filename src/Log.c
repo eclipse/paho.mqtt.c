@@ -109,8 +109,8 @@ static void Log_output(enum LOG_LEVELS log_level, const char *msg);
 static void Log_posttrace(enum LOG_LEVELS log_level, traceEntry* cur_entry);
 static void Log_trace(enum LOG_LEVELS log_level, const char *buf);
 #if 0
-FILE* Log_destToFile(const char *dest);
-int Log_compareEntries(const char *entry1, const char *entry2);
+static FILE* Log_destToFile(const char *dest);
+static int Log_compareEntries(const char *entry1, const char *entry2);
 #endif
 
 static int sametime_count = 0;
@@ -471,7 +471,7 @@ void Log_stackTrace(enum LOG_LEVELS log_level, int msgno, int thread_id, int cur
 
 
 #if 0
-FILE* Log_destToFile(const char *dest)
+static FILE* Log_destToFile(const char *dest)
 {
 	FILE* file = NULL;
 
@@ -490,7 +490,7 @@ FILE* Log_destToFile(const char *dest)
 }
 
 
-int Log_compareEntries(const char *entry1, const char *entry2)
+static int Log_compareEntries(const char *entry1, const char *entry2)
 {
 	int comp = strncmp(&entry1[7], &entry2[7], 19);
 

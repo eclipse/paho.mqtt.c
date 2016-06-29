@@ -33,7 +33,7 @@
 #include "Heap.h"
 
 
-int ListUnlink(List* aList, void* content, int(*callback)(void*, void*), int freeContent);
+static int ListUnlink(List* aList, void* content, int(*callback)(void*, void*), int freeContent);
 
 
 /**
@@ -197,7 +197,7 @@ ListElement* ListFindItem(List* aList, void* content, int(*callback)(void*, void
  * @param freeContent boolean value to indicate whether the item found is to be freed
  * @return 1=item removed, 0=item not removed
  */
-int ListUnlink(List* aList, void* content, int(*callback)(void*, void*), int freeContent)
+static int ListUnlink(List* aList, void* content, int(*callback)(void*, void*), int freeContent)
 {
 	ListElement* next = NULL;
 	ListElement* saved = aList->current;

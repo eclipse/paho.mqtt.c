@@ -108,8 +108,10 @@ static char* Log_formatTraceEntry(traceEntry* cur_entry);
 static void Log_output(int log_level, char* msg);
 static void Log_posttrace(int log_level, traceEntry* cur_entry);
 static void Log_trace(int log_level, char* buf);
+#if 0
 FILE* Log_destToFile(char* dest);
 int Log_compareEntries(char* entry1, char* entry2);
+#endif
 
 static int sametime_count = 0;
 #if defined(GETTIMEOFDAY)
@@ -468,6 +470,7 @@ void Log_stackTrace(int log_level, int msgno, int thread_id, int current_depth, 
 }
 
 
+#if 0
 FILE* Log_destToFile(char* dest)
 {
 	FILE* file = NULL;
@@ -499,7 +502,6 @@ int Log_compareEntries(char* entry1, char* entry2)
 }
 
 
-#if 0
 /**
  * Write the contents of the stored trace to a stream
  * @param dest string which contains a file name or the special strings stdout or stderr

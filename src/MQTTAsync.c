@@ -1322,8 +1322,11 @@ void MQTTAsync_checkTimeouts()
 		
 		MQTTAsyncs* m = (MQTTAsyncs*)(current->content);
 		
+		/* check disconnect timeout */
+		if (m->c->connect_state == -2)
+			MQTTAsync_checkDisconnect(m, &m->disconnect);
 		/* check connect timeout */
-		if (m->c->connect_state != 0 && MQTTAsync_elapsed(m->connect.start_time) > (m->connectTimeout * 1000))
+		else if (m->c->connect_state != 0 && MQTTAsync_elapsed(m->connect.start_time) > (m->connectTimeout * 1000))
 		{
 			if (MQTTAsync_checkConn(&m->connect, m))
 			{
@@ -1355,10 +1358,6 @@ void MQTTAsync_checkTimeouts()
 			}
 			continue;
 		}
-	
-		/* check disconnect timeout */
-		if (m->c->connect_state == -2)
-			MQTTAsync_checkDisconnect(m, &m->disconnect);
 	
 		timed_out_count = 0;
 		/* check response timeouts */

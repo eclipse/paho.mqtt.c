@@ -131,6 +131,7 @@ CCFLAGS_SO = -g -fPIC $(CFLAGS) -Os -Wall -fvisibility=hidden -I$(blddir_work)
 FLAGS_EXE = $(LDFLAGS) -I ${srcdir} -lpthread -L ${blddir}
 FLAGS_EXES = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread -lssl -lcrypto ${END_GROUP} -L ${blddir}
 
+LDCONFIG ?= /sbin/ldconfig
 LDFLAGS_C = $(LDFLAGS) -shared -Wl,-init,$(MQTTCLIENT_INIT) -lpthread
 LDFLAGS_CS = $(LDFLAGS) -shared $(START_GROUP) -lpthread $(EXTRA_LIB) -lssl -lcrypto $(END_GROUP) -Wl,-init,$(MQTTCLIENT_INIT)
 LDFLAGS_A = $(LDFLAGS) -shared -Wl,-init,$(MQTTASYNC_INIT) -lpthread
@@ -238,7 +239,7 @@ install: build
 	$(INSTALL_DATA) ${INSTALL_OPTS} ${MQTTLIB_A_TARGET} $(DESTDIR)${libdir}
 	$(INSTALL_DATA) ${INSTALL_OPTS} ${MQTTLIB_AS_TARGET} $(DESTDIR)${libdir}
 	$(INSTALL_PROGRAM) ${INSTALL_OPTS} ${MQTTVERSION_TARGET} $(DESTDIR)${bindir}
-	/sbin/ldconfig $(DESTDIR)${libdir}
+	$(LDCONFIG) $(DESTDIR)${libdir}
 	ln -s lib$(MQTTLIB_C).so.${MAJOR_VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_C).so
 	ln -s lib$(MQTTLIB_CS).so.${MAJOR_VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_CS).so
 	ln -s lib$(MQTTLIB_A).so.${MAJOR_VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so
@@ -253,7 +254,7 @@ uninstall:
 	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so.${VERSION}
 	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_AS).so.${VERSION}
 	rm $(DESTDIR)${bindir}/MQTTVersion
-	/sbin/ldconfig $(DESTDIR)${libdir}
+	$(LDCONFIG) $(DESTDIR)${libdir}
 	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_C).so
 	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_CS).so
 	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so

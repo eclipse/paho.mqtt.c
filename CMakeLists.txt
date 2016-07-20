@@ -12,6 +12,7 @@
 #
 #  Contributors:
 #     Rainer Poisel - initial version
+#     Genis Riera Perez - Add support for building debian package
 #*******************************************************************************/
 
 # Note: on OS X you should install XCode and the associated command-line tools

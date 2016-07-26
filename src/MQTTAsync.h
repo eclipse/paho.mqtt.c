@@ -94,6 +94,7 @@
 #endif
 
 #include <stdio.h>
+#include <stdint.h>
 /// @endcond
 
 #if !defined(NO_PERSISTENCE)
@@ -710,7 +711,12 @@ typedef struct
       * and authorisation by user name and password. This is the password 
       * parameter.
       */
-	const char* password;
+	const uint8_t* password;
+	/**
+	* The length of the password in bytes.  This variable is only used if
+	* password is not NULL.
+	*/
+	uint16_t passwordLength;
 	/**
       * The time interval in seconds to allow a connect to complete.
       */
@@ -777,8 +783,8 @@ typedef struct
 } MQTTAsync_connectOptions;
 
 
-#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 4, 60, 1, 10, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 1, 60}
+#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 4, 60, 1, 10, NULL, NULL, \
+NULL, 0,30, 0, NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 1, 60}
 
 /**
   * This function attempts to connect a previously-created client (see

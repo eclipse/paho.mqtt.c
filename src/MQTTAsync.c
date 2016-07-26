@@ -2167,10 +2167,15 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 			goto exit;
 		}
 	}
-	if ((options->username && !UTF8_validateString(options->username)) ||
-		(options->password && !UTF8_validateString(options->password)))
+	if (options->username && !UTF8_validateString(options->username))
 	{
 		rc = MQTTASYNC_BAD_UTF8_STRING;
+		goto exit;
+	}
+
+	if (options->password && !options->username)
+	{
+		rc = MQTTCLIENT_PASSWORD_WITHOUT_USERNAME;
 		goto exit;
 	}
 
@@ -2263,6 +2268,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 
 	m->c->username = options->username;
 	m->c->password = options->password;
+	m->c->passwordLength = options->passwordLength;
 	m->c->retryInterval = options->retryInterval;
 	m->shouldBeConnected = 1;
 

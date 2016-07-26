@@ -114,6 +114,7 @@
   #define DLLExport __attribute__ ((visibility ("default")))
 #endif
 
+#include <stdint.h>
 #include <stdio.h>
 /// @endcond
 
@@ -166,6 +167,10 @@
  * Return code: A QoS value that falls outside of the acceptable range (0,1,2)
  */
 #define MQTTCLIENT_BAD_QOS -9
+/**
+ * Return code: A password was supplied, but a username was not
+ */
+#define MQTTCLIENT_PASSWORD_WITHOUT_USERNAME -10
 
 /**
  * Default MQTT version to connect with.  Use 3.1.1 then fall back to 3.1
@@ -578,13 +583,18 @@ typedef struct
 	const char* username;	
 	/** 
    * MQTT servers that support the MQTT v3.1.1 protocol provide authentication
-   * and authorisation by user name and password. This is the password 
-   * parameter.
+   * and authorisation by user name and password. This is the password
+   * parameter.  An MQTT password is a binary value up to 2**16 bytes in length.
    */
-	const char* password;
+	const uint8_t* password;
 	/**
-   * The time interval in seconds to allow a connect to complete.
-   */
+	* The length of the password in bytes.  This variable is only used if
+	* password is not NULL.
+	*/
+	uint16_t passwordLength;
+	/**
+	* The time interval in seconds to allow a connect to complete.
+	*/
 	int connectTimeout;
 	/**
 	 * The time interval in seconds
@@ -628,7 +638,7 @@ typedef struct
 	} returned;
 } MQTTClient_connectOptions;
 
-#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 4, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, 0}
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 4, 60, 1, 1, NULL, NULL, NULL, 0, 30, 20, NULL, 0, NULL, 0}
 
 /**
   * MQTTClient_libraryInfo is used to store details relating to the currently used

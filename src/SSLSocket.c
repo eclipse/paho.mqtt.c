@@ -553,13 +553,15 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, 
 	if (net->ctx != NULL || (rc = SSLSocket_createContext(net, opts)) == 1)
 	{
 		int i;
-		SSL_CTX_set_info_callback(net->ctx, SSL_CTX_info_callback);
-		SSL_CTX_set_msg_callback(net->ctx, SSL_CTX_msg_callback);
-   		if (opts->enableServerCertAuth) 
+		if (net->ctx != NULL)
+		{
+		    SSL_CTX_set_info_callback(net->ctx, SSL_CTX_info_callback);
+		    SSL_CTX_set_msg_callback(net->ctx, SSL_CTX_msg_callback);
+		    if (opts->enableServerCertAuth)
 			SSL_CTX_set_verify(net->ctx, SSL_VERIFY_PEER, NULL);
 	
-		net->ssl = SSL_new(net->ctx);
-
+		    net->ssl = SSL_new(net->ctx);
+		}
 		/* Log all ciphers available to the SSL sessions (loaded in ctx) */
 		for (i = 0; ;i++)
 		{

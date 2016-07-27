@@ -64,20 +64,20 @@ int SSLSocket_error(char* aString, SSL* ssl, int sock, int rc)
 
     FUNC_ENTRY;
     if (ssl)
-        error = SSL_get_error(ssl, rc);
+	error = SSL_get_error(ssl, rc);
     else
-        error = ERR_get_error();
+	error = ERR_get_error();
     if (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE)
     {
 		Log(TRACE_MIN, -1, "SSLSocket error WANT_READ/WANT_WRITE");
     }
     else
     {
-        static char buf[120];
+	static char buf[120];
 
-        if (strcmp(aString, "shutdown") != 0)
-        	Log(TRACE_MIN, -1, "SSLSocket error %s(%d) in %s for socket %d rc %d errno %d %s\n", buf, error, aString, sock, rc, errno, strerror(errno));
-         ERR_print_errors_fp(stderr);
+	if (strcmp(aString, "shutdown") != 0)
+		Log(TRACE_MIN, -1, "SSLSocket error %s(%d) in %s for socket %d rc %d errno %d %s\n", buf, error, aString, sock, rc, errno, strerror(errno));
+	 ERR_print_errors_fp(stderr);
 		if (error == SSL_ERROR_SSL || error == SSL_ERROR_SYSCALL)
 			error = SSL_FATAL;
     }
@@ -177,39 +177,39 @@ void SSL_CTX_info_callback(const SSL* ssl, int where, int ret)
 	if (where & SSL_CB_LOOP)
 	{
 		Log(TRACE_PROTOCOL, 1, "SSL state %s:%s:%s", 
-                  (where & SSL_ST_CONNECT) ? "connect" : (where & SSL_ST_ACCEPT) ? "accept" : "undef", 
-                    SSL_state_string_long(ssl), SSL_get_cipher_name(ssl));
+		  (where & SSL_ST_CONNECT) ? "connect" : (where & SSL_ST_ACCEPT) ? "accept" : "undef", 
+		    SSL_state_string_long(ssl), SSL_get_cipher_name(ssl));
 	}
 	else if (where & SSL_CB_EXIT)
 	{
 		Log(TRACE_PROTOCOL, 1, "SSL %s:%s",
-                  (where & SSL_ST_CONNECT) ? "connect" : (where & SSL_ST_ACCEPT) ? "accept" : "undef",
-                    SSL_state_string_long(ssl));
+		  (where & SSL_ST_CONNECT) ? "connect" : (where & SSL_ST_ACCEPT) ? "accept" : "undef",
+		    SSL_state_string_long(ssl));
 	}
 	else if (where & SSL_CB_ALERT)
 	{
 		Log(TRACE_PROTOCOL, 1, "SSL alert %s:%s:%s",
-                  (where & SSL_CB_READ) ? "read" : "write", 
-                    SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
+		  (where & SSL_CB_READ) ? "read" : "write", 
+		    SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
 	}
 	else if (where & SSL_CB_HANDSHAKE_START)
 	{
 		Log(TRACE_PROTOCOL, 1, "SSL handshake started %s:%s:%s",
-                  (where & SSL_CB_READ) ? "read" : "write", 
-                    SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
+		  (where & SSL_CB_READ) ? "read" : "write", 
+		    SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
 	}
 	else if (where & SSL_CB_HANDSHAKE_DONE)
 	{
 		Log(TRACE_PROTOCOL, 1, "SSL handshake done %s:%s:%s", 
-                  (where & SSL_CB_READ) ? "read" : "write",
-                    SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
+		  (where & SSL_CB_READ) ? "read" : "write",
+		    SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
 		Log(TRACE_PROTOCOL, 1, "SSL certificate verification: %s", 
-                    SSL_get_verify_result_string(SSL_get_verify_result(ssl)));
+		    SSL_get_verify_result_string(SSL_get_verify_result(ssl)));
 	}
 	else
 	{
 		Log(TRACE_PROTOCOL, 1, "SSL state %s:%s:%s", SSL_state_string_long(ssl), 
-                   SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
+		   SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
 	}
 }
 
@@ -256,7 +256,7 @@ char* SSLSocket_get_version_string(int version)
 
 
 void SSL_CTX_msg_callback(int write_p, int version, int content_type, const void* buf, size_t len, 
-        SSL* ssl, void* arg)
+	SSL* ssl, void* arg)
 {  
 
 /*  
@@ -512,7 +512,7 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 		{
 			SSLSocket_error("SSL_CTX_load_verify_locations", NULL, net->socket, rc);
 			goto free_ctx;
-		}                               
+		}				
 	}
 	else if ((rc = SSL_CTX_set_default_verify_paths(net->ctx)) != 1)
 	{
@@ -529,7 +529,7 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	{
 		SSLSocket_error("SSL_CTX_set_cipher_list", NULL, net->socket, rc);
 		goto free_ctx;
-	}       
+	}	
 	
 	SSL_CTX_set_mode(net->ctx, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 
@@ -561,20 +561,26 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, 
 			SSL_CTX_set_verify(net->ctx, SSL_VERIFY_PEER, NULL);
 	
 		    net->ssl = SSL_new(net->ctx);
-		}
-		/* Log all ciphers available to the SSL sessions (loaded in ctx) */
-		for (i = 0; ;i++)
-		{
+		    /* Log all ciphers available to the SSL sessions (loaded in ctx) */
+		    for (i = 0; ;i++)
+		    {
 			const char* cipher = SSL_get_cipher_list(net->ssl, i);
 			if (cipher == NULL)
-				break;
+			    break;
 			Log(TRACE_PROTOCOL, 1, "SSL cipher available: %d:%s", i, cipher);
-	    	}	
-		if ((rc = SSL_set_fd(net->ssl, net->socket)) != 1)
+		    }
+		    if ((rc = SSL_set_fd(net->ssl, net->socket)) != 1)
 			SSLSocket_error("SSL_set_fd", net->ssl, net->socket, rc);
 
-		if ((rc = SSL_set_tlsext_host_name(net->ssl, hostname)) != 1)
+		    if ((rc = SSL_set_tlsext_host_name(net->ssl, hostname)) != 1)
 			SSLSocket_error("SSL_set_tlsext_host_name", NULL, net->socket, rc);
+		}
+		else
+		{
+		    // no net->ctx -> report fail
+		    Log(TRACE_MIN, 1, "No SSL context");
+		    rc = -1;
+		}
 	}
 		
 	FUNC_EXIT_RC(rc);
@@ -629,7 +635,7 @@ int SSLSocket_getch(SSL* ssl, int socket, char* c)
 		}
 	}
 	else if (rc == 0)
-		rc = SOCKET_ERROR; 	/* The return value from recv is 0 when the peer has performed an orderly shutdown. */
+		rc = SOCKET_ERROR;	/* The return value from recv is 0 when the peer has performed an orderly shutdown. */
 	else if (rc == 1)
 	{
 		SocketBuffer_queueChar(socket, *c);
@@ -726,7 +732,7 @@ int SSLSocket_close(networkHandles* net)
 }
 
 
-/* No SSL_writev() provided by OpenSSL. Boo. */  
+/* No SSL_writev() provided by OpenSSL. Boo. */	 
 int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens, int* frees)
 {
 	int rc = 0;

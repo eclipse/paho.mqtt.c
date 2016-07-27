@@ -555,31 +555,31 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, 
 		int i;
 		if (net->ctx != NULL)
 		{
-		    SSL_CTX_set_info_callback(net->ctx, SSL_CTX_info_callback);
-		    SSL_CTX_set_msg_callback(net->ctx, SSL_CTX_msg_callback);
-		    if (opts->enableServerCertAuth)
-			SSL_CTX_set_verify(net->ctx, SSL_VERIFY_PEER, NULL);
+			SSL_CTX_set_info_callback(net->ctx, SSL_CTX_info_callback);
+			SSL_CTX_set_msg_callback(net->ctx, SSL_CTX_msg_callback);
+			if (opts->enableServerCertAuth)
+				SSL_CTX_set_verify(net->ctx, SSL_VERIFY_PEER, NULL);
 	
-		    net->ssl = SSL_new(net->ctx);
-		    /* Log all ciphers available to the SSL sessions (loaded in ctx) */
-		    for (i = 0; ;i++)
-		    {
-			const char* cipher = SSL_get_cipher_list(net->ssl, i);
-			if (cipher == NULL)
-			    break;
-			Log(TRACE_PROTOCOL, 1, "SSL cipher available: %d:%s", i, cipher);
-		    }
-		    if ((rc = SSL_set_fd(net->ssl, net->socket)) != 1)
-			SSLSocket_error("SSL_set_fd", net->ssl, net->socket, rc);
+			net->ssl = SSL_new(net->ctx);
+			/* Log all ciphers available to the SSL sessions (loaded in ctx) */
+			for (i = 0; ;i++)
+			{
+				const char* cipher = SSL_get_cipher_list(net->ssl, i);
+				if (cipher == NULL)
+					break;
+				Log(TRACE_PROTOCOL, 1, "SSL cipher available: %d:%s", i, cipher);
+			}
+			if ((rc = SSL_set_fd(net->ssl, net->socket)) != 1)
+				SSLSocket_error("SSL_set_fd", net->ssl, net->socket, rc);
 
-		    if ((rc = SSL_set_tlsext_host_name(net->ssl, hostname)) != 1)
-			SSLSocket_error("SSL_set_tlsext_host_name", NULL, net->socket, rc);
+			if ((rc = SSL_set_tlsext_host_name(net->ssl, hostname)) != 1)
+				SSLSocket_error("SSL_set_tlsext_host_name", NULL, net->socket, rc);
 		}
-		else
+                else
 		{
-		    // no net->ctx -> report fail
-		    Log(TRACE_MIN, 1, "No SSL context");
-		    rc = -1;
+			// no net->ctx -> report fail
+			Log(TRACE_MIN, 1, "No SSL context");
+			rc = 0; // returning MQTTASYNC_SUCCESS or MQTTCLIENT_SUCCESS indicate fail!
 		}
 	}
 		
@@ -849,3 +849,8 @@ int SSLSocket_continueWrite(pending_writes* pw)
 	return rc;
 }
 #endif
+
+/* Local Variables: */
+/* indent-tabs-mode: t */
+/* c-basic-offset: 8 */
+/* End: */

@@ -806,13 +806,13 @@ int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* o
 
 	Log(TRACE_MIN, -1, "Connecting to serverURI %s with MQTT version %d", serverURI, MQTTVersion);
 #if defined(OPENSSL)
-#if defined(__GNUC__)
+#if defined(__GNUC__) && defined(__linux__)
 	rc = MQTTProtocol_connect(serverURI, m->c, m->ssl, MQTTVersion, millisecsTimeout - MQTTClient_elapsed(start));
 #else
 	rc = MQTTProtocol_connect(serverURI, m->c, m->ssl, MQTTVersion);
 #endif
 #else
-#if defined(__GNUC__)
+#if defined(__GNUC__) && defined(__linux__)
 	rc = MQTTProtocol_connect(serverURI, m->c, MQTTVersion, millisecsTimeout - MQTTClient_elapsed(start));
 #else
 	rc = MQTTProtocol_connect(serverURI, m->c, MQTTVersion);

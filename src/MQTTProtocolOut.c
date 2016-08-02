@@ -104,7 +104,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int MQTTVersi
 	aClient->good = 1;
 
 	addr = MQTTProtocol_addressPort(ip_address, &port);
-#if defined(__GNUC__)
+#if defined(__GNUC__) && defined(__linux__)
 	if (timeout < 0)
 		rc = -1;
 	else

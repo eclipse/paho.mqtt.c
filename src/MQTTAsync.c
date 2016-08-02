@@ -38,7 +38,6 @@
  *
  */
 
-#define _GNU_SOURCE /* for pthread_mutexattr_settype */
 #include <stdlib.h>
 #if !defined(WIN32) && !defined(WIN64)
 	#include <sys/time.h>
@@ -1154,9 +1153,17 @@ int MQTTAsync_processCommand()
 
 			Log(TRACE_MIN, -1, "Connecting to serverURI %s with MQTT version %d", serverURI, command->command.details.conn.MQTTVersion);
 #if defined(OPENSSL)
+#if defined(__GNUC__)
+			rc = MQTTProtocol_connect(serverURI, command->client->c, command->client->ssl, command->command.details.conn.MQTTVersion, 0);
+#else
 			rc = MQTTProtocol_connect(serverURI, command->client->c, command->client->ssl, command->command.details.conn.MQTTVersion);
+#endif
+#else
+#if defined(__GNUC__)
+			rc = MQTTProtocol_connect(serverURI, command->client->c, command->command.details.conn.MQTTVersion, 0);
 #else
 			rc = MQTTProtocol_connect(serverURI, command->client->c, command->command.details.conn.MQTTVersion);
+#endif
 #endif
 			if (command->client->c->connect_state == 0)
 				rc = SOCKET_ERROR;

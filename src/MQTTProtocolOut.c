@@ -80,12 +80,21 @@ char* MQTTProtocol_addressPort(const char* uri, int* port)
  * @param aClient a structure with all MQTT data needed
  * @param int ssl
  * @param int MQTTVersion the MQTT version to connect with (3 or 4)
+ * @param long timeout how long to wait for a new socket to be created
  * @return return code
  */
 #if defined(OPENSSL)
+#if defined (__GNUC__)
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int MQTTVersion, long timeout)
+#else
 int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int MQTTVersion)
+#endif
+#else
+#if defined (__GNUC__)
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int MQTTVersion, long timeout)
 #else
 int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int MQTTVersion)
+#endif
 #endif
 {
 	int rc, port;
@@ -95,7 +104,14 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int MQTTVersi
 	aClient->good = 1;
 
 	addr = MQTTProtocol_addressPort(ip_address, &port);
+#if defined(__GNUC__)
+	if (timeout < 0)
+		rc = -1;
+	else
+		rc = Socket_new(addr, port, &(aClient->net.socket), timeout);
+#else
 	rc = Socket_new(addr, port, &(aClient->net.socket));
+#endif
 	if (rc == EINPROGRESS || rc == EWOULDBLOCK)
 		aClient->connect_state = 1; /* TCP connect called - wait for connect completion */
 	else if (rc == 0)

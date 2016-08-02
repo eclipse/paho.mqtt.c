@@ -582,9 +582,14 @@ void Socket_close(int socket)
  *  @param addr the address string
  *  @param port the TCP port
  *  @param sock returns the new socket
+ *  @param timeout the timeout in milliseconds
  *  @return completion code
  */
+#if defined(__GNUC__)
+int Socket_new(char* addr, int port, int* sock, long timeout)
+#else
 int Socket_new(char* addr, int port, int* sock)
+#endif
 {
 	int type = SOCK_STREAM;
 	struct sockaddr_in address;
@@ -607,7 +612,21 @@ int Socket_new(char* addr, int port, int* sock)
 	if (addr[0] == '[')
 	  ++addr;
 
-	if ((rc = getaddrinfo(addr, NULL, &hints, &result)) == 0)
+#if defined(__GNUC__)
+	struct gaicb ar = {addr, NULL, &hints, result};
+	struct gaicb *reqs[] = {&ar};
+
+	__time_t seconds = timeout / 1000L;
+	__syscall_slong_t nanos = (timeout - (seconds * 1000L)) * 1000000L;
+	struct timespec timeoutspec = {seconds, nanos};
+
+	rc = getaddrinfo_a(GAI_NOWAIT, reqs, 1, NULL);
+	gai_suspend((const struct gaicb* const *) reqs, 1, &timeoutspec);
+#else
+	rc = getaddrinfo(addr, NULL, &hints, &result);
+#endif
+
+	if (rc == 0)
 	{
 		struct addrinfo* res = result;
 

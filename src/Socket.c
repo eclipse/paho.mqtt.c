@@ -585,7 +585,7 @@ void Socket_close(int socket)
  *  @param timeout the timeout in milliseconds
  *  @return completion code
  */
-#if defined(__GNUC__)
+#if defined(__GNUC__) && defined(__linux__)
 int Socket_new(char* addr, int port, int* sock, long timeout)
 #else
 int Socket_new(char* addr, int port, int* sock)
@@ -612,7 +612,7 @@ int Socket_new(char* addr, int port, int* sock)
 	if (addr[0] == '[')
 	  ++addr;
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && defined(__linux__)
 	struct gaicb ar = {addr, NULL, &hints, result};
 	struct gaicb *reqs[] = {&ar};
 

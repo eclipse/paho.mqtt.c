@@ -84,13 +84,13 @@ char* MQTTProtocol_addressPort(const char* uri, int* port)
  * @return return code
  */
 #if defined(OPENSSL)
-#if defined (__GNUC__)
+#if defined(__GNUC__) && defined(__linux__)
 int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int MQTTVersion, long timeout)
 #else
 int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int MQTTVersion)
 #endif
 #else
-#if defined (__GNUC__)
+#if defined(__GNUC__) && defined(__linux__)
 int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int MQTTVersion, long timeout)
 #else
 int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int MQTTVersion)
@@ -104,7 +104,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int MQTTVersi
 	aClient->good = 1;
 
 	addr = MQTTProtocol_addressPort(ip_address, &port);
-#if defined(__GNUC__)
+#if defined(__GNUC__) && defined(__linux__)
 	if (timeout < 0)
 		rc = -1;
 	else

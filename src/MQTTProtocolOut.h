@@ -31,13 +31,13 @@
 
 void MQTTProtocol_reconnect(const char* ip_address, Clients* client);
 #if defined(OPENSSL)
-#if defined (__GNUC__)
+#if defined(__GNUC__) && defined(__linux__)
 int MQTTProtocol_connect(const char* ip_address, Clients* aClients, int ssl, int MQTTVersion, long timeout);
 #else
 int MQTTProtocol_connect(const char* ip_address, Clients* aClients, int ssl, int MQTTVersion);
 #endif
 #else
-#if defined (__GNUC__)
+#if defined(__GNUC__) && defined(__linux__)
 int MQTTProtocol_connect(const char* ip_address, Clients* aClients, int MQTTVersion, long timeout);
 #else
 int MQTTProtocol_connect(const char* ip_address, Clients* aClients, int MQTTVersion);

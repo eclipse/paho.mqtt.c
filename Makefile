@@ -128,14 +128,14 @@ MQTTLIB_AS_TARGET = ${blddir}/lib${MQTTLIB_AS}.so.${VERSION}
 MQTTVERSION_TARGET = ${blddir}/MQTTVersion
 
 CCFLAGS_SO = -g -fPIC $(CFLAGS) -D_GNU_SOURCE -Os -Wall -fvisibility=hidden -I$(blddir_work)
-FLAGS_EXE = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread -lanl ${END_GROUP} -L ${blddir}
-FLAGS_EXES = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread -lanl -lssl -lcrypto ${END_GROUP} -L ${blddir}
+FLAGS_EXE = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread ${GAI_LIB} ${END_GROUP} -L ${blddir}
+FLAGS_EXES = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread ${GAI_LIB} -lssl -lcrypto ${END_GROUP} -L ${blddir}
 
 LDCONFIG ?= /sbin/ldconfig
-LDFLAGS_C = $(LDFLAGS) -shared -Wl,-init,$(MQTTCLIENT_INIT) $(START_GROUP) -lpthread -lanl $(END_GROUP)
-LDFLAGS_CS = $(LDFLAGS) -shared $(START_GROUP) -lpthread -lanl $(EXTRA_LIB) -lssl -lcrypto $(END_GROUP) -Wl,-init,$(MQTTCLIENT_INIT)
-LDFLAGS_A = $(LDFLAGS) -shared -Wl,-init,$(MQTTASYNC_INIT) $(START_GROUP) -lpthread -lanl $(END_GROUP)
-LDFLAGS_AS = $(LDFLAGS) -shared $(START_GROUP) -lpthread -lanl  $(EXTRA_LIB) -lssl -lcrypto $(END_GROUP) -Wl,-init,$(MQTTASYNC_INIT)
+LDFLAGS_C = $(LDFLAGS) -shared -Wl,-init,$(MQTTCLIENT_INIT) $(START_GROUP) -lpthread $(GAI_LIB) $(END_GROUP)
+LDFLAGS_CS = $(LDFLAGS) -shared $(START_GROUP) -lpthread $(GAI_LIB) $(EXTRA_LIB) -lssl -lcrypto $(END_GROUP) -Wl,-init,$(MQTTCLIENT_INIT)
+LDFLAGS_A = $(LDFLAGS) -shared -Wl,-init,$(MQTTASYNC_INIT) $(START_GROUP) -lpthread $(GAI_LIB) $(END_GROUP)
+LDFLAGS_AS = $(LDFLAGS) -shared $(START_GROUP) -lpthread $(GAI_LIB) $(EXTRA_LIB) -lssl -lcrypto $(END_GROUP) -Wl,-init,$(MQTTASYNC_INIT)
 
 SED_COMMAND = sed \
     -e "s/@CLIENT_VERSION@/${release.version}/g" \
@@ -148,6 +148,7 @@ MQTTASYNC_INIT = MQTTAsync_init
 START_GROUP = -Wl,--start-group
 END_GROUP = -Wl,--end-group
 
+GAI_LIB = -lanl
 EXTRA_LIB = -ldl
 
 LDFLAGS_C += -Wl,-soname,lib$(MQTTLIB_C).so.${MAJOR_VERSION}
@@ -162,6 +163,7 @@ MQTTASYNC_INIT = _MQTTAsync_init
 START_GROUP =
 END_GROUP = 
 
+GAI_LIB = 
 EXTRA_LIB = -ldl
 
 CCFLAGS_SO += -Wno-deprecated-declarations -DUSE_NAMED_SEMAPHORES

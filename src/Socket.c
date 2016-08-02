@@ -616,8 +616,8 @@ int Socket_new(char* addr, int port, int* sock)
 	struct gaicb ar = {addr, NULL, &hints, result};
 	struct gaicb *reqs[] = {&ar};
 
-	__time_t seconds = timeout / 1000L;
-	__syscall_slong_t nanos = (timeout - (seconds * 1000L)) * 1000000L;
+	unsigned long int seconds = timeout / 1000L;
+	unsigned long int nanos = (timeout - (seconds * 1000L)) * 1000000L;
 	struct timespec timeoutspec = {seconds, nanos};
 
 	rc = getaddrinfo_a(GAI_NOWAIT, reqs, 1, NULL);

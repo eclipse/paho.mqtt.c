@@ -613,7 +613,7 @@ int Socket_new(char* addr, int port, int* sock)
 	  ++addr;
 
 #if defined(__GNUC__) && defined(__linux__)
-	struct gaicb ar = {addr, NULL, &hints, result};
+	struct gaicb ar = {addr, NULL, &hints, NULL};
 	struct gaicb *reqs[] = {&ar};
 
 	unsigned long int seconds = timeout / 1000L;
@@ -621,7 +621,9 @@ int Socket_new(char* addr, int port, int* sock)
 	struct timespec timeoutspec = {seconds, nanos};
 
 	rc = getaddrinfo_a(GAI_NOWAIT, reqs, 1, NULL);
-	gai_suspend((const struct gaicb* const *) reqs, 1, &timeoutspec);
+	if (rc == 0)
+		gai_suspend((const struct gaicb* const *) reqs, 1, &timeoutspec);
+	result = ar.ar_result;
 #else
 	rc = getaddrinfo(addr, NULL, &hints, &result);
 #endif

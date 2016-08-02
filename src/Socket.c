@@ -622,8 +622,13 @@ int Socket_new(char* addr, int port, int* sock)
 
 	rc = getaddrinfo_a(GAI_NOWAIT, reqs, 1, NULL);
 	if (rc == 0)
-		gai_suspend((const struct gaicb* const *) reqs, 1, &timeoutspec);
-	result = ar.ar_result;
+		rc = gai_suspend((const struct gaicb* const *) reqs, 1, &timeoutspec);
+
+	if (rc == 0)
+	{
+		rc = gai_error(reqs[0]);
+		result = ar.ar_result;
+	}
 #else
 	rc = getaddrinfo(addr, NULL, &hints, &result);
 #endif

@@ -12,3 +12,5 @@ Makefile.in
 *.o
 *.stamp
 *.swp
+# AC_CONFIG_AUX_DIR created by /bootstrap
+/autotools_build

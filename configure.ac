@@ -20,7 +20,7 @@
 
 AC_PREREQ([2.65])
 AC_INIT([paho.mqtt.c], [1.1.0])
-AC_CONFIG_AUX_DIR([build])
+AC_CONFIG_AUX_DIR([autotools_build])
 AC_CONFIG_MACRO_DIR([m4])
 AC_LANG_C
 

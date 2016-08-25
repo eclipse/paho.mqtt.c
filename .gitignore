@@ -14,3 +14,5 @@ Makefile.in
 *.stamp
 *.swp
 /build.paho
+# AC_CONFIG_AUX_DIR created by /bootstrap
+/autotools_build

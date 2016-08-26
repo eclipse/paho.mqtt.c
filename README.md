@@ -30,7 +30,7 @@ The build process supports any POSIX-compliant system. The following tools must 
 By default, Autotools uses GCC. However, you can instruct Autotools to use another compiler:
 
 ```
-$ ./configure CC=clang CXX=clang++
+$ $PAHO_DIR/configure CC=clang CXX=clang++
 ```
 
 #### Build instructions (on systems with Autotools)
@@ -39,6 +39,13 @@ First, run the bootstrap script to create Autotools' scripts:
 
 ```
 $ ./bootstrap
+```
+
+To avoid problems with the existing Makefile, build in a seperate directory
+(known as VPATH build or out of tree build):
+
+```
+$ mkdir mybuild && cd mybuild
 ```
 
 Next, configure the features available in the library:
@@ -57,9 +64,10 @@ Option | Default Value | Description
  --with[out]-ssl | no | Build with OpenSSL support
 
 For example, in order to build only the static library:
+(under the assumption that "$PAHO_DIR" points to the directory which contains the paho.mqtt.c source tree)
 
 ```
-$ ./configure --disable-shared --enable-static
+$ $PAHO_DIR/configure --disable-shared --enable-static
 $ make
 ```
 
@@ -71,7 +79,7 @@ Which builds:
 In order to build only the dynamic library:
 
 ```
-$ ./configure --enable-shared --disable-static
+$ $PAHO_DIR/configure --enable-shared --disable-static
 $ make
 ```
 
@@ -108,7 +116,7 @@ $ make
 The Autotools cross compilation is performed through --host option. For example, to build the library for one of the ARM platforms:
 
 ```
-$ ./configure --host=arm-linux-gnueabi
+$ $PAHO_DIR/configure --host=arm-linux-gnueabi
 ```
 
 

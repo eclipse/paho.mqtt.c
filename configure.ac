@@ -31,7 +31,6 @@ AM_SILENT_RULES([yes])
 LT_INIT([shared static pic-only])
 
 AC_PROG_CC
-AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 AC_PROG_SED
@@ -130,30 +129,7 @@ AC_ARG_ENABLE(
 	enable_samples=no
 )
 
-AS_IF([test "x$enable_samples" = "xyes"], [
-	AC_CONFIG_FILES([src/samples/Makefile])
-])
-
 AM_CONDITIONAL([PAHO_BUILD_SAMPLES], [test "$enable_samples" = yes])
-
-
-# Build test
-AC_ARG_ENABLE(
-	[test],
-	AS_HELP_STRING(
-		[--enable-test=@<:@yes/no@:>@],
-		[build test programs @<:@default=no@:>@]
-	),
-	,
-	enable_test=no
-)
-
-AS_IF([test "x$enable_test" = "xyes"], [
-	AC_CONFIG_FILES([test/Makefile])
-])
-
-AM_CONDITIONAL([PAHO_BUILD_TEST], [test "$enable_test" = yes])
-
 
 # Build documentation
 AC_ARG_ENABLE(
@@ -258,8 +234,6 @@ AM_CONDITIONAL([PAHO_WITH_SSL], [test "$with_ssl" = yes])
 AC_CONFIG_HEADERS([config.h])
 
 AC_CONFIG_FILES([Makefile])
-AC_CONFIG_FILES([src/Makefile])
-AC_CONFIG_FILES([doc/Makefile])
 
 AC_OUTPUT
 
@@ -274,7 +248,6 @@ echo "            Build as static library : $enable_static"
 echo "          Build synchronous library : $enable_sync"
 echo "         Build asynchronous library : $enable_async"
 echo "                      Build samples : $enable_samples"
-echo "                         Build test : $enable_test"
 echo "                Build documentation : $enable_doc"
 echo "                   Enable debugging : $enable_debug"
 echo "          Enable peak warning level : $enable_peak_warnings"

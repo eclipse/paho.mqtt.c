@@ -44,7 +44,7 @@ src/VersionInfo.h: $(VERSION_INFO_TERMPLATE)
 BUILT_SOURCES = src/VersionInfo.h
 
 ###############################################################################
-# Public API headers (to install)
+# Install: public API headers
 ###############################################################################
 
 include_HEADERS = src/MQTTClientPersistence.h
@@ -58,7 +58,7 @@ include_HEADERS += src/MQTTAsync.h
 endif
 
 ###############################################################################
-# Distribuition headers (to compile distribuition)
+# Distribuition: headers to compile distribuition
 ###############################################################################
 
 EXTRA_DIST  = $(VERSION_INFO_TERMPLATE)
@@ -83,7 +83,7 @@ EXTRA_DIST += src/Tree.h
 EXTRA_DIST += src/utf-8.h
 
 ###############################################################################
-# Libraries names
+# Libraries: names
 ###############################################################################
 
 # Convenience Library to avoid compile twice
@@ -115,7 +115,7 @@ endif
 endif
 
 ###############################################################################
-# Libraries source code
+# Libraries: source code
 ###############################################################################
 
 COMMONSOURCES  = src/Clients.c
@@ -161,7 +161,7 @@ endif
 endif # if PAHO_WITH_SSL
 
 ###############################################################################
-# Libraries compiler flags
+# Libraries: compiler flags
 ###############################################################################
 
 #COMMONCFLAGS += -fPIC # do not set this here, because the libtool needs to control it!
@@ -191,7 +191,7 @@ endif
 endif # if PAHO_WITH_SSL
 
 ###############################################################################
-# Libraries linker flags
+# Libraries: linker flags
 ###############################################################################
 
 # Create SONAME entry. Same as -Wl,-soname,libname.so.major
@@ -235,27 +235,27 @@ endif
 endif # if PAHO_WITH_SSL
 
 ###############################################################################
-# Binary name
+# Binary: name
 ###############################################################################
 
 bin_PROGRAMS = MQTTVersion
 
 ###############################################################################
-# Binary source code
+# Binary: source code
 ###############################################################################
 
 MQTTVersion_SOURCES = src/MQTTVersion.c
 
 
 ###############################################################################
-# Binary linker flags
+# Binary: linker flags
 ###############################################################################
 
 MQTTVersion_LDADD = libpaho-mqtt3a.la
 
 
 ###############################################################################
-# Binaries names
+# Samples: names
 ###############################################################################
 
 if PAHO_BUILD_SAMPLES
@@ -276,7 +276,7 @@ endif
 endif # if PAHO_BUILD_SAMPLES
 
 ###############################################################################
-# Source code
+# Samples: source code
 ###############################################################################
 
 if PAHO_BUILD_SYNC
@@ -302,7 +302,7 @@ MQTTAsync_subscribe_SOURCES = src/samples/MQTTAsync_subscribe.c
 endif
 
 ###############################################################################
-# Linker flags
+# Samples: linker flags
 ###############################################################################
 
 if PAHO_BUILD_SYNC
@@ -359,7 +359,7 @@ endif
 TESTS = $(check_PROGRAMS)
 
 ###############################################################################
-# Source code
+# Test: source code
 ###############################################################################
 
 if PAHO_BUILD_SYNC
@@ -397,7 +397,7 @@ endif
 endif
 
 ###############################################################################
-# Linker flags
+# Test: linker flags
 ###############################################################################
 
 if PAHO_BUILD_SYNC
@@ -436,23 +436,31 @@ endif
 
 endif
 
+###############################################################################
+# Documentation
+###############################################################################
+
 if PAHO_BUILD_DOC
 DoxyfileV3ClientAPI.stamp:
-	$(MKDIR_P) $(srcdir)/build/output/doc/MQTTClient/
-	cd $(srcdir)/src && $(DOXYGEN) ../doc/DoxyfileV3ClientAPI
+	$(MKDIR_P) @top_builddir@/doc/MQTTClient/
+	cd doc && $(DOXYGEN) DoxyfileV3ClientAPI
 	echo Timestamp > DoxyfileV3ClientAPI.stamp
 
+CLEANFILES  = DoxyfileV3ClientAPI.stamp
+
 DoxyfileV3AsyncAPI.stamp:
-	$(MKDIR_P) $(srcdir)/build/output/doc/MQTTAsync/
-	cd $(srcdir)/src && $(DOXYGEN) ../doc/DoxyfileV3AsyncAPI
+	$(MKDIR_P) @top_builddir@/doc/MQTTAsync/
+	cd doc && $(DOXYGEN) DoxyfileV3AsyncAPI
 	echo Timestamp > DoxyfileV3AsyncAPI.stamp
 
+CLEANFILES += DoxyfileV3AsyncAPI.stamp
+
 DoxyfileV3ClientInternal.stamp:
-	$(MKDIR_P) $(srcdir)/build/output/doc/MQTTClient_internal/
-	cd $(srcdir)/src && $(DOXYGEN) ../doc/DoxyfileV3ClientInternal
+	$(MKDIR_P) @top_builddir@/doc/MQTTClient_internal/
+	cd doc && $(DOXYGEN) DoxyfileV3ClientInternal
 	echo Timestamp > DoxyfileV3ClientInternal.stamp
 
-CLEANFILES = DoxyfileV3ClientAPI.stamp DoxyfileV3AsyncAPI.stamp DoxyfileV3ClientInternal.stamp
+CLEANFILES += DoxyfileV3ClientInternal.stamp
 
 all-local: DoxyfileV3ClientAPI.stamp DoxyfileV3AsyncAPI.stamp DoxyfileV3ClientInternal.stamp
 clean-local:

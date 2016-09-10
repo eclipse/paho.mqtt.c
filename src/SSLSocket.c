@@ -474,8 +474,8 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 			SSLSocket_error("SSL_CTX_new", NULL, net->socket, rc);
 			goto exit;
 		}
-	
-	if (opts->keyStore)
+
+	if (opts->keyStore && (strlen(opts->keyStore) > 0))
 	{
 		int rc1 = 0;
 
@@ -492,7 +492,7 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 		{
 			SSL_CTX_set_default_passwd_cb(net->ctx, pem_passwd_cb);
 			SSL_CTX_set_default_passwd_cb_userdata(net->ctx, (void*)opts->privateKeyPassword);
-    }
+		}
 		
 		/* support for ASN.1 == DER format? DER can contain only one certificate? */
 		rc1 = SSL_CTX_use_PrivateKey_file(net->ctx, opts->privateKey, SSL_FILETYPE_PEM);
@@ -505,13 +505,13 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 		}  
 	}
 
-	if (opts->trustStore)
+	if (opts->trustStore && (strlen(opts->trustStore) > 0))
 	{
 		if ((rc = SSL_CTX_load_verify_locations(net->ctx, opts->trustStore, NULL)) != 1)
 		{
 			SSLSocket_error("SSL_CTX_load_verify_locations", NULL, net->socket, rc);
 			goto free_ctx;
-		}                               
+		}
 	}
 	else if ((rc = SSL_CTX_set_default_verify_paths(net->ctx)) != 1)
 	{
@@ -519,7 +519,7 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 		goto free_ctx;
 	}
 
-	if (opts->enabledCipherSuites == NULL)
+	if ((opts->enabledCipherSuites == NULL) || (strlen(opts->enabledCipherSuites) == 0))
 		ciphers = "DEFAULT"; 
 	else
 		ciphers = opts->enabledCipherSuites;
@@ -528,7 +528,7 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	{
 		SSLSocket_error("SSL_CTX_set_cipher_list", NULL, net->socket, rc);
 		goto free_ctx;
-	}       
+	}
 	
 	SSL_CTX_set_mode(net->ctx, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 
@@ -552,11 +552,12 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts)
 	if (net->ctx != NULL || (rc = SSLSocket_createContext(net, opts)) == 1)
 	{
 		int i;
+
 		SSL_CTX_set_info_callback(net->ctx, SSL_CTX_info_callback);
 		SSL_CTX_set_msg_callback(net->ctx, SSL_CTX_msg_callback);
-   		if (opts->enableServerCertAuth) 
+		if (opts->enableServerCertAuth)
 			SSL_CTX_set_verify(net->ctx, SSL_VERIFY_PEER, NULL);
-	
+
 		net->ssl = SSL_new(net->ctx);
 
 		/* Log all ciphers available to the SSL sessions (loaded in ctx) */
@@ -566,7 +567,7 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts)
 			if (cipher == NULL)
 				break;
 			Log(TRACE_PROTOCOL, 1, "SSL cipher available: %d:%s", i, cipher);
-	    	}	
+		}
 		if ((rc = SSL_set_fd(net->ssl, net->socket)) != 1)
 			SSLSocket_error("SSL_set_fd", net->ssl, net->socket, rc);
 	}

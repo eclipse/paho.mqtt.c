@@ -1168,17 +1168,31 @@ static int MQTTAsync_processCommand(void)
 
 			if (command->client->serverURIcount > 0)
 			{
-				serverURI = command->client->serverURIs[command->command.details.conn.currentURI];
-
-				if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
-					serverURI += strlen(URI_TCP);
-#if defined(OPENSSL)
-				else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
+				if (command->client->c->MQTTVersion == MQTTVERSION_DEFAULT)
 				{
-					serverURI += strlen(URI_SSL);
-					command->client->ssl = 1;
+					if (command->command.details.conn.MQTTVersion == MQTTVERSION_3_1)
+					{
+						command->command.details.conn.currentURI++;
+						command->command.details.conn.MQTTVersion = MQTTVERSION_DEFAULT;
+					}
 				}
+				else
+					command->command.details.conn.currentURI++;
+
+				if (command->command.details.conn.currentURI < command->client->serverURIcount)
+				{
+					serverURI = command->client->serverURIs[command->command.details.conn.currentURI];
+
+					if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
+						serverURI += strlen(URI_TCP);
+#if defined(OPENSSL)
+					else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
+					{
+						serverURI += strlen(URI_SSL);
+						command->client->ssl = 1;
+					}
 #endif
+				}
 			}
 
 			if (command->client->c->MQTTVersion == MQTTVERSION_DEFAULT)
@@ -3214,3 +3228,8 @@ MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void)
 	libinfo[i].value = NULL;
 	return libinfo;
 }
+
+/* Local Variables: */
+/* indent-tabs-mode: t */
+/* c-basic-offset: 8 */
+/* End: */

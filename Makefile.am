@@ -21,9 +21,15 @@ ACLOCAL_AMFLAGS = -I m4
 # Common precompiler, compiler and linker flags
 ###############################################################################
 
+# AM_CPPFLAGS are added by default to the precompiler flags CPPFLAGS within automake, except there are more special CPPFLAGS
 AM_CPPFLAGS = -I $(srcdir)/src -I src
 # AM_CFLAGS are added by default to the CFLAGS within automake, except there are more special CFLAGS
 AM_CFLAGS =
+
+# Libraries with openssl support need to be build with macro OPENSSL defined.
+libcommon_ssl_la_CPPFLAGS  = $(AM_CPPFLAGS) -DOPENSSL
+libpaho_mqtt3cs_la_CPPFLAGS = $(AM_CPPFLAGS) -DOPENSSL
+libpaho_mqtt3as_la_CFLAGS = $(AM_CPPFLAGS) -DOPENSSL
 
 ###############################################################################
 # Build-time header
@@ -165,30 +171,6 @@ endif # if PAHO_WITH_SSL
 ###############################################################################
 
 #COMMONCFLAGS += -fPIC # do not set this here, because the libtool needs to control it!
-
-libcommon_la_CFLAGS  = $(AM_CFLAGS)
-
-if PAHO_BUILD_SYNC
-libpaho_mqtt3c_la_CFLAGS  = $(AM_CFLAGS)
-endif
-
-if PAHO_BUILD_ASYNC
-libpaho_mqtt3a_la_CFLAGS  = $(AM_CFLAGS)
-endif
-
-if PAHO_WITH_SSL
-
-libcommon_ssl_la_CFLAGS  = $(AM_CFLAGS) -DOPENSSL
-
-if PAHO_BUILD_SYNC
-libpaho_mqtt3cs_la_CFLAGS = $(AM_CFLAGS) -DOPENSSL
-endif
-
-if PAHO_BUILD_ASYNC
-libpaho_mqtt3as_la_CFLAGS = $(AM_CFLAGS) -DOPENSSL
-endif
-
-endif # if PAHO_WITH_SSL
 
 ###############################################################################
 # Libraries: linker flags

@@ -18,36 +18,40 @@
 # Note: on OS X you should install XCode and the associated command-line tools
 
 ## compilation/linkage settings
-INCLUDE_DIRECTORIES(
-    .
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_BINARY_DIR}
-    )
 
 # sample files c
-ADD_EXECUTABLE(paho_c_pub paho_c_pub.c)
-ADD_EXECUTABLE(paho_c_sub paho_c_sub.c)
-ADD_EXECUTABLE(paho_cs_pub paho_cs_pub.c)
-ADD_EXECUTABLE(paho_cs_sub paho_cs_sub.c)
+add_executable(paho_c_pub paho_c_pub.c)
+add_executable(paho_c_sub paho_c_sub.c)
+add_executable(paho_cs_pub paho_cs_pub.c)
+add_executable(paho_cs_sub paho_cs_sub.c)
 
-TARGET_LINK_LIBRARIES(paho_c_pub paho-mqtt3a)
-TARGET_LINK_LIBRARIES(paho_c_sub paho-mqtt3a)
-TARGET_LINK_LIBRARIES(paho_cs_pub paho-mqtt3c)
-TARGET_LINK_LIBRARIES(paho_cs_sub paho-mqtt3c)
+target_include_directories(paho_c_pub PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(paho_c_sub PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(paho_cs_pub PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(paho_cs_sub PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_link_libraries(paho_c_pub paho-mqtt3a)
+target_link_libraries(paho_c_sub paho-mqtt3a)
+target_link_libraries(paho_cs_pub paho-mqtt3c)
+target_link_libraries(paho_cs_sub paho-mqtt3c)
 
-ADD_EXECUTABLE(MQTTAsync_subscribe MQTTAsync_subscribe.c)
-ADD_EXECUTABLE(MQTTAsync_publish MQTTAsync_publish.c)
-ADD_EXECUTABLE(MQTTClient_subscribe MQTTClient_subscribe.c)
-ADD_EXECUTABLE(MQTTClient_publish MQTTClient_publish.c)
-ADD_EXECUTABLE(MQTTClient_publish_async MQTTClient_publish_async.c)
+add_executable(MQTTAsync_subscribe MQTTAsync_subscribe.c)
+add_executable(MQTTAsync_publish MQTTAsync_publish.c)
+add_executable(MQTTClient_subscribe MQTTClient_subscribe.c)
+add_executable(MQTTClient_publish MQTTClient_publish.c)
+add_executable(MQTTClient_publish_async MQTTClient_publish_async.c)
 
-TARGET_LINK_LIBRARIES(MQTTAsync_subscribe paho-mqtt3a)
-TARGET_LINK_LIBRARIES(MQTTAsync_publish paho-mqtt3a)
-TARGET_LINK_LIBRARIES(MQTTClient_subscribe paho-mqtt3c)
-TARGET_LINK_LIBRARIES(MQTTClient_publish paho-mqtt3c)
-TARGET_LINK_LIBRARIES(MQTTClient_publish_async paho-mqtt3c)
+target_include_directories(MQTTAsync_subscribe PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(MQTTAsync_publish PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(MQTTClient_subscribe PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(MQTTClient_publish PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(MQTTClient_publish_async PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_link_libraries(MQTTAsync_subscribe paho-mqtt3a)
+target_link_libraries(MQTTAsync_publish paho-mqtt3a)
+target_link_libraries(MQTTClient_subscribe paho-mqtt3c)
+target_link_libraries(MQTTClient_publish paho-mqtt3c)
+target_link_libraries(MQTTClient_publish_async paho-mqtt3c)
 
-INSTALL(TARGETS paho_c_sub
+install(TARGETS paho_c_sub
                 paho_c_pub
                 paho_cs_sub
                 paho_cs_pub
@@ -57,5 +61,7 @@ INSTALL(TARGETS paho_c_sub
                 MQTTClient_publish
                 MQTTClient_publish_async
     RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib)
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
 

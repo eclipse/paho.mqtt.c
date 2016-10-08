@@ -44,7 +44,7 @@
 
 
 #if defined(WIN32)
-#include <Windows.h>
+#include <windows.h>
 #define sleep Sleep
 #else
 #include <sys/time.h>

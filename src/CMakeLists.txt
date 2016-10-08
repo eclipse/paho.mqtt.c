@@ -17,17 +17,12 @@
 # Note: on OS X you should install XCode and the associated command-line tools
 
 ## compilation/linkage settings
-INCLUDE_DIRECTORIES(
-    .
-    ${CMAKE_BINARY_DIR}
-    )
-
-CONFIGURE_FILE(VersionInfo.h.in
+configure_file(VersionInfo.h.in
     ${CMAKE_BINARY_DIR}/VersionInfo.h
     @ONLY
-    )
+)
 
-SET(common_src
+set(common_src
     MQTTProtocolClient.c
     Clients.c
     utf-8.c
@@ -45,53 +40,71 @@ SET(common_src
     SocketBuffer.c
     Heap.c
     LinkedList.c
-    )
+)
 
-IF (CMAKE_SYSTEM_NAME MATCHES "Windows")
-    SET(LIBS_SYSTEM ws2_32)
-ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    SET(LIBS_SYSTEM dl)
-ENDIF()
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+    set(LIBS_SYSTEM ws2_32)
+elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    set(LIBS_SYSTEM dl)
+endif()
 
-ADD_EXECUTABLE(MQTTVersion MQTTVersion.c)
-ADD_LIBRARY(paho-mqtt3c SHARED ${common_src} MQTTClient.c)
-ADD_LIBRARY(paho-mqtt3a SHARED ${common_src} MQTTAsync.c)
-TARGET_LINK_LIBRARIES(paho-mqtt3c pthread ${LIBS_SYSTEM}) 
-TARGET_LINK_LIBRARIES(paho-mqtt3a pthread ${LIBS_SYSTEM})
-TARGET_LINK_LIBRARIES(MQTTVersion paho-mqtt3a paho-mqtt3c ${LIBS_SYSTEM})
-SET_TARGET_PROPERTIES(
+add_executable(MQTTVersion MQTTVersion.c)
+add_library(paho-mqtt3c SHARED ${common_src} MQTTClient.c)
+add_library(paho-mqtt3a SHARED ${common_src} MQTTAsync.c)
+target_include_directories(paho-mqtt3c PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${CMAKE_BINARY_DIR}
+)
+target_include_directories(paho-mqtt3a PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${CMAKE_BINARY_DIR}
+)
+target_link_libraries(paho-mqtt3c pthread ${LIBS_SYSTEM})
+target_link_libraries(paho-mqtt3a pthread ${LIBS_SYSTEM})
+target_link_libraries(MQTTVersion paho-mqtt3a paho-mqtt3c ${LIBS_SYSTEM})
+set_target_properties(
     paho-mqtt3c paho-mqtt3a PROPERTIES
     VERSION ${CLIENT_VERSION}
-    SOVERSION ${PAHO_VERSION_MAJOR})
-INSTALL(TARGETS paho-mqtt3c paho-mqtt3a MQTTVersion
+    SOVERSION ${PAHO_VERSION_MAJOR}
+    PREFIX "${PAHO_LIB_PREFIX}"
+    IMPORT_PREFIX "${PAHO_LIB_PREFIX}"
+)
+install(TARGETS paho-mqtt3c paho-mqtt3a MQTTVersion
     RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib)
-INSTALL(FILES MQTTAsync.h MQTTClient.h MQTTClientPersistence.h
-    DESTINATION include)
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
+install(FILES MQTTAsync.h MQTTClient.h MQTTClientPersistence.h
+    DESTINATION include
+)
 
-IF (PAHO_WITH_SSL)
-    SET(OPENSSL_LIB_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries")
-    SET(OPENSSL_INC_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL includes")
-    SET(OPENSSL_LIBRARIES ssl crypto)
-    LINK_DIRECTORIES(
-        ${OPENSSL_LIB_SEARCH_PATH}
-        )
-    INCLUDE_DIRECTORIES(
-        ${OPENSSL_INC_SEARCH_PATH}
-        )
-    ADD_LIBRARY(paho-mqtt3cs SHARED ${common_src} MQTTClient.c SSLSocket.c)
-    ADD_LIBRARY(paho-mqtt3as SHARED ${common_src} MQTTAsync.c SSLSocket.c)
-    TARGET_LINK_LIBRARIES(paho-mqtt3cs pthread ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
-    TARGET_LINK_LIBRARIES(paho-mqtt3as pthread ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
-    SET_TARGET_PROPERTIES(
+if (PAHO_WITH_SSL)
+    find_package(OpenSSL REQUIRED)
+    add_library(paho-mqtt3cs SHARED ${common_src} MQTTClient.c SSLSocket.c)
+    add_library(paho-mqtt3as SHARED ${common_src} MQTTAsync.c SSLSocket.c)
+    target_include_directories(paho-mqtt3cs PUBLIC
+        ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_BINARY_DIR}
+        ${OPENSSL_INCLUDE_DIR}
+    )
+    target_include_directories(paho-mqtt3as PUBLIC
+        ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_BINARY_DIR}
+        ${OPENSSL_INCLUDE_DIR}
+    )
+    target_link_libraries(paho-mqtt3cs pthread ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
+    target_link_libraries(paho-mqtt3as pthread ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
+    set_target_properties(
         paho-mqtt3cs paho-mqtt3as PROPERTIES
         VERSION ${CLIENT_VERSION}
-        SOVERSION ${PAHO_VERSION_MAJOR})
-    INSTALL(TARGETS paho-mqtt3cs
+        SOVERSION ${PAHO_VERSION_MAJOR}
+        PREFIX "${PAHO_LIB_PREFIX}"
+        IMPORT_PREFIX "${PAHO_LIB_PREFIX}"
+    )
+    install(TARGETS paho-mqtt3cs paho-mqtt3as
         RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib)
-    INSTALL(TARGETS paho-mqtt3as
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib)
-ENDIF()
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+    )
+endif()
 

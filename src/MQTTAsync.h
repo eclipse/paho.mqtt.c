@@ -177,6 +177,13 @@
  */
 #define MQTT_BAD_SUBSCRIBE 0x80
 
+/** 
+ * Global init of mqtt library. Call once on program start to set global behaviour.
+ * handle_openssl_init - if mqtt library should handle openssl init (1) or rely on the caller to init it before using mqtt (0)
+ */
+void MQTTAsync_global_init(int handle_openssl_init);
+
+
 /**
  * A handle representing an MQTT client. A valid client handle is available
  * following a successful call to MQTTAsync_create().

@@ -1824,7 +1824,8 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 							MQTTAsync_successData data;
 							memset(&data, '\0', sizeof(data));
 							Log(TRACE_MIN, -1, "Calling connect success for client %s", m->c->clientID);
-							if (m->serverURIcount > 0)
+							if ((m->serverURIcount > 0)
+							    && (m->connect.details.conn.currentURI < m->serverURIcount))
 								data.alt.connect.serverURI = m->serverURIs[m->connect.details.conn.currentURI];
 							else
 								data.alt.connect.serverURI = m->serverURI;

@@ -1345,6 +1345,7 @@ void MQTTAsync_checkTimeouts()
 			else
 			{
 				MQTTAsync_closeSession(m->c);
+				Log(TRACE_MIN, -1, "Connect failed with timeout, no to try");
 				if (m->connect.onFailure)
 				{
 					MQTTAsync_failureData data;
@@ -2849,6 +2850,7 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 			m = (MQTTAsync)(handles->current->content);
 		if (m != NULL)
 		{
+			Log(TRACE_MINIMUM, -1, "m->c->connect_state = %d",m->c->connect_state);
 			if (m->c->connect_state == 1 || m->c->connect_state == 2)
 				*rc = MQTTAsync_connecting(m);
 			else
@@ -2884,6 +2886,11 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 					}
 					MQTTAsync_startConnectRetry(m);
 				}
+			}
+			else
+			{
+				Log(TRACE_MINIMUM, -1, "m->c->connect_state = %d",m->c->connect_state);
+				Log(TRACE_MINIMUM, -1, "CONNECT sent, *rc is %d",*rc);
 			}
 		}
 		if (pack)

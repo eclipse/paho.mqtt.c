@@ -67,26 +67,26 @@ endif
 # Distribuition: headers to compile distribuition
 ###############################################################################
 
-EXTRA_DIST  = $(VERSION_INFO_TERMPLATE)
-EXTRA_DIST += src/Clients.h
-EXTRA_DIST += src/Heap.h
-EXTRA_DIST += src/LinkedList.h
-EXTRA_DIST += src/Log.h
-EXTRA_DIST += src/Messages.h
-EXTRA_DIST += src/MQTTPacket.h
-EXTRA_DIST += src/MQTTPacketOut.h
-EXTRA_DIST += src/MQTTPersistenceDefault.h
-EXTRA_DIST += src/MQTTPersistence.h
-EXTRA_DIST += src/MQTTProtocolClient.h
-EXTRA_DIST += src/MQTTProtocol.h
-EXTRA_DIST += src/MQTTProtocolOut.h
-EXTRA_DIST += src/SocketBuffer.h
-EXTRA_DIST += src/Socket.h
-EXTRA_DIST += src/SSLSocket.h
-EXTRA_DIST += src/StackTrace.h
-EXTRA_DIST += src/Thread.h
-EXTRA_DIST += src/Tree.h
-EXTRA_DIST += src/utf-8.h
+noinst_HEADERS  = $(VERSION_INFO_TERMPLATE)
+noinst_HEADERS += src/Clients.h
+noinst_HEADERS += src/Heap.h
+noinst_HEADERS += src/LinkedList.h
+noinst_HEADERS += src/Log.h
+noinst_HEADERS += src/Messages.h
+noinst_HEADERS += src/MQTTPacket.h
+noinst_HEADERS += src/MQTTPacketOut.h
+noinst_HEADERS += src/MQTTPersistenceDefault.h
+noinst_HEADERS += src/MQTTPersistence.h
+noinst_HEADERS += src/MQTTProtocolClient.h
+noinst_HEADERS += src/MQTTProtocol.h
+noinst_HEADERS += src/MQTTProtocolOut.h
+noinst_HEADERS += src/SocketBuffer.h
+noinst_HEADERS += src/Socket.h
+noinst_HEADERS += src/SSLSocket.h
+noinst_HEADERS += src/StackTrace.h
+noinst_HEADERS += src/Thread.h
+noinst_HEADERS += src/Tree.h
+noinst_HEADERS += src/utf-8.h
 
 ###############################################################################
 # Libraries: names

@@ -22,7 +22,6 @@ AC_PREREQ([2.65])
 AC_INIT([paho.mqtt.c], [1.1.0])
 AC_CONFIG_AUX_DIR([autotools_build])
 AC_CONFIG_MACRO_DIR([m4])
-AC_LANG_C
 
 AM_INIT_AUTOMAKE([1.11 -Wall -Werror foreign subdir-objects])
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
@@ -31,6 +30,7 @@ AM_SILENT_RULES([yes])
 LT_INIT([shared static pic-only])
 
 AC_PROG_CC
+AM_PROG_CC_C_O
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 AC_PROG_SED

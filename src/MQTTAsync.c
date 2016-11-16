@@ -1993,11 +1993,11 @@ void MQTTAsync_closeOnly(Clients* client)
 		SSLSocket_close(&client->net);
 #endif
 		Socket_close(client->net.socket);
-		Thread_unlock_mutex(socket_mutex);
 		client->net.socket = 0;
 #if defined(OPENSSL)
 		client->net.ssl = NULL;
 #endif
+		Thread_unlock_mutex(socket_mutex);
 	}
 	client->connected = 0;
 	client->connect_state = 0;		

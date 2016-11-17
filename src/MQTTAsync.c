@@ -1159,6 +1159,7 @@ int MQTTAsync_processCommand()
 #else
 			rc = MQTTProtocol_connect(serverURI, command->client->c, command->command.details.conn.MQTTVersion);
 #endif
+			Log(TRACE_MIN, -1,"connect_state %d",command->client->c->connect_state);
 			if (command->client->c->connect_state == 0)
 				rc = SOCKET_ERROR;
 			
@@ -2855,7 +2856,12 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 				*rc = MQTTAsync_connecting(m);
 			else
 				pack = MQTTPacket_Factory(&m->c->net, rc);
-			if (m->c->connect_state == 3 && *rc == SOCKET_ERROR)
+			if (((m->c->connect_state == 3)
+			     || (m->c->connect_state == 0)) /*
+							     * Issue 190: Connect_state could be set to 0
+							     * in case of some connect failure, which needs to be handled here
+							     */
+			    && *rc == SOCKET_ERROR)
 			{
 				Log(TRACE_MINIMUM, -1, "CONNECT sent but MQTTPacket_Factory has returned SOCKET_ERROR");
 				if (MQTTAsync_checkConn(&m->connect, m))

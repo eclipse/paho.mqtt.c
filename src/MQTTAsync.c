@@ -1691,8 +1691,11 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 				MQTTAsync_disconnect_internal(m, 0);
 				MQTTAsync_lock_mutex(mqttasync_mutex);
 			}
-			else /* calling disconnect_internal won't have any effect if we're already disconnected */
+			else if (m->c->connect_state == 0)/* calling disconnect_internal won't have any effect if we're already disconnected.
+							   * Unless we just trying to connect (issue 190). */
+			{
 				MQTTAsync_closeOnly(m->c);
+			}
 		}
 		else
 		{

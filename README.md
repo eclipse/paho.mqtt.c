@@ -1,7 +1,7 @@
 # Eclipse Paho MQTT C client
 
 
-This repository contains the source code for the [Eclipse Paho](http://eclipse.org/paho) MQTT C client library. 
+This repository contains the source code for the [Eclipse Paho](http://eclipse.org/paho) MQTT C client library.
 
 This code builds libraries which enable applications to connect to an [MQTT](http://mqtt.org) broker to publish messages, and to subscribe to topics and receive published messages.
 
@@ -20,6 +20,13 @@ On Debian based systems this would mean that the following packages have to be i
 ```
 apt-get install build-essential gcc make cmake cmake-gui cmake-curses-gui
 ```
+
+Also, in order to build a debian package from the source code, the following packages have to be installed
+
+```
+apt-get install fakeroot fakeroot devscripts dh-make lsb-release
+```
+
 Ninja can be downloaded from its github project page in the "releases" section. Optionally it is possible to build binaries with SSL support. This requires the OpenSSL libraries and includes to be available. E. g. on Debian:
 
 ```
@@ -36,11 +43,12 @@ Before compiling, determine the value of some variables in order to configure fe
 
 Variable | Default Value | Description
 ------------ | ------------- | -------------
-PAHO_WITH_SSL | FALSE | Flag that defines whether to build ssl-enabled binaries too. 
+PAHO_WITH_SSL | FALSE | Flag that defines whether to build ssl-enabled binaries too.
 OPENSSL_INC_SEARCH_PATH | "" (system default) | Directory containing OpenSSL includes
 OPENSSL_LIB_SEARCH_PATH | "" (system default) | Directory containing OpenSSL libraries
 PAHO_BUILD_DOCUMENTATION | FALSE | Create and install the HTML based API documentation (requires Doxygen)
 PAHO_BUILD_SAMPLES | FALSE | Build sample programs
+PAHO_BUILD_DEB_PACKAGE | FALSE | Build debian package
 
 Using these variables CMake can be used to generate your Ninja or Make files. Using CMake, building out-of-source is the default. Therefore it is recommended to invoke all build commands inside your chosen build directory but outside of the source tree.
 
@@ -58,7 +66,7 @@ Invoking cmake and specifying build options can also be performed using cmake-gu
 ccmake -GNinja ~/git/org.eclipse.paho.mqtt.c
 ```
 
-To compile/link the binaries and to generate packages, simply invoke `ninja package` or `make -j <number-of-cores-to-use> package` after CMake. To simply compile/link invoke `ninja` or `make -j <number-of-cores-to-use>`. 
+To compile/link the binaries and to generate packages, simply invoke `ninja package` or `make -j <number-of-cores-to-use> package` after CMake. To simply compile/link invoke `ninja` or `make -j <number-of-cores-to-use>`.
 
 ### Debug builds
 
@@ -70,7 +78,7 @@ cmake -GNinja -DCMAKE_BUILD_TYPE=Debug git/org.eclipse.paho.mqtt.c
 
 ### Cross compilation
 
-Cross compilation using CMake is performed by using so called "toolchain files" (see: http://www.vtk.org/Wiki/CMake_Cross_Compiling). 
+Cross compilation using CMake is performed by using so called "toolchain files" (see: http://www.vtk.org/Wiki/CMake_Cross_Compiling).
 
 The path to the toolchain file can be specified by using CMake's `-DCMAKE_TOOLCHAIN_FILE` option. In case no toolchain file is specified, the build is performed for the native build platform.
 
@@ -80,7 +88,7 @@ For your convenience toolchain files for the following platforms can be found in
   * Windows x86_64
   * Windows x86
 
-The provided toolchain files assume that required compilers/linkers are to be found in the environment, i. e. the PATH-Variable of your user or system. If you prefer, you can also specify the absolute location of your compilers in the toolchain files. 
+The provided toolchain files assume that required compilers/linkers are to be found in the environment, i. e. the PATH-Variable of your user or system. If you prefer, you can also specify the absolute location of your compilers in the toolchain files.
 
 Example invocation for the Raspberry Pi:
 
@@ -106,7 +114,7 @@ apt-get install gcc-mingw-w64-x86-64 gcc-mingw-w64-i686
 
 ## Build instructions for GNU Make (deprecated)
 
-The provided GNU Makefile is intended to perform all build steps in the ```build``` directory within the source-tree of Eclipse Paho. Generated binares, libraries, and the documentation can be found in the ```build/output``` directory after completion. 
+The provided GNU Makefile is intended to perform all build steps in the ```build``` directory within the source-tree of Eclipse Paho. Generated binares, libraries, and the documentation can be found in the ```build/output``` directory after completion.
 
 Options that are passed to the compiler/linker can be specified by typical Unix build variables:
 
@@ -142,9 +150,9 @@ Note that using the C headers from a C++ program requires the following declarat
 
 ## Runtime tracing
 
-A number of environment variables control runtime tracing of the C library. 
+A number of environment variables control runtime tracing of the C library.
 
-Tracing is switched on using ``MQTT_C_CLIENT_TRACE`` (a value of ON traces to stdout, any other value should specify a file to trace to). 
+Tracing is switched on using ``MQTT_C_CLIENT_TRACE`` (a value of ON traces to stdout, any other value should specify a file to trace to).
 
 The verbosity of the output is controlled using the  ``MQTT_C_CLIENT_TRACE_LEVEL`` environment variable - valid values are ERROR, PROTOCOL, MINIMUM, MEDIUM and MAXIMUM (from least to most verbose).
 

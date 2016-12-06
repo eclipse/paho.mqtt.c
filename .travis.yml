@@ -1,6 +1,11 @@
 sudo: true
 language: c
 
+addons:
+  apt:
+    packages:
+      - doxygen
+
 compiler:
   - gcc
   - clang

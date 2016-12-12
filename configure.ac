@@ -12,6 +12,7 @@
 # 
 #  Contributors:
 #     Guilherme Maciel Ferreira - initial implementation
+#     Juergen Kosel - many improvements
 #*******************************************************************************/
 
 ###############################################################################

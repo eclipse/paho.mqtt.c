@@ -12,6 +12,7 @@
 # 
 #  Contributors:
 #     Guilherme Maciel Ferreira - initial implementation
+#     Juergen Kosel - many improvements
 #*******************************************************************************/
 
 AUTOMAKE_OPTIONS = subdir-objects color-tests
@@ -308,6 +309,10 @@ MQTTAsync_publish_LDADD = libpaho-mqtt3a.la
 
 MQTTAsync_subscribe_LDADD = libpaho-mqtt3a.la
 endif
+
+###############################################################################
+# Test: names
+###############################################################################
 
 check_PROGRAMS  =
 

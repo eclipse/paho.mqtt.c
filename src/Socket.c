@@ -682,6 +682,15 @@ int Socket_new(char* addr, int port, int* sock)
 					Log(TRACE_MIN, 15, "Connect pending");
 				}
 			}
+                        /* Prevent socket leak by closing unusable sockets,
+                         * as reported in
+                         * https://github.com/eclipse/paho.mqtt.c/issues/135
+                         */
+                        if (rc && (rc != EINPROGRESS) && (rc != EWOULDBLOCK))
+                        {
+                            Socket_close(*sock); // close socket and remove from our list of sockets
+                            *sock = -1; // as initialized before
+                        }
 		}
 	}
 	FUNC_EXIT_RC(rc);

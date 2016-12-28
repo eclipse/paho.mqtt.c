@@ -3136,7 +3136,8 @@ MQTTAsync_nameValue* MQTTAsync_getVersionInfo()
 #if defined(OPENSSL)
 	libinfo[i].name = "OpenSSL version";
 	libinfo[i++].value = SSLeay_version(SSLEAY_VERSION);
-		
+
+#if !defined(BORINGSSL)
 	libinfo[i].name = "OpenSSL flags";
 	libinfo[i++].value = SSLeay_version(SSLEAY_CFLAGS);
 	
@@ -3148,6 +3149,7 @@ MQTTAsync_nameValue* MQTTAsync_getVersionInfo()
 	
 	libinfo[i].name = "OpenSSL directory";
 	libinfo[i++].value = SSLeay_version(SSLEAY_DIR);
+#endif /* BORINGSSL */
 #endif
 	libinfo[i].name = NULL;
 	libinfo[i].value = NULL;

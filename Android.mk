@@ -104,3 +104,7 @@ LOCAL_C_INCLUDE := external/boringssl/src/include
 include $(LOCAL_PATH)/VersionInfo.mk
 
 include $(BUILD_SHARED_LIBRARY)
+
+
+########################################
+include $(LOCAL_PATH)/src/samples/Android.mk

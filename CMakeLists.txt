@@ -17,7 +17,7 @@
 # Note: on OS X you should install XCode and the associated command-line tools
 
 PROJECT("paho" C)
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 ## build settings
 SET(PAHO_VERSION_MAJOR 1)

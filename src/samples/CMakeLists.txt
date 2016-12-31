@@ -1,15 +1,15 @@
 #*******************************************************************************
 #  Copyright (c) 2015, 2016 logi.cals GmbH
-# 
+#
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
-#  and Eclipse Distribution License v1.0 which accompany this distribution. 
-# 
-#  The Eclipse Public License is available at 
+#  and Eclipse Distribution License v1.0 which accompany this distribution.
+#
+#  The Eclipse Public License is available at
 #     http://www.eclipse.org/legal/epl-v10.html
-#  and the Eclipse Distribution License is available at 
+#  and the Eclipse Distribution License is available at
 #    http://www.eclipse.org/org/documents/edl-v10.php.
-# 
+#
 #  Contributors:
 #     Rainer Poisel - initial version
 #     Ian Craggs - update sample names
@@ -57,5 +57,4 @@ INSTALL(TARGETS paho_c_sub
                 MQTTClient_publish
                 MQTTClient_publish_async
     RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib)
-
+    LIBRARY DESTINATION ${PAHO_LIBRARY_DIR_NAME})

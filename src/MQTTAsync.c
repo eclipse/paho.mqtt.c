@@ -1815,9 +1815,12 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 					if (rc == MQTTASYNC_SUCCESS)
 					{
 						int onSuccess = 0;
-						if (m->serverURIcount > 0)
-							Log(TRACE_MIN, -1, "Connect succeeded to %s",
+						if ((m->serverURIcount > 0)
+						    && (m->connect.details.conn.currentURI < m->serverURIcount))
+						{
+							Log(TRACE_MIN, -1, "Connect succeeded to %s", 
 								m->serverURIs[m->connect.details.conn.currentURI]);
+						}
 						onSuccess = (m->connect.onSuccess != NULL); /* save setting of onSuccess callback */
 						if (m->connect.onSuccess)
 						{

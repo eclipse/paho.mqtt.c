@@ -1,15 +1,15 @@
 #*******************************************************************************
 #  Copyright (c) 2015 logi.cals GmbH
-# 
+#
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
-#  and Eclipse Distribution License v1.0 which accompany this distribution. 
-# 
-#  The Eclipse Public License is available at 
+#  and Eclipse Distribution License v1.0 which accompany this distribution.
+#
+#  The Eclipse Public License is available at
 #     http://www.eclipse.org/legal/epl-v10.html
-#  and the Eclipse Distribution License is available at 
+#  and the Eclipse Distribution License is available at
 #    http://www.eclipse.org/org/documents/edl-v10.php.
-# 
+#
 #  Contributors:
 #     Rainer Poisel - initial version
 #*******************************************************************************/
@@ -56,7 +56,7 @@ ENDIF()
 ADD_EXECUTABLE(MQTTVersion MQTTVersion.c)
 ADD_LIBRARY(paho-mqtt3c SHARED ${common_src} MQTTClient.c)
 ADD_LIBRARY(paho-mqtt3a SHARED ${common_src} MQTTAsync.c)
-TARGET_LINK_LIBRARIES(paho-mqtt3c pthread ${LIBS_SYSTEM}) 
+TARGET_LINK_LIBRARIES(paho-mqtt3c pthread ${LIBS_SYSTEM})
 TARGET_LINK_LIBRARIES(paho-mqtt3a pthread ${LIBS_SYSTEM})
 TARGET_LINK_LIBRARIES(MQTTVersion paho-mqtt3a paho-mqtt3c ${LIBS_SYSTEM})
 SET_TARGET_PROPERTIES(
@@ -64,10 +64,10 @@ SET_TARGET_PROPERTIES(
     VERSION ${CLIENT_VERSION}
     SOVERSION ${PAHO_VERSION_MAJOR})
 INSTALL(TARGETS paho-mqtt3c paho-mqtt3a MQTTVersion
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib)
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 INSTALL(FILES MQTTAsync.h MQTTClient.h MQTTClientPersistence.h
-    DESTINATION include)
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 IF (PAHO_WITH_SSL)
     SET(OPENSSL_LIB_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries")
@@ -88,10 +88,9 @@ IF (PAHO_WITH_SSL)
         VERSION ${CLIENT_VERSION}
         SOVERSION ${PAHO_VERSION_MAJOR})
     INSTALL(TARGETS paho-mqtt3cs
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib)
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
     INSTALL(TARGETS paho-mqtt3as
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib)
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 ENDIF()
-

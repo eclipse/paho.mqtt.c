@@ -1,15 +1,15 @@
 #*******************************************************************************
 #  Copyright (c) 2015 logi.cals GmbH
-# 
+#
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
-#  and Eclipse Distribution License v1.0 which accompany this distribution. 
-# 
-#  The Eclipse Public License is available at 
+#  and Eclipse Distribution License v1.0 which accompany this distribution.
+#
+#  The Eclipse Public License is available at
 #     http://www.eclipse.org/legal/epl-v10.html
-#  and the Eclipse Distribution License is available at 
+#  and the Eclipse Distribution License is available at
 #    http://www.eclipse.org/org/documents/edl-v10.php.
-# 
+#
 #  Contributors:
 #     Rainer Poisel - initial version
 #*******************************************************************************/
@@ -24,6 +24,8 @@ SET(PAHO_VERSION_MAJOR 1)
 SET(PAHO_VERSION_MINOR 0)
 SET(PAHO_VERSION_PATCH 3)
 SET(CLIENT_VERSION ${PAHO_VERSION_MAJOR}.${PAHO_VERSION_MINOR}.${PAHO_VERSION_PATCH})
+
+INCLUDE(GNUInstallDirs)
 
 EXECUTE_PROCESS(COMMAND date -u OUTPUT_VARIABLE BUILD_TIMESTAMP)
 STRING(STRIP ${BUILD_TIMESTAMP} BUILD_TIMESTAMP)

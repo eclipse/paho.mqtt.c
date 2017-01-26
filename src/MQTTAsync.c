@@ -804,7 +804,16 @@ int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 	
 	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttcommand_mutex);
-	command->command.start_time = MQTTAsync_start_clock();
+
+	// >>> Wolfgang Petroschka >>>
+	// Don't set start_time if it is a connect command which is already busy connecting. Else we might
+	// never reach our connect timeout!!!
+	if( ( command->command.type != CONNECT ) || ( ( command->command.type == CONNECT ) && ( command->client->c->connect_state == 0 ) ) )
+	{
+		command->command.start_time = MQTTAsync_start_clock();
+	}
+	// <<< Wolfgang Petroschka <<<
+
 	if (command->command.type == CONNECT || 
 		(command->command.type == DISCONNECT && command->command.details.dis.internal))
 	{

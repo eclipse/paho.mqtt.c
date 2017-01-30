@@ -7,6 +7,9 @@ compiler:
 os:
   - linux
   - osx
-  
+
 script:
   - make
+  
+before_install:
+  - ./travis-install.sh

@@ -47,25 +47,31 @@ SET(common_src
     LinkedList.c
     )
 
-IF (CMAKE_SYSTEM_NAME MATCHES "Windows")
+IF (WIN32)
     SET(LIBS_SYSTEM ws2_32)
-ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    SET(LIBS_SYSTEM dl)
+ELSEIF (UNIX)
+    IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
+        SET(LIBS_SYSTEM c dl pthread)
+    ELSE()
+        SET(LIBS_SYSTEM c pthread)
+    ENDIF()
 ENDIF()
 
 ADD_EXECUTABLE(MQTTVersion MQTTVersion.c)
 ADD_LIBRARY(paho-mqtt3c SHARED ${common_src} MQTTClient.c)
 ADD_LIBRARY(paho-mqtt3a SHARED ${common_src} MQTTAsync.c)
-TARGET_LINK_LIBRARIES(paho-mqtt3c pthread ${LIBS_SYSTEM}) 
-TARGET_LINK_LIBRARIES(paho-mqtt3a pthread ${LIBS_SYSTEM})
+TARGET_LINK_LIBRARIES(paho-mqtt3c ${LIBS_SYSTEM})
+TARGET_LINK_LIBRARIES(paho-mqtt3a ${LIBS_SYSTEM})
 TARGET_LINK_LIBRARIES(MQTTVersion paho-mqtt3a paho-mqtt3c ${LIBS_SYSTEM})
 SET_TARGET_PROPERTIES(
     paho-mqtt3c paho-mqtt3a PROPERTIES
     VERSION ${CLIENT_VERSION}
     SOVERSION ${PAHO_VERSION_MAJOR})
-INSTALL(TARGETS paho-mqtt3c paho-mqtt3a MQTTVersion
-    RUNTIME DESTINATION bin
+INSTALL(TARGETS paho-mqtt3c paho-mqtt3a
+    ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib)
+INSTALL(TARGETS MQTTVersion
+    RUNTIME DESTINATION bin)
 INSTALL(FILES MQTTAsync.h MQTTClient.h MQTTClientPersistence.h
     DESTINATION include)
 
@@ -81,17 +87,17 @@ IF (PAHO_WITH_SSL)
         )
     ADD_LIBRARY(paho-mqtt3cs SHARED ${common_src} MQTTClient.c SSLSocket.c)
     ADD_LIBRARY(paho-mqtt3as SHARED ${common_src} MQTTAsync.c SSLSocket.c)
-    TARGET_LINK_LIBRARIES(paho-mqtt3cs pthread ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
-    TARGET_LINK_LIBRARIES(paho-mqtt3as pthread ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
+    TARGET_LINK_LIBRARIES(paho-mqtt3cs ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
+    TARGET_LINK_LIBRARIES(paho-mqtt3as ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
     SET_TARGET_PROPERTIES(
         paho-mqtt3cs paho-mqtt3as PROPERTIES
         VERSION ${CLIENT_VERSION}
         SOVERSION ${PAHO_VERSION_MAJOR})
     INSTALL(TARGETS paho-mqtt3cs
-        RUNTIME DESTINATION bin
+        ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib)
     INSTALL(TARGETS paho-mqtt3as
-        RUNTIME DESTINATION bin
+        ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib)
 ENDIF()
 

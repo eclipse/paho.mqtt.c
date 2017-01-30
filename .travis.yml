@@ -8,5 +8,18 @@ os:
   - linux
   - osx
   
+env:
+  global:
+    # COVERITY_SCAN_TOKEN
+    - secure: "qHUP2VvQpWrQb+xnJrlJefXJ7/A5+M+YWlNk3edHJ+oePfYAo2jAISI7ni1TOmpJkWj2QYAltQGttiXL89Tr5qZaSPY6Fjq8ZoUs5MDvdBQCAbUldMYoS6Nnq9dBHZnmdrFWQh2aYWzCumWGDazlyZQ5+RlubKVyfQyUF1YmJ/EkqKLA1osxZPZtRBrM6swiDInoXKBq5415UUmdfTMJjwnlqp3NFJDNrG+Jg3SMKzMZgLNE6+2UxZHNyPYJj/5U/lqFudxV9e/3ju03Y7yxczHgwpmrM4NXl5TXMsGZwCcDrOlUjtB82hvUdAS9FTzFczruEQYK1EsAbjwM+D65FzulZXZx4Tz+Rd1M+BggFl9BpQJlG7mu0DrxTmY+3pvScdYDWGkNIvRSP9oa6rWz21BK6tGz1Kfs8M2rk455B7iIGEf/Wp3v2VN9RF/CcY45kVdzG14tahaTcyrih6JJZkTZVkTR5Bvpw9qjCrQfYkfUxVcGlg60uCekE8y2lGNjMi327dCR9Ggt5p5vkv6fzgNXgDjb4UnJRxcLjtp1f7Ph3Rt9KQSttudQGNh62BpQzIch/MSTuzQk7PcUi/RNN0ZjHGyEbN+B7aDh22h31kGBtCOZwPR+8+vurQXu9/7lcCZ0f8H5fb1u/RM+RVls6GtPhYh9AHoiBpyO1vVEC5k="
+
 script:
-  - make
+  - if [[ "$COVERITY_SCAN_BRANCH" != 1 ]]; then make ; fi
+
+addons:
+  coverity_scan:
+    project:
+      name: "eclipse/paho.mqtt.c"
+      description: "Build submitted via Travis CI"
+      build_command: "make -j 4"
+      branch_pattern: coverity-.*

@@ -8,6 +8,8 @@ os:
   - linux
   - osx
 
+sudo: required
+
 script:
   - make
   

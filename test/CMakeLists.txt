@@ -125,3 +125,6 @@ ADD_TEST(
 	NAME test9
 	COMMAND test9 "--connection" ${MQTT_TEST_BROKER}
 )
+
+# Times out after 9 minutes
+SET_TESTS_PROPERTIES(test9 PROPERTIES TIMEOUT 540)

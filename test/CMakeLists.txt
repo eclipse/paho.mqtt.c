@@ -133,5 +133,5 @@ ADD_TEST(
 
 # Times out after 9 minutes
 SET_TESTS_PROPERTIES(
-	test1 test2 test4 test6 test7 test8 test9 
+	test1 test2 test4 test6 test8 test9 
 	PROPERTIES TIMEOUT 540)

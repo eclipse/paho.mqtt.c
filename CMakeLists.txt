@@ -36,6 +36,9 @@ IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
     	SET(PAHO_LIBRARY_DIR_NAME "lib64")
     ENDIF()
   ENDIF()
+ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  # Both were taken from the VS solution files
+  ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN -D_WINDOWS )
 ENDIF()
 
 ## build options

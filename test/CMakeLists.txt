@@ -116,22 +116,30 @@ ADD_TEST(
 )
 
 
-ADD_EXECUTABLE(
-	test9
-	test9.c
-)
+IF (WIN32)
+	MESSAGE(WARNING "Test9 disabled due to compilation errors on Windows")
+	# Times out after 9 minutes
+	SET_TESTS_PROPERTIES(
+		test1 test2 test4 test6 test8 
+		PROPERTIES TIMEOUT 540)
+ELSE()
+	ADD_EXECUTABLE(
+		test9
+		test9.c
+	)
 
-TARGET_LINK_LIBRARIES(
-	test9
-	paho-mqtt3a
-)
+	TARGET_LINK_LIBRARIES(
+		test9
+		paho-mqtt3a
+	)
 
-ADD_TEST(
-	NAME test9
-	COMMAND test9 "--connection" ${MQTT_TEST_BROKER}
-)
+	ADD_TEST(
+		NAME test9
+		COMMAND test9 "--connection" ${MQTT_TEST_BROKER}
+	)
+	# Times out after 9 minutes
+	SET_TESTS_PROPERTIES(
+		test1 test2 test4 test6 test8 test9
+		PROPERTIES TIMEOUT 540)
+ENDIF()
 
-# Times out after 9 minutes
-SET_TESTS_PROPERTIES(
-	test1 test2 test4 test6 test8 test9 
-	PROPERTIES TIMEOUT 540)

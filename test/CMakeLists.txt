@@ -4,6 +4,10 @@ SET(MQTT_TEST_BROKER "tcp://localhost:1883" CACHE STRING "Hostname of a test MQT
 SET(MQTT_SSL_HOSTNAME "localhost" CACHE STRING "Hostname of a test SSL MQTT broker to use")
 
 
+IF (WIN32)
+	ADD_DEFINITIONS(/DCMAKE_BUILD)
+ENDIF()
+
 ADD_EXECUTABLE(
 	test1
 	test1.c

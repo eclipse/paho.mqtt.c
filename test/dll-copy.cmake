@@ -1,0 +1,5 @@
+FILE(GLOB dlls ${CMAKE_BINARY_DIR}/src/*.dll)
+FOREACH(dll ${dlls}) 
+	MESSAGE(STATUS, "Copying dll runtime file ${CMAKE_BINARY_DIR}/src/${dll} to runtime dir ${CMAKE_BINARY_DIR}/test")
+	FILE(COPY ${dlls} DESTINATION  ${CMAKE_BINARY_DIR}/test)
+ENDFOREACH(dll)

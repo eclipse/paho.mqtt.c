@@ -8,8 +8,11 @@ os:
   - linux
   - osx
 
+sudo: required
+
 script:
   - make
   
 before_install:
-  - ./travis-install.sh
+  - 'if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export CFLAGS="-I/usr/local/opt/openssl/include $CFLAGS" LDFLAGS="-L/usr/local/opt/openssl/lib $LDFLAGS"; fi'
+

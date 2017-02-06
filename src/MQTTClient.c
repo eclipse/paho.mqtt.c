@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2015 IBM Corp.
+ * Copyright (c) 2009, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@
  *    Ian Craggs - fix for bug 459791 - deadlock in WaitForCompletion for bad client
  *    Ian Craggs - fix for bug 474905 - insufficient synchronization for subscribe, unsubscribe, connect
  *    Ian Craggs - make it clear that yield and receive are not intended for multi-threaded mode (bug 474748)
+ *    Ian Craggs - SNI support
  *******************************************************************************/
 
 /**
@@ -834,7 +835,16 @@ int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* o
 #if defined(OPENSSL)
 		if (m->ssl)
 		{
-			if (SSLSocket_setSocketForSSL(&m->c->net, m->c->sslopts) != MQTTCLIENT_SUCCESS)
+			int port;
+			char* hostname;
+			int setSocketForSSLrc = 0;
+
+			hostname = MQTTProtocol_addressPort(m->serverURI, &port);
+			setSocketForSSLrc = SSLSocket_setSocketForSSL(&m->c->net, m->c->sslopts, hostname);
+			if (hostname != m->serverURI)
+				free(hostname);
+
+			if (setSocketForSSLrc != MQTTCLIENT_SUCCESS)
 			{
 				if (m->c->session != NULL)
 					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)

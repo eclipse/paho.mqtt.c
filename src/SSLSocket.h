@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs, Allan Stockdill-Mander - initial implementation 
+ *    Ian Craggs - SNI support
  *******************************************************************************/
 #if !defined(SSLSOCKET_H)
 #define SSLSOCKET_H
@@ -32,7 +33,7 @@
 
 int SSLSocket_initialize();
 void SSLSocket_terminate();
-int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts);
+int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, char* hostname);
 int SSLSocket_getch(SSL* ssl, int socket, char* c);
 char *SSLSocket_getdata(SSL* ssl, int socket, size_t bytes, size_t* actual_len);
 

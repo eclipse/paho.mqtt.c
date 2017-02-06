@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,7 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - MQTT 3.1.1 support
+ *    Ian Craggs - SNI support
  *******************************************************************************/
 
 #if !defined(MQTTPROTOCOLOUT_H)
@@ -29,6 +30,7 @@
 
 #define DEFAULT_PORT 1883
 
+char* MQTTProtocol_addressPort(const char* uri, int* port);
 void MQTTProtocol_reconnect(const char* ip_address, Clients* client);
 #if defined(OPENSSL)
 int MQTTProtocol_connect(const char* ip_address, Clients* acClients, int ssl, int MQTTVersion);

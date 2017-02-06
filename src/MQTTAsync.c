@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2016 IBM Corp.
+ * Copyright (c) 2009, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,6 +30,7 @@
  *    Ian Craggs - automatic reconnect and offline buffering (send while disconnected)
  *    Ian Craggs - fix for bug 472250
  *    Ian Craggs - fix for bug 486548
+ *    Ian Craggs - SNI support
  *******************************************************************************/
 
 /**
@@ -2708,7 +2709,16 @@ int MQTTAsync_connecting(MQTTAsyncs* m)
 #if defined(OPENSSL)
 		if (m->ssl)
 		{
-			if (SSLSocket_setSocketForSSL(&m->c->net, m->c->sslopts) != MQTTASYNC_SUCCESS)
+			int port;
+			char* hostname;
+			int setSocketForSSLrc = 0;
+
+			hostname = MQTTProtocol_addressPort(m->serverURI, &port);
+			setSocketForSSLrc = SSLSocket_setSocketForSSL(&m->c->net, m->c->sslopts, hostname);
+			if (hostname != m->serverURI)
+				free(hostname);
+
+			if (setSocketForSSLrc != MQTTASYNC_SUCCESS)
 			{
 				if (m->c->session != NULL)
 					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)

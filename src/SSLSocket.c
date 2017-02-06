@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2016 IBM Corp.
+ * Copyright (c) 2009, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,6 +16,7 @@
  *    Ian Craggs - allow compilation for OpenSSL < 1.0
  *    Ian Craggs - fix for bug #453883
  *    Ian Craggs - fix for bug #480363, issue 13
+ *    Ian Craggs - SNI support
  *******************************************************************************/
 
 /**
@@ -543,7 +544,7 @@ exit:
 }
 
 
-int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts)
+int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, char* hostname)
 {
 	int rc = 1;
 	
@@ -569,6 +570,9 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts)
 	    	}	
 		if ((rc = SSL_set_fd(net->ssl, net->socket)) != 1)
 			SSLSocket_error("SSL_set_fd", net->ssl, net->socket, rc);
+
+		if ((rc = SSL_set_tlsext_host_name(net->ssl, hostname)) != 1)
+			SSLSocket_error("SSL_set_tlsext_host_name", NULL, net->socket, rc);
 	}
 		
 	FUNC_EXIT_RC(rc);

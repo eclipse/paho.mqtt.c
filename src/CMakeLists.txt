@@ -88,7 +88,7 @@ SET(OPENSSL_LIB_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL librarie
     FIND_LIBRARY(OPENSSLCRYPTO_LIB NAMES ssl libssl
       	HINTS ${OPENSSL_BREW_PATH}/lib ${OPENSSL_DIR}/lib ${OPENSSL_DIR}/lib64)
 
-    MESSAGE(STATUS "OpenSSL hint ${PENSSL_INC_SEARCH_PATH} (includes) / ")
+    MESSAGE(STATUS "OpenSSL hints: ${OPENSSL_INC_SEARCH_PATH},${OPENSSL_BREW_PATH}")
     MESSAGE(STATUS "OpenSSL headers found at ${OPENSSL_INCLUDE_DIR}")
     MESSAGE(STATUS "OpenSSL library found at ${OPENSSL_LIB}")
     MESSAGE(STATUS "OpenSSL Crypto library found at ${OPENSSLCRYPTO_LIB}")

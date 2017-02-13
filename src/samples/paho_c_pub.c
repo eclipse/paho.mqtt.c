@@ -48,6 +48,7 @@
 #include <Windows.h>
 #define sleep Sleep
 #else
+#include <unistd.h>
 #include <sys/time.h>
 #include <stdlib.h>
 #endif

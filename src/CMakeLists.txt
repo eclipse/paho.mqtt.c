@@ -27,6 +27,31 @@ CONFIGURE_FILE(VersionInfo.h.in
     @ONLY
     )
 
+IF (PAHO_WITH_SSL)
+    SET(OPENSSL_LIB_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries")
+    SET(OPENSSL_INC_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL includes")
+
+    IF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+      SET(OPENSSL_BREW_PATH "/usr/local/opt/openssl")
+    ENDIF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+
+    FIND_PATH(OPENSSL_INCLUDE_DIR openssl/ssl.h
+        HINTS ${OPENSSL_INC_SEARCH_PATH}/include ${OPENSSL_BREW_PATH}/include/)
+    FIND_LIBRARY(OPENSSL_LIB NAMES ssl libssl
+        HINTS ${OPENSSL_BREW_PATH}/lib ${OPENSSL_DIR}/lib ${OPENSSL_DIR}/lib64)
+    FIND_LIBRARY(OPENSSLCRYPTO_LIB NAMES crypto libcrypto
+      	HINTS ${OPENSSL_BREW_PATH}/lib ${OPENSSL_DIR}/lib ${OPENSSL_DIR}/lib64)
+
+    MESSAGE(STATUS "OpenSSL hint ${PENSSL_INC_SEARCH_PATH} (includes) / ")
+    MESSAGE(STATUS "OpenSSL headers found at ${OPENSSL_INCLUDE_DIR}")
+    MESSAGE(STATUS "OpenSSL library found at ${OPENSSL_LIB}")
+    MESSAGE(STATUS "OpenSSL Crypto library found at ${OPENSSLCRYPTO_LIB}")
+
+    INCLUDE_DIRECTORIES(
+        ${OPENSSL_INCLUDE_DIR}
+    )
+ENDIF()
+
 SET(common_src
     MQTTProtocolClient.c
     Clients.c
@@ -76,28 +101,6 @@ INSTALL(FILES MQTTAsync.h MQTTClient.h MQTTClientPersistence.h
     DESTINATION include)
 
 IF (PAHO_WITH_SSL)
-SET(OPENSSL_LIB_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries")
-    SET(OPENSSL_INC_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL includes")
-
-    IF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-      SET(OPENSSL_BREW_PATH "/usr/local/opt/openssl")
-    ENDIF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-
-    FIND_PATH(OPENSSL_INCLUDE_DIR openssl/ssl.h
-        HINTS ${OPENSSL_INC_SEARCH_PATH}/include ${OPENSSL_BREW_PATH}/include/)
-    FIND_LIBRARY(OPENSSL_LIB NAMES ssl libssl
-        HINTS ${OPENSSL_BREW_PATH}/lib ${OPENSSL_DIR}/lib ${OPENSSL_DIR}/lib64)
-    FIND_LIBRARY(OPENSSLCRYPTO_LIB NAMES crypto libcrypto
-      	HINTS ${OPENSSL_BREW_PATH}/lib ${OPENSSL_DIR}/lib ${OPENSSL_DIR}/lib64)
-
-    MESSAGE(STATUS "OpenSSL hint ${PENSSL_INC_SEARCH_PATH} (includes) / ")
-    MESSAGE(STATUS "OpenSSL headers found at ${OPENSSL_INCLUDE_DIR}")
-    MESSAGE(STATUS "OpenSSL library found at ${OPENSSL_LIB}")
-    MESSAGE(STATUS "OpenSSL Crypto library found at ${OPENSSLCRYPTO_LIB}")
-
-    INCLUDE_DIRECTORIES(
-        ${OPENSSL_INCLUDE_DIR}
-    )
     ADD_LIBRARY(paho-mqtt3cs SHARED ${common_src} MQTTClient.c SSLSocket.c)
     ADD_LIBRARY(paho-mqtt3as SHARED ${common_src} MQTTAsync.c SSLSocket.c)
 

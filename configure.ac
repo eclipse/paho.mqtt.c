@@ -221,8 +221,10 @@ AS_IF([test "x$with_ssl" = "xyes"], [
 	AC_CHECK_HEADER([openssl/crypto.h], , AC_MSG_ERROR([missing openssl/crypto.h header]))
 	AC_CHECK_LIB([crypto], [CRYPTO_num_locks], , AC_MSG_ERROR([missing crypto library]))
 
-        AC_CHECK_HEADER([openssl/ssl.h], , AC_MSG_ERROR([missing openssl/ssl.h header]))
+	AC_CHECK_HEADER([openssl/ssl.h], , AC_MSG_ERROR([missing openssl/ssl.h header]))
 	AC_CHECK_LIB([ssl], [SSL_connect], , AC_MSG_ERROR([missing ssl library]))
+
+	AC_DEFINE([OPENSSL], [], [OpenSSL support])
 ])
 
 AM_CONDITIONAL([PAHO_WITH_SSL], [test "$with_ssl" = yes])

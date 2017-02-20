@@ -2223,7 +2223,15 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	m->connect.onSuccess = options->onSuccess;
 	m->connect.onFailure = options->onFailure;
 	m->connect.context = options->context;
-	m->connectTimeoutMs = options->connectTimeout * 1000;
+	// If connect timeout > 1000, assume it's in milliseconds
+	if (options->connectTimeout >= 1000)
+	{
+		m->connectTimeoutMs = options->connectTimeout;
+	}
+	else
+	{
+		m->connectTimeoutMs = options->connectTimeout * 1000;
+	}
 	
 	tostop = 0;
 	if (sendThread_state != STARTING && sendThread_state != RUNNING)

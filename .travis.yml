@@ -12,13 +12,16 @@ sudo: required
 
  
 before_install:
+  - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
   - 'if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export CFLAGS="-I/usr/local/opt/openssl/include $CFLAGS" LDFLAGS="-L/usr/local/opt/openssl/lib $LDFLAGS"; fi'
 
   
 env:
   global:
-    # COVERITY_SCAN_TOKEN
-    - secure: "qHUP2VvQpWrQb+xnJrlJefXJ7/A5+M+YWlNk3edHJ+oePfYAo2jAISI7ni1TOmpJkWj2QYAltQGttiXL89Tr5qZaSPY6Fjq8ZoUs5MDvdBQCAbUldMYoS6Nnq9dBHZnmdrFWQh2aYWzCumWGDazlyZQ5+RlubKVyfQyUF1YmJ/EkqKLA1osxZPZtRBrM6swiDInoXKBq5415UUmdfTMJjwnlqp3NFJDNrG+Jg3SMKzMZgLNE6+2UxZHNyPYJj/5U/lqFudxV9e/3ju03Y7yxczHgwpmrM4NXl5TXMsGZwCcDrOlUjtB82hvUdAS9FTzFczruEQYK1EsAbjwM+D65FzulZXZx4Tz+Rd1M+BggFl9BpQJlG7mu0DrxTmY+3pvScdYDWGkNIvRSP9oa6rWz21BK6tGz1Kfs8M2rk455B7iIGEf/Wp3v2VN9RF/CcY45kVdzG14tahaTcyrih6JJZkTZVkTR5Bvpw9qjCrQfYkfUxVcGlg60uCekE8y2lGNjMi327dCR9Ggt5p5vkv6fzgNXgDjb4UnJRxcLjtp1f7Ph3Rt9KQSttudQGNh62BpQzIch/MSTuzQk7PcUi/RNN0ZjHGyEbN+B7aDh22h31kGBtCOZwPR+8+vurQXu9/7lcCZ0f8H5fb1u/RM+RVls6GtPhYh9AHoiBpyO1vVEC5k="
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "Ro53zVdGCjCQx9U4wvD9GBwB346tIQ7y1MWOAe1QrFWlmoQLC8KUeddQkc+27pdrOG9Fm9QQcI82EDlh0bfRBy1ITfWSVVZVfbNLv9sBWesND1F9YlnFpn/fag2OE+ULPSEJVJMxZoqiR9yiYWO3pTWue4YjCSuFAjpQNO6VnV3HiQJRG1jeaylx0QVLQWKAL/qkRbuqG9o4xpS1Kebaj86+q9UTHcL1a+Aj53u+Ajqnc9ZbUB/yBrfHyufTKpAD8Ef/FEIWXg2svtiWVEwEsPtdTn5P7AefJ2FNEyT4uMKIEBzWIPeWvUZLFF6U7QA07+uYDE0Ir4voPptBUlIYqQz1CUz9XCOPmM/N+GgqpyNyUjpMb4CM1b+iwBwcsHc0Z1JFcPz65ZMSt1D/WeUfQlaB/KxQBpz4lD2mxEmAuBIoGNrAG+FRULoY+xQSAf7V0W8am6QbHNnXif30mdkF3lgAhaAOwWO03JD7ctEJXqzRbMK8HrBkrgWfHsRRLFT50m8CrNLFz+3lCYuPHge2gHUMDfIHMxd4N9f2dlfV9GJkHQOQYwFfP5L2Y5Xq9KTnZX+bsglDC2WcOJu2F8h1LxTMV5Kku8zl1RZlEAt8Qa9EtCMczA3sL4NfGxazO22WpyOvHdwb26mhdJTgquI5oZsl71zcIf+WLGfgUAEq4/k="
+
 
 script:
   - if [[ "$COVERITY_SCAN_BRANCH" != 1 ]]; then make ; fi
@@ -28,6 +31,8 @@ addons:
     project:
       name: "eclipse/paho.mqtt.c"
       description: "Build submitted via Travis CI"
-      build_command: "make -j 4"
-      branch_pattern: coverity-.*
+    notification_email: icraggs@uk.ibm.com
+    build_command_prepend: "make clean"
+    build_command: "make -j 4"
+    branch_pattern: coverity-.*
 

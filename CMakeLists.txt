@@ -1,15 +1,15 @@
 #*******************************************************************************
 #  Copyright (c) 2015 logi.cals GmbH
-# 
+#
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
-#  and Eclipse Distribution License v1.0 which accompany this distribution. 
-# 
-#  The Eclipse Public License is available at 
+#  and Eclipse Distribution License v1.0 which accompany this distribution.
+#
+#  The Eclipse Public License is available at
 #     http://www.eclipse.org/legal/epl-v10.html
-#  and the Eclipse Distribution License is available at 
+#  and the Eclipse Distribution License is available at
 #    http://www.eclipse.org/org/documents/edl-v10.php.
-# 
+#
 #  Contributors:
 #     Rainer Poisel - initial version
 #*******************************************************************************/
@@ -17,7 +17,7 @@
 # Note: on OS X you should install XCode and the associated command-line tools
 
 PROJECT("paho" C)
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 ## build settings
 SET(PAHO_VERSION_MAJOR 1)
@@ -27,6 +27,16 @@ SET(CLIENT_VERSION ${PAHO_VERSION_MAJOR}.${PAHO_VERSION_MINOR}.${PAHO_VERSION_PA
 
 EXECUTE_PROCESS(COMMAND date -u OUTPUT_VARIABLE BUILD_TIMESTAMP)
 STRING(STRIP ${BUILD_TIMESTAMP} BUILD_TIMESTAMP)
+
+# Uses the correct directory for libraries on Red Hat-based distributions.
+SET(PAHO_LIBRARY_DIR_NAME "lib")
+IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
+  IF(EXISTS "/etc/redhat-release")
+    IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    	SET(PAHO_LIBRARY_DIR_NAME "lib64")
+    ENDIF()
+  ENDIF()
+ENDIF()
 
 ## build options
 SET(PAHO_WITH_SSL FALSE CACHE BOOL "Flag that defines whether to build ssl-enabled binaries too. ")
@@ -53,3 +63,8 @@ SET(CPACK_PACKAGE_VERSION_MAJOR ${PAHO_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${PAHO_VERSION_MINOR})
 SET(CPACK_PACKAGE_VERSION_PATCH ${PAHO_VERSION_PATCH})
 INCLUDE(CPack)
+
+ENABLE_TESTING()
+
+INCLUDE_DIRECTORIES(test src)
+ADD_SUBDIRECTORY(test)

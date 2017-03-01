@@ -7,6 +7,10 @@ compiler:
 os:
   - linux
   - osx
-  
+
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install openssl ; fi
+
 script:
-  - make
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then mkdir build.paho ; cd build.paho; cmake -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE .. ; make ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make ; fi

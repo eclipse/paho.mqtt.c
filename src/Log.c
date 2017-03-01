@@ -221,10 +221,14 @@ void Log_terminate()
 			fclose(trace_destination);
 		trace_destination = NULL;
 	}
-	if (trace_destination_name)
+	if (trace_destination_name) {
 		free(trace_destination_name);
-	if (trace_destination_backup_name)
+		trace_destination_name = NULL;
+	}
+	if (trace_destination_backup_name) {
 		free(trace_destination_backup_name);
+		trace_destination_backup_name = NULL;
+	}
 	start_index = -1;
 	next_index = 0;
 	trace_output_level = -1;

@@ -36,6 +36,7 @@ Before compiling, determine the value of some variables in order to configure fe
 
 Variable | Default Value | Description
 ------------ | ------------- | -------------
+PAHO_BUILD_STATIC | FALSE | Build a static version of the libraries
 PAHO_WITH_SSL | FALSE | Flag that defines whether to build ssl-enabled binaries too. 
 OPENSSL_INC_SEARCH_PATH | "" (system default) | Directory containing OpenSSL includes
 OPENSSL_LIB_SEARCH_PATH | "" (system default) | Directory containing OpenSSL libraries
@@ -124,6 +125,8 @@ The Paho C client comprises four shared libraries:
  * libmqttv3as.so - asynchronous with SSL
  * libmqttv3c.so - "classic" / synchronous
  * libmqttv3cs.so - "classic" / synchronous with SSL
+
+Optionally, you can build static version of those libraries.
 
 ## Usage and API
 

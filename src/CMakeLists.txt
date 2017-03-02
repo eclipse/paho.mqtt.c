@@ -58,11 +58,17 @@ ELSEIF (UNIX)
     ENDIF()
 ENDIF()
 
+## common compilation for libpaho-mqtt3c and libpaho-mqtt3a
+ADD_LIBRARY(common_obj OBJECT ${common_src})
+SET_PROPERTY(TARGET common_obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 ADD_EXECUTABLE(MQTTVersion MQTTVersion.c)
-ADD_LIBRARY(paho-mqtt3c SHARED ${common_src} MQTTClient.c)
-ADD_LIBRARY(paho-mqtt3a SHARED ${common_src} MQTTAsync.c)
+
+ADD_LIBRARY(paho-mqtt3c SHARED $<TARGET_OBJECTS:common_obj> MQTTClient.c)
+ADD_LIBRARY(paho-mqtt3a SHARED $<TARGET_OBJECTS:common_obj> MQTTAsync.c)
 TARGET_LINK_LIBRARIES(paho-mqtt3c pthread ${LIBS_SYSTEM})
 TARGET_LINK_LIBRARIES(paho-mqtt3a pthread ${LIBS_SYSTEM})
+
 TARGET_LINK_LIBRARIES(MQTTVersion paho-mqtt3a paho-mqtt3c ${LIBS_SYSTEM})
 SET_TARGET_PROPERTIES(
     paho-mqtt3c paho-mqtt3a PROPERTIES
@@ -73,6 +79,22 @@ INSTALL(TARGETS paho-mqtt3c paho-mqtt3a
     LIBRARY DESTINATION lib)
 INSTALL(TARGETS MQTTVersion
     RUNTIME DESTINATION bin)
+
+IF (PAHO_BUILD_STATIC)
+    ADD_LIBRARY(paho-mqtt3c-static STATIC $<TARGET_OBJECTS:common_obj> MQTTClient.c)
+    ADD_LIBRARY(paho-mqtt3a-static STATIC $<TARGET_OBJECTS:common_obj> MQTTAsync.c)
+
+    TARGET_LINK_LIBRARIES(paho-mqtt3c-static ${LIBS_SYSTEM})
+    TARGET_LINK_LIBRARIES(paho-mqtt3a-static ${LIBS_SYSTEM})
+
+    INSTALL(TARGETS paho-mqtt3c-static
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib)
+    INSTALL(TARGETS paho-mqtt3a-static
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib)
+ENDIF()
+
 INSTALL(FILES MQTTAsync.h MQTTClient.h MQTTClientPersistence.h
     DESTINATION include)
 
@@ -99,8 +121,13 @@ SET(OPENSSL_LIB_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL librarie
     INCLUDE_DIRECTORIES(
         ${OPENSSL_INCLUDE_DIR}
     )
-    ADD_LIBRARY(paho-mqtt3cs SHARED ${common_src} MQTTClient.c SSLSocket.c)
-    ADD_LIBRARY(paho-mqtt3as SHARED ${common_src} MQTTAsync.c SSLSocket.c)
+
+    ## common compilation for libpaho-mqtt3cs and libpaho-mqtt3as
+    ## Note: SSL libraries must be recompiled due ifdefs
+    ADD_LIBRARY(common_ssl_obj OBJECT ${common_src})
+    SET_PROPERTY(TARGET common_ssl_obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+    ADD_LIBRARY(paho-mqtt3cs SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTClient.c SSLSocket.c)
+    ADD_LIBRARY(paho-mqtt3as SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTAsync.c SSLSocket.c)
 
     TARGET_LINK_LIBRARIES(paho-mqtt3cs pthread ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} ${LIBS_SYSTEM})
     TARGET_LINK_LIBRARIES(paho-mqtt3as pthread ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} ${LIBS_SYSTEM})
@@ -115,4 +142,20 @@ SET(OPENSSL_LIB_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL librarie
     INSTALL(TARGETS paho-mqtt3as
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib)
+
+    IF (PAHO_BUILD_STATIC)
+        ADD_LIBRARY(paho-mqtt3cs-static STATIC $<TARGET_OBJECTS:common_ssl_obj> MQTTClient.c SSLSocket.c)
+        ADD_LIBRARY(paho-mqtt3as-static STATIC $<TARGET_OBJECTS:common_ssl_obj> MQTTAsync.c SSLSocket.c)
+
+        TARGET_LINK_LIBRARIES(paho-mqtt3cs-static ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
+        TARGET_LINK_LIBRARIES(paho-mqtt3as-static ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
+
+        INSTALL(TARGETS paho-mqtt3cs-static
+            ARCHIVE DESTINATION lib
+            LIBRARY DESTINATION lib)
+        INSTALL(TARGETS paho-mqtt3as-static
+            ARCHIVE DESTINATION lib
+            LIBRARY DESTINATION lib)
+    ENDIF()
+
 ENDIF()

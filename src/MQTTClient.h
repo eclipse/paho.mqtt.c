@@ -184,6 +184,12 @@
  */
 #define MQTT_BAD_SUBSCRIBE 0x80
 
+/** 
+ * Global init of mqtt library. Call once on program start to set global behaviour.
+ * handle_openssl_init - if mqtt library should handle openssl init (1) or rely on the caller to init it before using mqtt (0)
+ */
+void MQTTClient_global_init(int handle_openssl_init);
+
 /**
  * A handle representing an MQTT client. A valid client handle is available
  * following a successful call to MQTTClient_create().
@@ -628,7 +634,7 @@ typedef struct
 	} returned;
 } MQTTClient_connectOptions;
 
-#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 4, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, 0}
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 4, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, 0, {NULL, 0, 0}}
 
 /**
   * MQTTClient_libraryInfo is used to store details relating to the currently used

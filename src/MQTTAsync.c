@@ -60,6 +60,13 @@
 
 #include "VersionInfo.h"
 
+void MQTTAsync_global_init(int handle_openssl_init)
+{
+#if defined(OPENSSL)
+	SSLSocket_handleOpensslInit(handle_openssl_init);
+#endif
+}
+
 char* client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
 char* client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
 

@@ -21,8 +21,8 @@ env:
 
 
 script:
-  - if [[ "$COVERITY_SCAN_BRANCH" != 1 -a "$TRAVIS_OS_NAME" == "osx" ]]; then mkdir build.paho ; cd build.paho; cmake -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE .. ; make ; fi
-  - if [[ "$COVERITY_SCAN_BRANCH" != 1 -a "$TRAVIS_OS_NAME" == "linux" ]]; then make ; fi
+  - if [[ "$COVERITY_SCAN_BRANCH" != 1 ]]; then if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then mkdir build.paho ; cd build.paho; cmake -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE .. ; make ; fi ; fi
+  - if [[ "$COVERITY_SCAN_BRANCH" != 1]]; then if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make ; fi ; fi
 
 addons:
   coverity_scan:

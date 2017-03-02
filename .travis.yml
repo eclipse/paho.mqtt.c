@@ -9,10 +9,10 @@ os:
   - osx
 
 sudo: required
- 
+
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install openssl ; fi
-  
+
 env:
   global:
    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
@@ -21,8 +21,7 @@ env:
 
 
 script:
-  - if [[ "$COVERITY_SCAN_BRANCH" != 1 ]]; then if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then mkdir build.paho ; cd build.paho; cmake -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE .. ; make ; fi ; fi
-  - if [[ "$COVERITY_SCAN_BRANCH" != 1]]; then if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make ; fi ; fi
+  - if [[ "$COVERITY_SCAN_BRANCH" != 1 ]]; then ./travis-build.sh; fi
 
 addons:
   coverity_scan:
@@ -33,4 +32,3 @@ addons:
     build_command_prepend: "make clean"
     build_command: "make -j 4"
     branch_pattern: coverity-.*
-

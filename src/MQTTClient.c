@@ -1039,6 +1039,7 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 
 	m->c->username = options->username;
 	m->c->password = options->password;
+	m->c->passwordLength = options->passwordLength;
 	m->c->retryInterval = options->retryInterval;
 
 	if (options->struct_version >= 3)
@@ -1102,10 +1103,15 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 	}
 #endif
 
-	if ((options->username && !UTF8_validateString(options->username)) ||
-		(options->password && !UTF8_validateString(options->password)))
+	if (options->username && !UTF8_validateString(options->username))
 	{
 		rc = MQTTCLIENT_BAD_UTF8_STRING;
+		goto exit;
+	}
+
+	if (options->password && !options->username)
+	{
+		rc = MQTTCLIENT_PASSWORD_WITHOUT_USERNAME;
 		goto exit;
 	}
 

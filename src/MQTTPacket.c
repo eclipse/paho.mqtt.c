@@ -436,6 +436,17 @@ void writeUTF(char** pptr, const char* string)
 	*pptr += len;
 }
 
+/**
+ * Writes binary data to an output buffer.  The data in the output buffer is
+ * prefixed by its length stored as a 2-byte integer.
+ */
+void writeBinaryData(char** pptr, const uint8_t* data, uint16_t dataLength)
+{
+	writeInt(pptr, dataLength);
+	memcpy(*pptr, data, dataLength);
+	*pptr += dataLength;
+}
+
 
 /**
  * Function used in the new packets table to create packets which have only a header.

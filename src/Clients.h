@@ -164,7 +164,8 @@ typedef struct
 {
 	char* clientID;					/**< the string id of the client */
 	const char* username;					/**< MQTT v3.1 user name */
-	const char* password;					/**< MQTT v3.1 password */
+	const uint8_t* password;				/**< MQTT v3.1 password */
+	uint16_t passwordLength;				/**< password length in bytes */
 	unsigned int cleansession : 1;	/**< MQTT clean session flag */
 	unsigned int connected : 1;		/**< whether it is currently connected */
 	unsigned int good : 1; 			/**< if we have an error on the socket we turn this off */

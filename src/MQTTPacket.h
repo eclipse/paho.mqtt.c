@@ -224,6 +224,7 @@ unsigned char readChar(char** pptr);
 void writeChar(char** pptr, char c);
 void writeInt(char** pptr, int anInt);
 void writeUTF(char** pptr, const char* string);
+void writeBinaryData(char** pptr, const uint8_t* data, uint16_t dataLength);
 
 char* MQTTPacket_name(int ptype);
 

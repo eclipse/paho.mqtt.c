@@ -55,9 +55,11 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion)
 	if (client->will)
 		len += (int)strlen(client->will->topic)+2 + (int)strlen(client->will->msg)+2;
 	if (client->username)
+	{
 		len += (int)strlen(client->username)+2;
-	if (client->password)
-		len += (int)strlen(client->password)+2;
+		if (client->password)
+			len += client->passwordLength+2;
+	}
 
 	ptr = buf = malloc(len);
 	if (MQTTVersion == 3)
@@ -83,9 +85,11 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion)
 	}
 
 	if (client->username)
+	{
 		packet.flags.bits.username = 1;
-	if (client->password)
-		packet.flags.bits.password = 1;
+		if (client->password)
+			packet.flags.bits.password = 1;
+	}
 
 	writeChar(&ptr, packet.flags.all);
 	writeInt(&ptr, client->keepAliveInterval);
@@ -95,10 +99,13 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion)
 		writeUTF(&ptr, client->will->topic);
 		writeUTF(&ptr, client->will->msg);
 	}
+
 	if (client->username)
+	{
 		writeUTF(&ptr, client->username);
-	if (client->password)
-		writeUTF(&ptr, client->password);
+		if (client->password)
+			writeBinaryData(&ptr, client->password, client->passwordLength);
+	}
 
 	rc = MQTTPacket_send(&client->net, packet.header, buf, len, 1);
 	Log(LOG_PROTOCOL, 0, NULL, client->net.socket, client->clientID, client->cleansession, rc);

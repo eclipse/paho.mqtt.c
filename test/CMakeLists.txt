@@ -12,8 +12,33 @@ TARGET_LINK_LIBRARIES(
 )
 
 ADD_TEST(
-	NAME test1
-	COMMAND "test1" "--connection" ${MQTT_TEST_BROKER}
+	NAME test1-1-single-thread-client
+	COMMAND "test1" "--test_no 1" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test1-2-multithread-callbacks
+	COMMAND "test1" "--test_no 2" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test1-3-connack-return-codes
+	COMMAND "test1" "--test_no 3" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test1-4-client-persistence
+	COMMAND "test1" "--test_no 4" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test1-5-disconnect-with-quiesce
+	COMMAND "test1" "--test_no 5" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test1-6-connlost-will-message
+	COMMAND "test1" "--test_no 6" "--connection" ${MQTT_TEST_BROKER}
 )
 
 ADD_EXECUTABLE(
@@ -27,7 +52,7 @@ TARGET_LINK_LIBRARIES(
 )
 
 ADD_TEST(
-	NAME test2
+	NAME test2-1-multiple-threads-single-client
 	COMMAND test2 "--connection" ${MQTT_TEST_BROKER}
 )
 
@@ -41,9 +66,55 @@ TARGET_LINK_LIBRARIES(
 	paho-mqtt3cs
 )
 
+
 ADD_TEST(
-	NAME test3
-	COMMAND test3 "--connection" ${MQTT_TEST_BROKER}
+	NAME test3-1-ssl-conn-to-non-SSL-broker
+	COMMAND test3 "--test_no 1" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test3-2as-mutual-ssl-auth-single-thread
+	COMMAND test3 "--test_no 2" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test3-2am-mutual-ssl-auth-multi-thread
+	COMMAND test3 "--test_no 3" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test3-2b-mutual-ssl-broker-missing-client-cert
+	COMMAND test3 "--test_no 4" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test3-2c-mutual-ssl-client-missing-broker-cert
+	COMMAND test3 "--test_no 5" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test3-3as-broker-auth-server-cert-in-client-store-single-thread
+	COMMAND test3 "--test_no 6" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test3-3am-broker-auth-server-cert-in-client-store-multi-thread
+	COMMAND test3 "--test_no 7" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test3-3b-broker-auth-client-missing-broker-cert
+	COMMAND test3 "--test_no 8" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test3-4s-broker-auth-accept-invalid-certificate-single-thread
+	COMMAND test3 "--test_no 9" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test3-4m-broker-auth-accept-invalid-certificate-multi-thread
+	COMMAND test3 "--test_no 10" "--connection" ${MQTT_TEST_BROKER}
 )
 
 ADD_EXECUTABLE(
@@ -57,8 +128,43 @@ TARGET_LINK_LIBRARIES(
 )
 
 ADD_TEST(
-	NAME test4
-	COMMAND test4 "--connection" ${MQTT_TEST_BROKER}
+	NAME test4-1-basic-connect-subscribe-receive
+	COMMAND test4 "--test_no 1" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test4-2-connect-timeout
+	COMMAND test4 "--test_no 2" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test4-3-multiple-client-objs-simultaneous-working
+	COMMAND test4 "--test_no 3" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test4-4-send-receive-big-messages
+	COMMAND test4 "--test_no 4" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test4-5-connack-return-codes
+	COMMAND test4 "--test_no 5" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test4-6-ha-connections
+	COMMAND test4 "--test_no 6" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test4-7-pending-tokens
+	COMMAND test4 "--test_no 7" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test4-8-incomplete-commands-requests
+	COMMAND test4 "--test_no 8" "--connection" ${MQTT_TEST_BROKER}
 )
 
 
@@ -73,8 +179,38 @@ TARGET_LINK_LIBRARIES(
 )
 
 ADD_TEST(
-	NAME test5
-	COMMAND test5 "--hostname" ${MQTT_SSL_HOSTNAME}
+	NAME test5-1-ssl-connection-to-no-SSL-server
+	COMMAND test5 "--test_no 1" "--hostname" ${MQTT_SSL_HOSTNAME}
+)
+
+ADD_TEST(
+	NAME test5-2a-multual-ssl-auth-certificates-in-place
+	COMMAND test5 "--test_no 2" "--hostname" ${MQTT_SSL_HOSTNAME}
+)
+
+ADD_TEST(
+	NAME test5-2b-multual-ssl-auth-broker-missing-client-cert
+	COMMAND test5 "--test_no 3" "--hostname" ${MQTT_SSL_HOSTNAME}
+)
+
+ADD_TEST(
+	NAME test5-2c-multual-ssl-auth-client-missing-broker-cert
+	COMMAND test5 "--test_no 4" "--hostname" ${MQTT_SSL_HOSTNAME}
+)
+
+ADD_TEST(
+	NAME test5-3a-server-auth-server-cert-in-client-store
+	COMMAND test5 "--test_no 5" "--hostname" ${MQTT_SSL_HOSTNAME}
+)
+
+ADD_TEST(
+	NAME test5-3b-server-auth-client-missing-broker-cert
+	COMMAND test5 "--test_no 6" "--hostname" ${MQTT_SSL_HOSTNAME}
+)
+
+ADD_TEST(
+	NAME test5-4-accept-invalid-certificates
+	COMMAND test5 "--test_no 7" "--hostname" ${MQTT_SSL_HOSTNAME}
 )
 
 ADD_EXECUTABLE(
@@ -88,7 +224,7 @@ TARGET_LINK_LIBRARIES(
 )
 
 ADD_TEST(
-	NAME test6
+	NAME test6-restart-recovery
 	COMMAND test6 "--connection" ${MQTT_TEST_BROKER}
 )
 
@@ -103,8 +239,23 @@ TARGET_LINK_LIBRARIES(
 )
 
 ADD_TEST(
-	NAME test8
-	COMMAND test8 "--connection" ${MQTT_TEST_BROKER}
+	NAME test8-1-basic-connect-subscribe-receive
+	COMMAND test8 "--test_no 1" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test8-2-connect-timeout
+	COMMAND test8 "--test_no 2" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test8-3-multiple-client-objects-simultaneous-working
+	COMMAND test8 "--test_no 3" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test8-4-send-receive-big-messages
+	COMMAND test8 "--test_no 4" "--connection" ${MQTT_TEST_BROKER}
 )
 
 ADD_EXECUTABLE(
@@ -118,6 +269,26 @@ TARGET_LINK_LIBRARIES(
 )
 
 ADD_TEST(
-	NAME test9
-	COMMAND test9 "--connection" ${MQTT_TEST_BROKER}
+	NAME test9-1-offline-buffering-send-disconnected
+	COMMAND test9 "--test_no 1" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test9-2-offline-buffering-send-disconnected-serverURIs
+	COMMAND test9 "--test_no 2" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test9-3-offline-buffering-auto-reconnect
+	COMMAND test9 "--test_no 3" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test9-4-offline-buffering-auto-reconnect-serverURIs
+	COMMAND test9 "--test_no 4" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test9-5-offline-buffering-max-buffered
+	COMMAND test9 "--test_no 5" "--connection" ${MQTT_TEST_BROKER}
 )

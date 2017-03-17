@@ -1,13 +1,13 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
- * and Eclipse Distribution License v1.0 which accompany this distribution. 
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
- * The Eclipse Public License is available at 
+ * The Eclipse Public License is available at
  *    http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
@@ -15,6 +15,7 @@
  *    Ian Craggs, Allan Stockdill-Mander - async client updates
  *    Ian Craggs - bug #415042 - start Linux thread as disconnected
  *    Ian Craggs - fix for bug #420851
+ *    Ian Craggs - change MacOS semaphore implementation
  *******************************************************************************/
 
 /**
@@ -176,20 +177,6 @@ thread_id_type Thread_getid()
 }
 
 
-#if defined(USE_NAMED_SEMAPHORES)
-#define MAX_NAMED_SEMAPHORES 10
-
-static int named_semaphore_count = 0;
-
-static struct 
-{
-	sem_type sem;
-	char name[NAME_MAX-4];
-} named_semaphores[MAX_NAMED_SEMAPHORES];
- 
-#endif
-
-
 /**
  * Create a new semaphore
  * @return the new condition variable
@@ -207,27 +194,9 @@ sem_type Thread_create_sem()
 		        FALSE,              // initial state is nonsignaled
 		        NULL                // object name
 		        );
-    #elif defined(USE_NAMED_SEMAPHORES)
-    	if (named_semaphore_count == 0)
-    		memset(named_semaphores, '\0', sizeof(named_semaphores));
-    	char* name = &(strrchr(tempnam("/", "MQTT"), '/'))[1]; /* skip first slash of name */
-    	if ((sem = sem_open(name, O_CREAT, S_IRWXU, 0)) == SEM_FAILED)
-    		rc = -1;
-    	else
-    	{
-    		int i;
-    		
-    		named_semaphore_count++;
-    		for (i = 0; i < MAX_NAMED_SEMAPHORES; ++i)
-    		{
-    			if (named_semaphores[i].name[0] == '\0')
-    			{ 
-    				named_semaphores[i].sem = sem;
-    				strcpy(named_semaphores[i].name, name);	
-    				break;
-    			}
-    		}
-    	}
+	#elif defined(OSX)
+	  sem = dispatch_semaphore_create(0L);
+		rc = (sem == NULL) ? -1 : 0;
 	#else
 		sem = malloc(sizeof(sem_t));
 		rc = sem_init(sem, 0, 0);
@@ -263,6 +232,8 @@ int Thread_wait_sem(sem_type sem, int timeout)
 	FUNC_ENTRY;
 	#if defined(WIN32) || defined(WIN64)
 		rc = WaitForSingleObject(sem, timeout);
+  #elif defined(OSX)
+	  rc = (int)dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, timeout*1000));
 	#elif defined(USE_TRYWAIT)
 		while (++i < count && (rc = sem_trywait(sem)) != 0)
 		{
@@ -295,6 +266,8 @@ int Thread_check_sem(sem_type sem)
 {
 #if defined(WIN32) || defined(WIN64)
 	return WaitForSingleObject(sem, 0) == WAIT_OBJECT_0;
+#elif defined(OSX)
+  return dispatch_semaphore_wait(sem, DISPATCH_TIME_NOW) == 0;
 #else
 	int semval = -1;
 	sem_getvalue(sem, &semval);
@@ -316,6 +289,8 @@ int Thread_post_sem(sem_type sem)
 	#if defined(WIN32) || defined(WIN64)
 		if (SetEvent(sem) == 0)
 			rc = GetLastError();
+	#elif defined(OSX)
+	  rc = (int)dispatch_semaphore_signal(sem);
 	#else
 		if (sem_post(sem) == -1)
 			rc = errno;
@@ -337,19 +312,8 @@ int Thread_destroy_sem(sem_type sem)
 	FUNC_ENTRY;
 	#if defined(WIN32) || defined(WIN64)
 		rc = CloseHandle(sem);
-    #elif defined(USE_NAMED_SEMAPHORES)
-    	int i;
-    	rc = sem_close(sem);
-    	for (i = 0; i < MAX_NAMED_SEMAPHORES; ++i)
-    	{
-    		if (named_semaphores[i].sem == sem)
-    		{ 
-    			rc = sem_unlink(named_semaphores[i].name);
-    			named_semaphores[i].name[0] = '\0';	
-    			break;
-    		}
-    	}
-    	named_semaphore_count--;
+  #elif defined(OSX)
+	  dispatch_release(sem);
 	#else
 		rc = sem_destroy(sem);
 		free(sem);

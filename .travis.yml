@@ -1,3 +1,4 @@
+sudo: true
 language: c
 
 compiler:
@@ -11,7 +12,7 @@ os:
 sudo: required
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install openssl ; fi
+  - ./travis-install.sh
 
 env:
   global:
@@ -32,4 +33,15 @@ addons:
     build_command_prepend: "make clean"
     build_command: "make -j 4"
     branch_pattern: coverity-.*
+addons:
+  apt:
+    sources:
+      - george-edison55-precise-backports # cmake 3.2.3 / doxygen 1.8.3
+      - sourceline: 'ppa:mosquitto-dev/mosquitto-ppa'
+    packages:
+      - cmake
+      - cmake-data
+      - mosquitto
+      - doxygen
+
 

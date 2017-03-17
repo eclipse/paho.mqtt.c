@@ -1,5 +1,5 @@
 #*******************************************************************************
-#  Copyright (c) 2015 logi.cals GmbH
+#  Copyright (c) 2015, 2017 logi.cals GmbH and others
 #
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,12 @@
 
 PROJECT("paho" C)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+MESSAGE(STATUS "CMake version: " ${CMAKE_VERSION})
 
 ## build settings
 SET(PAHO_VERSION_MAJOR 1)
-SET(PAHO_VERSION_MINOR 0)
-SET(PAHO_VERSION_PATCH 3)
+SET(PAHO_VERSION_MINOR 1)
+SET(PAHO_VERSION_PATCH 0)
 SET(CLIENT_VERSION ${PAHO_VERSION_MAJOR}.${PAHO_VERSION_MINOR}.${PAHO_VERSION_PATCH})
 
 IF(WIN32)
@@ -73,3 +74,4 @@ ENABLE_TESTING()
 
 INCLUDE_DIRECTORIES(test src)
 ADD_SUBDIRECTORY(test)
+

@@ -29,7 +29,7 @@
  *    Ian Craggs - fix for bug 459791 - deadlock in WaitForCompletion for bad client
  *    Ian Craggs - fix for bug 474905 - insufficient synchronization for subscribe, unsubscribe, connect
  *    Ian Craggs - make it clear that yield and receive are not intended for multi-threaded mode (bug 474748)
- *    Ian Craggs - SNI support
+ *    Ian Craggs - SNI support, message queue unpersist bug
  *******************************************************************************/
 
 /**
@@ -569,7 +569,13 @@ thread_return_type WINAPI MQTTClient_run(void* n)
 				 * so we must be careful how we use it.
 				 */
 				if (rc)
+				{
+					#if !defined(NO_PERSISTENCE)
+					if (m->c->persistence)
+						MQTTPersistence_unpersistQueueEntry(m->c, (MQTTPersistence_qEntry*)qe);
+					#endif
 					ListRemove(m->c->messageQueue, qe);
+				}
 				else
 					Log(TRACE_MIN, -1, "False returned from messageArrived for client %s, message remains on queue",
 						m->c->clientID);

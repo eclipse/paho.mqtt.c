@@ -28,6 +28,31 @@ CONFIGURE_FILE(VersionInfo.h.in
     @ONLY
     )
 
+IF (PAHO_WITH_SSL)
+    SET(OPENSSL_LIB_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries")
+    SET(OPENSSL_INC_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL includes")
+
+    IF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+      SET(OPENSSL_BREW_PATH "/usr/local/opt/openssl")
+    ENDIF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+
+    FIND_PATH(OPENSSL_INCLUDE_DIR openssl/ssl.h
+        HINTS ${OPENSSL_INC_SEARCH_PATH}/include ${OPENSSL_BREW_PATH}/include/)
+    FIND_LIBRARY(OPENSSL_LIB NAMES ssl libssl
+        HINTS ${OPENSSL_BREW_PATH}/lib ${OPENSSL_DIR}/lib ${OPENSSL_DIR}/lib64)
+    FIND_LIBRARY(OPENSSLCRYPTO_LIB NAMES crypto libcrypto
+      	HINTS ${OPENSSL_BREW_PATH}/lib ${OPENSSL_DIR}/lib ${OPENSSL_DIR}/lib64)
+
+    MESSAGE(STATUS "OpenSSL hint ${PENSSL_INC_SEARCH_PATH} (includes) / ")
+    MESSAGE(STATUS "OpenSSL headers found at ${OPENSSL_INCLUDE_DIR}")
+    MESSAGE(STATUS "OpenSSL library found at ${OPENSSL_LIB}")
+    MESSAGE(STATUS "OpenSSL Crypto library found at ${OPENSSLCRYPTO_LIB}")
+
+    INCLUDE_DIRECTORIES(
+        ${OPENSSL_INCLUDE_DIR}
+    )
+ENDIF()
+
 SET(common_src
     MQTTProtocolClient.c
     Clients.c
@@ -60,16 +85,25 @@ ELSEIF (UNIX)
     ENDIF()
 ENDIF()
 
+IF (UNIX)
+    SET(THREAD_LIBS_SYSTEM pthread)
+ENDIF()
+
 ## common compilation for libpaho-mqtt3c and libpaho-mqtt3a
 ADD_LIBRARY(common_obj OBJECT ${common_src})
 SET_PROPERTY(TARGET common_obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+IF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+  SET_PROPERTY(TARGET common_obj PROPERTY
+    COMPILE_DEFINITIONS "OSX=1")
+ENDIF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 
 ADD_EXECUTABLE(MQTTVersion MQTTVersion.c)
 
 ADD_LIBRARY(paho-mqtt3c SHARED $<TARGET_OBJECTS:common_obj> MQTTClient.c)
 ADD_LIBRARY(paho-mqtt3a SHARED $<TARGET_OBJECTS:common_obj> MQTTAsync.c)
-TARGET_LINK_LIBRARIES(paho-mqtt3c pthread ${LIBS_SYSTEM})
-TARGET_LINK_LIBRARIES(paho-mqtt3a pthread ${LIBS_SYSTEM})
+
+TARGET_LINK_LIBRARIES(paho-mqtt3c ${THREAD_LIBS_SYSTEM} ${LIBS_SYSTEM})
+TARGET_LINK_LIBRARIES(paho-mqtt3a ${THREAD_LIBS_SYSTEM} ${LIBS_SYSTEM})
 
 TARGET_LINK_LIBRARIES(MQTTVersion paho-mqtt3a paho-mqtt3c ${LIBS_SYSTEM})
 SET_TARGET_PROPERTIES(
@@ -130,11 +164,16 @@ SET(OPENSSL_LIB_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL librarie
     ## Note: SSL libraries must be recompiled due ifdefs
     ADD_LIBRARY(common_ssl_obj OBJECT ${common_src})
     SET_PROPERTY(TARGET common_ssl_obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+    IF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+      SET_PROPERTY(TARGET common_ssl_obj PROPERTY COMPILE_DEFINITIONS "OPENSSL=1;OSX=1")
+    ELSE (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+      SET_PROPERTY(TARGET common_ssl_obj PROPERTY COMPILE_DEFINITIONS "OPENSSL=1")
+    ENDIF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     ADD_LIBRARY(paho-mqtt3cs SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTClient.c SSLSocket.c)
     ADD_LIBRARY(paho-mqtt3as SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTAsync.c SSLSocket.c)
 
-    TARGET_LINK_LIBRARIES(paho-mqtt3cs pthread ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} ${LIBS_SYSTEM})
-    TARGET_LINK_LIBRARIES(paho-mqtt3as pthread ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} ${LIBS_SYSTEM})
+    TARGET_LINK_LIBRARIES(paho-mqtt3cs ${THREAD_LIBS_SYSTEM} ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} ${LIBS_SYSTEM})
+    TARGET_LINK_LIBRARIES(paho-mqtt3as ${THREAD_LIBS_SYSTEM} ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} ${LIBS_SYSTEM})
     SET_TARGET_PROPERTIES(
         paho-mqtt3cs paho-mqtt3as PROPERTIES
         VERSION ${CLIENT_VERSION}

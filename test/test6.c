@@ -3,11 +3,11 @@
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
- * and Eclipse Distribution License v1.0 which accompany this distribution. 
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
- * The Eclipse Public License is available at 
+ * The Eclipse Public License is available at
  *    http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
@@ -51,7 +51,7 @@ struct
 {
 	char* connection;         /**< connection to system under test. */
 	char** connections;        /**< HA connection list */
-	int connection_count; 
+	int connection_count;
 	char* control_connection; /**< MQTT control connection, for test sync */
 	char* topic;
 	char* control_topic;
@@ -84,7 +84,7 @@ struct
 void getopts(int argc, char** argv)
 {
 	int count = 1;
-	
+
 	while (count < argc)
 	{
 		if (strcmp(argv[count], "--qos") == 0)
@@ -191,7 +191,7 @@ void MyLog(int log_level, char* format, ...)
 
 	if (log_level == LOGA_DEBUG && opts.verbose == 0)
 	  return;
-	
+
 	ftime(&ts);
 	timeinfo = localtime(&ts.time);
 	strftime(msg_buf, 80, "%Y%m%d %H%M%S", timeinfo);
@@ -298,7 +298,7 @@ void control_connectionLost(void* context, char* cause)
  * @param topicName the name of the topic on which the message is received
  * @param topicLen the length of the topic name (in case of embedded nulls)
  * @param m pointer to the message received
- * @return boolean 
+ * @return boolean
  */
 int control_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* m)
 {
@@ -325,6 +325,21 @@ int control_messageArrived(void* context, char* topicName, int topicLen, MQTTAsy
 }
 
 
+int control_send(char* message)
+{
+	char buf[156];
+	int rc = 0;
+	MQTTAsync_responseOptions ropts = MQTTAsync_responseOptions_initializer;
+
+	sprintf(buf, "%s: %s", opts.clientid, message);
+	rc = MQTTAsync_send(control_client, pub_topic, strlen(buf),
+															buf, 1, 0, &ropts);
+	MyLog(LOGA_DEBUG, "Control message sent: %s", buf);
+
+	return rc;
+}
+
+
 /* wait for a specific message on the control topic. */
 int control_wait(char* message)
 {
@@ -336,7 +351,7 @@ int control_wait(char* message)
 
 	sprintf(buf, "waiting for: %s", message);
 	control_send(buf);
-	
+
 	while (control_found == 0 && stopping == 0)
 	{
 		if (++count == 300)
@@ -368,20 +383,6 @@ int control_which(char* message1, char* message2)
 	return control_found;
 }
 
-
-int control_send(char* message)
-{
-	char buf[156];
-	int rc = 0;
-	MQTTAsync_responseOptions ropts = MQTTAsync_responseOptions_initializer;
-
-	sprintf(buf, "%s: %s", opts.clientid, message);
-	rc = MQTTAsync_send(control_client, pub_topic, strlen(buf),
-															buf, 1, 0, &ropts);
-	MyLog(LOGA_DEBUG, "Control message sent: %s", buf);
-
-	return rc;
-}
 
 START_TIME_TYPE global_start_time;
 
@@ -508,14 +509,14 @@ int recreateReconnect()
 		MyLog(LOGA_ALWAYS, "Recreating client");
 
 		MQTTAsync_destroy(&client); /* destroy the client object so that we force persistence to be read on recreate */
-	
+
 		rc = MQTTAsync_create(&client, opts.connection, opts.clientid, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 		if (rc != MQTTASYNC_SUCCESS)
 		{
 			MyLog(LOGA_ALWAYS, "MQTTAsync_create failed, rc %d", rc);
 			goto exit;
 		}
-	
+
 		if ((rc = MQTTAsync_setCallbacks(client, client, connectionLost,
 														messageArrived, NULL)) != MQTTASYNC_SUCCESS)
 		{
@@ -537,7 +538,7 @@ int recreateReconnect()
 		MyLog(LOGA_ALWAYS, "MQTTAsync_connect failed, rc %d", rc);
 	else
 		connection_lost = 0;
-	
+
 exit:
 	return rc;
 }
@@ -546,7 +547,7 @@ exit:
 int success(int count)
 {
 	int rc = 1;
-	
+
 	if (errors)
 	{
 		MyLog(LOGA_ALWAYS, "Workload test failed because the callback had errors");
@@ -576,7 +577,7 @@ int waitForCompletion(START_TIME_TYPE start_time)
 	int lastreport = 0;
 	int wait_count = 0;
 	int limit = 120;
-	
+
 	mqsleep(1);
 	while (arrivedCount < expectedCount)
 	{
@@ -632,7 +633,7 @@ void one_iteration()
 	for (i = 1; i <= test_count; ++i)
 	{
 		char payload[128];
-	
+
 		sprintf(payload, "message number %d", i);
 
 		rc = MQTTAsync_send(client, opts.topic, strlen(payload)+1, payload,
@@ -660,17 +661,17 @@ void one_iteration()
 
 	/* Now set a target of 30 seconds total round trip */
 	if (last_completion_time == -1)
-	{	
+	{
 		MyLog(LOGA_ALWAYS, "Round trip time for %d messages is %d ms", test_count, roundtrip_time);
 		expectedCount = 1000 * test_count * test_interval / roundtrip_time / 2;
 	}
 	else
-	{				
+	{
 		MyLog(LOGA_ALWAYS, "Last time, %d messages took %d s.", last_expected_count, last_completion_time);
-		expectedCount = last_expected_count * test_interval / last_completion_time;			
+		expectedCount = last_expected_count * test_interval / last_completion_time;
 	}
 	MyLog(LOGA_ALWAYS, "Therefore %d messages needed for 30 seconds", expectedCount);
-	
+
 	if (control_wait("start_test") == 0) /* now synchronize the test interval */
 		goto exit;
 
@@ -682,11 +683,11 @@ void one_iteration()
 	{
 		MQTTAsync_responseOptions ropts = MQTTAsync_responseOptions_initializer;
 		char payload[128];
-		
+
 		ropts.onSuccess = messageSent;
 		seqno++;
 		sprintf(payload, "message number %d", seqno);
-		rc = MQTTAsync_send(client, opts.topic, strlen(payload)+1, payload, 
+		rc = MQTTAsync_send(client, opts.topic, strlen(payload)+1, payload,
 				opts.qos, opts.retained, &ropts);
 		while (rc != MQTTASYNC_SUCCESS)
 		{
@@ -696,7 +697,7 @@ void one_iteration()
 			if (stopping)
 				goto exit;
 			mqsleep(1);
-			rc = MQTTAsync_send(client, opts.topic, strlen(payload)+1, payload, 
+			rc = MQTTAsync_send(client, opts.topic, strlen(payload)+1, payload,
 				opts.qos, opts.retained, &ropts);
 		}
 		//MyLog(LOGA_DEBUG, "Successful publish with payload %s", payload);
@@ -704,7 +705,7 @@ void one_iteration()
 			mqsleep(1);
 	}
 	MyLog(LOGA_ALWAYS, "%d messages sent in %d seconds", expectedCount, elapsed(start_time) / 1000);
- 
+
 	waitForCompletion(start_time);
 	control_wait("test finished");
 exit:
@@ -717,7 +718,7 @@ static int client_subscribed = 0;
 void client_onSubscribe(void* context, MQTTAsync_successData* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	
+
 	MyLog(LOGA_DEBUG, "In client subscribe onSuccess callback %p granted qos %d", c, response->alt.qos);
 
 	client_subscribed = 1;
@@ -739,7 +740,7 @@ void client_onConnect(void* context, MQTTAsync_successData* response)
 	int rc;
 
 	sprintf(sub_topic, "%s/send", opts.control_topic);
-	sprintf(pub_topic, "%s/receive", opts.control_topic);	
+	sprintf(pub_topic, "%s/receive", opts.control_topic);
 	ropts.context = context;
 	ropts.onSuccess = client_onSubscribe;
 	ropts.onFailure = client_onFailure;
@@ -763,7 +764,7 @@ void client_onCleaned(void* context, MQTTAsync_successData* response)
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_disconnectOptions dopts = MQTTAsync_disconnectOptions_initializer;
 	int rc;
-	
+
 	dopts.context = context;
 	dopts.onSuccess = client_onCleanedDisconnected;
 	dopts.onFailure = client_onFailure;
@@ -780,7 +781,7 @@ int sendAndReceive(void)
 {
 	int rc = 0;
 	int persistence = MQTTCLIENT_PERSISTENCE_NONE;
-	
+
 	MyLog(LOGA_ALWAYS, "v3 async C client topic workload using QoS %d", opts.qos);
 	MyLog(LOGA_DEBUG, "Connecting to %s", opts.connection);
 
@@ -794,8 +795,8 @@ int sendAndReceive(void)
 		rc = 99;
 		goto exit;
 	}
-	
-	if ((rc = MQTTAsync_setCallbacks(client, client, connectionLost, 
+
+	if ((rc = MQTTAsync_setCallbacks(client, client, connectionLost,
                 messageArrived, NULL)) != MQTTASYNC_SUCCESS)
 	{
 		MyLog(LOGA_ALWAYS, "MQTTAsync_setCallbacks failed, rc %d", rc);
@@ -865,15 +866,15 @@ int sendAndReceive(void)
 
 	while (!stopping)
 	{
-		one_iteration(client);
+		one_iteration();
 	}
-	
+
 disconnect_exit:
 	MQTTAsync_disconnect(client, 0);
 
 destroy_exit:
  	MQTTAsync_destroy(&client);
-	
+
 exit:
 	return rc;
 }
@@ -884,7 +885,7 @@ static int control_subscribed = 0;
 void control_onSubscribe(void* context, MQTTAsync_successData* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	
+
 	MyLog(LOGA_DEBUG, "In control subscribe onSuccess callback %p granted qos %d", c, response->alt.qos);
 
 	control_subscribed = 1;
@@ -905,7 +906,7 @@ void control_onConnect(void* context, MQTTAsync_successData* response)
 	int rc;
 
 	sprintf(sub_topic, "%s/send", opts.control_topic);
-	sprintf(pub_topic, "%s/receive", opts.control_topic);	
+	sprintf(pub_topic, "%s/receive", opts.control_topic);
 	ropts.onSuccess = control_onSubscribe;
 	ropts.onFailure = control_onFailure;
 	ropts.context = c;
@@ -939,10 +940,10 @@ int main(int argc, char** argv)
 	{
 	  MyLog(LOGA_ALWAYS, "%s: %s\n", info->name, info->value);
 	  info++;
-	}	
+	}
 
 	getopts(argc, argv);
-	
+
 	sprintf(topic_buf, "%s_%d", opts.topic, opts.slot_no);
 	opts.topic = topic_buf;
 
@@ -962,7 +963,7 @@ int main(int argc, char** argv)
 		rc = 99;
 		goto exit;
 	}
-	
+
 	if ((rc = MQTTAsync_setCallbacks(control_client, control_client, control_connectionLost,
 						control_messageArrived, NULL)) != MQTTASYNC_SUCCESS)
 	{
@@ -989,14 +990,14 @@ int main(int argc, char** argv)
 
 	if (control_subscribed != 1)
 		goto destroy_exit;
-	
+
 	sendAndReceive();
-	
+
 exit:
 	MQTTAsync_disconnect(control_client, 0);
-	
+
 destroy_exit:
 	MQTTAsync_destroy(&control_client);
-	
+
 	return 0;
 }

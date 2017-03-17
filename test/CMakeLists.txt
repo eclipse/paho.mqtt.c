@@ -1,5 +1,9 @@
+
 SET(MQTT_TEST_BROKER "tcp://localhost:1883" CACHE STRING "Hostname of a test MQTT broker to use")
+SET(MQTT_TEST_PROXY "tcp://localhost:1884" CACHE STRING "Hostname of the test proxy to use")
 SET(MQTT_SSL_HOSTNAME "localhost" CACHE STRING "Hostname of a test SSL MQTT broker to use")
+SET(CERTDIR $ENV{TRAVIS_BUILD_DIR}/test/ssl )
+
 
 ADD_EXECUTABLE(
 	test1
@@ -13,7 +17,7 @@ TARGET_LINK_LIBRARIES(
 
 ADD_TEST(
 	NAME test1
-	COMMAND "test1" "--connection" ${MQTT_TEST_BROKER}
+	COMMAND "test1" "--connection" ${MQTT_TEST_BROKER} 
 )
 
 ADD_EXECUTABLE(
@@ -31,20 +35,24 @@ ADD_TEST(
 	COMMAND test2 "--connection" ${MQTT_TEST_BROKER}
 )
 
-ADD_EXECUTABLE(
-	test3
-	test3.c
-)
+IF (PAHO_WITH_SSL)
+	ADD_EXECUTABLE(
+		test3
+		test3.c
+	)
 
-TARGET_LINK_LIBRARIES(
-	test3
-	paho-mqtt3cs
-)
+	TARGET_LINK_LIBRARIES(
+		test3
+		paho-mqtt3cs
+	)
 
-ADD_TEST(
-	NAME test3
-	COMMAND test3 "--connection" ${MQTT_TEST_BROKER}
-)
+	ADD_TEST(
+		NAME test3
+		COMMAND test3 "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	)
+
+	SET_TESTS_PROPERTIES(test3 PROPERTIES TIMEOUT 540)
+ENDIF()
 
 ADD_EXECUTABLE(
 	test4
@@ -61,21 +69,24 @@ ADD_TEST(
 	COMMAND test4 "--connection" ${MQTT_TEST_BROKER}
 )
 
+IF (PAHO_WITH_SSL)
+	ADD_EXECUTABLE(
+		test5
+		test5.c
+	)
 
-ADD_EXECUTABLE(
-	test5
-	test5.c
-)
+	TARGET_LINK_LIBRARIES(
+		test5
+		paho-mqtt3as
+	)
 
-TARGET_LINK_LIBRARIES(
-	test5
-	paho-mqtt3as
-)
+	ADD_TEST(
+		NAME test5
+		COMMAND test5 "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	)
 
-ADD_TEST(
-	NAME test5
-	COMMAND test5 "--hostname" ${MQTT_SSL_HOSTNAME}
-)
+	SET_TESTS_PROPERTIES(test5 PROPERTIES TIMEOUT 540)
+ENDIF()
 
 ADD_EXECUTABLE(
 	test6
@@ -119,5 +130,11 @@ TARGET_LINK_LIBRARIES(
 
 ADD_TEST(
 	NAME test9
-	COMMAND test9 "--connection" ${MQTT_TEST_BROKER}
+	COMMAND test9 "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
 )
+
+# Times out after 9 minutes
+SET_TESTS_PROPERTIES(
+	test1 test2 test4 test6 test8 test9 
+	PROPERTIES TIMEOUT 540)
+

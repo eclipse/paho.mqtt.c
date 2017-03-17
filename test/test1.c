@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2015 IBM Corp.
+ * Copyright (c) 2009, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs - MQTT 3.1.1 support
+ *    Ian Craggs - change will message test back to using proxy
  *******************************************************************************/
 
 
@@ -62,6 +63,7 @@ struct Options
 {
 	char* connection;         /**< connection to system under test. */
 	char** haconnections;
+	char* proxy_connection;
 	int hacount;
 	int verbose;
 	int test_no;
@@ -69,8 +71,9 @@ struct Options
 	int iterations;
 } options =
 {
-	"tcp://m2m.eclipse.org:1883",
+	"tcp://iot.eclipse.org:1883",
 	NULL,
+	"tcp://localhost:1883",
 	0,
 	0,
 	0,
@@ -116,6 +119,13 @@ void getopts(int argc, char** argv)
 					tok = strtok(NULL, " ");
 				}
 			}
+			else
+				usage();
+		}
+		else if (strcmp(argv[count], "--proxy_connection") == 0)
+		{
+			if (++count < argc)
+				options.proxy_connection = argv[count];
 			else
 				usage();
 		}
@@ -276,8 +286,8 @@ void myassert(char* filename, int lineno, char* description, int value, char* fo
 		cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n", 
                         description, filename, lineno);
 	}
-    else
-    	MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);  
+	else
+		MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);  
 }
 
 
@@ -838,16 +848,11 @@ Test 5: disconnect with quiesce timeout should allow exchanges to complete
 int test5(struct Options options)
 {
 	char* testname = "test 5";
-	/* TODO - unused -remove? char summaryname[50]; */
-	/* TODO - unused -remove? FILE *outfile = NULL; */
 	char* topic = "Persistence test 2";
 	int subsqos = 2;
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
-	/* TODO - unused -remove? MQTTClient_message* m = NULL; */
-	/* TODO - unused -remove? char* topicName = NULL; */
 	MQTTClient_deliveryToken* tokens = NULL;
-	/* TODO - unused -remove? int mytoken = -99; */
 	char buffer[100];
 	int count = 5;
 	int i, rc;
@@ -942,89 +947,6 @@ int test6_messageArrived(void* context, char* topicName, int topicLen, MQTTClien
 }
 
 
-int test6_socket_error(char* aString, int sock)
-{
-#if defined(WIN32)
-	int errno;
-#endif
-
-#if defined(WIN32)
-	errno = WSAGetLastError();
-#endif
-	if (errno != EINTR && errno != EAGAIN && errno != EINPROGRESS && errno != EWOULDBLOCK)
-	{
-		if (strcmp(aString, "shutdown") != 0 || (errno != ENOTCONN && errno != ECONNRESET))
-			printf("Socket error %d in %s for socket %d", errno, aString, sock);
-	}
-	return errno;
-}
-
-#if !defined(SOCKET_ERROR)
-#define SOCKET_ERROR -1
-#endif
-
-int test6_socket_close(int socket)
-{
-	int rc;
-
-#if defined(WIN32)
-	if (shutdown(socket, SD_BOTH) == SOCKET_ERROR)
-		test6_socket_error("shutdown", socket);
-	if ((rc = closesocket(socket)) == SOCKET_ERROR)
-		test6_socket_error("close", socket);
-#else
-	if (shutdown(socket, SHUT_RDWR) == SOCKET_ERROR)
-		test6_socket_error("shutdown", socket);
-	if ((rc = close(socket)) == SOCKET_ERROR)
-		test6_socket_error("close", socket);
-#endif
-	return rc;
-}
-
-typedef struct
-{
-	int socket;
-	time_t lastContact;
-#if defined(OPENSSL)
-	SSL* ssl;
-	SSL_CTX* ctx;
-#endif
-} networkHandles;
-
-
-typedef struct
-{
-	char* clientID;					/**< the string id of the client */
-	char* username;					/**< MQTT v3.1 user name */
-	char* password;					/**< MQTT v3.1 password */
-	unsigned int cleansession : 1;	/**< MQTT clean session flag */
-	unsigned int connected : 1;		/**< whether it is currently connected */
-	unsigned int good : 1; 			/**< if we have an error on the socket we turn this off */
-	unsigned int ping_outstanding : 1;
-	int connect_state : 4;
-	networkHandles net;
-/* ... */
-} Clients;
-
-
-typedef struct
-{
-	char* serverURI;
-	Clients* c;
-	MQTTClient_connectionLost* cl;
-	MQTTClient_messageArrived* ma;
-	MQTTClient_deliveryComplete* dc;
-	void* context;
-
-	int connect_sem;
-	int rc; /* getsockopt return code in connect */
-	int connack_sem;
-	int suback_sem;
-	int unsuback_sem;
-	void* pack;
-} MQTTClients;
-
-
 int test6(struct Options options)
 {
 	char* testname = "test6";
@@ -1054,7 +976,7 @@ int test6(struct Options options)
 	}
 
 	/* Client-1 with Will options */
-	rc = MQTTClient_create(&test6_c1, options.connection, "Client_1", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	rc = MQTTClient_create(&test6_c1, options.proxy_connection, "Client_1", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTCLIENT_SUCCESS)
 		goto exit;
@@ -1089,9 +1011,8 @@ int test6(struct Options options)
 	assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 
 	/* now send the command which will break the connection and cause the will message to be sent */
-	/*rc = MQTTClient_publish(test6_c1, mqttsas_topic, strlen("TERMINATE"), "TERMINATE", 0, 0, NULL);
-	assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);*/
-	test6_socket_close(((MQTTClients*)test6_c1)->c->net.socket); 
+	rc = MQTTClient_publish(test6_c1, mqttsas_topic, strlen("TERMINATE"), "TERMINATE", 0, 0, NULL);
+	assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 
 	MyLog(LOGA_INFO, "Waiting to receive the will message");
 	count = 0;
@@ -1119,11 +1040,11 @@ int test6(struct Options options)
 	rc = MQTTClient_isConnected(test6_c1);
 	assert("Client-1 not connected", rc == 0, "isconnected is %d", rc);
 	
-	/* rc = MQTTClient_disconnect(test6_c2, 100L); */
-	/* assert("Good rc from disconnect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc); */
+	rc = MQTTClient_disconnect(test6_c2, 100L); 
+	assert("Good rc from disconnect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
 	MQTTClient_destroy(&test6_c1);
-	/* MQTTClient_destroy(&test6_c2); */
+	MQTTClient_destroy(&test6_c2);
 
 exit:
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.\n",

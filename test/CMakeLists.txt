@@ -17,7 +17,7 @@ TARGET_LINK_LIBRARIES(
 
 ADD_TEST(
 	NAME test1
-	COMMAND "test1" "--connection" ${MQTT_TEST_BROKER} 
+	COMMAND "test1" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
 )
 
 ADD_EXECUTABLE(

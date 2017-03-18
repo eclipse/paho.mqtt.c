@@ -43,14 +43,14 @@
 /**
  * List of the predefined MQTT v3 packet names.
  */
-static char* packet_names[] =
+static const char *packet_names[] =
 {
 	"RESERVED", "CONNECT", "CONNACK", "PUBLISH", "PUBACK", "PUBREC", "PUBREL",
 	"PUBCOMP", "SUBSCRIBE", "SUBACK", "UNSUBSCRIBE", "UNSUBACK",
 	"PINGREQ", "PINGRESP", "DISCONNECT"
 };
 
-char** MQTTClient_packet_names = packet_names;
+const char** MQTTClient_packet_names = packet_names;
 
 
 /**
@@ -58,7 +58,7 @@ char** MQTTClient_packet_names = packet_names;
  * @param ptype packet code
  * @return the corresponding string, or "UNKNOWN"
  */
-char* MQTTPacket_name(int ptype)
+const char* MQTTPacket_name(int ptype)
 {
 	return (ptype >= 0 && ptype <= DISCONNECT) ? packet_names[ptype] : "UNKNOWN";
 }
@@ -85,6 +85,9 @@ pf new_packets[] =
 	MQTTPacket_header_only  /**< DISCONNECT */
 };
 
+
+static char* readUTFlen(char** pptr, char* enddata, int* len);
+static int MQTTPacket_send_ack(int type, int msgid, int dup, networkHandles *net);
 
 /**
  * Reads one MQTT packet from a socket.
@@ -346,7 +349,7 @@ int readInt(char** pptr)
  * have caused an overrun.
  *
  */
-char* readUTFlen(char** pptr, char* enddata, int* len)
+static char* readUTFlen(char** pptr, char* enddata, int* len)
 {
 	char* string = NULL;
 
@@ -527,7 +530,7 @@ void MQTTPacket_freePublish(Publish* pack)
  * @param net the network handle to send the data to
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-int MQTTPacket_send_ack(int type, int msgid, int dup, networkHandles *net)
+static int MQTTPacket_send_ack(int type, int msgid, int dup, networkHandles *net)
 {
 	Header header;
 	int rc;

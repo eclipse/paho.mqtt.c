@@ -62,8 +62,8 @@
 #endif
 #endif
 
-void StackTrace_entry(const char* name, int line, int trace);
-void StackTrace_exit(const char* name, int line, void* return_value, int trace);
+void StackTrace_entry(const char* name, int line, enum LOG_LEVELS trace);
+void StackTrace_exit(const char* name, int line, void* return_value, enum LOG_LEVELS trace);
 
 void StackTrace_printStack(FILE* dest);
 char* StackTrace_get(thread_id_type);

@@ -17,6 +17,8 @@
 #if !defined(MESSAGES_H)
 #define MESSAGES_H
 
-char* Messages_get(int, int);
+#include "Log.h"
+
+const char* Messages_get(int, enum LOG_LEVELS);
 
 #endif

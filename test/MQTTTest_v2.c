@@ -369,7 +369,7 @@ void handleTrace(enum MQTTASYNC_TRACE_LEVELS level, char* message)
  				!= MQTTASYNC_SUCCESS)
  			{
  				printf("Failed to start sendMessage, return code %d\n", rc);
- 				exit(-1);
+ 				exit(EXIT_FAILURE);
  			}
  		}
 
@@ -382,7 +382,7 @@ void handleTrace(enum MQTTASYNC_TRACE_LEVELS level, char* message)
  		opts.context = client;
  		if ((rc = MQTTAsync_subscribe(client, options.topic, options.qos, &opts)) != MQTTASYNC_SUCCESS) {
  			printf("Failed to subscribe, return code %d\n", rc);
- 			exit(-1);
+ 			exit(EXIT_FAILURE);
  		}
  	}
 
@@ -403,7 +403,7 @@ void handleTrace(enum MQTTASYNC_TRACE_LEVELS level, char* message)
  			if ((rc = MQTTAsync_disconnect(client, &opts)) != MQTTASYNC_SUCCESS)
  			{
  				printf("Failed to start disconnect, return code %d\n", rc);
- 				exit(-1);
+ 				exit(EXIT_FAILURE);
  			}
  			toStop = 0;
  		}

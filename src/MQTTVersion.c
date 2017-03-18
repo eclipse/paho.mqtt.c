@@ -56,6 +56,12 @@
  					 "MQTTClientV3_Version", "MQTTClientV3_Timestamp"};
  
 
+char* FindString(char* filename, char* eyecatcher_input);
+int printVersionInfo(MQTTAsync_nameValue* info);
+int loadandcall(char* libname);
+void printEyecatchers(char* filename);
+
+
 /**
  * Finds an eyecatcher in a binary file and returns the following value.
  * @param filename the name of the file

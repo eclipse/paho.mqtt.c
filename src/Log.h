@@ -33,6 +33,7 @@ map LOG_LEVELS
 BE*/
 
 enum LOG_LEVELS {
+	INVALID_LEVEL = -1,
 	TRACE_MAXIMUM = 1,
 	TRACE_MEDIUM,
 	TRACE_MINIMUM,
@@ -40,7 +41,7 @@ enum LOG_LEVELS {
 	LOG_ERROR,
 	LOG_SEVERE,
 	LOG_FATAL,
-} Log_levels;
+};
 
 
 /*BE
@@ -53,9 +54,9 @@ def trace_settings_type
 BE*/
 typedef struct
 {
-	int trace_level;			/**< trace level */
+	enum LOG_LEVELS trace_level;	/**< trace level */
 	int max_trace_entries;		/**< max no of entries in the trace buffer */
-	int trace_output_level;		/**< trace level to output to destination */
+	enum LOG_LEVELS trace_output_level;		/**< trace level to output to destination */
 } trace_settings_type;
 
 extern trace_settings_type trace_settings;
@@ -72,12 +73,12 @@ typedef struct
 } Log_nameValue;
 
 int Log_initialize(Log_nameValue*);
-void Log_terminate();
+void Log_terminate(void);
 
-void Log(int, int, char *, ...);
-void Log_stackTrace(int, int, int, int, const char*, int, int*);
+void Log(enum LOG_LEVELS, int, const char *, ...);
+void Log_stackTrace(enum LOG_LEVELS, int, int, int, const char*, int, int*);
 
-typedef void Log_traceCallback(enum LOG_LEVELS level, char* message);
+typedef void Log_traceCallback(enum LOG_LEVELS level, const char *message);
 void Log_setTraceCallback(Log_traceCallback* callback);
 void Log_setTraceLevel(enum LOG_LEVELS level);
 

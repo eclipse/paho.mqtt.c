@@ -33,8 +33,8 @@
 #include "StackTrace.h"
 #include "Heap.h"
 
-extern MQTTProtocol state;
 extern ClientStates* bstate;
+
 
 
 /**

@@ -9,7 +9,7 @@ if [ "$TRAVIS_OS_NAME" == "osx" ]; then
   cmake -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE ..
   make
   python ../test/mqttsas2.py &
-  ctest -VV
+  ctest -VV --timeout 600
   kill %1 %2
 fi
 
@@ -20,6 +20,6 @@ if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
   cmake -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE ..
   make
   python ../test/mqttsas2.py &
-  ctest -VV
+  ctest -VV --timeout 600
   kill %1 %2
 fi

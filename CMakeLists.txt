@@ -17,7 +17,7 @@
 # Note: on OS X you should install XCode and the associated command-line tools
 
 PROJECT("paho" C)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 MESSAGE(STATUS "CMake version: " ${CMAKE_VERSION})
 
 ## build settings
@@ -26,12 +26,30 @@ SET(PAHO_VERSION_MINOR 1)
 SET(PAHO_VERSION_PATCH 0)
 SET(CLIENT_VERSION ${PAHO_VERSION_MAJOR}.${PAHO_VERSION_MINOR}.${PAHO_VERSION_PATCH})
 
-IF(WIN32)
-    EXECUTE_PROCESS(COMMAND "cmd" " /C date /T" OUTPUT_VARIABLE BUILD_TIMESTAMP)
-ELSE()
-    EXECUTE_PROCESS(COMMAND date -u OUTPUT_VARIABLE BUILD_TIMESTAMP)
+
+EXECUTE_PROCESS(COMMAND date -u OUTPUT_VARIABLE BUILD_TIMESTAMP)
+
+IF (BUILD_TIMESTAMP STREQUAL "")
+	MESSAGE(WARNING "Unable to determine build timestamp via default mechanism.")
+
+	IF (WIN32)
+		EXECUTE_PROCESS(COMMAND "cmd.exe" "/c" echo %DATE% %TIME% OUTPUT_VARIABLE BUILD_TIMESTAMP)
+	ENDIF()
 ENDIF()
+
 STRING(STRIP ${BUILD_TIMESTAMP} BUILD_TIMESTAMP)
+MESSAGE(STATUS "Timestamp is ${BUILD_TIMESTAMP}")
+
+
+# Uses the correct directory for libraries on Red Hat-based distributions.
+SET(PAHO_LIBRARY_DIR_NAME "lib")
+IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
+  IF(EXISTS "/etc/redhat-release")
+    IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    	SET(PAHO_LIBRARY_DIR_NAME "lib64")
+    ENDIF()
+  ENDIF()
+ENDIF()
 
 # Uses the correct directory for libraries on Red Hat-based distributions.
 SET(PAHO_LIBRARY_DIR_NAME "lib")
@@ -74,4 +92,3 @@ ENABLE_TESTING()
 
 INCLUDE_DIRECTORIES(test src)
 ADD_SUBDIRECTORY(test)
-

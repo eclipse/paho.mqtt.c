@@ -1,8 +1,13 @@
+PROJECT(mqtt-tests)
 
 SET(MQTT_TEST_BROKER "tcp://localhost:1883" CACHE STRING "Hostname of a test MQTT broker to use")
 SET(MQTT_TEST_PROXY "tcp://localhost:1884" CACHE STRING "Hostname of the test proxy to use")
 SET(MQTT_SSL_HOSTNAME "localhost" CACHE STRING "Hostname of a test SSL MQTT broker to use")
 SET(CERTDIR $ENV{TRAVIS_BUILD_DIR}/test/ssl )
+
+IF (WIN32)
+	ADD_DEFINITIONS(/DCMAKE_BUILD)
+ENDIF()
 
 
 ADD_EXECUTABLE(
@@ -14,6 +19,14 @@ TARGET_LINK_LIBRARIES(
 	test1
 	paho-mqtt3c
 )
+
+IF (WIN32)
+	ADD_CUSTOM_COMMAND(
+		TARGET test1 PRE_BUILD 
+		COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/dll-copy.cmake
+		COMMENT "Copying DLLs to test directory"
+	)
+ENDIF()
 
 ADD_TEST(
 	NAME test1-1-single-thread-client
@@ -221,7 +234,6 @@ ADD_TEST(
 
 ENDIF()
 
-
 ADD_EXECUTABLE(
 	test6
 	test6.c
@@ -301,4 +313,5 @@ ADD_TEST(
 	NAME test9-5-offline-buffering-max-buffered
 	COMMAND test9 "--test_no" "5" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
 )
+
 

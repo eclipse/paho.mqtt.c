@@ -16,6 +16,7 @@
  *    Ian Craggs - fix for bug #420851
  *    Ian Craggs - change MacOS semaphore implementation
  *******************************************************************************/
+#include "MQTTClient.h"
 
 #if !defined(THREAD_H)
 #define THREAD_H
@@ -53,14 +54,14 @@
 	int Thread_destroy_cond(cond_type);
 #endif
 
-thread_type Thread_start(thread_fn, void*);
+DLLExport thread_type Thread_start(thread_fn, void*);
 
-mutex_type Thread_create_mutex(void);
-int Thread_lock_mutex(mutex_type);
-int Thread_unlock_mutex(mutex_type);
+DLLExport mutex_type Thread_create_mutex();
+DLLExport int Thread_lock_mutex(mutex_type);
+DLLExport int Thread_unlock_mutex(mutex_type);
 void Thread_destroy_mutex(mutex_type);
 
-thread_id_type Thread_getid(void);
+DLLExport thread_id_type Thread_getid();
 
 sem_type Thread_create_sem(void);
 int Thread_wait_sem(sem_type sem, int timeout);

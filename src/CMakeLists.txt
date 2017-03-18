@@ -136,7 +136,6 @@ INSTALL(FILES MQTTAsync.h MQTTClient.h MQTTClientPersistence.h
     DESTINATION include)
 
 IF (PAHO_WITH_SSL)
-SET(OPENSSL_LIB_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries")
     SET(OPENSSL_INC_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL includes")
 
     IF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
@@ -200,5 +199,4 @@ SET(OPENSSL_LIB_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL librarie
             ARCHIVE DESTINATION lib
             LIBRARY DESTINATION  ${PAHO_LIBRARY_DIR_NAME})
     ENDIF()
-
 ENDIF()

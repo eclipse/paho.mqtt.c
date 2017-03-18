@@ -42,6 +42,29 @@
 
 extern Sockets s;
 
+int SSLSocket_error(char* aString, SSL* ssl, int sock, int rc);
+char* SSL_get_verify_result_string(int rc);
+void SSL_CTX_info_callback(const SSL* ssl, int where, int ret);
+char* SSLSocket_get_version_string(int version);
+void SSL_CTX_msg_callback(
+		int write_p,
+		int version,
+		int content_type,
+		const void* buf, size_t len,
+		SSL* ssl, void* arg);
+int pem_passwd_cb(char* buf, int size, int rwflag, void* userdata);
+int SSL_create_mutex(ssl_mutex_type* mutex);
+int SSL_lock_mutex(ssl_mutex_type* mutex);
+int SSL_unlock_mutex(ssl_mutex_type* mutex);
+void SSL_destroy_mutex(ssl_mutex_type* mutex);
+#if (OPENSSL_VERSION_NUMBER >= 0x010000000)
+extern void SSLThread_id(CRYPTO_THREADID *id);
+#else
+extern unsigned long SSLThread_id(void);
+#endif
+extern void SSLLocks_callback(int mode, int n, const char *file, int line);
+int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts);
+void SSLSocket_destroyContext(networkHandles* net);
 void SSLSocket_addPendingRead(int sock);
 
 static ssl_mutex_type* sslLocks = NULL;
@@ -393,7 +416,7 @@ extern void SSLLocks_callback(int mode, int n, const char *file, int line)
 	}
 }
 
-int SSLSocket_initialize()   
+int SSLSocket_initialize(void)
 {
 	int rc = 0;
 	/*int prc;*/
@@ -444,7 +467,7 @@ exit:
 	return rc;
 }
 
-void SSLSocket_terminate()
+void SSLSocket_terminate(void)
 {
 	FUNC_ENTRY;
 	EVP_cleanup();
@@ -806,7 +829,7 @@ void SSLSocket_addPendingRead(int sock)
 }
 
 
-int SSLSocket_getPendingRead()
+int SSLSocket_getPendingRead(void)
 {
 	int sock = -1;
 	

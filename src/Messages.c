@@ -35,7 +35,7 @@
 
 #define max_msg_len 120
 
-static char* protocol_message_list[] =
+static const char *protocol_message_list[] =
 {
 	"%d %s -> CONNECT cleansession: %d (%d)", /* 0, was 131, 68 and 69 */
 	"%d %s <- CONNACK rc: %d", /* 1, was 132 */
@@ -69,7 +69,7 @@ static char* protocol_message_list[] =
 	"Socket error for client identifier %s, socket %d, peer address %s; ending connection", /* 29 */
 };
 
-static char* trace_message_list[] =
+static const char *trace_message_list[] =
 {
 	"Failed to remove client from bstate->clients", /* 0 */
 	"Removed client %s from bstate->clients, socket %d", /* 1 */
@@ -92,9 +92,9 @@ static char* trace_message_list[] =
  * @param log_level the log level, used to determine which message list to use
  * @return the message format string
  */
-char* Messages_get(int index, int log_level)
+const char* Messages_get(int index, enum LOG_LEVELS log_level)
 {
-	char* msg = NULL;
+	const char *msg = NULL;
 
 	if (log_level == TRACE_PROTOCOL)
 		msg = (index >= 0 && index < ARRAY_SIZE(protocol_message_list)) ? protocol_message_list[index] : NULL;

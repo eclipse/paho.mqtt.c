@@ -23,6 +23,7 @@
  * UTF-8 byte sequences.
  * 
  */
+#include "utf-8.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -63,13 +64,16 @@ valid_ranges[] =
 };
 
 
+static const char* UTF8_char_validate(int len, const char* data);
+
+
 /**
  * Validate a single UTF-8 character
  * @param len the length of the string in "data"
  * @param data the bytes to check for a valid UTF-8 char
  * @return pointer to the start of the next UTF-8 character in "data"
  */
-const char* UTF8_char_validate(int len, const char* data)
+static const char* UTF8_char_validate(int len, const char* data)
 {
 	int good = 0;
 	int charlen = 2;

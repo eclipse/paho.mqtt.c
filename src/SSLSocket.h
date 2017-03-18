@@ -31,8 +31,8 @@
 
 #define URI_SSL "ssl://"
 
-int SSLSocket_initialize();
-void SSLSocket_terminate();
+int SSLSocket_initialize(void);
+void SSLSocket_terminate(void);
 int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, char* hostname);
 int SSLSocket_getch(SSL* ssl, int socket, char* c);
 char *SSLSocket_getdata(SSL* ssl, int socket, size_t bytes, size_t* actual_len);
@@ -41,7 +41,7 @@ int SSLSocket_close(networkHandles* net);
 int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens, int* frees);
 int SSLSocket_connect(SSL* ssl, int socket);
 
-int SSLSocket_getPendingRead();
+int SSLSocket_getPendingRead(void);
 int SSLSocket_continueWrite(pending_writes* pw);
 
 #endif

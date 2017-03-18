@@ -63,7 +63,7 @@ char* persistenceStore = NULL;
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
-void usage()
+void usage(void)
 {
 	printf("Options:\n");
 	printf("\t--test_no <test_no> - Run test number <test_no>\n");
@@ -76,7 +76,7 @@ void usage()
 	printf("\t--verbose - Enable verbose output \n");
 	printf("\tserver connection URLs should be in the form; (tcp|ssl)://hostname:port\n");
 	printf("\t--help - This help output\n");
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 struct Options
@@ -359,7 +359,7 @@ char output[3000];
 char* cur_output = output;
 
 
-void write_test_result()
+void write_test_result(void)
 {
 	long duration = elapsed(global_start_time);
 

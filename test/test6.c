@@ -38,10 +38,10 @@
 	#include <winsock2.h>
 #endif
 
-void usage()
+void usage(void)
 {
 	printf("help!!\n");
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 static char pub_topic[200];
@@ -500,7 +500,7 @@ void connectionLost(void* context, char* cause)
 }
 
 
-int recreateReconnect()
+int recreateReconnect(void)
 {
 	int rc;
 
@@ -609,7 +609,7 @@ void messageSent(void* context, MQTTAsync_successData* response)
 }
 
 
-void one_iteration()
+void one_iteration(void)
 {
 	int interval = 0;
 	int i = 0;

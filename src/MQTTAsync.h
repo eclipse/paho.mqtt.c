@@ -347,7 +347,7 @@ typedef struct
 	/** A numeric code identifying the error. */
 	int code;
 	/** Optional text explaining the error. Can be NULL. */
-	char* message;
+	const char *message;
 } MQTTAsync_failureData;
 
 /** The data returned on completion of a successful API call in the response callback onSuccess. */
@@ -1102,7 +1102,7 @@ typedef struct
   * MQTTASYNC_TRACE_MINIMUM
   * @return an array of strings describing the library.  The last entry is a NULL pointer. 
   */
-DLLExport MQTTAsync_nameValue* MQTTAsync_getVersionInfo();
+DLLExport MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void);
 
 
 /**
@@ -1265,7 +1265,7 @@ void onSend(void* context, MQTTAsync_successData* response)
 	if ((rc = MQTTAsync_disconnect(client, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start sendMessage, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -1298,7 +1298,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	if ((rc = MQTTAsync_sendMessage(client, TOPIC, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start sendMessage, return code %d\n", rc);
- 		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -1323,7 +1323,7 @@ int main(int argc, char* argv[])
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 
 	printf("Waiting for publication of %s\n"
@@ -1449,7 +1449,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	if ((rc = MQTTAsync_subscribe(client, TOPIC, QOS, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start subscribe, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -1476,7 +1476,7 @@ int main(int argc, char* argv[])
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 
 	while	(!subscribed)
@@ -1498,7 +1498,7 @@ int main(int argc, char* argv[])
 	if ((rc = MQTTAsync_disconnect(client, &disc_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start disconnect, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
  	while	(!disc_finished)
 		#if defined(WIN32) || defined(WIN64)

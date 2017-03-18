@@ -225,7 +225,7 @@ void writeChar(char** pptr, char c);
 void writeInt(char** pptr, int anInt);
 void writeUTF(char** pptr, const char* string);
 
-char* MQTTPacket_name(int ptype);
+const char* MQTTPacket_name(int ptype);
 
 void* MQTTPacket_Factory(networkHandles* net, int* error);
 int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buflen, int free);

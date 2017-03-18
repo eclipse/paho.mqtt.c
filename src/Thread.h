@@ -47,7 +47,7 @@
 	  typedef sem_t *sem_type;
 	#endif
 
-	cond_type Thread_create_cond();
+	cond_type Thread_create_cond(void);
 	int Thread_signal_cond(cond_type);
 	int Thread_wait_cond(cond_type condvar, int timeout);
 	int Thread_destroy_cond(cond_type);
@@ -55,14 +55,14 @@
 
 thread_type Thread_start(thread_fn, void*);
 
-mutex_type Thread_create_mutex();
+mutex_type Thread_create_mutex(void);
 int Thread_lock_mutex(mutex_type);
 int Thread_unlock_mutex(mutex_type);
 void Thread_destroy_mutex(mutex_type);
 
-thread_id_type Thread_getid();
+thread_id_type Thread_getid(void);
 
-sem_type Thread_create_sem();
+sem_type Thread_create_sem(void);
 int Thread_wait_sem(sem_type sem, int timeout);
 int Thread_check_sem(sem_type sem);
 int Thread_post_sem(sem_type sem);

@@ -718,8 +718,8 @@ int main (int argc, char *argv[])
 	int rc;
 	char *handle;
 	char *perdir = ".";
-	char *clientID = "TheUTClient";
-	char *serverURI = "127.0.0.1:1883";
+	const char *clientID = "TheUTClient";
+	const char *serverURI = "127.0.0.1:1883";
 
 	char *stem = MSTEM;
 	int msgId, i;

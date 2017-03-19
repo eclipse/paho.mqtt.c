@@ -42,6 +42,9 @@ OPENSSL_INC_SEARCH_PATH | "" (system default) | Directory containing OpenSSL inc
 OPENSSL_LIB_SEARCH_PATH | "" (system default) | Directory containing OpenSSL libraries
 PAHO_BUILD_DOCUMENTATION | FALSE | Create and install the HTML based API documentation (requires Doxygen)
 PAHO_BUILD_SAMPLES | FALSE | Build sample programs
+MQTT_TEST_BROKER | tcp://localhost:1883 | MQTT connection URL for a broker to use during test execution
+MQTT_TEST_PROXY | tcp://localhost:1883 | Hostname of the test proxy to use
+MQTT_SSL_HOSTNAME | localhost | "Hostname of a test SSL MQTT broker to use
 
 Using these variables CMake can be used to generate your Ninja or Make files. Using CMake, building out-of-source is the default. Therefore it is recommended to invoke all build commands inside your chosen build directory but outside of the source tree.
 
@@ -68,6 +71,19 @@ Debug builds can be performed by defining the value of the ```CMAKE_BUILD_TYPE``
 ```
 cmake -GNinja -DCMAKE_BUILD_TYPE=Debug git/org.eclipse.paho.mqtt.c
 ```
+
+
+### Running the tests
+
+Test code is available in the ``test`` directory. The tests can be built and executed with the CMake build system. The test execution requires a MQTT broker running. By default, the build system uses ```localhost```, however it is possible to configure the build to use an external broker. These parameters are documented in the Build Requirements section above.
+
+After ensuring a MQTT broker is available, it is possible to execute the tests by starting the proxy and running ctest as described below:
+
+```
+python ../test/mqttsas2.py &
+ctest -VV
+```
+
 
 ### Cross compilation
 

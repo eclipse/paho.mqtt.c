@@ -77,7 +77,7 @@ cmake -GNinja -DCMAKE_BUILD_TYPE=Debug git/org.eclipse.paho.mqtt.c
 
 Test code is available in the ``test`` directory. The tests can be built and executed with the CMake build system. The test execution requires a MQTT broker running. By default, the build system uses ```localhost```, however it is possible to configure the build to use an external broker. These parameters are documented in the Build Requirements section above.
 
-After ensuring a MQTT broker is available, it is possible to execute the tests by starting the proxy and running ctest as described below:
+After ensuring a MQTT broker is available, it is possible to execute the tests by starting the proxy and running `ctest` as described below:
 
 ```
 python ../test/mqttsas2.py &

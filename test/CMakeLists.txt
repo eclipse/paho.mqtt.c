@@ -19,7 +19,7 @@ TARGET_LINK_LIBRARIES(
 
 IF (WIN32)
 	ADD_CUSTOM_COMMAND(
-		TARGET test1-1-single-thread-client PRE_BUILD 
+		TARGET test1 PRE_BUILD 
 		COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/dll-copy.cmake
 		COMMENT "Copying DLLs to test directory"
 	)

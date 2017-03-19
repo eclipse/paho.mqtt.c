@@ -44,7 +44,7 @@ PAHO_BUILD_DOCUMENTATION | FALSE | Create and install the HTML based API documen
 PAHO_BUILD_SAMPLES | FALSE | Build sample programs
 MQTT_TEST_BROKER | tcp://localhost:1883 | MQTT connection URL for a broker to use during test execution
 MQTT_TEST_PROXY | tcp://localhost:1883 | Hostname of the test proxy to use
-MQTT_SSL_HOSTNAME | localhost | "Hostname of a test SSL MQTT broker to use
+MQTT_SSL_HOSTNAME | localhost | Hostname of a test SSL MQTT broker to use
 
 Using these variables CMake can be used to generate your Ninja or Make files. Using CMake, building out-of-source is the default. Therefore it is recommended to invoke all build commands inside your chosen build directory but outside of the source tree.
 

@@ -32,8 +32,15 @@
   	#include <errno.h>
 	#define WINAPI
 #else
-#include <winsock2.h>
-#include <ws2tcpip.h>
+#define WIN32_LEAN_AND_MEAN
+#if !defined(CMAKE_BUILD)
+	/*
+	 * These causes the cmake build to fail. In order to prevent affecting 
+	 * other builds, remove them only from CMAKE-related builds
+	 */
+	#include <winsock2.h>
+	#include <ws2tcpip.h>
+#endif // CMAKE_BUILD
 #define MAXHOSTNAMELEN 256
 #define EAGAIN WSAEWOULDBLOCK
 #define EINTR WSAEINTR
@@ -42,6 +49,7 @@
 #define ENOTCONN WSAENOTCONN
 #define ECONNRESET WSAECONNRESET
 #define setenv(a, b, c) _putenv_s(a, b)
+
 #endif
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))

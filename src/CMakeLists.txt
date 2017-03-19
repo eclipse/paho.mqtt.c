@@ -79,15 +79,12 @@ ELSEIF (UNIX)
     IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
         SET(LIBS_SYSTEM c dl pthread)
     ELSEIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-        SET(LIBS_SYSTEM compat)
+        SET(LIBS_SYSTEM compat pthread)
     ELSE()
         SET(LIBS_SYSTEM c pthread)
     ENDIF()
 ENDIF()
 
-IF (UNIX)
-    SET(THREAD_LIBS_SYSTEM pthread)
-ENDIF()
 
 ## common compilation for libpaho-mqtt3c and libpaho-mqtt3a
 ADD_LIBRARY(common_obj OBJECT ${common_src})
@@ -102,8 +99,8 @@ ADD_EXECUTABLE(MQTTVersion MQTTVersion.c)
 ADD_LIBRARY(paho-mqtt3c SHARED $<TARGET_OBJECTS:common_obj> MQTTClient.c)
 ADD_LIBRARY(paho-mqtt3a SHARED $<TARGET_OBJECTS:common_obj> MQTTAsync.c)
 
-TARGET_LINK_LIBRARIES(paho-mqtt3c ${THREAD_LIBS_SYSTEM} ${LIBS_SYSTEM})
-TARGET_LINK_LIBRARIES(paho-mqtt3a ${THREAD_LIBS_SYSTEM} ${LIBS_SYSTEM})
+TARGET_LINK_LIBRARIES(paho-mqtt3c ${LIBS_SYSTEM})
+TARGET_LINK_LIBRARIES(paho-mqtt3a ${LIBS_SYSTEM})
 
 TARGET_LINK_LIBRARIES(MQTTVersion paho-mqtt3a paho-mqtt3c ${LIBS_SYSTEM})
 SET_TARGET_PROPERTIES(
@@ -172,8 +169,8 @@ SET(OPENSSL_LIB_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL librarie
     ADD_LIBRARY(paho-mqtt3cs SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTClient.c SSLSocket.c)
     ADD_LIBRARY(paho-mqtt3as SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTAsync.c SSLSocket.c)
 
-    TARGET_LINK_LIBRARIES(paho-mqtt3cs ${THREAD_LIBS_SYSTEM} ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} ${LIBS_SYSTEM})
-    TARGET_LINK_LIBRARIES(paho-mqtt3as ${THREAD_LIBS_SYSTEM} ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} ${LIBS_SYSTEM})
+    TARGET_LINK_LIBRARIES(paho-mqtt3cs ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} ${LIBS_SYSTEM})
+    TARGET_LINK_LIBRARIES(paho-mqtt3as ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} ${LIBS_SYSTEM})
     SET_TARGET_PROPERTIES(
         paho-mqtt3cs paho-mqtt3as PROPERTIES
         VERSION ${CLIENT_VERSION}

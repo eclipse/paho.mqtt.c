@@ -29,19 +29,11 @@
 
 #if !defined(_WINDOWS)
 	#include <sys/time.h>
-  	#include <sys/socket.h>
+  #include <sys/socket.h>
 	#include <unistd.h>
-  	#include <errno.h>
+  #include <errno.h>
 #else
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#define MAXHOSTNAMELEN 256
-#define EAGAIN WSAEWOULDBLOCK
-#define EINTR WSAEINTR
-#define EINPROGRESS WSAEINPROGRESS
-#define EWOULDBLOCK WSAEWOULDBLOCK
-#define ENOTCONN WSAENOTCONN
-#define ECONNRESET WSAECONNRESET
+	#include <windows.h>
 #endif
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
@@ -69,7 +61,7 @@ struct Options
 void getopts(int argc, char** argv)
 {
 	int count = 1;
-	
+
 	while (count < argc)
 	{
 		if (strcmp(argv[count], "--test_no") == 0)
@@ -118,7 +110,7 @@ void MyLog(int LOGA_level, char* format, ...)
 
 	if (LOGA_level == LOGA_DEBUG && options.verbose == 0)
 	  return;
-	
+
 	ftime(&ts);
 	timeinfo = localtime(&ts.time);
 	strftime(msg_buf, 80, "%Y%m%d %H%M%S", timeinfo);
@@ -218,7 +210,7 @@ void myassert(char* filename, int lineno, char* description, int value, char* fo
 		va_end(args);
 	}
     else
-    	MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);  
+    	MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);
 }
 
 volatile int test_finished = 0;
@@ -239,7 +231,7 @@ void test1_onUnsubscribe(void* context, MQTTAsync_successData* response)
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
 	int rc;
-	
+
 	MyLog(LOGA_DEBUG, "In onUnsubscribe onSuccess callback %p", c);
 	opts.onSuccess = test1_onDisconnect;
 	opts.context = c;
@@ -288,7 +280,7 @@ void test1_onSubscribe(void* context, MQTTAsync_successData* response)
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	int rc;
-	
+
 	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback %p granted qos %d", c, response->alt.qos);
 
 	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
@@ -305,7 +297,7 @@ void test1_onConnect(void* context, MQTTAsync_successData* response)
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	int rc;
-	
+
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
 	opts.onSuccess = test1_onSubscribe;
 	opts.context = c;
@@ -321,8 +313,7 @@ void test1_onConnectFailure(void* context, MQTTAsync_failureData* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	int rc;
-	
+
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
 
 	test_finished = 1;
@@ -346,9 +337,9 @@ int test1(struct Options options)
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 1 - asynchronous connect");
-	
+
 	rc = MQTTAsync_create(&c, options.connection, "async_test",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);		
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -388,7 +379,7 @@ int test1(struct Options options)
 			Sleep(100);
 		#else
 			usleep(10000L);
-		#endif		
+		#endif
 
 	MQTTAsync_destroy(&c);
 
@@ -437,9 +428,9 @@ int test2(struct Options options)
 	test_finished = 0;
 
 	MyLog(LOGA_INFO, "Starting test 2 - connect timeout");
-	
+
 	rc = MQTTAsync_create(&c, "tcp://9.20.96.160:66", "connect timeout",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);		
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -478,12 +469,12 @@ int test2(struct Options options)
 			Sleep(100);
 		#else
 			usleep(10000L);
-		#endif		
+		#endif
 
 	MQTTAsync_destroy(&c);
 
 exit:
-	assert("Connect onFailure should be called once", test2_onFailure_called == 1, 
+	assert("Connect onFailure should be called once", test2_onFailure_called == 1,
 			"connect onFailure was called %d times", test2_onFailure_called);
 
 	MyLog(LOGA_INFO, "TEST2: test %s. %d tests run, %d failures.",
@@ -523,7 +514,7 @@ void test3_onUnsubscribe(void* context, MQTTAsync_successData* response)
 	client_data* cd = (client_data*)context;
 	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
 	int rc;
-	
+
 	MyLog(LOGA_DEBUG, "In onUnsubscribe onSuccess callback \"%s\"", cd->clientid);
 	opts.onSuccess = test3_onDisconnect;
 	opts.context = cd;
@@ -584,7 +575,7 @@ void test3_onSubscribe(void* context, MQTTAsync_successData* response)
 	client_data* cd = (client_data*)context;
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	int rc;
-	
+
 	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback \"%s\"", cd->clientid);
 
 	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
@@ -602,7 +593,7 @@ void test3_onConnect(void* context, MQTTAsync_successData* response)
 	client_data* cd = (client_data*)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	int rc;
-	
+
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback, \"%s\"", cd->clientid);
 	opts.onSuccess = test3_onSubscribe;
 	opts.context = cd;
@@ -618,7 +609,7 @@ void test3_onFailure(void* context, MQTTAsync_failureData* response)
 {
 	client_data* cd = (client_data*)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	
+
 	assert("Should have connected", 0, "failed to connect", NULL);
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, \"%s\" rc %d\n", cd->clientid, response->code);
 	if (response->message)
@@ -646,7 +637,7 @@ int test3(struct Options options)
 
 	test_finished = 0;
 	MyLog(LOGA_INFO, "Starting test 3 - multiple connections");
-	
+
 	for (i = 0; i < num_clients; ++i)
 	{
 		sprintf(clientdata[i].clientid, "async_test3_num_%d", i);
@@ -655,9 +646,9 @@ int test3(struct Options options)
 		clientdata[i].message_count = 0;
 
 		rc = MQTTAsync_create(&(clientdata[i].c), options.connection, clientdata[i].clientid,
-			MQTTCLIENT_PERSISTENCE_NONE, NULL);		
+			MQTTCLIENT_PERSISTENCE_NONE, NULL);
 		assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
-	
+
 		rc = MQTTAsync_setCallbacks(clientdata[i].c, &clientdata[i], NULL, test3_messageArrived, NULL);
 		assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
@@ -687,7 +678,7 @@ int test3(struct Options options)
 			Sleep(100);
 		#else
 			usleep(10000L);
-		#endif		
+		#endif
 	}
 
 	MyLog(LOGA_DEBUG, "TEST3: destroying clients");
@@ -695,7 +686,7 @@ int test3(struct Options options)
 	for (i = 0; i < num_clients; ++i)
 		MQTTAsync_destroy(&clientdata[i].c);
 
-exit:
+/*exit:*/
 	MyLog(LOGA_INFO, "TEST3: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 
@@ -709,7 +700,7 @@ int test4_payloadlen = 0;
 void test4_onPublish(void* context, MQTTAsync_successData* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	
+
 	MyLog(LOGA_DEBUG, "In publish onSuccess callback, context %p", context);
 }
 
@@ -783,7 +774,7 @@ void test4_onSubscribe(void* context, MQTTAsync_successData* response)
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	int rc, i;
-	
+
 	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback %p", c);
 
 	pubmsg.payload = test4_payload = malloc(options.size);
@@ -792,7 +783,7 @@ void test4_onSubscribe(void* context, MQTTAsync_successData* response)
 	srand(33);
 	for (i = 0; i < options.size; ++i)
 		((char*)pubmsg.payload)[i] = rand() % 256;
-	
+
 	pubmsg.qos = 2;
 	pubmsg.retained = 0;
 
@@ -805,7 +796,7 @@ void test4_onConnect(void* context, MQTTAsync_successData* response)
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	int rc;
-	
+
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
 	opts.onSuccess = test4_onSubscribe;
 	opts.context = c;
@@ -833,9 +824,9 @@ int test4(struct Options options)
 
 	test_finished = failures = 0;
 	MyLog(LOGA_INFO, "Starting test 4 - big messages");
-	
+
 	rc = MQTTAsync_create(&c, options.connection, "async_test_4",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);		
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -873,7 +864,7 @@ int test4(struct Options options)
 			Sleep(100);
 		#else
 			usleep(1000L);
-		#endif		
+		#endif
 
 	MQTTAsync_destroy(&c);
 
@@ -897,18 +888,18 @@ int main(int argc, char** argv)
 	int rc = 0;
  	int (*tests[])() = {NULL, test1, test2, test3, test4}; /* indexed starting from 1 */
 	MQTTAsync_nameValue* info;
-	
+
 	getopts(argc, argv);
 
 	MQTTAsync_setTraceCallback(trace_callback);
 
 	info = MQTTAsync_getVersionInfo();
-	
+
 	while (info->name)
 	{
 	  MyLog(LOGA_INFO, "%s: %s", info->name, info->value);
 	  info++;
-	}	
+	}
 
  	if (options.test_no == -1)
 	{ /* run all the tests */
@@ -916,7 +907,7 @@ int main(int argc, char** argv)
 		{
 			failures = 0;
 			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
-			rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */	
+			rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */
 		}
 	}
 	else
@@ -929,6 +920,6 @@ int main(int argc, char** argv)
 		MyLog(LOGA_INFO, "verdict pass");
 	else
 		MyLog(LOGA_INFO, "verdict fail");
-	
+
 	return rc;
 }

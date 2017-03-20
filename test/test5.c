@@ -3,11 +3,11 @@
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
- * and Eclipse Distribution License v1.0 which accompany this distribution. 
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
- * The Eclipse Public License is available at 
+ * The Eclipse Public License is available at
  *    http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
@@ -37,15 +37,8 @@
 #include <unistd.h>
 #include <errno.h>
 #else
-#include <winsock2.h>
-#include <ws2tcpip.h>
+#include <windows.h>
 #define MAXHOSTNAMELEN 256
-#define EAGAIN WSAEWOULDBLOCK
-#define EINTR WSAEINTR
-#define EINPROGRESS WSAEINPROGRESS
-#define EWOULDBLOCK WSAEWOULDBLOCK
-#define ENOTCONN WSAENOTCONN
-#define ECONNRESET WSAECONNRESET
 #define snprintf _snprintf
 #endif
 
@@ -79,7 +72,7 @@ struct Options
 	int test_no;
 	int size;
 } options =
-{ 
+{
 	"ssl://m2m.eclipse.org:18883",
 	"ssl://m2m.eclipse.org:18884",
 	"ssl://m2m.eclipse.org:18887",
@@ -282,11 +275,11 @@ void write_test_result(void)
 {
 	long duration = elapsed(global_start_time);
 
-	fprintf(xml, " time=\"%ld.%.3ld\" >\n", duration / 1000, duration % 1000); 
+	fprintf(xml, " time=\"%ld.%.3ld\" >\n", duration / 1000, duration % 1000);
 	if (cur_output != output)
 	{
 		fprintf(xml, "%s", output);
-		cur_output = output;	
+		cur_output = output;
 	}
 	fprintf(xml, "</testcase>\n");
 }
@@ -307,7 +300,7 @@ void myassert(char* filename, int lineno, char* description, int value,
 		vprintf(format, args);
 		va_end(args);
 
-		cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n", 
+		cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n",
                         description, filename, lineno);
 	}
 	else
@@ -932,7 +925,7 @@ int test2c(struct Options options)
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	rc = MQTTAsync_create(&c, options.nocert_mutual_auth_connection, 
+	rc = MQTTAsync_create(&c, options.nocert_mutual_auth_connection,
             "test2c", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
@@ -2071,4 +2064,3 @@ int main(int argc, char** argv)
 
 	return rc;
 }
-

@@ -35,7 +35,7 @@
 	#include <unistd.h>
   #include <signal.h>
 #else
-	#include <winsock2.h>
+	#include <windows.h>
 #endif
 
 void usage(void)
@@ -332,7 +332,7 @@ int control_send(char* message)
 	MQTTAsync_responseOptions ropts = MQTTAsync_responseOptions_initializer;
 
 	sprintf(buf, "%s: %s", opts.clientid, message);
-	rc = MQTTAsync_send(control_client, pub_topic, strlen(buf),
+	rc = MQTTAsync_send(control_client, pub_topic, (int)strlen(buf),
 															buf, 1, 0, &ropts);
 	MyLog(LOGA_DEBUG, "Control message sent: %s", buf);
 
@@ -636,7 +636,7 @@ void one_iteration(void)
 
 		sprintf(payload, "message number %d", i);
 
-		rc = MQTTAsync_send(client, opts.topic, strlen(payload)+1, payload,
+		rc = MQTTAsync_send(client, opts.topic, (int)(strlen(payload)+1), payload,
 				        opts.qos, opts.retained, NULL);
 		while (rc != MQTTASYNC_SUCCESS)
 		{
@@ -645,7 +645,7 @@ void one_iteration(void)
 			if (stopping)
 				goto exit;
 			mqsleep(1);
-			rc = MQTTAsync_send(client, opts.topic, strlen(payload)+1, payload,
+			rc = MQTTAsync_send(client, opts.topic, (int)(strlen(payload)+1), payload,
 					opts.qos, opts.retained, NULL);
 		}
 	}
@@ -687,7 +687,7 @@ void one_iteration(void)
 		ropts.onSuccess = messageSent;
 		seqno++;
 		sprintf(payload, "message number %d", seqno);
-		rc = MQTTAsync_send(client, opts.topic, strlen(payload)+1, payload,
+		rc = MQTTAsync_send(client, opts.topic, (int)(strlen(payload)+1), payload,
 				opts.qos, opts.retained, &ropts);
 		while (rc != MQTTASYNC_SUCCESS)
 		{
@@ -697,7 +697,7 @@ void one_iteration(void)
 			if (stopping)
 				goto exit;
 			mqsleep(1);
-			rc = MQTTAsync_send(client, opts.topic, strlen(payload)+1, payload,
+			rc = MQTTAsync_send(client, opts.topic, (int)(strlen(payload)+1), payload,
 				opts.qos, opts.retained, &ropts);
 		}
 		//MyLog(LOGA_DEBUG, "Successful publish with payload %s", payload);

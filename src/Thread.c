@@ -90,6 +90,8 @@ mutex_type Thread_create_mutex(void)
 	FUNC_ENTRY;
 	#if defined(WIN32) || defined(WIN64)
 		mutex = CreateMutex(NULL, 0, NULL);
+		if (mutex == NULL)
+			rc = GetLastError();
 	#else
 		mutex = malloc(sizeof(pthread_mutex_t));
 		rc = pthread_mutex_init(mutex, NULL);
@@ -100,8 +102,7 @@ mutex_type Thread_create_mutex(void)
 
 
 /**
- * Lock a mutex which has already been created, block until ready
- * @param mutex the mutex
+ * Lock a mutex which has alrea
  * @return completion code, 0 is success
  */
 int Thread_lock_mutex(mutex_type mutex)

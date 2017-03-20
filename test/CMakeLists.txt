@@ -6,7 +6,7 @@ SET(MQTT_SSL_HOSTNAME "localhost" CACHE STRING "Hostname of a test SSL MQTT brok
 SET(CERTDIR $ENV{TRAVIS_BUILD_DIR}/test/ssl )
 
 IF (WIN32)
-	ADD_DEFINITIONS(/DCMAKE_BUILD)
+	ADD_DEFINITIONS(/DCMAKE_BUILD /D_CRT_SECURE_NO_WARNINGS)
 ENDIF()
 
 
@@ -22,7 +22,7 @@ TARGET_LINK_LIBRARIES(
 
 IF (WIN32)
 	ADD_CUSTOM_COMMAND(
-		TARGET test1 PRE_BUILD 
+		TARGET test1 PRE_BUILD
 		COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/dll-copy.cmake
 		COMMENT "Copying DLLs to test directory"
 	)
@@ -313,5 +313,3 @@ ADD_TEST(
 	NAME test9-5-offline-buffering-max-buffered
 	COMMAND test9 "--test_no" "5" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
 )
-
-

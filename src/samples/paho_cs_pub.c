@@ -3,36 +3,36 @@
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
- * and Eclipse Distribution License v1.0 which accompany this distribution. 
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
- * The Eclipse Public License is available at 
+ * The Eclipse Public License is available at
  *   http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
  *    Ian Craggs - initial contribution
  *******************************************************************************/
- 
+
  /*
  stdin publisher
- 
+
  compulsory parameters:
- 
+
   --topic topic to publish on
- 
+
  defaulted parameters:
- 
+
 	--host localhost
 	--port 1883
 	--qos 0
 	--delimiters \n
 	--clientid stdin_publisher
 	--maxdatalen 100
-	
+
 	--userid none
 	--password none
- 
+
 */
 
 #include "MQTTClient.h"
@@ -128,13 +128,13 @@ int main(int argc, char** argv)
 
 	if (argc < 2)
 		usage();
-	
+
 	getopts(argc, argv);
-	
+
 	sprintf(url, "%s:%s", opts.host, opts.port);
 	if (opts.verbose)
 		printf("URL is %s\n", url);
-	
+
 	topic = argv[1];
 	printf("Using topic %s\n", topic);
 
@@ -152,17 +152,17 @@ int main(int argc, char** argv)
 	conn_opts.password = opts.password;
 	ssl_opts.enableServerCertAuth = 0;
 	conn_opts.ssl = &ssl_opts;
-	
+
 	myconnect(&client, &conn_opts);
 
 	buffer = malloc(opts.maxdatalen);
-	
+
 	while (!toStop)
 	{
 		int data_len = 0;
 		int delim_len = 0;
-		
-		delim_len = strlen(opts.delimiter);
+
+		delim_len = (int)strlen(opts.delimiter);
 		do
 		{
 			buffer[data_len++] = getchar();
@@ -173,7 +173,7 @@ int main(int argc, char** argv)
 				break;
 			}
 		} while (data_len < opts.maxdatalen);
-				
+
 		if (opts.verbose)
 				printf("Publishing data of length %d\n", data_len);
 		rc = MQTTClient_publish(client, topic, data_len, buffer, opts.qos, opts.retained, NULL);
@@ -185,9 +185,9 @@ int main(int argc, char** argv)
 		if (opts.qos > 0)
 			MQTTClient_yield();
 	}
-	
+
 	printf("Stopping\n");
-	
+
 	free(buffer);
 
 	MQTTClient_disconnect(client, 0);
@@ -200,7 +200,7 @@ int main(int argc, char** argv)
 void getopts(int argc, char** argv)
 {
 	int count = 2;
-	
+
 	while (count < argc)
 	{
 		if (strcmp(argv[count], "--retained") == 0)
@@ -274,6 +274,5 @@ void getopts(int argc, char** argv)
 		}
 		count++;
 	}
-	
-}
 
+}

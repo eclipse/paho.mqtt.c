@@ -24,6 +24,10 @@ INCLUDE_DIRECTORIES(
     ${CMAKE_BINARY_DIR}
     )
 
+IF (WIN32)
+  	ADD_DEFINITIONS(/DCMAKE_BUILD /D_CRT_SECURE_NO_DEPRECATE)
+ENDIF()
+
 # sample files c
 ADD_EXECUTABLE(paho_c_pub paho_c_pub.c)
 ADD_EXECUTABLE(paho_c_sub paho_c_sub.c)

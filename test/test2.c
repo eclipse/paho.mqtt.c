@@ -3,11 +3,11 @@
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
- * and Eclipse Distribution License v1.0 which accompany this distribution. 
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
- * The Eclipse Public License is available at 
+ * The Eclipse Public License is available at
  *    http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
@@ -27,29 +27,13 @@
 
 #if !defined(_WINDOWS)
 	#include <sys/time.h>
-  	#include <sys/socket.h>
+	#include <sys/socket.h>
 	#include <unistd.h>
-  	#include <errno.h>
+  #include <errno.h>
 	#define WINAPI
 #else
-#define WIN32_LEAN_AND_MEAN
-#if !defined(CMAKE_BUILD)
-	/*
-	 * These causes the cmake build to fail. In order to prevent affecting 
-	 * other builds, remove them only from CMAKE-related builds
-	 */
-	#include <winsock2.h>
-	#include <ws2tcpip.h>
-#endif // CMAKE_BUILD
-#define MAXHOSTNAMELEN 256
-#define EAGAIN WSAEWOULDBLOCK
-#define EINTR WSAEINTR
-#define EINPROGRESS WSAEINPROGRESS
-#define EWOULDBLOCK WSAEWOULDBLOCK
-#define ENOTCONN WSAENOTCONN
-#define ECONNRESET WSAECONNRESET
-#define setenv(a, b, c) _putenv_s(a, b)
-
+	#include <windows.h>
+	#define setenv(a, b, c) _putenv_s(a, b)
 #endif
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
@@ -83,7 +67,7 @@ struct Options
 void getopts(int argc, char** argv)
 {
 	int count = 1;
-	
+
 	while (count < argc)
 	{
 		if (strcmp(argv[count], "--test_no") == 0)
@@ -163,7 +147,7 @@ void MyLog(int LOGA_level, char* format, ...)
 
 	if (LOGA_level == LOGA_DEBUG && options.verbose == 0)
 	  return;
-	
+
 	ftime(&ts);
 	timeinfo = localtime(&ts.time);
 	strftime(msg_buf, 80, "%Y%m%d %H%M%S", timeinfo);
@@ -251,11 +235,11 @@ void write_test_result(void)
 {
 	long duration = elapsed(global_start_time);
 
-	fprintf(xml, " time=\"%ld.%.3ld\" >\n", duration / 1000, duration % 1000); 
+	fprintf(xml, " time=\"%ld.%.3ld\" >\n", duration / 1000, duration % 1000);
 	if (cur_output != output)
 	{
 		fprintf(xml, "%s", output);
-		cur_output = output;	
+		cur_output = output;
 	}
 	fprintf(xml, "</testcase>\n");
 }
@@ -275,11 +259,11 @@ void myassert(char* filename, int lineno, char* description, int value, char* fo
 		vprintf(format, args);
 		va_end(args);
 
-		cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n", 
+		cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n",
                         description, filename, lineno);
 	}
     else
-    	MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);  
+    	MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);
 }
 
 
@@ -351,7 +335,7 @@ struct thread_parms
 };
 
 static int iterations = 50;
-	
+
 thread_return_type WINAPI test1_sendAndReceive(void* n)
 {
 	MQTTClient_deliveryToken dt;
@@ -403,7 +387,7 @@ thread_return_type WINAPI test1_sendAndReceive(void* n)
 		assert("Message Arrived", wait_seconds > 0,
 				"Timed out waiting for message %d\n", i);
 	}
-	
+
 #if defined(_WINDOWS)
 	return 0;
 #else
@@ -424,7 +408,7 @@ int test1(struct Options options)
 	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 1 - multiple threads using same client object");
-	
+
 	rc = MQTTClient_create(&c, options.connection, "single_object, multiple threads",
 			MQTTCLIENT_PERSISTENCE_NONE, NULL);
 	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
@@ -478,7 +462,7 @@ int test1(struct Options options)
 	   completed the QoS 2 handshake with the publisher. For QoS 1 and 2,
 	   allow time for the final delivery complete callback before checking
 	   that all expected callbacks have been made */
-	
+
 	int wait_seconds = 90;
 	while (((test1_arrivedcount < iterations*3) || (test1_deliveryCompleted < iterations*2)) && (wait_seconds-- > 0))
 	{
@@ -570,7 +554,7 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 	for (i = 1; i <= iterations; ++i)
 	{
 		if (i % 10 == 0)
-			rc = MQTTClient_publish(c, test_topic, test2_pubmsg.payloadlen, test2_pubmsg.payload, 
+			rc = MQTTClient_publish(c, test_topic, test2_pubmsg.payloadlen, test2_pubmsg.payload,
                    test2_pubmsg.qos, test2_pubmsg.retained, NULL);
 		else
 			rc = MQTTClient_publishMessage(c, test_topic, &test2_pubmsg, &dt);
@@ -592,7 +576,7 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 				usleep(1000000L);
 			#endif
 		}
-		assert("Message Arrived", wait_seconds > 0, 
+		assert("Message Arrived", wait_seconds > 0,
 				"Time out waiting for message %d\n", i );
 	}
 	if (qos > 0)
@@ -600,7 +584,7 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 		/* MQ Telemetry can send a message to a subscriber before the server has
 		   completed the QoS 2 handshake with the publisher. For QoS 1 and 2,
 		   allow time for the final delivery complete callback before checking
-		   that all expected callbacks have been made */ 
+		   that all expected callbacks have been made */
 		wait_seconds = 40;
 		while ((test2_deliveryCompleted < iterations) && (wait_seconds-- > 0))
 		{
@@ -611,8 +595,8 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 				usleep(1000000L);
 			#endif
 		}
-		assert("All Deliveries Complete", test2_deliveryCompleted == iterations, 
-			   "Number of deliveryCompleted callbacks was %d\n", 
+		assert("All Deliveries Complete", test2_deliveryCompleted == iterations,
+			   "Number of deliveryCompleted callbacks was %d\n",
 			   test2_deliveryCompleted);
 	}
 }
@@ -686,7 +670,7 @@ int main(int argc, char** argv)
 	#if defined(WIN32) || defined(WIN64)
 	deliveryCompleted_mutex = CreateMutex(NULL, 0, NULL);
 	#endif
-	
+
 	xml = fopen("TEST-test2.xml", "w");
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
 
@@ -705,13 +689,13 @@ int main(int argc, char** argv)
 		else
  		   	rc = tests[options.test_no](options); /* run just the selected test */
 	}
-    	
+
  	if (rc == 0)
 		MyLog(LOGA_INFO, "verdict pass");
 	else
 		MyLog(LOGA_INFO, "verdict fail");
 
 	fprintf(xml, "</testsuite>\n");
-	fclose(xml);	
+	fclose(xml);
 	return rc;
 }

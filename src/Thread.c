@@ -196,7 +196,7 @@ sem_type Thread_create_sem(void)
 		        NULL                // object name
 		        );
 	#elif defined(OSX)
-	  sem = dispatch_semaphore_create(0L);
+		sem = dispatch_semaphore_create(0L);
 		rc = (sem == NULL) ? -1 : 0;
 	#else
 		sem = malloc(sizeof(sem_t));
@@ -234,7 +234,7 @@ int Thread_wait_sem(sem_type sem, int timeout)
 	#if defined(WIN32) || defined(WIN64)
 		rc = WaitForSingleObject(sem, timeout);
   #elif defined(OSX)
-	  rc = (int)dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, timeout*1000));
+		rc = (int)dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, (int64_t)timeout*1000000L));
 	#elif defined(USE_TRYWAIT)
 		while (++i < count && (rc = sem_trywait(sem)) != 0)
 		{
@@ -291,7 +291,7 @@ int Thread_post_sem(sem_type sem)
 		if (SetEvent(sem) == 0)
 			rc = GetLastError();
 	#elif defined(OSX)
-	  rc = (int)dispatch_semaphore_signal(sem);
+		rc = (int)dispatch_semaphore_signal(sem);
 	#else
 		if (sem_post(sem) == -1)
 			rc = errno;

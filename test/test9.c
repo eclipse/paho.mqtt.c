@@ -34,8 +34,14 @@
 	#include <unistd.h>
   	#include <errno.h>
 #else
-#include <winsock2.h>
-#include <ws2tcpip.h>
+#if !defined(CMAKE_BUILD)
+	/*
+	 * These causes the cmake build to fail. In order to prevent affecting 
+	 * other builds, remove them only from CMAKE-related builds
+	 */
+	#include <winsock2.h>
+	#include <ws2tcpip.h>
+#endif // CMAKE_BUILD
 #define MAXHOSTNAMELEN 256
 #define EAGAIN WSAEWOULDBLOCK
 #define EINTR WSAEINTR

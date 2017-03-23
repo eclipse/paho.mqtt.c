@@ -43,6 +43,10 @@ IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
   ENDIF()
 ENDIF()
 
+IF(WIN32)
+    ADD_DEFINITIONS(-DWIN32 -D_WINDOWS)
+ENDIF()
+
 ## build options
 SET(PAHO_WITH_SSL FALSE CACHE BOOL "Flag that defines whether to build ssl-enabled binaries too. ")
 SET(PAHO_BUILD_STATIC FALSE CACHE BOOL "Build static library")

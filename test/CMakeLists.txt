@@ -5,11 +5,6 @@ SET(MQTT_TEST_PROXY "tcp://localhost:1884" CACHE STRING "Hostname of the test pr
 SET(MQTT_SSL_HOSTNAME "localhost" CACHE STRING "Hostname of a test SSL MQTT broker to use")
 SET(CERTDIR $ENV{TRAVIS_BUILD_DIR}/test/ssl )
 
-IF (WIN32)
-	ADD_DEFINITIONS(/DCMAKE_BUILD /D_CRT_SECURE_NO_WARNINGS)
-ENDIF()
-
-
 ADD_EXECUTABLE(
 	test1
 	test1.c

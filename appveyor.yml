@@ -15,4 +15,9 @@ build_script:
 
     nmake
 
+    ctest -T test -VV
+
     cd ..
+
+test:
+  assemblies: build/Testing/*/Test.xml

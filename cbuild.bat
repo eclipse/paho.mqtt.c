@@ -11,6 +11,8 @@ cmake -G "NMake Makefiles" -DPAHO_WITH_SSL=FALSE -DPAHO_BUILD_DOCUMENTATION=FALS
 
 nmake
 
+ctest -T test -VV
+
 cd ..
 
 endlocal

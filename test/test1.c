@@ -955,7 +955,7 @@ int test6(struct Options options)
 
 	opts.keepAliveInterval = 2;
 	opts.cleansession = 1;
-	opts.MQTTVersion = options.MQTTVersion;
+	opts.MQTTVersion = MQTTVERSION_3_1_1;
 	opts.will = &wopts;
 	opts.will->message = test6_will_message;
 	opts.will->qos = 1;

@@ -31,6 +31,7 @@
   #include <errno.h>
 #else
 #include <windows.h>
+#include <applink.c>
 #define MAXHOSTNAMELEN 256
 #define snprintf _snprintf
 #define setenv(a, b, c) _putenv_s(a, b)

@@ -36,14 +36,18 @@ IF (PAHO_WITH_SSL)
       SET(OPENSSL_BREW_PATH "/usr/local/opt/openssl")
     ENDIF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 
+    IF (WIN32)
+      SET(OPENSSL_DIR $ENV{OPENSSL_DIR})
+    ENDIF ()
+
     FIND_PATH(OPENSSL_INCLUDE_DIR openssl/ssl.h
-        HINTS ${OPENSSL_INC_SEARCH_PATH}/include ${OPENSSL_BREW_PATH}/include/)
-    FIND_LIBRARY(OPENSSL_LIB NAMES ssl libssl
+        HINTS ${OPENSSL_INC_SEARCH_PATH}/include ${OPENSSL_DIR}/include ${OPENSSL_BREW_PATH}/include/)
+    FIND_LIBRARY(OPENSSL_LIB NAMES ssl libssl ssleay32
         HINTS ${OPENSSL_BREW_PATH}/lib ${OPENSSL_DIR}/lib ${OPENSSL_DIR}/lib64)
-    FIND_LIBRARY(OPENSSLCRYPTO_LIB NAMES crypto libcrypto
+    FIND_LIBRARY(OPENSSLCRYPTO_LIB NAMES crypto libcrypto libeay32
       	HINTS ${OPENSSL_BREW_PATH}/lib ${OPENSSL_DIR}/lib ${OPENSSL_DIR}/lib64)
 
-    MESSAGE(STATUS "OpenSSL hint ${PENSSL_INC_SEARCH_PATH} (includes) / ")
+    MESSAGE(STATUS "OpenSSL hint ${OPENSSL_INC_SEARCH_PATH} (includes) / ")
     MESSAGE(STATUS "OpenSSL headers found at ${OPENSSL_INCLUDE_DIR}")
     MESSAGE(STATUS "OpenSSL library found at ${OPENSSL_LIB}")
     MESSAGE(STATUS "OpenSSL Crypto library found at ${OPENSSLCRYPTO_LIB}")

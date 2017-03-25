@@ -3,10 +3,6 @@ image: Visual Studio 2015
 configuration: Debug
 install:
 - ps: cinst openssl.light -y
-- ps: (new-object net.webclient).DownloadFile('https://eclipse.org/downloads/download.php?file=/mosquitto/binary/win32/mosquitto-1.4.11-install-win32.exe', 'mosquitto-1.4.11-install-win32.exe')
-- ps: mosquitto-1.4.11-install-win32.exe /S
-- ps: taskkill
-- ps: (new-object net.webclient).DownloadFile('ftp://sources.redhat.com/pub/pthreads-win32/dll-latest/dll/x86/pthreadVC2.dll', "C:\Program Files (x86)\mosquitto\pthreadVC2.dll")
 build_script:
 - cmd: >-
     mkdir build.paho
@@ -15,7 +11,7 @@ build_script:
 
     "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
 
-    cmake -G "NMake Makefiles" -DPAHO_WITH_SSL=FALSE -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=TRUE ..
+    cmake -G "NMake Makefiles" -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=TRUE ..
 
     nmake
 

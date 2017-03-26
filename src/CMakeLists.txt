@@ -115,7 +115,7 @@ IF (PAHO_WITH_SSL)
 
     IF (WIN32)
       SET(OPENSSL_SEARCH_PATH "C:/Program Files/OpenSSL")
-    ENDIF
+    ENDIF ()
 
     FIND_PATH(OPENSSL_INCLUDE_DIR openssl/ssl.h
         HINTS ${OPENSSL_SEARCH_PATH}/include)

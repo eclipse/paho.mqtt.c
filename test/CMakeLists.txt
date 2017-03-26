@@ -11,6 +11,28 @@ ELSE ()
 ENDIF ()
 SET(CERTDIR $ENV{TRAVIS_BUILD_DIR}/test/ssl )
 
+IF (PAHO_WITH_SSL)
+    SET(OPENSSL_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries and includes")
+
+    IF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+      SET(OPENSSL_SEARCH_PATH "/usr/local/opt/openssl")
+    ENDIF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+
+    IF (WIN32)
+      SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win64")
+    ENDIF ()
+
+    FIND_PATH(OPENSSL_INCLUDE_DIR openssl/ssl.h
+        HINTS ${OPENSSL_SEARCH_PATH}/include)
+
+    MESSAGE(STATUS "OpenSSL hints: ${OPENSSL_SEARCH_PATH}")
+    MESSAGE(STATUS "OpenSSL headers found at ${OPENSSL_INCLUDE_DIR}")
+
+    INCLUDE_DIRECTORIES(
+        ${OPENSSL_INCLUDE_DIR}
+    )
+ENDIF ()
+
 ADD_EXECUTABLE(
 	test1
 	test1.c

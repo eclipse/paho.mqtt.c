@@ -13,7 +13,7 @@ build_script:
 
     nmake
 
-    python ..\test\mqttsas2.py mqtt.iotree.co.uk
+    start python ..\test\mqttsas2.py mqtt.iotree.co.uk
 
     ctest -T test -VV
 

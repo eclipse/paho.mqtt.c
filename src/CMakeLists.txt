@@ -114,7 +114,7 @@ IF (PAHO_WITH_SSL)
     ENDIF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 
     IF (WIN32)
-      SET(OPENSSL_SEARCH_PATH "C:/Program Files/OpenSSL")
+      SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win64")
     ENDIF ()
 
     FIND_PATH(OPENSSL_INCLUDE_DIR openssl/ssl.h

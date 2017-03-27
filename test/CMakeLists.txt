@@ -81,6 +81,17 @@ ADD_TEST(
 	COMMAND "test1" "--test_no" "6" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
 )
 
+SET_TESTS_PROPERTIES(
+	test1-1-single-thread-client
+	test1-2-multithread-callbacks
+	test1-3-connack-return-codes
+	test1-4-client-persistence
+	test1-5-disconnect-with-quiesce
+	test1-6-connlost-will-message
+	PROPERTIES TIMEOUT 540
+)
+
+
 ADD_EXECUTABLE(
 	test2
 	test2.c
@@ -94,6 +105,11 @@ TARGET_LINK_LIBRARIES(
 ADD_TEST(
 	NAME test2-1-multiple-threads-single-client
 	COMMAND test2 "--connection" ${MQTT_TEST_BROKER}
+)
+
+SET_TESTS_PROPERTIES(
+	test2-1-multiple-threads-single-client
+	PROPERTIES TIMEOUT 540
 )
 
 IF (PAHO_WITH_SSL)
@@ -157,6 +173,20 @@ ADD_TEST(
 	COMMAND test3 "--test_no" "10" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
+SET_TESTS_PROPERTIES(
+	test3-1-ssl-conn-to-non-SSL-broker
+	test3-2as-mutual-ssl-auth-single-thread
+	test3-2am-mutual-ssl-auth-multi-thread
+	test3-2b-mutual-ssl-broker-missing-client-cert
+	test3-2c-mutual-ssl-client-missing-broker-cert
+	test3-3as-broker-auth-server-cert-in-client-store-single-thread
+	test3-3am-broker-auth-server-cert-in-client-store-multi-thread
+	test3-3b-broker-auth-client-missing-broker-cert
+	test3-4s-broker-auth-accept-invalid-certificate-single-thread
+	test3-4m-broker-auth-accept-invalid-certificate-multi-thread
+	PROPERTIES TIMEOUT 540
+)
+
 ENDIF()
 
 ADD_EXECUTABLE(
@@ -209,6 +239,18 @@ ADD_TEST(
 	COMMAND test4 "--test_no" "8" "--connection" ${MQTT_TEST_BROKER}
 )
 
+SET_TESTS_PROPERTIES(
+	test4-1-basic-connect-subscribe-receive
+	test4-2-connect-timeout
+	test4-3-multiple-client-objs-simultaneous-working
+	test4-4-send-receive-big-messages
+	test4-5-connack-return-codes
+	test4-6-ha-connections
+	test4-7-pending-tokens
+	test4-8-incomplete-commands-requests
+	PROPERTIES TIMEOUT 540
+)
+
 IF (PAHO_WITH_SSL)
 	ADD_EXECUTABLE(
 		test5
@@ -255,6 +297,17 @@ ADD_TEST(
 	COMMAND test5 "--test_no" "7" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
+SET_TESTS_PROPERTIES(
+	test5-1-ssl-connection-to-no-SSL-server
+	test5-2a-multual-ssl-auth-certificates-in-place
+	test5-2b-multual-ssl-auth-broker-missing-client-cert
+	test5-2c-multual-ssl-auth-client-missing-broker-cert
+	test5-3a-server-auth-server-cert-in-client-store
+	test5-3b-server-auth-client-missing-broker-cert
+	test5-4-accept-invalid-certificates
+	PROPERTIES TIMEOUT 540
+)
+
 ENDIF()
 
 ADD_EXECUTABLE(
@@ -270,6 +323,11 @@ TARGET_LINK_LIBRARIES(
 ADD_TEST(
 	NAME test6-restart-recovery
 	COMMAND test6 "--connection" ${MQTT_TEST_BROKER}
+)
+
+SET_TESTS_PROPERTIES(
+	test6-restart-recovery
+	PROPERTIES TIMEOUT 540
 )
 
 ADD_EXECUTABLE(
@@ -301,6 +359,15 @@ ADD_TEST(
 	NAME test8-4-send-receive-big-messages
 	COMMAND test8 "--test_no" "4" "--connection" ${MQTT_TEST_BROKER}
 )
+
+SET_TESTS_PROPERTIES(
+	test8-1-basic-connect-subscribe-receive
+	test8-2-connect-timeout
+	test8-3-multiple-client-objects-simultaneous-working
+	test8-4-send-receive-big-messages
+	PROPERTIES TIMEOUT 540
+)
+
 
 ADD_EXECUTABLE(
 	test9
@@ -335,4 +402,13 @@ ADD_TEST(
 ADD_TEST(
 	NAME test9-5-offline-buffering-max-buffered
 	COMMAND test9 "--test_no" "5" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
+SET_TESTS_PROPERTIES(
+	test9-1-offline-buffering-send-disconnected
+	test9-2-offline-buffering-send-disconnected-serverURIs
+	test9-3-offline-buffering-auto-reconnect
+	test9-4-offline-buffering-auto-reconnect-serverURIs
+	test9-5-offline-buffering-max-buffered
+	PROPERTIES TIMEOUT 540
 )

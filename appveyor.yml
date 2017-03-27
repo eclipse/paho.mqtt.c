@@ -14,8 +14,10 @@ build_script:
     nmake
 
     python --version
+    
+    netsh firewall add portopening TCP 1883 "Open Port 1883"
 
-    start cmd /k python.exe ..\test\mqttsas2.py mqtt.iotree.co.uk
+    start python.exe ..\test\mqttsas2.py mqtt.iotree.co.uk
 
     ctest -T test -VV
 

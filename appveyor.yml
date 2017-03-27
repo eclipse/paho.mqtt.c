@@ -22,7 +22,7 @@ build_script:
 
     netsh advfirewall set allprofiles state off
 
-    start python -m trace --trace ..\test\mqttsas2.py mqtt.iotree.co.uk
+    start /B python -m trace --count ..\test\mqttsas2.py mqtt.iotree.co.uk
 
     ctest -T test -VV
 

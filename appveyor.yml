@@ -16,9 +16,11 @@ build_script:
     python --version
 
 
-    netsh advfirewall firewall add rule name="My Application" dir=in action=allow program="C:\Python27\Python.exe" enable=yes
+    netsh advfirewall firewall add rule name="Python 2.7" dir=in action=allow program="C:\Python27\python.exe" enable=yes
 
     netsh advfirewall firewall add rule name="Open Port 1883" dir=in action=allow protocol=TCP localport=1883
+
+    netsh advfirewall set allprofiles state off
 
     start python.exe ..\test\mqttsas2.py mqtt.iotree.co.uk
 

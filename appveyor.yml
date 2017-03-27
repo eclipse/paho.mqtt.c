@@ -14,8 +14,11 @@ build_script:
     nmake
 
     python --version
-    
-    netsh firewall add portopening TCP 1883 "Open Port 1883"
+
+
+    netsh advfirewall firewall add rule name="My Application" dir=in action=allow program="C:\Python27\Python.exe" enable=yes
+
+    netsh advfirewall firewall add rule name="Open Port 1883" dir=in action=allow protocol=TCP localport=1883
 
     start python.exe ..\test\mqttsas2.py mqtt.iotree.co.uk
 

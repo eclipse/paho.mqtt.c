@@ -16,8 +16,6 @@ build_script:
     python --version
 
 
-    python.exe -m trace --trace ..\test.py
-
     netsh advfirewall firewall add rule name="Python 2.7" dir=in action=allow program="C:\Python27\python.exe" enable=yes
 
     netsh advfirewall firewall add rule name="Open Port 1883" dir=in action=allow protocol=TCP localport=1883

@@ -16,7 +16,7 @@ build_script:
     python --version
 
 
-    python ..\test.py
+    python.exe -m trace --trace ..\test.py
 
     netsh advfirewall firewall add rule name="Python 2.7" dir=in action=allow program="C:\Python27\python.exe" enable=yes
 
@@ -24,7 +24,7 @@ build_script:
 
     netsh advfirewall set allprofiles state off
 
-    start python.exe ..\test\mqttsas2.py mqtt.iotree.co.uk
+    python -m trace --trace ..\test\mqttsas2.py mqtt.iotree.co.uk
 
     ctest -T test -VV
 

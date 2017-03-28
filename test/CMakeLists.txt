@@ -358,7 +358,7 @@ ADD_TEST(
 
 ADD_TEST(
 	NAME test8-4-send-receive-big-messages
-	COMMAND test8 "--test_no" "4" "--connection" ${MQTT_TEST_BROKER}
+	COMMAND test8 "--test_no" "4" "--connection" ${MQTT_TEST_BROKER} "--size" "500000"
 )
 
 SET_TESTS_PROPERTIES(

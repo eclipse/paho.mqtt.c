@@ -112,7 +112,7 @@ def run():
     myport = 1883
 
   print("Listening on port", str(myport)+", broker on port", brokerport)
-  s = ThreadingTCPServer(("", myport), MyHandler)
+  s = ThreadingTCPServer(("127.0.0.1", myport), MyHandler)
   s.serve_forever()
 
 if __name__ == "__main__":

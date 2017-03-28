@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 IBM Corp.
+ * Copyright (c) 2012, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,7 +14,6 @@
  *    Allan Stockdill-Mander - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
-
 /**
  * @file
  * SSL tests for the MQ Telemetry MQTT C client
@@ -24,17 +23,17 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if !defined(_WINDOWS)
+#if defined(_WINDOWS)
+  #include <windows.h>
+  #include <openssl/applink.c>
+  #define MAXHOSTNAMELEN 256
+  #define snprintf _snprintf
+  #define setenv(a, b, c) _putenv_s(a, b)
+#else
 	#include <sys/time.h>
   #include <sys/socket.h>
 	#include <unistd.h>
   #include <errno.h>
-#else
-#include <windows.h>
-#include <openssl/applink.c>
-#define MAXHOSTNAMELEN 256
-#define snprintf _snprintf
-#define setenv(a, b, c) _putenv_s(a, b)
 #endif
 
 #if defined(IOS)
@@ -45,10 +44,6 @@ char persistenceStore[1024];
 char* persistenceStore = NULL;
 #endif
 
-#if 0
-#include <logaX.h>   /* For general log messages                      */
-#define MyLog logaLine
-#else
 #define LOGA_DEBUG 0
 #define LOGA_INFO 1
 #include <stdarg.h>
@@ -1090,7 +1085,7 @@ int test3b(struct Options options)
 	MyLog(LOGA_DEBUG, "Connecting");
 
 	rc = MQTTClient_connect(c, &opts);
-	if (!(assert("Good rc from connect", rc == MQTTCLIENT_FAILURE, "rc was %d", rc)))
+	if (!(assert("Bad rc from connect", rc == MQTTCLIENT_FAILURE, "rc was %d", rc)))
 		goto exit;
 
 exit:

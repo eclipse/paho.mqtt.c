@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 IBM Corp.
+ * Copyright (c) 2012, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,18 +12,12 @@
  *
  * Contributors:
  *    Allan Stockdill-Mander - initial API and implementation and/or initial documentation
+ *    Ian Craggs - fix Windows includes
  *******************************************************************************/
-
 
 /**
  * @file
  * SSL tests for the MQ Telemetry Asynchronous MQTT C client
- */
-
-/*
- #if !defined(_RTSHEADER)
- #include <rts.h>
- #endif
  */
 
 #include "MQTTAsync.h"
@@ -31,15 +25,16 @@
 #include <stdlib.h>
 #include "Thread.h"
 
-#if !defined(_WINDOWS)
+#if defined(_WINDOWS)
+#include <windows.h>
+#include <openssl/applink.c>
+#define MAXHOSTNAMELEN 256
+#define snprintf _snprintf
+#else
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
-#else
-#include <windows.h>
-#define MAXHOSTNAMELEN 256
-#define snprintf _snprintf
 #endif
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))

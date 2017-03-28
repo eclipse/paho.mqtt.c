@@ -30,9 +30,9 @@
   #define snprintf _snprintf
   #define setenv(a, b, c) _putenv_s(a, b)
 #else
-	#include <sys/time.h>
+  #include <sys/time.h>
   #include <sys/socket.h>
-	#include <unistd.h>
+  #include <unistd.h>
   #include <errno.h>
 #endif
 
@@ -276,7 +276,6 @@ void MyLog(int LOGA_level, char* format, ...)
 	printf("%s\n", msg_buf);
 	fflush(stdout);
 }
-#endif
 
 
 #if defined(WIN32) || defined(_WINDOWS)

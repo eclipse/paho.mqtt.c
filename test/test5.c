@@ -162,10 +162,7 @@ void getopts(int argc, char** argv)
 	}
 }
 
-#if 0
-#include <logaX.h>   /* For general log messages                      */
-#define MyLog logaLine
-#else
+
 #define LOGA_DEBUG 0
 #define LOGA_INFO 1
 #include <stdarg.h>
@@ -196,7 +193,7 @@ void MyLog(int LOGA_level, char* format, ...)
 	printf("%s\n", msg_buf);
 	fflush(stdout);
 }
-#endif
+
 
 #if defined(WIN32) || defined(_WINDOWS)
 #define mqsleep(A) Sleep(1000*A)

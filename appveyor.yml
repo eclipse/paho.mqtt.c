@@ -10,7 +10,7 @@ install:
 
   - cmd: netsh advfirewall set allprofiles state off
     
-  - ps: Start-Process python ..\test\mqttsas2.py mqtt.iotree.co.uk
+  - ps: Start-Process python -ArgumentList ..\test\mqttsas2.py mqtt.iotree.co.uk
   
 build_script:
 - cmd: >-

@@ -18,6 +18,7 @@
  *    Rong Xiang, Ian Craggs - C++ compatibility
  *    Ian Craggs - fix for bug 479376
  *    Ian Craggs - SNI support
+ *    Ian Craggs - fix for issue #164
  *******************************************************************************/
 
 /**
@@ -107,7 +108,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int MQTTVersi
 			if (SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts, addr) == 1)
 			{
 				rc = SSLSocket_connect(aClient->net.ssl, aClient->net.socket);
-				if (rc == -1)
+				if (rc == TCPSOCKET_INTERRUPTED)
 					aClient->connect_state = 2; /* SSL connect called - wait for completion */
 			}
 			else

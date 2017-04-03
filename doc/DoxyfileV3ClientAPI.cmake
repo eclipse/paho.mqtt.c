@@ -26,33 +26,33 @@ DOXYFILE_ENCODING      = UTF-8
 # identify the project. Note that if you do not use Doxywizard you need
 # to put quotes around the project name if it contains spaces.
 
-PROJECT_NAME           = @PACKAGE_NAME@
+PROJECT_NAME           = "Paho MQTT C Client Library"
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number.
 # This could be handy for archiving the generated documentation or
 # if some version control system is used.
 
-PROJECT_NUMBER         = @PACKAGE_VERSION@
+PROJECT_NUMBER         =
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer
 # a quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF          = "Paho MQTT C Client Library"
+PROJECT_BRIEF          =
 
 # With the PROJECT_LOGO tag one can specify an logo or icon that is
 # included in the documentation. The maximum height of the logo should not
 # exceed 55 pixels and the maximum width should not exceed 200 pixels.
 # Doxygen will copy the logo to the output directory.
 
-PROJECT_LOGO           = "@top_srcdir@/doc/pahologo.png"
+PROJECT_LOGO           = "@PROJECT_SOURCE_DIR@/doc/pahologo.png"
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.
 # If a relative path is entered, it will be relative to the location
 # where doxygen was started. If left blank the current directory will be used.
 
-OUTPUT_DIRECTORY       = "@top_srcdir@/doc/MQTTClient/"
+OUTPUT_DIRECTORY       = "@CMAKE_CURRENT_BINARY_DIR@/doc/MQTTClient/"
 
 # If the CREATE_SUBDIRS tag is set to YES, then doxygen will create
 # 4096 sub-directories (in 2 levels) under the output directory of each output
@@ -665,9 +665,9 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-STRIP_FROM_PATH        = @top_srcdir@/src
-INPUT                  = @top_srcdir@/src/MQTTClient.h \
-                         @top_srcdir@/src/MQTTClientPersistence.h
+STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@/src
+INPUT                  = @PROJECT_SOURCE_DIR@/src/MQTTClient.h \
+                         @PROJECT_SOURCE_DIR@/src/MQTTClientPersistence.h
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is

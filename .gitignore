@@ -1,3 +1,16 @@
 /dep/
-/build/
+.deps/
+.libs/
+autom4te.cache/
+config.*
+configure
+libtool
+Makefile.in
+*.la
+*.lo
+*.m4
+*.o
+*.stamp
 *.swp
+# AC_CONFIG_AUX_DIR created by /bootstrap
+/autotools_build

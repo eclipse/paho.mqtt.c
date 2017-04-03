@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2016 IBM Corp.
+ * Copyright (c) 2009, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,7 @@
  * @cond MQTTAsync_main
  * @mainpage Asynchronous MQTT client library for C
  * 
- * &copy; Copyright IBM Corp. 2009, 2016
+ * &copy; Copyright IBM Corp. 2009, 2017
  * 
  * @brief An Asynchronous MQTT client library for C.
  *
@@ -505,8 +505,6 @@ DLLExport int MQTTAsync_reconnect(MQTTAsync handle);
  * <i>tcp://localhost:1883</i>.
  * @param clientId The client identifier passed to the server when the
  * client connects to it. It is a null-terminated UTF-8 encoded string. 
- * ClientIDs must be no longer than 23 characters according to the MQTT 
- * specification.
  * @param persistence_type The type of persistence to be used by the client:
  * <br>
  * ::MQTTCLIENT_PERSISTENCE_NONE: Use in-memory persistence. If the device or 

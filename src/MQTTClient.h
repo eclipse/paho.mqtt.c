@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2015 IBM Corp.
+ * Copyright (c) 2009, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -40,7 +40,7 @@
  * @endcond
  * @cond MQTTClient_main
  * @mainpage MQTT Client library for C
- * &copy; Copyright IBM Corp. 2009, 2015
+ * &copy; Copyright IBM Corp. 2009, 2017
  * 
  * @brief An MQTT client library in C.
  *
@@ -48,7 +48,7 @@
  * considered easier to use.  Some of the calls will block.  For the new
  * totally asynchronous API where no calls block, which is especially suitable
  * for use in windowed environments, see the
- * <a href="../Casync/index.html">MQTT C Client Asynchronous API Documentation</a>.
+ * <a href="../../MQTTAsync/html/index.html">MQTT C Client Asynchronous API Documentation</a>.
  * The MQTTClient API is not thread safe, whereas the MQTTAsync API is.
  *
  * An MQTT client application connects to MQTT-capable servers.
@@ -380,8 +380,6 @@ DLLExport int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTClie
  * <i>tcp://localhost:1883</i>.
  * @param clientId The client identifier passed to the server when the
  * client connects to it. It is a null-terminated UTF-8 encoded string. 
- * ClientIDs must be no longer than 23 characters according to the MQTT 
- * specification.
  * @param persistence_type The type of persistence to be used by the client:
  * <br>
  * ::MQTTCLIENT_PERSISTENCE_NONE: Use in-memory persistence. If the device or 

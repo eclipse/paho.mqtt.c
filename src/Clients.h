@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,8 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs - add SSL support
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
+ *    Ian Craggs - change will payload to binary
+ *    Ian Craggs - password to binary
  *******************************************************************************/
 
 #if !defined(CLIENTS_H)
@@ -107,7 +109,8 @@ BE*/
 typedef struct
 {
 	char *topic;
-	char *msg;
+	int payloadlen;
+	void *payload;
 	int retained;
 	int qos;
 } willMessages;
@@ -162,12 +165,13 @@ typedef struct
  */
 typedef struct
 {
-	char* clientID;					/**< the string id of the client */
+	char* clientID;					      /**< the string id of the client */
 	const char* username;					/**< MQTT v3.1 user name */
-	const char* password;					/**< MQTT v3.1 password */
+	int passwordlen;              /**< MQTT password length */
+	const void* password;					/**< MQTT v3.1 binary password */
 	unsigned int cleansession : 1;	/**< MQTT clean session flag */
 	unsigned int connected : 1;		/**< whether it is currently connected */
-	unsigned int good : 1; 			/**< if we have an error on the socket we turn this off */
+	unsigned int good : 1; 			  /**< if we have an error on the socket we turn this off */
 	unsigned int ping_outstanding : 1;
 	int connect_state : 4;
 	networkHandles net;

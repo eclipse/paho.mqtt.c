@@ -30,6 +30,7 @@
  *    Ian Craggs - fix for bug 474905 - insufficient synchronization for subscribe, unsubscribe, connect
  *    Ian Craggs - make it clear that yield and receive are not intended for multi-threaded mode (bug 474748)
  *    Ian Craggs - SNI support, message queue unpersist bug
+ *    Ian Craggs - binary will message support
  *******************************************************************************/
 
 /**
@@ -1011,16 +1012,37 @@ static int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* o
 
 	if (m->c->will)
 	{
-		free(m->c->will->msg);
+		free(m->c->will->payload);
 		free(m->c->will->topic);
 		free(m->c->will);
 		m->c->will = NULL;
 	}
 
-	if (options->will && options->will->struct_version == 0)
+	if (options->will && (options->will->struct_version == 0 || options->will->struct_version == 1))
 	{
+		const void* source = NULL;
+		
 		m->c->will = malloc(sizeof(willMessages));
-		m->c->will->msg = MQTTStrdup(options->will->message);
+		if (options->will->message || (options->will->struct_version == 1 && options->will->payload.data))
+		{
+			if (options->will->struct_version == 1 && options->will->payload.data)
+			{
+				m->c->will->payloadlen = options->will->payload.len;
+				source = options->will->payload.data;
+			}
+			else
+			{
+				m->c->will->payloadlen = strlen(options->will->message);
+				source = (void*)options->will->message;
+			}
+			m->c->will->payload = malloc(m->c->will->payloadlen);
+			memcpy(m->c->will->payload, source, m->c->will->payloadlen);
+		}
+		else 
+		{
+			m->c->will->payload = NULL;
+			m->c->will->payloadlen = 0;
+		}
 		m->c->will->qos = options->will->qos;
 		m->c->will->retained = options->will->retained;
 		m->c->will->topic = MQTTStrdup(options->will->topicName);
@@ -1063,6 +1085,13 @@ static int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* o
 
 	m->c->username = options->username;
 	m->c->password = options->password;
+	if (options->password)
+		m->c->passwordlen = strlen(options->password) + 1;
+	else if (options->struct_version >= 5 && options->binarypwd.data)
+	{
+		m->c->password = options->binarypwd.data;
+		m->c->passwordlen = options->binarypwd.len;
+	}
 	m->c->retryInterval = options->retryInterval;
 
 	if (options->struct_version >= 3)
@@ -1098,9 +1127,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 		goto exit;
 	}
 
-	if (strncmp(options->struct_id, "MQTC", 4) != 0 || 
-		(options->struct_version != 0 && options->struct_version != 1 && options->struct_version != 2
-			&& options->struct_version != 3 && options->struct_version != 4))
+	if (strncmp(options->struct_id, "MQTC", 4) != 0 || 	options->struct_version < 0 || options->struct_version > 5)
 	{
 		rc = MQTTCLIENT_BAD_STRUCTURE;
 		goto exit;
@@ -1108,7 +1135,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 
 	if (options->will) /* check validity of will options structure */
 	{
-		if (strncmp(options->will->struct_id, "MQTW", 4) != 0 || options->will->struct_version != 0)
+		if (strncmp(options->will->struct_id, "MQTW", 4) != 0 || (options->will->struct_version != 0 && options->will->struct_version != 1))
 		{
 			rc = MQTTCLIENT_BAD_STRUCTURE;
 			goto exit;
@@ -1160,6 +1187,10 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 exit:
 	if (m->c->will)
 	{
+		if (m->c->will->payload)
+			free(m->c->will->payload);
+		if (m->c->will->topic)
+			free(m->c->will->topic);
 		free(m->c->will);
 		m->c->will = NULL;
 	}

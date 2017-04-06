@@ -82,6 +82,11 @@ ADD_TEST(
 	COMMAND "test1" "--test_no" "6" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
 )
 
+ADD_TEST(
+	NAME test1-7-connlost-binary-will-message
+	COMMAND "test1" "--test_no" "7" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
 SET_TESTS_PROPERTIES(
 	test1-1-single-thread-client
 	test1-2-multithread-callbacks
@@ -89,6 +94,7 @@ SET_TESTS_PROPERTIES(
 	test1-4-client-persistence
 	test1-5-disconnect-with-quiesce
 	test1-6-connlost-will-message
+	test1-7-connlost-binary-will-message
 	PROPERTIES TIMEOUT 540
 )
 
@@ -405,11 +411,17 @@ ADD_TEST(
 	COMMAND test9 "--test_no" "5" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
 )
 
+ADD_TEST(
+	NAME test9-6-offline-buffering-max-buffered-binary-will
+	COMMAND test9 "--test_no" "6" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
 SET_TESTS_PROPERTIES(
 	test9-1-offline-buffering-send-disconnected
 	test9-2-offline-buffering-send-disconnected-serverURIs
 	test9-3-offline-buffering-auto-reconnect
 	test9-4-offline-buffering-auto-reconnect-serverURIs
 	test9-5-offline-buffering-max-buffered
+	test9-6-offline-buffering-max-buffered-binary-will
 	PROPERTIES TIMEOUT 540
 )

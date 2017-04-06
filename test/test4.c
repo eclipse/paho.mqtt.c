@@ -470,7 +470,8 @@ int test2(struct Options options)
 	opts.keepAliveInterval = 20;
 	opts.cleansession = 1;
 	opts.username = "testuser";
-	opts.password = "testpassword";
+	opts.binarypwd.data = "testpassword";
+	opts.binarypwd.len = strlen(opts.binarypwd.data);
 	opts.MQTTVersion = options.MQTTVersion;
 
 	opts.will = &wopts;

@@ -224,6 +224,7 @@ unsigned char readChar(char** pptr);
 void writeChar(char** pptr, char c);
 void writeInt(char** pptr, int anInt);
 void writeUTF(char** pptr, const char* string);
+void writeData(char** pptr, const void* data, int datalen);
 
 const char* MQTTPacket_name(int ptype);
 

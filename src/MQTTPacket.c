@@ -441,6 +441,20 @@ void writeUTF(char** pptr, const char* string)
 
 
 /**
+ * Writes length delimited data to an output buffer
+ * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
+ * @param data the data to write
+ * @param datalen the length of the data to write
+ */
+void writeData(char** pptr, const void* data, int datalen)
+{
+	writeInt(pptr, datalen);
+	memcpy(*pptr, data, datalen);
+	*pptr += datalen;
+}
+
+
+/**
  * Function used in the new packets table to create packets which have only a header.
  * @param aHeader the MQTT header byte
  * @param data the rest of the packet

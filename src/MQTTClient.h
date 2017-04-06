@@ -425,24 +425,32 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTW. */
 	const char struct_id[4];
-	/** The version number of this structure.  Must be 0 */
+	/** The version number of this structure.  Must be 0 or 1 
+		   0 means there is no binary payload option
+	 */
 	int struct_version;
 	/** The LWT topic to which the LWT message will be published. */
 	const char* topicName;
-	/** The LWT payload. */
+	/** The LWT payload in string form. */
 	const char* message;
 	/**
-      * The retained flag for the LWT message (see MQTTClient_message.retained).
-      */
+	 * The retained flag for the LWT message (see MQTTClient_message.retained).
+	 */
 	int retained;
 	/** 
-      * The quality of service setting for the LWT message (see 
-      * MQTTClient_message.qos and @ref qos).
-      */
+	 * The quality of service setting for the LWT message (see 
+	 * MQTTClient_message.qos and @ref qos).
+	 */
 	int qos;
+  /** The LWT payload in binary form. This is only checked and used if the message option is NULL */
+	struct
+	{
+  	int len;            /**< binary payload length */
+		const void* data;  /**< binary payload data */
+	} payload;
 } MQTTClient_willOptions;
 
-#define MQTTClient_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 0, NULL, NULL, 0, 0 }
+#define MQTTClient_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 1, NULL, NULL, 0, 0, {0, NULL} }
 
 /**
 * MQTTClient_sslProperties defines the settings to establish an SSL/TLS connection using the 
@@ -513,11 +521,12 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	const char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1, 2, 3 or 4.  
+	/** The version number of this structure.  Must be 0, 1, 2, 3, 4 or 5.  
 	 * 0 signifies no SSL options and no serverURIs
 	 * 1 signifies no serverURIs 
 	 * 2 signifies no MQTTVersion
 	 * 3 signifies no returned values
+	 * 4 signifies no binary password option
 	 */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -624,9 +633,16 @@ typedef struct
 		int MQTTVersion;     /**< the MQTT version used to connect with */
 		int sessionPresent;  /**< if the MQTT version is 3.1.1, the value of sessionPresent returned in the connack */
 	} returned;
+	/** 
+   * Optional binary password.  Only checked and used if the password option is NULL
+   */
+  struct {
+  	int len;            /**< binary password length */
+		const void* data;  /**< binary password data */
+	} binarypwd;
 } MQTTClient_connectOptions;
 
-#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 4, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, 0, {NULL, 0, 0} }
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 5, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, 0,         {NULL, 0, 0}, {0, NULL} }
 
 /**
   * MQTTClient_libraryInfo is used to store details relating to the currently used

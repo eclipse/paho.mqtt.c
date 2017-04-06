@@ -17,6 +17,8 @@
  *    Ian Craggs - MQTT 3.1.1 support
  *    Ian Craggs - fix for bug 444103 - success/failure callbacks not invoked
  *    Ian Craggs - automatic reconnect and offline buffering (send while disconnected)
+ *    Ian Craggs - binary will message
+ *    Ian Craggs - binary password
  *******************************************************************************/
 
 /********************************************************************/
@@ -568,7 +570,9 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTW. */
 	const char struct_id[4];
-	/** The version number of this structure.  Must be 0 */
+	/** The version number of this structure.  Must be 0 or 1
+	    0 indicates no binary will message support
+	 */
 	int struct_version;
 	/** The LWT topic to which the LWT message will be published. */
 	const char* topicName;
@@ -583,9 +587,15 @@ typedef struct
       * MQTTAsync_message.qos and @ref qos).
       */
 	int qos;
+  /** The LWT payload in binary form. This is only checked and used if the message option is NULL */
+	struct
+	{
+  	int len;            /**< binary payload length */
+		const void* data;  /**< binary payload data */
+	} payload;
 } MQTTAsync_willOptions;
 
-#define MQTTAsync_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 0, NULL, NULL, 0, 0 }
+#define MQTTAsync_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 1, NULL, NULL, 0, 0 }
 
 /**
 * MQTTAsync_sslProperties defines the settings to establish an SSL/TLS connection using the 
@@ -647,11 +657,12 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	const char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1, 2, 3 or 4.  
+	/** The version number of this structure.  Must be 0, 1, 2, 3 4 or 5.  
 	  * 0 signifies no SSL options and no serverURIs
 	  * 1 signifies no serverURIs 
-      * 2 signifies no MQTTVersion
-      * 3 signifies no automatic reconnect options
+    * 2 signifies no MQTTVersion
+    * 3 signifies no automatic reconnect options
+    * 4 signifies no binary password option (just string)
 	  */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -772,11 +783,18 @@ typedef struct
 	  * Maximum retry interval in seconds.  The doubling stops here on failed retries.
 	  */
 	int maxRetryInterval;
+	/** 
+   * Optional binary password.  Only checked and used if the password option is NULL
+   */
+  struct {
+  	int len;            /**< binary password length */
+		const void* data;  /**< binary password data */
+	} binarypwd;
 } MQTTAsync_connectOptions;
 
 
-#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 4, 60, 1, 10, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 1, 60}
+#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 5, 60, 1, 10, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 1, 60, {0, NULL}}
 
 /**
   * This function attempts to connect a previously-created client (see

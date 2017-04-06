@@ -669,7 +669,7 @@ void MQTTProtocol_freeClient(Clients* client)
 	free(client->clientID);
 	if (client->will)
 	{
-		free(client->will->msg);
+		free(client->will->payload);
 		free(client->will->topic);
 		free(client->will);
 	}

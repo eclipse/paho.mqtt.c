@@ -1021,7 +1021,7 @@ int test2d(struct Options options)
         // there is/was some race condition, which caused _sometimes_ that the library failed to detect,
         // that the connect attempt has already failed.
         // Therefore we need to test this several times!
-        for (iteration = 0; !failures && (iteration < 100) ; iteration++)
+        for (iteration = 0; !failures && (iteration < 20) ; iteration++)
         {
 		rc = MQTTAsync_create(&c, options.mutual_auth_connection,
 				      "test2d", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
@@ -1065,8 +1065,8 @@ int test2d(struct Options options)
 			MQTTAsync_destroy(&c);
 			break;
 		}
-
-		while (!test2dFinished && ++count < 10000)
+#define TEST2D_COUNT 1000
+		while (!test2dFinished && ++count < TEST2D_COUNT)
 		{
 #if defined(WIN32)
 			Sleep(100);
@@ -1074,7 +1074,7 @@ int test2d(struct Options options)
 			usleep(10000L);
 #endif
 		}
-		if (!test2dFinished && count >= 10000)
+		if (!test2dFinished && count >= TEST2D_COUNT)
 		{
 			MyLog(LOGA_INFO, "Failed in iteration %d\n",iteration);
 			failures++;

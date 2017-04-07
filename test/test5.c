@@ -43,7 +43,7 @@ void usage(void)
 {
 	printf("Options:\n");
 	printf("\t--test_no <test_no> - Run test number <test_no>\n");
-	printf("\t--server <hostname> - Connect to <hostname> for tests\n");
+	printf("\t--hostname <hostname> - Connect to <hostname> for tests\n");
 	printf("\t--client_key <key_file> - Use <key_file> as the client certificate for SSL authentication\n");
 	printf("\t--client_key_pass <password> - Use <password> to access the private key in the client certificate\n");
 	printf("\t--server_key <key_file> - Use <key_file> as the trusted certificate for server\n");
@@ -892,7 +892,7 @@ void test2cOnConnectFailure(void* context, MQTTAsync_failureData* response)
 
 void test2cOnConnect(void* context, MQTTAsync_successData* response)
 {
-	MyLog(LOGA_DEBUG, "In test2cOnConnectFailure callback, context %p", context);
+	MyLog(LOGA_DEBUG, "In test2cOnConnect callback, context %p", context);
 
 	assert("This connect should not succeed. ", 0, "test2cOnConnect callback was called\n", 0);
 	test2cFinished = 1;
@@ -971,6 +971,107 @@ int test2c(struct Options options)
 	write_test_result();
 	return failures;
 }
+
+
+/*********************************************************************
+
+ Test2d: Mutual SSL Authentication - client has no certs
+
+ *********************************************************************/
+
+int test2dFinished;
+
+void test2dOnConnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	MyLog(LOGA_DEBUG, "In test2dOnConnectFailure callback, context %p", context);
+
+	assert("This test should call test2dOnConnectFailure. ", 1, "test2dOnConnectFailure callback was called\n", 0);
+	test2dFinished = 1;
+}
+
+void test2dOnConnect(void* context, MQTTAsync_successData* response)
+{
+	MyLog(LOGA_DEBUG, "In test2dOnConnect callback, context %p", context);
+
+	assert("This connect should not succeed. ", 0, "test2dOnConnect callback was called\n", 0);
+	test2dFinished = 1;
+}
+
+int test2d(struct Options options)
+{
+	char* testname = "test2d";
+	int subsqos = 2;
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
+	int rc = 0;
+	char* test_topic = "C client test2d";
+	int count = 0;
+
+	failures = 0;
+	MyLog(
+			LOGA_INFO,
+			"Starting test 2d - connection to SSL MQTT server, server auth enabled but unknown cert");
+	fprintf(xml, "<testcase classname=\"test2d\" name=\"%s\"", testname);
+	global_start_time = start_clock();
+
+	rc = MQTTAsync_create(&c, options.mutual_auth_connection,
+            "test2d", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
+
+	opts.keepAliveInterval = 20;
+	opts.cleansession = 1;
+	opts.username = "testuser";
+	opts.password = "testpassword";
+
+	opts.will = &wopts;
+	opts.will->message = "will message";
+	opts.will->qos = 1;
+	opts.will->retained = 0;
+	opts.will->topicName = "will topic";
+	opts.will = NULL;
+	opts.onSuccess = test2dOnConnect;
+	opts.onFailure = test2dOnConnectFailure;
+	opts.context = c;
+
+	opts.ssl = &sslopts;
+	//if (options.server_key_file != NULL) opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
+	//opts.ssl->keyStore = options.client_key_file; /*file of certificate for client to present to server*/
+	//if (options.client_key_pass != NULL)
+	//	opts.ssl->privateKeyPassword = options.client_key_pass;
+	//opts.ssl->enabledCipherSuites = "DEFAULT";
+	//opts.ssl->enabledServerCertAuth = 0;
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		failures++;
+		goto exit;
+	}
+
+	while (!test2dFinished && ++count < 10000)
+#if defined(WIN32)
+		Sleep(100);
+#else
+		usleep(10000L);
+#endif
+
+	exit: MQTTAsync_destroy(&c);
+	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", testname, tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
 
 /*********************************************************************
 
@@ -2022,7 +2123,7 @@ int main(int argc, char** argv)
 	int rc = 0;
 	int (*tests[])() =
 	{ NULL, test1, test2a, test2b, test2c, test3a, test3b, test4, /* test5a,
-			test5b, test5c, */ test6, test7 };
+			test5b, test5c, */ test6, test7, test2d };
 
 	xml = fopen("TEST-test5.xml", "w");
 	fprintf(xml, "<testsuite name=\"test5\" tests=\"%lu\">\n", ARRAY_SIZE(tests) - 1);

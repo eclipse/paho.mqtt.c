@@ -208,7 +208,7 @@ typedef int MQTTClient_token;
  * MQTTClient_publish(), MQTTClient_receive(), MQTTClient_freeMessage()
  * and MQTTClient_messageArrived()).
  */
-typedef struct
+typedef struct __attribute__((packed, aligned(4)))
 {
 	/** The eyecatcher for this structure.  must be MQTM. */
 	char struct_id[4];
@@ -423,7 +423,7 @@ DLLExport int MQTTClient_create(MQTTClient* handle, const char* serverURI, const
  * to MQTTClient_willOptions can be set to NULL if the LWT function is not 
  * required.
  */
-typedef struct
+typedef struct __attribute__((packed, aligned(4)))
 {
 	/** The eyecatcher for this structure.  must be MQTW. */
 	const char struct_id[4];
@@ -458,7 +458,7 @@ typedef struct
 *   to establish an SSL connection. Note that this scenario is not fully secure since it is subject to
 *   man-in-the-middle attacks.
 */
-typedef struct 
+typedef struct __attribute__((packed, aligned(4))) 
 {
 	/** The eyecatcher for this structure.  Must be MQTS */
 	const char struct_id[4];
@@ -511,7 +511,7 @@ typedef struct
  * correct operation of the client and so you <b>must</b> at least set a value
  * for #keepAliveInterval.
  */
-typedef struct
+typedef struct __attribute__((packed, aligned(4)))
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	const char struct_id[4];
@@ -637,7 +637,7 @@ typedef struct
   * There is one static instance of this struct in MQTTClient.c
   */
 
-typedef struct
+typedef struct __attribute__((packed, aligned(4)))
 {
 	const char* name;
 	const char* value;

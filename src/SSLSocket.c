@@ -17,6 +17,7 @@
  *    Ian Craggs - fix for bug #453883
  *    Ian Craggs - fix for bug #480363, issue 13
  *    Ian Craggs - SNI support
+ *    Ian Craggs - fix for issues #155, #160
  *******************************************************************************/
 
 /**
@@ -501,8 +502,6 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	
 	if (opts->keyStore)
 	{
-		int rc1 = 0;
-
 		if ((rc = SSL_CTX_use_certificate_chain_file(net->ctx, opts->keyStore)) != 1)
 		{
 			SSLSocket_error("SSL_CTX_use_certificate_chain_file", NULL, net->socket, rc);
@@ -516,13 +515,13 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 		{
 			SSL_CTX_set_default_passwd_cb(net->ctx, pem_passwd_cb);
 			SSL_CTX_set_default_passwd_cb_userdata(net->ctx, (void*)opts->privateKeyPassword);
-    }
+		}
 		
 		/* support for ASN.1 == DER format? DER can contain only one certificate? */
-		rc1 = SSL_CTX_use_PrivateKey_file(net->ctx, opts->privateKey, SSL_FILETYPE_PEM);
+		rc = SSL_CTX_use_PrivateKey_file(net->ctx, opts->privateKey, SSL_FILETYPE_PEM);
 		if (opts->privateKey == opts->keyStore)
 			opts->privateKey = NULL;
-		if (rc1 != 1)
+		if (rc != 1)
 		{
 			SSLSocket_error("SSL_CTX_use_PrivateKey_file", NULL, net->socket, rc);
 			goto free_ctx;
@@ -576,6 +575,7 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, 
 	if (net->ctx != NULL || (rc = SSLSocket_createContext(net, opts)) == 1)
 	{
 		int i;
+		printf("%p %d\n", net->ctx, rc);
 		SSL_CTX_set_info_callback(net->ctx, SSL_CTX_info_callback);
 		SSL_CTX_set_msg_callback(net->ctx, SSL_CTX_msg_callback);
    		if (opts->enableServerCertAuth) 

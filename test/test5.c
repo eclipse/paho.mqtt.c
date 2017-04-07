@@ -1017,70 +1017,70 @@ int test2d(struct Options options)
 	fprintf(xml, "<testcase classname=\"test2d\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	rc = MQTTAsync_create(&c, options.mutual_auth_connection,
-            "test2d", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
-	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
-	if (rc != MQTTASYNC_SUCCESS)
-	{
-		MQTTAsync_destroy(&c);
-		goto exit;
-	}
-
-	opts.keepAliveInterval = 60;
-	opts.cleansession = 1;
-	opts.username = "testuser";
-	opts.password = "testpassword";
-	opts.serverURIs = (char**) malloc(1*sizeof(char*));
-	if (opts.serverURIs)
-	{
-		*opts.serverURIs = strdup(options.mutual_auth_connection);
-		opts.serverURIcount = 1;
-	}
-
-	opts.will = &wopts;
-	opts.will->message = "will message";
-	opts.will->qos = 1;
-	opts.will->retained = 0;
-	opts.will->topicName = "will topic";
-	opts.will = NULL;
-	opts.onSuccess = test2dOnConnect;
-	opts.onFailure = test2dOnConnectFailure;
-	opts.context = c;
-
-	opts.ssl = &sslopts;
-	if (options.server_key_file != NULL) opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
-	opts.ssl->keyStore = options.client_key_file; /*file of certificate for client to present to server*/
-	//if (options.client_key_pass != NULL)
-	//	opts.ssl->privateKeyPassword = options.client_key_pass;
-	//opts.ssl->enabledCipherSuites = "DEFAULT";
-	//opts.ssl->enabledServerCertAuth = 0;
-
         // As reported in https://github.com/eclipse/paho.mqtt.c/issues/190
         // there is/was some race condition, which caused _sometimes_ that the library failed to detect,
         // that the connect attempt has already failed.
         // Therefore we need to test this several times!
-        for (iteration = 0; iteration < 100; iteration++)
+        for (iteration = 0; !failures && (iteration < 100) ; iteration++)
         {
-            test2dFinished = 0;
-            MyLog(LOGA_DEBUG, "Connecting");
-            rc = MQTTAsync_connect(c, &opts);
-            assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
-            if (rc != MQTTASYNC_SUCCESS)
-            {
-		failures++;
-                MyLog(LOGA_INFO, "Failed in iteration %d\n",iteration);
-		goto exit;
-            }
+		rc = MQTTAsync_create(&c, options.mutual_auth_connection,
+				      "test2d", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+		assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+		if (rc != MQTTASYNC_SUCCESS)
+		{
+			MQTTAsync_destroy(&c);
+			failures++;
+			break;
+		}
 
-            while (!test2dFinished && ++count < 10000)
+		opts.keepAliveInterval = 60;
+		opts.cleansession = 1;
+
+		opts.will = &wopts;
+		opts.will->message = "will message";
+		opts.will->qos = 1;
+		opts.will->retained = 0;
+		opts.will->topicName = "will topic";
+		opts.will = NULL;
+		opts.onSuccess = test2dOnConnect;
+		opts.onFailure = test2dOnConnectFailure;
+		opts.context = c;
+
+		opts.ssl = &sslopts;
+		if (options.server_key_file != NULL) opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
+		opts.ssl->keyStore = options.client_key_file; /*file of certificate for client to present to server*/
+		//if (options.client_key_pass != NULL)
+		//	opts.ssl->privateKeyPassword = options.client_key_pass;
+		//opts.ssl->enabledCipherSuites = "DEFAULT";
+		//opts.ssl->enabledServerCertAuth = 0;
+
+		test2dFinished = 0;
+		MyLog(LOGA_DEBUG, "Connecting");
+		rc = MQTTAsync_connect(c, &opts);
+		assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+		if (rc != MQTTASYNC_SUCCESS)
+		{
+			failures++;
+			MyLog(LOGA_INFO, "Failed in iteration %d\n",iteration);
+			MQTTAsync_destroy(&c);
+			break;
+		}
+
+		while (!test2dFinished && ++count < 10000)
+		{
 #if defined(WIN32)
-		Sleep(100);
+			Sleep(100);
 #else
-            usleep(10000L);
+			usleep(10000L);
 #endif
-            if (!test2dFinished && count >= 10000) failures++;
+		}
+		if (!test2dFinished && count >= 10000)
+		{
+			MyLog(LOGA_INFO, "Failed in iteration %d\n",iteration);
+			failures++;
+		}
+		MQTTAsync_destroy(&c);
         }
-	exit: MQTTAsync_destroy(&c);
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 	write_test_result();

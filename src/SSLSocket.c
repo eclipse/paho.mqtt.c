@@ -575,7 +575,7 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, 
 	if (net->ctx != NULL || (rc = SSLSocket_createContext(net, opts)) == 1)
 	{
 		int i;
-		printf("%p %d\n", net->ctx, rc);
+
 		SSL_CTX_set_info_callback(net->ctx, SSL_CTX_info_callback);
 		SSL_CTX_set_msg_callback(net->ctx, SSL_CTX_msg_callback);
    		if (opts->enableServerCertAuth) 

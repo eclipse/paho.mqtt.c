@@ -1030,6 +1030,12 @@ int test2d(struct Options options)
 	opts.cleansession = 1;
 	opts.username = "testuser";
 	opts.password = "testpassword";
+	opts.serverURIs = (char**) malloc(1*sizeof(char*));
+	if (opts.serverURIs)
+	{
+		*opts.serverURIs = strdup(options.mutual_auth_connection);
+		opts.serverURIcount = 1;
+	}
 
 	opts.will = &wopts;
 	opts.will->message = "will message";
@@ -2167,3 +2173,8 @@ int main(int argc, char** argv)
 
 	return rc;
 }
+
+/* Local Variables: */
+/* indent-tabs-mode: t */
+/* c-basic-offset: 8 */
+/* End: */

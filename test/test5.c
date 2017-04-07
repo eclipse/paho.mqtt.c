@@ -1008,6 +1008,7 @@ int test2d(struct Options options)
 	int rc = 0;
 	char* test_topic = "C client test2d";
 	int count = 0;
+        unsigned int iteration = 0;
 
 	failures = 0;
 	MyLog(
@@ -1025,7 +1026,7 @@ int test2d(struct Options options)
 		goto exit;
 	}
 
-	opts.keepAliveInterval = 20;
+	opts.keepAliveInterval = 60;
 	opts.cleansession = 1;
 	opts.username = "testuser";
 	opts.password = "testpassword";
@@ -1048,22 +1049,31 @@ int test2d(struct Options options)
 	//opts.ssl->enabledCipherSuites = "DEFAULT";
 	//opts.ssl->enabledServerCertAuth = 0;
 
-	MyLog(LOGA_DEBUG, "Connecting");
-	rc = MQTTAsync_connect(c, &opts);
-	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
-	if (rc != MQTTASYNC_SUCCESS)
-	{
+        // As reported in https://github.com/eclipse/paho.mqtt.c/issues/190
+        // there is/was some race condition, which caused _sometimes_ that the library failed to detect,
+        // that the connect attempt has already failed.
+        // Therefore we need to test this several times!
+        for (iteration = 0; iteration < 100; iteration++)
+        {
+            test2dFinished = 0;
+            MyLog(LOGA_DEBUG, "Connecting");
+            rc = MQTTAsync_connect(c, &opts);
+            assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+            if (rc != MQTTASYNC_SUCCESS)
+            {
 		failures++;
+                MyLog(LOGA_INFO, "Failed in iteration %d\n",iteration);
 		goto exit;
-	}
+            }
 
-	while (!test2dFinished && ++count < 10000)
+            while (!test2dFinished && ++count < 10000)
 #if defined(WIN32)
 		Sleep(100);
 #else
-		usleep(10000L);
+            usleep(10000L);
 #endif
-
+            if (!test2dFinished && count >= 10000) failures++;
+        }
 	exit: MQTTAsync_destroy(&c);
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
@@ -2122,8 +2132,8 @@ int main(int argc, char** argv)
 	int* numtests = &tests;
 	int rc = 0;
 	int (*tests[])() =
-	{ NULL, test1, test2a, test2b, test2c, test3a, test3b, test4, /* test5a,
-			test5b, test5c, */ test6, test7, test2d };
+            { NULL, test1, test2a, test2b, test2c, test2d, test3a, test3b, test4, /* test5a,
+			test5b, test5c, */ test6, test7 };
 
 	xml = fopen("TEST-test5.xml", "w");
 	fprintf(xml, "<testsuite name=\"test5\" tests=\"%lu\">\n", ARRAY_SIZE(tests) - 1);

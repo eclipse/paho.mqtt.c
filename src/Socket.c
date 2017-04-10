@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2016 IBM Corp.
+ * Copyright (c) 2009, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,7 @@
  *    Ian Craggs - initial implementation and documentation
  *    Ian Craggs - async client updates
  *    Ian Craggs - fix for bug 484496
+ *    Ian Craggs - issue #217
  *******************************************************************************/
 
 /**
@@ -741,7 +742,7 @@ int Socket_continueWrite(int socket)
 				add some of the buffer */
 			size_t offset = pw->bytes - curbuflen;
 			iovecs1[++curbuf].iov_len = pw->iovecs[i].iov_len - (ULONG)offset;
-			iovecs1[curbuf].iov_base = pw->iovecs[i].iov_base + offset;
+			iovecs1[curbuf].iov_base = (char*)pw->iovecs[i].iov_base + offset;
 			break;
 		}
 		curbuflen += pw->iovecs[i].iov_len;

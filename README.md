@@ -7,11 +7,54 @@ This code builds libraries which enable applications to connect to an [MQTT](htt
 
 Both synchronous and asynchronous modes of operation are supported.
 
+## Libraries
+
+The Paho C client comprises four shared libraries:
+
+ * libmqttv3a.so - asynchronous
+ * libmqttv3as.so - asynchronous with SSL
+ * libmqttv3c.so - "classic" / synchronous
+ * libmqttv3cs.so - "classic" / synchronous with SSL
+
+Optionally, you can build static version of those libraries.
+
+## Build instructions for GNU Make
+
+Ensure the OpenSSL development package is installed.  Then from the client library base directory run:
+
+```
+make
+sudo make install
+```
+
+This will build and install the libraries.  To uninstall:
+
+```
+sudo make uninstall
+```
+
+To build the documentation requires doxygen and optionally graphviz.
+
+```
+make html
+```
+
+The provided GNU Makefile is intended to perform all build steps in the ```build``` directory within the source-tree of Eclipse Paho. Generated binares, libraries, and the documentation can be found in the ```build/output``` directory after completion. 
+
+Options that are passed to the compiler/linker can be specified by typical Unix build variables:
+
+Variable | Description
+------------ | -------------
+CC | Path to the C compiler
+CFLAGS | Flags passed to compiler calls
+LDFLAGS | Flags passed to linker calls
+
+
 ## Build requirements / compilation using CMake
 
 There build process currently supports a number of Linux "flavors" including ARM and s390, OS X, AIX and Solaris as well as the Windows operating system. The build process requires the following tools:
   * CMake (http://cmake.org)
-  * Ninja (https://martine.github.io/ninja/; preferred) or
+  * Ninja (https://martine.github.io/ninja/) or
     GNU Make (https://www.gnu.org/software/make/), and
   * gcc (https://gcc.gnu.org/).
 
@@ -120,29 +163,6 @@ In this case the libraries and executable are not linked against OpenSSL Librari
 apt-get install gcc-mingw-w64-x86-64 gcc-mingw-w64-i686
 ```
 
-
-## Build instructions for GNU Make (deprecated)
-
-The provided GNU Makefile is intended to perform all build steps in the ```build``` directory within the source-tree of Eclipse Paho. Generated binares, libraries, and the documentation can be found in the ```build/output``` directory after completion. 
-
-Options that are passed to the compiler/linker can be specified by typical Unix build variables:
-
-Variable | Description
------------- | -------------
-CC | Path to the C compiler
-CFLAGS | Flags passed to compiler calls
-LDFLAGS | Flags passed to linker calls
-
-## Libraries
-
-The Paho C client comprises four shared libraries:
-
- * libmqttv3a.so - asynchronous
- * libmqttv3as.so - asynchronous with SSL
- * libmqttv3c.so - "classic" / synchronous
- * libmqttv3cs.so - "classic" / synchronous with SSL
-
-Optionally, you can build static version of those libraries.
 
 ## Usage and API
 

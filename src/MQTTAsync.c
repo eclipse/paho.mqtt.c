@@ -1377,6 +1377,7 @@ static void MQTTAsync_checkTimeouts(void)
 			else
 			{
 				MQTTAsync_closeSession(m->c);
+				Log(TRACE_MIN, -1, "Connect failed with timeout, no to try");
 				if (m->connect.onFailure)
 				{
 					MQTTAsync_failureData data;
@@ -2024,11 +2025,11 @@ static void MQTTAsync_closeOnly(Clients* client)
 		SSLSocket_close(&client->net);
 #endif
 		Socket_close(client->net.socket);
-		Thread_unlock_mutex(socket_mutex);
 		client->net.socket = 0;
 #if defined(OPENSSL)
 		client->net.ssl = NULL;
 #endif
+		Thread_unlock_mutex(socket_mutex);
 	}
 	client->connected = 0;
 	client->connect_state = 0;		
@@ -2881,6 +2882,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 			m = (MQTTAsync)(handles->current->content);
 		if (m != NULL)
 		{
+			Log(TRACE_MINIMUM, -1, "m->c->connect_state = %d",m->c->connect_state);
 			if (m->c->connect_state == 1 || m->c->connect_state == 2)
 				*rc = MQTTAsync_connecting(m);
 			else
@@ -2916,6 +2918,11 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 					}
 					MQTTAsync_startConnectRetry(m);
 				}
+			}
+			else
+			{
+				Log(TRACE_MINIMUM, -1, "m->c->connect_state = %d",m->c->connect_state);
+				Log(TRACE_MINIMUM, -1, "CONNECT sent, *rc is %d",*rc);
 			}
 		}
 		if (pack)

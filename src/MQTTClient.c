@@ -31,6 +31,7 @@
  *    Ian Craggs - make it clear that yield and receive are not intended for multi-threaded mode (bug 474748)
  *    Ian Craggs - SNI support, message queue unpersist bug
  *    Ian Craggs - binary will message support
+ *    Ian Craggs - waitforCompletion fix #240
  *******************************************************************************/
 
 /**
@@ -1916,29 +1917,23 @@ int MQTTClient_waitForCompletion(MQTTClient handle, MQTTClient_deliveryToken mdt
 		rc = MQTTCLIENT_FAILURE;
 		goto exit;
 	}
-	if (m->c->connected == 0)
-	{
-		rc = MQTTCLIENT_DISCONNECTED;
-		goto exit;
-	}
-
-	if (ListFindItem(m->c->outboundMsgs, &mdt, messageIDCompare) == NULL)
-	{
-		rc = MQTTCLIENT_SUCCESS; /* well we couldn't find it */
-		goto exit;
-	}
 
 	elapsed = MQTTClient_elapsed(start);
 	while (elapsed < timeout)
 	{
-		Thread_unlock_mutex(mqttclient_mutex);
-		MQTTClient_yield();
-		Thread_lock_mutex(mqttclient_mutex);
+		if (m->c->connected == 0)
+		{
+			rc = MQTTCLIENT_DISCONNECTED;
+			goto exit;
+		}
 		if (ListFindItem(m->c->outboundMsgs, &mdt, messageIDCompare) == NULL)
 		{
 			rc = MQTTCLIENT_SUCCESS; /* well we couldn't find it */
 			goto exit;
 		}
+		Thread_unlock_mutex(mqttclient_mutex);
+		MQTTClient_yield();
+		Thread_lock_mutex(mqttclient_mutex);
 		elapsed = MQTTClient_elapsed(start);
 	}
 

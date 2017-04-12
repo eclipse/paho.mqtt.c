@@ -290,18 +290,23 @@ ADD_TEST(
 )
 
 ADD_TEST(
-	NAME test5-3a-server-auth-server-cert-in-client-store
+	NAME test5-2d-multual-ssl-auth-client-missing-client-cert
 	COMMAND test5 "--test_no" "5" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
-	NAME test5-3b-server-auth-client-missing-broker-cert
+	NAME test5-3a-server-auth-server-cert-in-client-store
 	COMMAND test5 "--test_no" "6" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
-	NAME test5-4-accept-invalid-certificates
+	NAME test5-3b-server-auth-client-missing-broker-cert
 	COMMAND test5 "--test_no" "7" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+)
+
+ADD_TEST(
+	NAME test5-4-accept-invalid-certificates
+	COMMAND test5 "--test_no" "8" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 SET_TESTS_PROPERTIES(
@@ -309,6 +314,7 @@ SET_TESTS_PROPERTIES(
 	test5-2a-multual-ssl-auth-certificates-in-place
 	test5-2b-multual-ssl-auth-broker-missing-client-cert
 	test5-2c-multual-ssl-auth-client-missing-broker-cert
+	test5-2d-multual-ssl-auth-client-missing-client-cert
 	test5-3a-server-auth-server-cert-in-client-store
 	test5-3b-server-auth-client-missing-broker-cert
 	test5-4-accept-invalid-certificates

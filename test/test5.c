@@ -1048,7 +1048,7 @@ int test2d(struct Options options)
 
 		opts.ssl = &sslopts;
 		if (options.server_key_file != NULL) opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
-		opts.ssl->keyStore = options.client_key_file; /*file of certificate for client to present to server*/
+		opts.ssl->keyStore = NULL; /*file of certificate for client to present to server - In this test the client has no certificate! */
 		//if (options.client_key_pass != NULL)
 		//	opts.ssl->privateKeyPassword = options.client_key_pass;
 		//opts.ssl->enabledCipherSuites = "DEFAULT";

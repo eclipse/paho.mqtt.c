@@ -7,11 +7,54 @@ This code builds libraries which enable applications to connect to an [MQTT](htt
 
 Both synchronous and asynchronous modes of operation are supported.
 
+## Libraries
+
+The Paho C client comprises four shared libraries:
+
+ * libmqttv3a.so - asynchronous
+ * libmqttv3as.so - asynchronous with SSL
+ * libmqttv3c.so - "classic" / synchronous
+ * libmqttv3cs.so - "classic" / synchronous with SSL
+
+Optionally, you can build static version of those libraries.
+
+## Build instructions for GNU Make
+
+Ensure the OpenSSL development package is installed.  Then from the client library base directory run:
+
+```
+make
+sudo make install
+```
+
+This will build and install the libraries.  To uninstall:
+
+```
+sudo make uninstall
+```
+
+To build the documentation requires doxygen and optionally graphviz.
+
+```
+make html
+```
+
+The provided GNU Makefile is intended to perform all build steps in the ```build``` directory within the source-tree of Eclipse Paho. Generated binares, libraries, and the documentation can be found in the ```build/output``` directory after completion. 
+
+Options that are passed to the compiler/linker can be specified by typical Unix build variables:
+
+Variable | Description
+------------ | -------------
+CC | Path to the C compiler
+CFLAGS | Flags passed to compiler calls
+LDFLAGS | Flags passed to linker calls
+
+
 ## Build requirements / compilation using CMake
 
 There build process currently supports a number of Linux "flavors" including ARM and s390, OS X, AIX and Solaris as well as the Windows operating system. The build process requires the following tools:
   * CMake (http://cmake.org)
-  * Ninja (https://martine.github.io/ninja/; preferred) or
+  * Ninja (https://martine.github.io/ninja/) or
     GNU Make (https://www.gnu.org/software/make/), and
   * gcc (https://gcc.gnu.org/).
 
@@ -42,6 +85,9 @@ OPENSSL_INC_SEARCH_PATH | "" (system default) | Directory containing OpenSSL inc
 OPENSSL_LIB_SEARCH_PATH | "" (system default) | Directory containing OpenSSL libraries
 PAHO_BUILD_DOCUMENTATION | FALSE | Create and install the HTML based API documentation (requires Doxygen)
 PAHO_BUILD_SAMPLES | FALSE | Build sample programs
+MQTT_TEST_BROKER | tcp://localhost:1883 | MQTT connection URL for a broker to use during test execution
+MQTT_TEST_PROXY | tcp://localhost:1883 | Hostname of the test proxy to use
+MQTT_SSL_HOSTNAME | localhost | Hostname of a test SSL MQTT broker to use
 
 Using these variables CMake can be used to generate your Ninja or Make files. Using CMake, building out-of-source is the default. Therefore it is recommended to invoke all build commands inside your chosen build directory but outside of the source tree.
 
@@ -68,6 +114,19 @@ Debug builds can be performed by defining the value of the ```CMAKE_BUILD_TYPE``
 ```
 cmake -GNinja -DCMAKE_BUILD_TYPE=Debug git/org.eclipse.paho.mqtt.c
 ```
+
+
+### Running the tests
+
+Test code is available in the ``test`` directory. The tests can be built and executed with the CMake build system. The test execution requires a MQTT broker running. By default, the build system uses ```localhost```, however it is possible to configure the build to use an external broker. These parameters are documented in the Build Requirements section above.
+
+After ensuring a MQTT broker is available, it is possible to execute the tests by starting the proxy and running `ctest` as described below:
+
+```
+python ../test/mqttsas2.py &
+ctest -VV
+```
+
 
 ### Cross compilation
 
@@ -104,29 +163,6 @@ In this case the libraries and executable are not linked against OpenSSL Librari
 apt-get install gcc-mingw-w64-x86-64 gcc-mingw-w64-i686
 ```
 
-
-## Build instructions for GNU Make (deprecated)
-
-The provided GNU Makefile is intended to perform all build steps in the ```build``` directory within the source-tree of Eclipse Paho. Generated binares, libraries, and the documentation can be found in the ```build/output``` directory after completion. 
-
-Options that are passed to the compiler/linker can be specified by typical Unix build variables:
-
-Variable | Description
------------- | -------------
-CC | Path to the C compiler
-CFLAGS | Flags passed to compiler calls
-LDFLAGS | Flags passed to linker calls
-
-## Libraries
-
-The Paho C client comprises four shared libraries:
-
- * libmqttv3a.so - asynchronous
- * libmqttv3as.so - asynchronous with SSL
- * libmqttv3c.so - "classic" / synchronous
- * libmqttv3cs.so - "classic" / synchronous with SSL
-
-Optionally, you can build static version of those libraries.
 
 ## Usage and API
 

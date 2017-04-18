@@ -1,4 +1,5 @@
 /dep/
 /build/
+/build.paho/
 *.swp
 /build.paho

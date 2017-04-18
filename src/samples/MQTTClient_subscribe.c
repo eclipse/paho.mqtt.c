@@ -88,6 +88,7 @@ int main(int argc, char* argv[])
         ch = getchar();
     } while(ch!='Q' && ch != 'q');
 
+    MQTTClient_unsubscribe(client, TOPIC);
     MQTTClient_disconnect(client, 10000);
     MQTTClient_destroy(&client);
     return rc;

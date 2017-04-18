@@ -2147,18 +2147,18 @@ int main(int argc, char** argv)
 	MQTTAsync_setTraceCallback(handleTrace);
 	getopts(argc, argv);
 
+	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+
 	if (options.test_no == 0)
 	{ /* run all the tests */
 		for (options.test_no = 1; options.test_no < ARRAY_SIZE(tests); ++options.test_no)
 		{
 			failures = 0;
-			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
 			rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */
 		}
 	}
 	else
 	{
-		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
 		rc = tests[options.test_no](options); /* run just the selected test */
 	}
 

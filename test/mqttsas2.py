@@ -41,6 +41,7 @@ class MyHandler(socketserver.StreamRequestHandler):
       self.versions = {}
     inbuf = True
     i = o = e = None
+    defaultValue = "unknown"
     try:
       clients = self.request
       brokers = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -58,15 +59,17 @@ class MyHandler(socketserver.StreamRequestHandler):
               if packet.fh.MessageType == MQTTV3.PUBLISH and \
                   packet.topicName == "MQTTSAS topic" and \
                   packet.data == b"TERMINATE":
-                print("Terminating client", self.ids[id(clients)])
+                print("Terminating client", self.ids.get(id(clients),defaultValue))
                 brokers.close()
                 clients.close()
+                brokers = None
+                clients = None
                 terminated = True
                 break
               elif packet.fh.MessageType == MQTTV3.CONNECT:
                 self.ids[id(clients)] = packet.ClientIdentifier
                 self.versions[id(clients)] = 3
-              print(timestamp() , "C to S", self.ids[id(clients)], repr(packet))
+              print(timestamp() , "C to S", self.ids.get(id(clients),defaultValue), repr(packet))
               #print([hex(b) for b in inbuf])
               #print(inbuf)
             except:
@@ -77,14 +80,19 @@ class MyHandler(socketserver.StreamRequestHandler):
             if inbuf == None:
               break
             try:
-              print(timestamp(), "S to C", self.ids[id(clients)], repr(MQTTV3.unpackPacket(inbuf)))
+              unpackedData = MQTTV3.unpackPacket(inbuf)
+              DataString = repr(unpackedData)
+              print(timestamp(), "S to C", self.ids.get(id(clients),defaultValue), DataString)
             except:
               traceback.print_exc()
-            clients.send(inbuf)
-      print(timestamp()+" client "+self.ids[id(clients)]+" connection closing")
+            try:
+              clients.send(inbuf)
+            except:
+              traceback.print_exc()
+      print(timestamp()+" client "+self.ids.get(id(clients),defaultValue)+" connection closing")
     except:
-      print(repr((i, o, e)), repr(inbuf))
       traceback.print_exc()
+      print(repr((i, o, e)), repr(inbuf))
     if id(clients) in self.ids.keys():
       del self.ids[id(clients)]
     elif id(clients) in self.versions.keys():

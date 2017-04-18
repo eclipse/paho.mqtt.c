@@ -127,6 +127,16 @@ python ../test/mqttsas2.py &
 ctest -VV
 ```
 
+To run all of the unit tests for Linux host:
+
+```
+export TRAVIS_OS_NAME=linux
+export TRAVIS_BUILD_DIR=`pwd`
+PATH=$PATH:/usr/sbin ./travis-install.sh
+rm -Rf build.paho/
+travis-build.sh
+```
+
 
 ### Cross compilation
 

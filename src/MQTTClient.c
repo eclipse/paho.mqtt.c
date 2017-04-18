@@ -29,7 +29,8 @@
  *    Ian Craggs - fix for bug 459791 - deadlock in WaitForCompletion for bad client
  *    Ian Craggs - fix for bug 474905 - insufficient synchronization for subscribe, unsubscribe, connect
  *    Ian Craggs - make it clear that yield and receive are not intended for multi-threaded mode (bug 474748)
- *    Ian Craggs - SNI support
+ *    Ian Craggs - SNI support, message queue unpersist bug
+ *    Ian Craggs - binary will message support
  *******************************************************************************/
 
 /**
@@ -65,8 +66,8 @@
 
 #include "VersionInfo.h"
 
-char* client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
-char* client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
+const char *client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
+const char *client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
 
 static ClientStates ClientState =
 {
@@ -131,7 +132,7 @@ static mutex_type unsubscribe_mutex = &unsubscribe_mutex_store;
 static pthread_mutex_t connect_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 static mutex_type connect_mutex = &connect_mutex_store;
 
-void MQTTClient_init()
+void MQTTClient_init(void)
 {
 	pthread_mutexattr_t attr;
 	int rc;
@@ -159,14 +160,6 @@ static time_t last;
 static int running = 0;
 static int tostop = 0;
 static thread_id_type run_id = 0;
-
-MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long timeout);
-MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc);
-int MQTTClient_cleanSession(Clients* client);
-void MQTTClient_stop();
-int MQTTClient_disconnect_internal(MQTTClient handle, int timeout);
-int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal, int stop);
-void MQTTClient_writeComplete(int socket);
 
 typedef struct
 {
@@ -261,6 +254,32 @@ long MQTTClient_elapsed(struct timeval start)
 }
 #endif
 
+static void MQTTClient_terminate(void);
+static void MQTTClient_emptyMessageQueue(Clients* client);
+static int MQTTClient_deliverMessage(
+		int rc, MQTTClients* m,
+		char** topicName, int* topicLen,
+		MQTTClient_message** message);
+static int clientSockCompare(void* a, void* b);
+static thread_return_type WINAPI connectionLost_call(void* context);
+static thread_return_type WINAPI MQTTClient_run(void* n);
+static void MQTTClient_stop(void);
+static void MQTTClient_closeSession(Clients* client);
+static int MQTTClient_cleanSession(Clients* client);
+static int MQTTClient_connectURIVersion(
+	MQTTClient handle, MQTTClient_connectOptions* options,
+	const char* serverURI, int MQTTVersion,
+	START_TIME_TYPE start, long millisecsTimeout);
+static int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options, const char* serverURI);
+static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal, int stop);
+static int MQTTClient_disconnect_internal(MQTTClient handle, int timeout);
+static void MQTTClient_retry(void);
+static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc);
+static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long timeout);
+static int pubCompare(void* a, void* b);
+static void MQTTProtocol_checkPendingWrites(void);
+static void MQTTClient_writeComplete(int socket);
+
 
 int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context)
@@ -343,7 +362,7 @@ exit:
 }
 
 
-void MQTTClient_terminate(void)
+static void MQTTClient_terminate(void)
 {
 	FUNC_ENTRY;
 	MQTTClient_stop();
@@ -366,7 +385,7 @@ void MQTTClient_terminate(void)
 }
 
 
-void MQTTClient_emptyMessageQueue(Clients* client)
+static void MQTTClient_emptyMessageQueue(Clients* client)
 {
 	FUNC_ENTRY;
 	/* empty message queue */
@@ -447,7 +466,7 @@ void MQTTClient_free(void* memory)
 }
 
 
-int MQTTClient_deliverMessage(int rc, MQTTClients* m, char** topicName, int* topicLen, MQTTClient_message** message)
+static int MQTTClient_deliverMessage(int rc, MQTTClients* m, char** topicName, int* topicLen, MQTTClient_message** message)
 {
 	qEntry* qe = (qEntry*)(m->c->messageQueue->first->content);
 
@@ -473,7 +492,7 @@ int MQTTClient_deliverMessage(int rc, MQTTClients* m, char** topicName, int* top
  * @param b second integer value
  * @return boolean indicating whether a and b are equal
  */
-int clientSockCompare(void* a, void* b)
+static int clientSockCompare(void* a, void* b)
 {
 	MQTTClients* m = (MQTTClients*)a;
 	return m->c->net.socket == *(int*)b;
@@ -486,7 +505,7 @@ int clientSockCompare(void* a, void* b)
  * @param context a pointer to the relevant client
  * @return thread_return_type standard thread return value - not used here
  */
-thread_return_type WINAPI connectionLost_call(void* context)
+static thread_return_type WINAPI connectionLost_call(void* context)
 {
 	MQTTClients* m = (MQTTClients*)context;
 
@@ -496,7 +515,7 @@ thread_return_type WINAPI connectionLost_call(void* context)
 
 
 /* This is the thread function that handles the calling of callback functions if set */
-thread_return_type WINAPI MQTTClient_run(void* n)
+static thread_return_type WINAPI MQTTClient_run(void* n)
 {
 	long timeout = 10L; /* first time in we have a small timeout.  Gets things started more quickly */
 
@@ -569,7 +588,13 @@ thread_return_type WINAPI MQTTClient_run(void* n)
 				 * so we must be careful how we use it.
 				 */
 				if (rc)
+				{
+					#if !defined(NO_PERSISTENCE)
+					if (m->c->persistence)
+						MQTTPersistence_unpersistQueueEntry(m->c, (MQTTPersistence_qEntry*)qe);
+					#endif
 					ListRemove(m->c->messageQueue, qe);
+				}
 				else
 					Log(TRACE_MIN, -1, "False returned from messageArrived for client %s, message remains on queue",
 						m->c->clientID);
@@ -629,7 +654,7 @@ thread_return_type WINAPI MQTTClient_run(void* n)
 }
 
 
-void MQTTClient_stop()
+static void MQTTClient_stop(void)
 {
 	int rc = 0;
 
@@ -697,7 +722,7 @@ int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTClient_connect
 }
 
 
-void MQTTClient_closeSession(Clients* client)
+static void MQTTClient_closeSession(Clients* client)
 {
 	FUNC_ENTRY;
 	client->good = 0;
@@ -726,7 +751,7 @@ void MQTTClient_closeSession(Clients* client)
 }
 
 
-int MQTTClient_cleanSession(Clients* client)
+static int MQTTClient_cleanSession(Clients* client)
 {
 	int rc = 0;
 
@@ -787,7 +812,7 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 }
 
 
-int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* options, const char* serverURI, int MQTTVersion,
+static int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* options, const char* serverURI, int MQTTVersion,
 	START_TIME_TYPE start, long millisecsTimeout)
 {
 	MQTTClients* m = handle;
@@ -969,7 +994,7 @@ exit:
 }
 
 
-int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options, const char* serverURI)
+static int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options, const char* serverURI)
 {
 	MQTTClients* m = handle;
 	START_TIME_TYPE start;
@@ -987,16 +1012,37 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 
 	if (m->c->will)
 	{
-		free(m->c->will->msg);
+		free(m->c->will->payload);
 		free(m->c->will->topic);
 		free(m->c->will);
 		m->c->will = NULL;
 	}
 
-	if (options->will && options->will->struct_version == 0)
+	if (options->will && (options->will->struct_version == 0 || options->will->struct_version == 1))
 	{
+		const void* source = NULL;
+		
 		m->c->will = malloc(sizeof(willMessages));
-		m->c->will->msg = MQTTStrdup(options->will->message);
+		if (options->will->message || (options->will->struct_version == 1 && options->will->payload.data))
+		{
+			if (options->will->struct_version == 1 && options->will->payload.data)
+			{
+				m->c->will->payloadlen = options->will->payload.len;
+				source = options->will->payload.data;
+			}
+			else
+			{
+				m->c->will->payloadlen = strlen(options->will->message);
+				source = (void*)options->will->message;
+			}
+			m->c->will->payload = malloc(m->c->will->payloadlen);
+			memcpy(m->c->will->payload, source, m->c->will->payloadlen);
+		}
+		else 
+		{
+			m->c->will->payload = NULL;
+			m->c->will->payloadlen = 0;
+		}
 		m->c->will->qos = options->will->qos;
 		m->c->will->retained = options->will->retained;
 		m->c->will->topic = MQTTStrdup(options->will->topicName);
@@ -1039,6 +1085,13 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 
 	m->c->username = options->username;
 	m->c->password = options->password;
+	if (options->password)
+		m->c->passwordlen = strlen(options->password) + 1;
+	else if (options->struct_version >= 5 && options->binarypwd.data)
+	{
+		m->c->password = options->binarypwd.data;
+		m->c->passwordlen = options->binarypwd.len;
+	}
 	m->c->retryInterval = options->retryInterval;
 
 	if (options->struct_version >= 3)
@@ -1074,9 +1127,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 		goto exit;
 	}
 
-	if (strncmp(options->struct_id, "MQTC", 4) != 0 || 
-		(options->struct_version != 0 && options->struct_version != 1 && options->struct_version != 2
-			&& options->struct_version != 3 && options->struct_version != 4))
+	if (strncmp(options->struct_id, "MQTC", 4) != 0 || 	options->struct_version < 0 || options->struct_version > 5)
 	{
 		rc = MQTTCLIENT_BAD_STRUCTURE;
 		goto exit;
@@ -1084,7 +1135,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 
 	if (options->will) /* check validity of will options structure */
 	{
-		if (strncmp(options->will->struct_id, "MQTW", 4) != 0 || options->will->struct_version != 0)
+		if (strncmp(options->will->struct_id, "MQTW", 4) != 0 || (options->will->struct_version != 0 && options->will->struct_version != 1))
 		{
 			rc = MQTTCLIENT_BAD_STRUCTURE;
 			goto exit;
@@ -1136,6 +1187,10 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 exit:
 	if (m->c->will)
 	{
+		if (m->c->will->payload)
+			free(m->c->will->payload);
+		if (m->c->will->topic)
+			free(m->c->will->topic);
 		free(m->c->will);
 		m->c->will = NULL;
 	}
@@ -1149,7 +1204,7 @@ exit:
 /**
  * mqttclient_mutex must be locked when you call this function, if multi threaded
  */
-int MQTTClient_disconnect1(MQTTClient handle, int timeout, int call_connection_lost, int stop)
+static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int call_connection_lost, int stop)
 {
 	MQTTClients* m = handle;
 	START_TIME_TYPE start;
@@ -1208,7 +1263,7 @@ exit:
 /**
  * mqttclient_mutex must be locked when you call this function, if multi threaded
  */
-int MQTTClient_disconnect_internal(MQTTClient handle, int timeout)
+static int MQTTClient_disconnect_internal(MQTTClient handle, int timeout)
 {
 	return MQTTClient_disconnect1(handle, timeout, 1, 1);
 }
@@ -1554,7 +1609,7 @@ exit:
 }
 
 
-void MQTTClient_retry(void)
+static void MQTTClient_retry(void)
 {
 	time_t now;
 
@@ -1572,7 +1627,7 @@ void MQTTClient_retry(void)
 }
 
 
-MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
+static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
 {
 	struct timeval tp = {0L, 0L};
 	static Ack ack;
@@ -1653,7 +1708,7 @@ MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
 }
 
 
-MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long timeout)
+static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long timeout)
 {
 	MQTTPacket* pack = NULL;
 	MQTTClients* m = handle;
@@ -1839,7 +1894,7 @@ exit:
 }
 
 
-int pubCompare(void* a, void* b)
+static int pubCompare(void* a, void* b)
 {
 	Messages* msg = (Messages*)a;
 	return msg->publish == (Publications*)b;
@@ -1930,7 +1985,7 @@ exit:
 	return rc;
 }
 
-MQTTClient_nameValue* MQTTClient_getVersionInfo()
+MQTTClient_nameValue* MQTTClient_getVersionInfo(void)
 {
 	#define MAX_INFO_STRINGS 8
 	static MQTTClient_nameValue libinfo[MAX_INFO_STRINGS + 1];
@@ -1971,7 +2026,7 @@ MQTTClient_nameValue* MQTTClient_getVersionInfo()
  * Cleaning up means removing any publication data that was stored because the write did
  * not originally complete.
  */
-void MQTTProtocol_checkPendingWrites()
+static void MQTTProtocol_checkPendingWrites(void)
 {
 	FUNC_ENTRY;
 	if (state.pending_writes.count > 0)
@@ -1994,7 +2049,7 @@ void MQTTProtocol_checkPendingWrites()
 }
 
 
-void MQTTClient_writeComplete(int socket)				
+static void MQTTClient_writeComplete(int socket)
 {
 	ListElement* found = NULL;
 	

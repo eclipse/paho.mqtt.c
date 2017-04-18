@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2016 IBM Corp.
+ * Copyright (c) 2009, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,8 @@
  *    Ian Craggs - MQTT 3.1.1 support
  *    Ian Craggs - fix for bug 444103 - success/failure callbacks not invoked
  *    Ian Craggs - automatic reconnect and offline buffering (send while disconnected)
+ *    Ian Craggs - binary will message
+ *    Ian Craggs - binary password
  *******************************************************************************/
 
 /********************************************************************/
@@ -25,7 +27,7 @@
  * @cond MQTTAsync_main
  * @mainpage Asynchronous MQTT client library for C
  * 
- * &copy; Copyright IBM Corp. 2009, 2016
+ * &copy; Copyright IBM Corp. 2009, 2017
  * 
  * @brief An Asynchronous MQTT client library for C.
  *
@@ -347,7 +349,7 @@ typedef struct
 	/** A numeric code identifying the error. */
 	int code;
 	/** Optional text explaining the error. Can be NULL. */
-	char* message;
+	const char *message;
 } MQTTAsync_failureData;
 
 /** The data returned on completion of a successful API call in the response callback onSuccess. */
@@ -505,8 +507,6 @@ DLLExport int MQTTAsync_reconnect(MQTTAsync handle);
  * <i>tcp://localhost:1883</i>.
  * @param clientId The client identifier passed to the server when the
  * client connects to it. It is a null-terminated UTF-8 encoded string. 
- * ClientIDs must be no longer than 23 characters according to the MQTT 
- * specification.
  * @param persistence_type The type of persistence to be used by the client:
  * <br>
  * ::MQTTCLIENT_PERSISTENCE_NONE: Use in-memory persistence. If the device or 
@@ -570,7 +570,9 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTW. */
 	const char struct_id[4];
-	/** The version number of this structure.  Must be 0 */
+	/** The version number of this structure.  Must be 0 or 1
+	    0 indicates no binary will message support
+	 */
 	int struct_version;
 	/** The LWT topic to which the LWT message will be published. */
 	const char* topicName;
@@ -585,9 +587,15 @@ typedef struct
       * MQTTAsync_message.qos and @ref qos).
       */
 	int qos;
+  /** The LWT payload in binary form. This is only checked and used if the message option is NULL */
+	struct
+	{
+  	int len;            /**< binary payload length */
+		const void* data;  /**< binary payload data */
+	} payload;
 } MQTTAsync_willOptions;
 
-#define MQTTAsync_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 0, NULL, NULL, 0, 0 }
+#define MQTTAsync_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 1, NULL, NULL, 0, 0 }
 
 /**
 * MQTTAsync_sslProperties defines the settings to establish an SSL/TLS connection using the 
@@ -649,11 +657,12 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	const char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1, 2, 3 or 4.  
+	/** The version number of this structure.  Must be 0, 1, 2, 3 4 or 5.  
 	  * 0 signifies no SSL options and no serverURIs
 	  * 1 signifies no serverURIs 
-      * 2 signifies no MQTTVersion
-      * 3 signifies no automatic reconnect options
+    * 2 signifies no MQTTVersion
+    * 3 signifies no automatic reconnect options
+    * 4 signifies no binary password option (just string)
 	  */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -774,11 +783,18 @@ typedef struct
 	  * Maximum retry interval in seconds.  The doubling stops here on failed retries.
 	  */
 	int maxRetryInterval;
+	/** 
+   * Optional binary password.  Only checked and used if the password option is NULL
+   */
+  struct {
+  	int len;            /**< binary password length */
+		const void* data;  /**< binary password data */
+	} binarypwd;
 } MQTTAsync_connectOptions;
 
 
-#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 4, 60, 1, 10, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 1, 60}
+#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 5, 60, 1, 10, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 1, 60, {0, NULL}}
 
 /**
   * This function attempts to connect a previously-created client (see
@@ -1102,7 +1118,7 @@ typedef struct
   * MQTTASYNC_TRACE_MINIMUM
   * @return an array of strings describing the library.  The last entry is a NULL pointer. 
   */
-DLLExport MQTTAsync_nameValue* MQTTAsync_getVersionInfo();
+DLLExport MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void);
 
 
 /**
@@ -1265,7 +1281,7 @@ void onSend(void* context, MQTTAsync_successData* response)
 	if ((rc = MQTTAsync_disconnect(client, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start sendMessage, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -1298,7 +1314,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	if ((rc = MQTTAsync_sendMessage(client, TOPIC, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start sendMessage, return code %d\n", rc);
- 		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -1323,7 +1339,7 @@ int main(int argc, char* argv[])
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 
 	printf("Waiting for publication of %s\n"
@@ -1449,7 +1465,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	if ((rc = MQTTAsync_subscribe(client, TOPIC, QOS, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start subscribe, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -1476,7 +1492,7 @@ int main(int argc, char* argv[])
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
 
 	while	(!subscribed)
@@ -1498,7 +1514,7 @@ int main(int argc, char* argv[])
 	if ((rc = MQTTAsync_disconnect(client, &disc_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start disconnect, return code %d\n", rc);
-		exit(-1);	
+		exit(EXIT_FAILURE);
 	}
  	while	(!disc_finished)
 		#if defined(WIN32) || defined(WIN64)

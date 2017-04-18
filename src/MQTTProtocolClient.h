@@ -35,6 +35,7 @@ Publications* MQTTProtocol_storePublication(Publish* publish, int* len);
 int messageIDCompare(void* a, void* b);
 int MQTTProtocol_assignMsgId(Clients* client);
 void MQTTProtocol_removePublication(Publications* p);
+void Protocol_processPublication(Publish* publish, Clients* client);
 
 int MQTTProtocol_handlePublishes(void* pack, int sock);
 int MQTTProtocol_handlePubacks(void* pack, int sock);
@@ -42,6 +43,7 @@ int MQTTProtocol_handlePubrecs(void* pack, int sock);
 int MQTTProtocol_handlePubrels(void* pack, int sock);
 int MQTTProtocol_handlePubcomps(void* pack, int sock);
 
+void MQTTProtocol_closeSession(Clients* c, int sendwill);
 void MQTTProtocol_keepalive(time_t);
 void MQTTProtocol_retry(time_t, int, int);
 void MQTTProtocol_freeClient(Clients* client);

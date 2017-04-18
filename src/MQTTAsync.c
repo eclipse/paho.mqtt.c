@@ -61,14 +61,12 @@
 
 #include "VersionInfo.h"
 
-char* client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
-char* client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
+const char *client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
+const char *client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
 
 #if !defined(min)
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
-
-extern Sockets s;
 
 static ClientStates ClientState =
 {
@@ -143,7 +141,7 @@ static mutex_type mqttcommand_mutex = &mqttcommand_mutex_store;
 static cond_type_struct send_cond_store = { PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER };
 static cond_type send_cond = &send_cond_store;
 
-void MQTTAsync_init()
+void MQTTAsync_init(void)
 {
 	pthread_mutexattr_t attr;
 	int rc;
@@ -171,14 +169,6 @@ static List* handles = NULL;
 static int tostop = 0;
 static List* commands = NULL;
 
-MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc);
-int MQTTAsync_cleanSession(Clients* client);
-void MQTTAsync_stop();
-int MQTTAsync_disconnect_internal(MQTTAsync handle, int timeout);
-void MQTTAsync_closeOnly(Clients* client);
-void MQTTAsync_closeSession(Clients* client);
-void MQTTProtocol_closeSession(Clients* client, int sendwill);
-void MQTTAsync_writeComplete(int socket);
 
 #if defined(WIN32) || defined(WIN64)
 #define START_TIME_TYPE DWORD
@@ -336,12 +326,50 @@ typedef struct
 	unsigned int seqno; /* only used on restore */
 } MQTTAsync_queuedCommand;
 
-void MQTTAsync_freeCommand(MQTTAsync_queuedCommand *command);
-void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command);
-int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, size_t topicLen, MQTTAsync_message* mm);
+
+static int clientSockCompare(void* a, void* b);
+static void MQTTAsync_lock_mutex(mutex_type amutex);
+static void MQTTAsync_unlock_mutex(mutex_type amutex);
+static int MQTTAsync_checkConn(MQTTAsync_command* command, MQTTAsyncs* client);
+static void MQTTAsync_terminate(void);
 #if !defined(NO_PERSISTENCE)
-int MQTTAsync_restoreCommands(MQTTAsyncs* client);
+static int MQTTAsync_unpersistCommand(MQTTAsync_queuedCommand* qcmd);
+static int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd);
+static MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int buflen);
+static void MQTTAsync_insertInOrder(List* list, void* content, int size);
+static int MQTTAsync_restoreCommands(MQTTAsyncs* client);
 #endif
+static int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size);
+static void MQTTAsync_startConnectRetry(MQTTAsyncs* m);
+static void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* command);
+static void MQTTProtocol_checkPendingWrites(void);
+static void MQTTAsync_freeServerURIs(MQTTAsyncs* m);
+static void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command);
+static void MQTTAsync_freeCommand(MQTTAsync_queuedCommand *command);
+static void MQTTAsync_writeComplete(int socket);
+static int MQTTAsync_processCommand(void);
+static void MQTTAsync_checkTimeouts(void);
+static thread_return_type WINAPI MQTTAsync_sendThread(void* n);
+static void MQTTAsync_emptyMessageQueue(Clients* client);
+static void MQTTAsync_removeResponsesAndCommands(MQTTAsyncs* m);
+static int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack);
+static thread_return_type WINAPI MQTTAsync_receiveThread(void* n);
+static void MQTTAsync_stop(void);
+static void MQTTAsync_closeOnly(Clients* client);
+static void MQTTAsync_closeSession(Clients* client);
+static int clientStructCompare(void* a, void* b);
+static int MQTTAsync_cleanSession(Clients* client);
+static int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, size_t topicLen, MQTTAsync_message* mm);
+static int MQTTAsync_disconnect1(MQTTAsync handle, const MQTTAsync_disconnectOptions* options, int internal);
+static int MQTTAsync_disconnect_internal(MQTTAsync handle, int timeout);
+static int cmdMessageIDCompare(void* a, void* b);
+static int MQTTAsync_assignMsgId(MQTTAsyncs* m);
+static int MQTTAsync_countBufferedMessages(MQTTAsyncs* m);
+static void MQTTAsync_retry(void);
+static int MQTTAsync_connecting(MQTTAsyncs* m);
+static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc);
+static int pubCompare(void* a, void* b);
+
 
 void MQTTAsync_sleep(long milliseconds)
 {
@@ -361,14 +389,14 @@ void MQTTAsync_sleep(long milliseconds)
  * @param b second integer value
  * @return boolean indicating whether a and b are equal
  */
-int clientSockCompare(void* a, void* b)
+static int clientSockCompare(void* a, void* b)
 {
 	MQTTAsyncs* m = (MQTTAsyncs*)a;
 	return m->c->net.socket == *(int*)b;
 }
 
 
-void MQTTAsync_lock_mutex(mutex_type amutex)
+static void MQTTAsync_lock_mutex(mutex_type amutex)
 {
 	int rc = Thread_lock_mutex(amutex);
 	if (rc != 0)
@@ -376,7 +404,7 @@ void MQTTAsync_lock_mutex(mutex_type amutex)
 }
 
 
-void MQTTAsync_unlock_mutex(mutex_type amutex)
+static void MQTTAsync_unlock_mutex(mutex_type amutex)
 {
 	int rc = Thread_unlock_mutex(amutex);
 	if (rc != 0)
@@ -388,7 +416,7 @@ void MQTTAsync_unlock_mutex(mutex_type amutex)
   Check whether there are any more connect options.  If not then we are finished
   with connect attempts.
 */
-int MQTTAsync_checkConn(MQTTAsync_command* command, MQTTAsyncs* client)
+static int MQTTAsync_checkConn(MQTTAsync_command* command, MQTTAsyncs* client)
 {
 	int rc;
 
@@ -503,7 +531,7 @@ int MQTTAsync_create(MQTTAsync* handle, const char* serverURI, const char* clien
 }
 
 
-void MQTTAsync_terminate(void)
+static void MQTTAsync_terminate(void)
 {
 	FUNC_ENTRY;
 	MQTTAsync_stop();
@@ -531,7 +559,7 @@ void MQTTAsync_terminate(void)
 
 
 #if !defined(NO_PERSISTENCE)
-int MQTTAsync_unpersistCommand(MQTTAsync_queuedCommand* qcmd)
+static int MQTTAsync_unpersistCommand(MQTTAsync_queuedCommand* qcmd)
 {
 	int rc = 0;
 	char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
@@ -545,7 +573,7 @@ int MQTTAsync_unpersistCommand(MQTTAsync_queuedCommand* qcmd)
 }
 
 
-int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
+static int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 {
 	int rc = 0;
 	MQTTAsyncs* aclient = qcmd->client;
@@ -651,7 +679,7 @@ int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 }
 
 
-MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int buflen)
+static MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int buflen)
 {
 	MQTTAsync_command* command = NULL;
 	MQTTAsync_queuedCommand* qcommand = NULL;
@@ -735,7 +763,7 @@ MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int buflen)
 }
 
 
-void MQTTAsync_insertInOrder(List* list, void* content, int size)
+static void MQTTAsync_insertInOrder(List* list, void* content, int size)
 {
 	ListElement* index = NULL;
 	ListElement* current = NULL;
@@ -752,7 +780,7 @@ void MQTTAsync_insertInOrder(List* list, void* content, int size)
 }
 
 
-int MQTTAsync_restoreCommands(MQTTAsyncs* client)
+static int MQTTAsync_restoreCommands(MQTTAsyncs* client)
 {
 	int rc = 0;
 	char **msgkeys;
@@ -770,7 +798,9 @@ int MQTTAsync_restoreCommands(MQTTAsyncs* client)
 			int buflen;
 					
 			if (strncmp(msgkeys[i], PERSISTENCE_COMMAND_KEY, strlen(PERSISTENCE_COMMAND_KEY)) != 0)
+			{
 				;
+			}
 			else if ((rc = c->persistence->pget(c->phandle, msgkeys[i], &buffer, &buflen)) == 0)
 			{
 				MQTTAsync_queuedCommand* cmd = MQTTAsync_restoreCommand(buffer, buflen);
@@ -799,7 +829,7 @@ int MQTTAsync_restoreCommands(MQTTAsyncs* client)
 #endif
 
 
-int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
+static int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 {
 	int rc = 0;
 	
@@ -841,7 +871,7 @@ int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 }
 
 
-void MQTTAsync_startConnectRetry(MQTTAsyncs* m)
+static void MQTTAsync_startConnectRetry(MQTTAsyncs* m)
 {
 	if (m->automaticReconnect && m->shouldBeConnected)
 	{
@@ -898,7 +928,7 @@ int MQTTAsync_reconnect(MQTTAsync handle)
 }
 
 
-void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* command)
+static void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* command)
 {
 	MQTTAsyncs* m = handle;
 
@@ -932,7 +962,7 @@ void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* command)
  * Cleaning up means removing any publication data that was stored because the write did
  * not originally complete.
  */
-void MQTTProtocol_checkPendingWrites()
+static void MQTTProtocol_checkPendingWrites(void)
 {
 	FUNC_ENTRY;
 	if (state.pending_writes.count > 0)
@@ -955,7 +985,7 @@ void MQTTProtocol_checkPendingWrites()
 }
 
 
-void MQTTAsync_freeServerURIs(MQTTAsyncs* m)
+static void MQTTAsync_freeServerURIs(MQTTAsyncs* m)
 {
 	int i;
 		
@@ -966,7 +996,7 @@ void MQTTAsync_freeServerURIs(MQTTAsyncs* m)
 }
 
 
-void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command)
+static void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command)
 {
 	if (command->command.type == SUBSCRIBE)
 	{
@@ -996,14 +1026,14 @@ void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command)
 	}
 }
 
-void MQTTAsync_freeCommand(MQTTAsync_queuedCommand *command)
+static void MQTTAsync_freeCommand(MQTTAsync_queuedCommand *command)
 {
 	MQTTAsync_freeCommand1(command);
 	free(command);
 }
 
 
-void MQTTAsync_writeComplete(int socket)				
+static void MQTTAsync_writeComplete(int socket)
 {
 	ListElement* found = NULL;
 	
@@ -1056,7 +1086,7 @@ void MQTTAsync_writeComplete(int socket)
 }
 			
 
-int MQTTAsync_processCommand()
+static int MQTTAsync_processCommand(void)
 {
 	int rc = 0;
 	MQTTAsync_queuedCommand* command = NULL;
@@ -1086,7 +1116,9 @@ int MQTTAsync_processCommand()
 		{
 			if ((cmd->command.type == PUBLISH || cmd->command.type == SUBSCRIBE || cmd->command.type == UNSUBSCRIBE) &&
 				cmd->client->c->outboundMsgs->count >= MAX_MSG_ID - 1)
+			{
 				; /* no more message ids available */
+			}
 			else
 			{
 				command = cmd;
@@ -1303,7 +1335,7 @@ exit:
 }
 
 
-void MQTTAsync_checkTimeouts()
+static void MQTTAsync_checkTimeouts(void)
 {
 	ListElement* current = NULL;
 	static time_t last = 0L;
@@ -1408,7 +1440,7 @@ exit:
 }
 
 
-thread_return_type WINAPI MQTTAsync_sendThread(void* n)
+static thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 {
 	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttasync_mutex);
@@ -1444,7 +1476,7 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 }
 
 
-void MQTTAsync_emptyMessageQueue(Clients* client)
+static void MQTTAsync_emptyMessageQueue(Clients* client)
 {
 	FUNC_ENTRY;
 	/* empty message queue */
@@ -1464,7 +1496,7 @@ void MQTTAsync_emptyMessageQueue(Clients* client)
 }
 
 
-void MQTTAsync_removeResponsesAndCommands(MQTTAsyncs* m)
+static void MQTTAsync_removeResponsesAndCommands(MQTTAsyncs* m)
 {
 	int count = 0;	
 	ListElement* current = NULL;
@@ -1599,7 +1631,7 @@ void MQTTAsync_free(void* memory)
 }
 
 
-int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack)
+static int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack)
 {
 	int rc = MQTTASYNC_FAILURE;
 
@@ -1644,7 +1676,7 @@ int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack)
 }
 
 /* This is the thread function that handles the calling of callback functions if set */
-thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
+static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 {
 	long timeout = 10L; /* first time in we have a small timeout.  Gets things started more quickly */
 
@@ -1893,7 +1925,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 }
 
 
-void MQTTAsync_stop()
+static void MQTTAsync_stop(void)
 {
 	int rc = 0;
 
@@ -1983,7 +2015,7 @@ int MQTTAsync_setConnected(MQTTAsync handle, void* context, MQTTAsync_connected*
 }
 
 
-void MQTTAsync_closeOnly(Clients* client)
+static void MQTTAsync_closeOnly(Clients* client)
 {
 	FUNC_ENTRY;
 	client->good = 0;
@@ -2009,7 +2041,7 @@ void MQTTAsync_closeOnly(Clients* client)
 }
 
 
-void MQTTAsync_closeSession(Clients* client)
+static void MQTTAsync_closeSession(Clients* client)
 {
 	FUNC_ENTRY;
 	MQTTAsync_closeOnly(client);
@@ -2027,14 +2059,14 @@ void MQTTAsync_closeSession(Clients* client)
  * @param b Client structure
  * @return boolean indicating whether a and b are equal
  */
-int clientStructCompare(void* a, void* b)
+static int clientStructCompare(void* a, void* b)
 {
 	MQTTAsyncs* m = (MQTTAsyncs*)a;
 	return m->c == (Clients*)b;
 }
 
 
-int MQTTAsync_cleanSession(Clients* client)
+static int MQTTAsync_cleanSession(Clients* client)
 {
 	int rc = 0;
 	ListElement* found = NULL;
@@ -2060,7 +2092,7 @@ int MQTTAsync_cleanSession(Clients* client)
 }
 
 
-int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, size_t topicLen, MQTTAsync_message* mm)
+static int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, size_t topicLen, MQTTAsync_message* mm)
 {
 	int rc;
 					
@@ -2148,14 +2180,14 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		goto exit;
 	}
 
-	if (strncmp(options->struct_id, "MQTC", 4) != 0 || options->struct_version < 0 || options->struct_version > 4)
+	if (strncmp(options->struct_id, "MQTC", 4) != 0 || options->struct_version < 0 || options->struct_version > 5)
 	{
 		rc = MQTTASYNC_BAD_STRUCTURE;
 		goto exit;
 	}
 	if (options->will) /* check validity of will options structure */
 	{
-		if (strncmp(options->will->struct_id, "MQTW", 4) != 0 || options->will->struct_version != 0)
+		if (strncmp(options->will->struct_id, "MQTW", 4) != 0 || (options->will->struct_version != 0 && options->will->struct_version != 1))
 		{
 			rc = MQTTASYNC_BAD_STRUCTURE;
 			goto exit;
@@ -2218,16 +2250,37 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 
 	if (m->c->will)
 	{
-		free(m->c->will->msg);
+		free(m->c->will->payload);
 		free(m->c->will->topic);
 		free(m->c->will);
 		m->c->will = NULL;
 	}
 	
-	if (options->will && options->will->struct_version == 0)
+	if (options->will && (options->will->struct_version == 0 || options->will->struct_version == 1))
 	{
+		const void* source = NULL;
+		
 		m->c->will = malloc(sizeof(willMessages));
-		m->c->will->msg = MQTTStrdup(options->will->message);
+		if (options->will->message || (options->will->struct_version == 1 && options->will->payload.data))
+		{
+			if (options->will->struct_version == 1 && options->will->payload.data)
+			{
+				m->c->will->payloadlen = options->will->payload.len;
+				source = options->will->payload.data;
+			}
+			else
+			{
+				m->c->will->payloadlen = strlen(options->will->message);
+				source = (void*)options->will->message;
+			}
+			m->c->will->payload = malloc(m->c->will->payloadlen);
+			memcpy(m->c->will->payload, source, m->c->will->payloadlen);
+		}
+		else 
+		{
+			m->c->will->payload = NULL;
+			m->c->will->payloadlen = 0;
+		}
 		m->c->will->qos = options->will->qos;
 		m->c->will->retained = options->will->retained;
 		m->c->will->topic = MQTTStrdup(options->will->topicName);
@@ -2270,6 +2323,14 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 
 	m->c->username = options->username;
 	m->c->password = options->password;
+	if (options->password)
+		m->c->passwordlen = strlen(options->password) + 1;
+	else if (options->struct_version >= 5 && options->binarypwd.data)
+	{
+		m->c->password = options->binarypwd.data;
+		m->c->passwordlen = options->binarypwd.len;
+	}
+	
 	m->c->retryInterval = options->retryInterval;
 	m->shouldBeConnected = 1;
 
@@ -2306,7 +2367,7 @@ exit:
 }
 
 
-int MQTTAsync_disconnect1(MQTTAsync handle, const MQTTAsync_disconnectOptions* options, int internal)
+static int MQTTAsync_disconnect1(MQTTAsync handle, const MQTTAsync_disconnectOptions* options, int internal)
 {
 	MQTTAsyncs* m = handle;
 	int rc = MQTTASYNC_SUCCESS;
@@ -2347,7 +2408,7 @@ exit:
 }
 
 
-int MQTTAsync_disconnect_internal(MQTTAsync handle, int timeout)
+static int MQTTAsync_disconnect_internal(MQTTAsync handle, int timeout)
 {
 	MQTTAsync_disconnectOptions options = MQTTAsync_disconnectOptions_initializer;
 	
@@ -2383,7 +2444,7 @@ int MQTTAsync_isConnected(MQTTAsync handle)
 }
 
 
-int cmdMessageIDCompare(void* a, void* b)
+static int cmdMessageIDCompare(void* a, void* b)
 {
 	MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)a;
 	return cmd->command.token == *(int*)b;
@@ -2396,7 +2457,7 @@ int cmdMessageIDCompare(void* a, void* b)
  * @param m a client structure
  * @return the next message id to use, or 0 if none available
  */
-int MQTTAsync_assignMsgId(MQTTAsyncs* m)
+static int MQTTAsync_assignMsgId(MQTTAsyncs* m)
 {
 	int start_msgid = m->c->msgID;
 	int msgid = start_msgid;
@@ -2580,7 +2641,7 @@ int MQTTAsync_unsubscribe(MQTTAsync handle, const char* topic, MQTTAsync_respons
 }
 
 
-int MQTTAsync_countBufferedMessages(MQTTAsyncs* m)
+static int MQTTAsync_countBufferedMessages(MQTTAsyncs* m)
 {
 	ListElement* current = NULL;
 	int count = 0;
@@ -2675,7 +2736,7 @@ exit:
 }
 
 
-void MQTTAsync_retry(void)
+static void MQTTAsync_retry(void)
 {
 	static time_t last = 0L;
 	time_t now;
@@ -2694,7 +2755,7 @@ void MQTTAsync_retry(void)
 }
 
 
-int MQTTAsync_connecting(MQTTAsyncs* m)
+static int MQTTAsync_connecting(MQTTAsyncs* m)
 {
 	int rc = -1;
 
@@ -2820,7 +2881,7 @@ exit:
 }
 
 
-MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
+static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 {
 	struct timeval tp = {0L, 0L};
 	static Ack ack;
@@ -2974,7 +3035,7 @@ MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 }
 
 
-int pubCompare(void* a, void* b)
+static int pubCompare(void* a, void* b)
 {
 	Messages* msg = (Messages*)a;
 	return msg->publish == (Publications*)b;
@@ -3145,7 +3206,7 @@ void MQTTAsync_setTraceCallback(MQTTAsync_traceCallback* callback)
 }
 
 
-MQTTAsync_nameValue* MQTTAsync_getVersionInfo()
+MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void)
 {
 	#define MAX_INFO_STRINGS 8
 	static MQTTAsync_nameValue libinfo[MAX_INFO_STRINGS + 1];

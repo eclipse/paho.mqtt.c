@@ -31,6 +31,9 @@
 #include "Heap.h"
 
 
+static MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t buflen);
+static void MQTTPersistence_insertInSeqOrder(List* list, MQTTPersistence_qEntry* qEntry, size_t size);
+
 /**
  * Creates a ::MQTTClient_persistence structure representing a persistence implementation.
  * @param persistence the ::MQTTClient_persistence structure.
@@ -184,9 +187,13 @@ int MQTTPersistence_restore(Clients *c)
 		while (rc == 0 && i < nkeys)
 		{
 			if (strncmp(msgkeys[i], PERSISTENCE_COMMAND_KEY, strlen(PERSISTENCE_COMMAND_KEY)) == 0)
+			{
 				;
+			}
 			else if (strncmp(msgkeys[i], PERSISTENCE_QUEUE_KEY, strlen(PERSISTENCE_QUEUE_KEY)) == 0)
+			{
 				;
+			}
 			else if ((rc = c->persistence->pget(c->phandle, msgkeys[i], &buffer, &buflen)) == 0)
 			{
 				MQTTPacket* pack = MQTTPersistence_restorePacket(buffer, buflen);
@@ -531,7 +538,7 @@ int MQTTPersistence_persistQueueEntry(Clients* aclient, MQTTPersistence_qEntry* 
 }
 
 
-MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t buflen)
+static MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t buflen)
 {
 	MQTTPersistence_qEntry* qe = NULL;
 	char* ptr = buffer;
@@ -577,7 +584,7 @@ MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t b
 }
 
 
-void MQTTPersistence_insertInSeqOrder(List* list, MQTTPersistence_qEntry* qEntry, size_t size)
+static void MQTTPersistence_insertInSeqOrder(List* list, MQTTPersistence_qEntry* qEntry, size_t size)
 {
 	ListElement* index = NULL;
 	ListElement* current = NULL;
@@ -615,7 +622,9 @@ int MQTTPersistence_restoreMessageQueue(Clients* c)
 			int buflen;
 					
 			if (strncmp(msgkeys[i], PERSISTENCE_QUEUE_KEY, strlen(PERSISTENCE_QUEUE_KEY)) != 0)
+			{
 				;
+			}
 			else if ((rc = c->persistence->pget(c->phandle, msgkeys[i], &buffer, &buflen)) == 0)
 			{
 				MQTTPersistence_qEntry* qe = MQTTPersistence_restoreQueueEntry(buffer, buflen);
@@ -630,7 +639,9 @@ int MQTTPersistence_restoreMessageQueue(Clients* c)
 				}
 			}
 			if (msgkeys[i])
+			{
 				free(msgkeys[i]);
+			}
 			i++;
 		}
 		if (msgkeys != NULL)

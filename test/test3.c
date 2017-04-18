@@ -1,19 +1,18 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 IBM Corp.
+ * Copyright (c) 2012, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
- * and Eclipse Distribution License v1.0 which accompany this distribution. 
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
- * The Eclipse Public License is available at 
+ * The Eclipse Public License is available at
  *    http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
  *    Allan Stockdill-Mander - initial API and implementation and/or initial documentation
  *******************************************************************************/
-
 
 /**
  * @file
@@ -24,23 +23,17 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if !defined(_WINDOWS)
-	#include <sys/time.h>
-  	#include <sys/socket.h>
-	#include <unistd.h>
-  	#include <errno.h>
+#if defined(_WINDOWS)
+  #include <windows.h>
+  #include <openssl/applink.c>
+  #define MAXHOSTNAMELEN 256
+  #define snprintf _snprintf
+  #define setenv(a, b, c) _putenv_s(a, b)
 #else
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#define MAXHOSTNAMELEN 256
-#define EAGAIN WSAEWOULDBLOCK
-#define EINTR WSAEINTR
-#define EINPROGRESS WSAEINPROGRESS
-#define EWOULDBLOCK WSAEWOULDBLOCK
-#define ENOTCONN WSAENOTCONN
-#define ECONNRESET WSAECONNRESET
-#define snprintf _snprintf
-#define setenv(a, b, c) _putenv_s(a, b)
+  #include <sys/time.h>
+  #include <sys/socket.h>
+  #include <unistd.h>
+  #include <errno.h>
 #endif
 
 #if defined(IOS)
@@ -51,10 +44,6 @@ char persistenceStore[1024];
 char* persistenceStore = NULL;
 #endif
 
-#if 0
-#include <logaX.h>   /* For general log messages                      */
-#define MyLog logaLine
-#else
 #define LOGA_DEBUG 0
 #define LOGA_INFO 1
 #include <stdarg.h>
@@ -63,7 +52,7 @@ char* persistenceStore = NULL;
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
-void usage()
+void usage(void)
 {
 	printf("Options:\n");
 	printf("\t--test_no <test_no> - Run test number <test_no>\n");
@@ -76,7 +65,7 @@ void usage()
 	printf("\t--verbose - Enable verbose output \n");
 	printf("\tserver connection URLs should be in the form; (tcp|ssl)://hostname:port\n");
 	printf("\t--help - This help output\n");
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 struct Options
@@ -134,7 +123,7 @@ char* test_map[] =
 void getopts(int argc, char** argv)
 {
 	int count = 1;
-	
+
 	while (count < argc)
 	{
 		if (strcmp(argv[count], "--help") == 0)
@@ -155,7 +144,7 @@ void getopts(int argc, char** argv)
 				}
 				if (options.test_no == 0)
 					options.test_no = atoi(argv[count]);
-				
+
 			}
 			else
 				usage();
@@ -273,7 +262,7 @@ void MyLog(int LOGA_level, char* format, ...)
 
 	if (LOGA_level == LOGA_DEBUG && options.verbose == 0)
 	  return;
-	
+
 	ftime(&ts);
 	timeinfo = localtime(&ts.time);
 	strftime(msg_buf, 80, "%Y%m%d %H%M%S", timeinfo);
@@ -287,7 +276,6 @@ void MyLog(int LOGA_level, char* format, ...)
 	printf("%s\n", msg_buf);
 	fflush(stdout);
 }
-#endif
 
 
 #if defined(WIN32) || defined(_WINDOWS)
@@ -359,15 +347,15 @@ char output[3000];
 char* cur_output = output;
 
 
-void write_test_result()
+void write_test_result(void)
 {
 	long duration = elapsed(global_start_time);
 
-	fprintf(xml, " time=\"%ld.%.3ld\" >\n", duration / 1000, duration % 1000); 
+	fprintf(xml, " time=\"%ld.%.3ld\" >\n", duration / 1000, duration % 1000);
 	if (cur_output != output)
 	{
 		fprintf(xml, "%s", output);
-		cur_output = output;	
+		cur_output = output;
 	}
 	fprintf(xml, "</testcase>\n");
 }
@@ -387,11 +375,11 @@ int myassert(char* filename, int lineno, char* description, int value, char* for
 		vprintf(format, args);
 		va_end(args);
 
-		cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n", 
+		cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n",
                         description, filename, lineno);
 	}
 	else
-		MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);  
+		MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);
 	return value;
 }
 
@@ -513,7 +501,7 @@ void multiThread_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 	for (i = 1; i <= iterations; ++i)
 	{
 		if (i % 10 == 0)
-			rc = MQTTClient_publish(c, test_topic, multiThread_pubmsg.payloadlen, multiThread_pubmsg.payload, 
+			rc = MQTTClient_publish(c, test_topic, multiThread_pubmsg.payloadlen, multiThread_pubmsg.payload,
                    multiThread_pubmsg.qos, multiThread_pubmsg.retained, NULL);
 		else
 			rc = MQTTClient_publishMessage(c, test_topic, &multiThread_pubmsg, &dt);
@@ -535,7 +523,7 @@ void multiThread_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 				usleep(1000000L);
 			#endif
 		}
-		assert("Message Arrived", wait_seconds > 0, 
+		assert("Message Arrived", wait_seconds > 0,
 				"Time out waiting for message %d\n", i );
 	}
 	if (qos > 0)
@@ -543,7 +531,7 @@ void multiThread_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 		/* MQ Telemetry can send a message to a subscriber before the server has
 		   completed the QoS 2 handshake with the publisher. For QoS 1 and 2,
 		   allow time for the final delivery complete callback before checking
-		   that all expected callbacks have been made */ 
+		   that all expected callbacks have been made */
 		wait_seconds = 10;
 		while ((multiThread_deliveryCompleted < iterations) && (wait_seconds-- > 0))
 		{
@@ -554,8 +542,8 @@ void multiThread_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 				usleep(1000000L);
 			#endif
 		}
-		assert("All Deliveries Complete", wait_seconds > 0, 
-			   "Number of deliveryCompleted callbacks was %d\n", 
+		assert("All Deliveries Complete", wait_seconds > 0,
+			   "Number of deliveryCompleted callbacks was %d\n",
 			   multiThread_deliveryCompleted);
 	}
 }
@@ -581,7 +569,7 @@ int test1(struct Options options)
 	MyLog(LOGA_INFO, "Starting SSL test 1 - connection to nonSSL MQTT server");
 	fprintf(xml, "<testcase classname=\"test3\" name=\"SSL connect fail to nonSSL MQTT server\"");
 	global_start_time = start_clock();
-	
+
 	rc = MQTTClient_create(&c, options.connection, "test1",	MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
 	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d \n", rc)))
 		goto exit;
@@ -597,7 +585,7 @@ int test1(struct Options options)
 	}
 
 	opts.ssl = &sslopts;
-	if (options.server_key_file != NULL) 
+	if (options.server_key_file != NULL)
 		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
 
 	MyLog(LOGA_DEBUG, "Connecting");
@@ -636,7 +624,7 @@ int test2a_s(struct Options options)
 	MyLog(LOGA_INFO, "Starting test 2a_s - Mutual SSL authentication - single threaded client using receive");
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 2a_s\"");
 	global_start_time = start_clock();
-	
+
 	rc = MQTTClient_create(&c, options.server_auth_connection, "test2a_s", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
 	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
@@ -652,12 +640,12 @@ int test2a_s(struct Options options)
 	}
 
 	opts.ssl = &sslopts;
-	if (options.server_key_file) 
+	if (options.server_key_file)
 		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
 	opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
-	if (options.client_key_pass) 
+	if (options.client_key_pass)
 		opts.ssl->privateKeyPassword = options.client_key_pass;
-	if (options.client_private_key_file) 
+	if (options.client_private_key_file)
 		opts.ssl->privateKey = options.client_private_key_file;
 
 	MyLog(LOGA_DEBUG, "Connecting");
@@ -737,12 +725,12 @@ int test2a_m(struct Options options)
 	}
 
 	opts.ssl = &sslopts;
-	if (options.server_key_file) 
+	if (options.server_key_file)
 		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
 	opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
-	if (options.client_key_pass) 
+	if (options.client_key_pass)
 		opts.ssl->privateKeyPassword = options.client_key_pass;
-	if (options.client_private_key_file) 
+	if (options.client_private_key_file)
 		opts.ssl->privateKey = options.client_private_key_file;
 	//opts.ssl->enabledCipherSuites = "DEFAULT";
 	//opts.ssl->enabledServerCertAuth = 1;
@@ -802,7 +790,7 @@ int test2b(struct Options options)
 	MyLog(LOGA_INFO, "Starting test 2b - connection to SSL MQTT server with clientauth=req but server does not have client cert");
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 2b\"");
 	global_start_time = start_clock();
-	
+
 	rc = MQTTClient_create(&c, options.nocert_mutual_auth_connection, "test2b", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
 	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
@@ -818,12 +806,12 @@ int test2b(struct Options options)
 	}
 
 	opts.ssl = &sslopts;
-	if (options.server_key_file) 
+	if (options.server_key_file)
 		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
 	opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
-	if (options.client_key_pass) 
+	if (options.client_key_pass)
 		opts.ssl->privateKeyPassword = options.client_key_pass;
-	if (options.client_private_key_file)  
+	if (options.client_private_key_file)
 		opts.ssl->privateKey = options.client_private_key_file;
 	//opts.ssl->enabledCipherSuites = "DEFAULT";
 	//opts.ssl->enabledServerCertAuth = 0;
@@ -862,7 +850,7 @@ int test2c(struct Options options)
 	MyLog(LOGA_INFO, "Starting test 2c - connection to SSL MQTT server, server auth enabled but unknown cert");
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 2c\"");
 	global_start_time = start_clock();
-	
+
 	rc = MQTTClient_create(&c, options.mutual_auth_connection, "test2c", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
 	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
@@ -878,12 +866,12 @@ int test2c(struct Options options)
 	}
 
 	opts.ssl = &sslopts;
-    	//if (options.server_key_file) 
+    	//if (options.server_key_file)
 	//	opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
 	opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
-	if (options.client_key_pass) 
+	if (options.client_key_pass)
 		opts.ssl->privateKeyPassword = options.client_key_pass;
-	if (options.client_private_key_file) 
+	if (options.client_private_key_file)
 		opts.ssl->privateKey = options.client_private_key_file;
 	//opts.ssl->enabledCipherSuites = "DEFAULT";
 	//opts.ssl->enabledServerCertAuth = 0;
@@ -923,7 +911,7 @@ int test3a_s(struct Options options)
 	MyLog(LOGA_INFO, "Starting test 3a_s - Server authentication - single threaded client using receive");
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 3a_s\"");
 	global_start_time = start_clock();
-	
+
 	rc = MQTTClient_create(&c, options.server_auth_connection, "test3a_s", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
 	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
@@ -939,7 +927,7 @@ int test3a_s(struct Options options)
 	}
 
 	opts.ssl = &sslopts;
-	if (options.server_key_file != NULL) 
+	if (options.server_key_file != NULL)
 		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
 
 	MyLog(LOGA_DEBUG, "Connecting");
@@ -1018,7 +1006,7 @@ int test3a_m(struct Options options)
 	}
 
 	opts.ssl = &sslopts;
-	if (options.server_key_file != NULL) 
+	if (options.server_key_file != NULL)
 		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
 
 	rc = MQTTClient_setCallbacks(c, NULL, NULL, multiThread_messageArrived,	multiThread_deliveryComplete);
@@ -1076,7 +1064,7 @@ int test3b(struct Options options)
 	MyLog(LOGA_INFO, "Starting test 3b - connection to SSL MQTT server with clientauth=opt but client does not have server cert");
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 3b\"");
 	global_start_time = start_clock();
-	
+
 	rc = MQTTClient_create(&c, options.server_auth_connection, "test3b", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
 	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
@@ -1096,7 +1084,7 @@ int test3b(struct Options options)
 	MyLog(LOGA_DEBUG, "Connecting");
 
 	rc = MQTTClient_connect(c, &opts);
-	if (!(assert("Good rc from connect", rc == MQTTCLIENT_FAILURE, "rc was %d", rc)))
+	if (!(assert("Bad rc from connect", rc == MQTTCLIENT_FAILURE, "rc was %d", rc)))
 		goto exit;
 
 exit:
@@ -1128,7 +1116,7 @@ int test4_s(struct Options options)
 	MyLog(LOGA_INFO, "Starting test 4_s - accept invalid server certificates - single threaded");
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 4_s\"");
 	global_start_time = start_clock();
-	
+
 	rc = MQTTClient_create(&c, options.server_auth_connection, "test4_s", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
 	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
@@ -1279,7 +1267,7 @@ int test5a(struct Options options)
 	MyLog(LOGA_INFO, "Starting SSL test 5a - Anonymous ciphers - server authentication disabled");
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 5a\"");
 	global_start_time = start_clock();
-	
+
 	rc = MQTTClient_create(&c, options.anon_connection, "test5a", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
 	if (!(assert("good rc from create",	rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
@@ -1358,7 +1346,7 @@ int test5b(struct Options options)
 	MyLog(LOGA_INFO, "Starting SSL test 5b - Anonymous ciphers - server authentication enabled");
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 5b\"");
 	global_start_time = start_clock();
-	
+
 	rc = MQTTClient_create(&c, options.anon_connection, "test5b", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
 	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
@@ -1440,7 +1428,7 @@ int test5c(struct Options options)
 	MyLog(LOGA_INFO, "Starting SSL test 5c - Anonymous ciphers - client not using anonymous cipher");
 	fprintf(xml, "<testcase classname=\"test3\" name=\"test 5c\"");
 	global_start_time = start_clock();
-	
+
 	rc = MQTTClient_create(&c, options.anon_connection, "test5c", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
 	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
 		goto exit;
@@ -1528,9 +1516,9 @@ int main(int argc, char** argv)
 
 	xml = fopen("TEST-test3.xml", "w");
 	fprintf(xml, "<testsuite name=\"test3\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
-    
+
 	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
-	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
+	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 0);
 	getopts(argc, argv);
  	if (options.test_no == 0)
 	{ /* run all the tests */
@@ -1539,7 +1527,7 @@ int main(int argc, char** argv)
 	}
 	else
 		rc = tests[options.test_no](options); /* run just the selected test */
-    	
+
 	MyLog(LOGA_INFO, "Total tests run: %d", *numtests);
 	if (rc == 0)
 		MyLog(LOGA_INFO, "verdict pass");
@@ -1548,6 +1536,6 @@ int main(int argc, char** argv)
 
 	fprintf(xml, "</testsuite>\n");
 	fclose(xml);
-	
+
 	return rc;
 }

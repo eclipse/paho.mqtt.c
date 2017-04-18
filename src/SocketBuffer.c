@@ -53,6 +53,13 @@ static List* queues;
  */
 static List writes;
 
+
+int socketcompare(void* a, void* b);
+void SocketBuffer_newDefQ(void);
+void SocketBuffer_freeDefQ(void);
+int pending_socketcompare(void* a, void* b);
+
+
 /**
  * List callback function for comparing socket_queues by socket
  * @param a first integer value

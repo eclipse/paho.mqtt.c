@@ -1,13 +1,18 @@
 #!/bin/bash
 
-
 if [ "$TRAVIS_OS_NAME" == "linux" ]; then
-	sudo apt-get update -qq
-	sudo apt-get install -y libssl-dev
+	pwd
+	sudo service mosquitto stop
+	# Stop any mosquitto instance which may be still running from previous runs
+	killall mosquitto
+	mosquitto -h
+	mosquitto -c test/tls-testing/mosquitto.conf &
 fi
 
 if [ "$TRAVIS_OS_NAME" == "osx" ]; then
+	pwd
 	brew update
-	brew install openssl
-	export CFLAGS="-I/usr/local/opt/openssl/include $CFLAGS" LDFLAGS="-L/usr/local/opt/openssl/lib $LDFLAGS"
+	brew install openssl mosquitto
+	brew services stop mosquitto
+	/usr/local/sbin/mosquitto -c test/tls-testing/mosquitto.conf &
 fi

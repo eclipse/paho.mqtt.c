@@ -1,0 +1,32 @@
+version: 1.1.{build}
+image: Visual Studio 2015
+configuration: Debug
+install:
+  - cmd: python --version
+    
+  - cmd: netsh advfirewall firewall add rule name="Python 2.7" dir=in action=allow program="C:\Python27\python.exe" enable=yes
+
+  - cmd: netsh advfirewall firewall add rule name="Open Port 1883" dir=in action=allow protocol=TCP localport=1883
+
+  - cmd: netsh advfirewall set allprofiles state off
+    
+  - ps: Start-Process python -ArgumentList 'test\mqttsas2.py', 'mqtt.iotree.co.uk'
+  
+build_script:
+- cmd: >-
+    mkdir build.paho
+
+    cd build.paho
+
+    "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
+
+    cmake -G "NMake Makefiles" -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=TRUE ..
+
+    nmake
+
+    ctest -T test -VV
+
+    cd ..
+
+test:
+  assemblies: build/Testing/*/Test.xml

@@ -1,15 +1,15 @@
 #*******************************************************************************
-#  Copyright (c) 2015, 2016 logi.cals GmbH
-# 
+#  Copyright (c) 2015, 2017 logi.cals GmbH and others
+#
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
-#  and Eclipse Distribution License v1.0 which accompany this distribution. 
-# 
-#  The Eclipse Public License is available at 
+#  and Eclipse Distribution License v1.0 which accompany this distribution.
+#
+#  The Eclipse Public License is available at
 #     http://www.eclipse.org/legal/epl-v10.html
-#  and the Eclipse Distribution License is available at 
+#  and the Eclipse Distribution License is available at
 #    http://www.eclipse.org/org/documents/edl-v10.php.
-# 
+#
 #  Contributors:
 #     Rainer Poisel - initial version
 #     Ian Craggs - update sample names
@@ -23,6 +23,10 @@ INCLUDE_DIRECTORIES(
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_BINARY_DIR}
     )
+
+IF (WIN32)
+  	ADD_DEFINITIONS(/DCMAKE_BUILD /D_CRT_SECURE_NO_DEPRECATE)
+ENDIF()
 
 # sample files c
 ADD_EXECUTABLE(paho_c_pub paho_c_pub.c)
@@ -56,5 +60,6 @@ INSTALL(TARGETS paho_c_sub
                 MQTTClient_subscribe
                 MQTTClient_publish
                 MQTTClient_publish_async
-    RUNTIME DESTINATION bin)
 
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION ${PAHO_LIBRARY_DIR_NAME})

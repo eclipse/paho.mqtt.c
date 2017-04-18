@@ -1,18 +1,19 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2015 IBM Corp.
+ * Copyright (c) 2009, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
- * and Eclipse Distribution License v1.0 which accompany this distribution. 
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
- * The Eclipse Public License is available at 
+ * The Eclipse Public License is available at
  *    http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs - MQTT 3.1.1 support
+ *    Ian Craggs - change will message test back to using proxy
  *******************************************************************************/
 
 
@@ -33,35 +34,28 @@
 #include <stdlib.h>
 
 #if !defined(_WINDOWS)
-	#include <sys/time.h>
-  	#include <sys/socket.h>
-	#include <unistd.h>
-  	#include <errno.h>
+  #include <sys/time.h>
+  #include <sys/socket.h>
+  #include <unistd.h>
+  #include <errno.h>
 #else
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#define MAXHOSTNAMELEN 256
-#define EAGAIN WSAEWOULDBLOCK
-#define EINTR WSAEINTR
-#define EINPROGRESS WSAEINPROGRESS
-#define EWOULDBLOCK WSAEWOULDBLOCK
-#define ENOTCONN WSAENOTCONN
-#define ECONNRESET WSAECONNRESET
-#define setenv(a, b, c) _putenv_s(a, b)
+  #include <windows.h>
+  #define setenv(a, b, c) _putenv_s(a, b)
 #endif
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
-void usage()
+void usage(void)
 {
 	printf("help!!\n");
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 struct Options
 {
 	char* connection;         /**< connection to system under test. */
 	char** haconnections;
+	char* proxy_connection;
 	int hacount;
 	int verbose;
 	int test_no;
@@ -69,8 +63,9 @@ struct Options
 	int iterations;
 } options =
 {
-	"tcp://m2m.eclipse.org:1883",
+	"tcp://iot.eclipse.org:1883",
 	NULL,
+	"tcp://localhost:1883",
 	0,
 	0,
 	0,
@@ -81,7 +76,7 @@ struct Options
 void getopts(int argc, char** argv)
 {
 	int count = 1;
-	
+
 	while (count < argc)
 	{
 		if (strcmp(argv[count], "--test_no") == 0)
@@ -116,6 +111,13 @@ void getopts(int argc, char** argv)
 					tok = strtok(NULL, " ");
 				}
 			}
+			else
+				usage();
+		}
+		else if (strcmp(argv[count], "--proxy_connection") == 0)
+		{
+			if (++count < argc)
+				options.proxy_connection = argv[count];
 			else
 				usage();
 		}
@@ -161,7 +163,7 @@ void MyLog(int LOGA_level, char* format, ...)
 
 	if (LOGA_level == LOGA_DEBUG && options.verbose == 0)
 	  return;
-	
+
 	ftime(&ts);
 	timeinfo = localtime(&ts.time);
 	strftime(msg_buf, 80, "%Y%m%d %H%M%S", timeinfo);
@@ -245,15 +247,15 @@ char output[3000];
 char* cur_output = output;
 
 
-void write_test_result()
+void write_test_result(void)
 {
 	long duration = elapsed(global_start_time);
 
-	fprintf(xml, " time=\"%ld.%.3ld\" >\n", duration / 1000, duration % 1000); 
+	fprintf(xml, " time=\"%ld.%.3ld\" >\n", duration / 1000, duration % 1000);
 	if (cur_output != output)
 	{
 		fprintf(xml, "%s", output);
-		cur_output = output;	
+		cur_output = output;
 	}
 	fprintf(xml, "</testcase>\n");
 }
@@ -273,11 +275,11 @@ void myassert(char* filename, int lineno, char* description, int value, char* fo
 		vprintf(format, args);
 		va_end(args);
 
-		cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n", 
+		cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n",
                         description, filename, lineno);
 	}
-    else
-    	MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);  
+	else
+		MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);
 }
 
 
@@ -361,9 +363,9 @@ int test1(struct Options options)
 	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 1 - single threaded client using receive");
-	
+
 	rc = MQTTClient_create(&c, options.connection, "single_threaded_test",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);		
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTCLIENT_SUCCESS)
 	{
@@ -475,7 +477,7 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 	for (i = 1; i <= iterations; ++i)
 	{
 		if (i % 10 == 0)
-			rc = MQTTClient_publish(c, test_topic, test2_pubmsg.payloadlen, test2_pubmsg.payload, 
+			rc = MQTTClient_publish(c, test_topic, test2_pubmsg.payloadlen, test2_pubmsg.payload,
                    test2_pubmsg.qos, test2_pubmsg.retained, NULL);
 		else
 			rc = MQTTClient_publishMessage(c, test_topic, &test2_pubmsg, &dt);
@@ -497,7 +499,7 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 				usleep(1000000L);
 			#endif
 		}
-		assert("Message Arrived", wait_seconds > 0, 
+		assert("Message Arrived", wait_seconds > 0,
 				"Time out waiting for message %d\n", i );
 	}
 	if (qos > 0)
@@ -505,7 +507,7 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 		/* MQ Telemetry can send a message to a subscriber before the server has
 		   completed the QoS 2 handshake with the publisher. For QoS 1 and 2,
 		   allow time for the final delivery complete callback before checking
-		   that all expected callbacks have been made */ 
+		   that all expected callbacks have been made */
 		wait_seconds = 10;
 		while ((test2_deliveryCompleted < iterations) && (wait_seconds-- > 0))
 		{
@@ -516,8 +518,8 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 				usleep(1000000L);
 			#endif
 		}
-		assert("All Deliveries Complete", wait_seconds > 0, 
-			   "Number of deliveryCompleted callbacks was %d\n", 
+		assert("All Deliveries Complete", wait_seconds > 0,
+			   "Number of deliveryCompleted callbacks was %d\n",
 			   test2_deliveryCompleted);
 	}
 }
@@ -543,6 +545,9 @@ int test2(struct Options options)
 	opts.keepAliveInterval = 20;
 	opts.cleansession = 1;
 	opts.MQTTVersion = options.MQTTVersion;
+	opts.username = "testuser";
+	opts.binarypwd.data = "testpassword";
+	opts.binarypwd.len = strlen(opts.binarypwd.data);
 	if (options.haconnections != NULL)
 	{
 		opts.serverURIs = options.haconnections;
@@ -635,7 +640,7 @@ int test3(struct Options options)
 	/* authorization failure (RC = 5) */
 	opts.username = "Admin";
 	opts.password = "Admin";
-	/*opts.will = &wopts;    "Admin" not authorized to publish to Will topic by default 
+	/*opts.will = &wopts;    "Admin" not authorized to publish to Will topic by default
 	opts.will->message = "will message";
 	opts.will->qos = 1;
 	opts.will->retained = 0;
@@ -684,7 +689,7 @@ int test4_run(int qos)
 	int count = 3;
 	int i, rc;
 
-	failures = 0;	
+	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 4 - persistence, qos %d", qos);
 
 	MQTTClient_create(&c, options.connection, "xrctest1_test_4", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
@@ -714,7 +719,7 @@ int test4_run(int qos)
   		assert("Good rc from connect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 		return -1;
 	}
-	
+
 	/* subscribe so we can get messages back */
 	rc = MQTTClient_subscribe(c, topic, subsqos);
 	assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
@@ -794,7 +799,7 @@ int test4_run(int qos)
 			MQTTClient_free(topicName);
 		}
 	}
-	
+
 	MQTTClient_yield();  /* allow any unfinished protocol exchanges to finish */
 
 	rc = MQTTClient_getPendingDeliveryTokens(c, &tokens);
@@ -819,11 +824,11 @@ int test4(struct Options options)
 	fprintf(xml, "<testcase classname=\"test1\" name=\"persistence\"");
 	global_start_time = start_clock();
 	rc = test4_run(1) + test4_run(2);
-	fprintf(xml, " time=\"%ld\" >\n", elapsed(global_start_time) / 1000); 
+	fprintf(xml, " time=\"%ld\" >\n", elapsed(global_start_time) / 1000);
 	if (cur_output != output)
 	{
 		fprintf(xml, "%s", output);
-		cur_output = output;	
+		cur_output = output;
 	}
 	fprintf(xml, "</testcase>\n");
 	return rc;
@@ -838,16 +843,11 @@ Test 5: disconnect with quiesce timeout should allow exchanges to complete
 int test5(struct Options options)
 {
 	char* testname = "test 5";
-	/* TODO - unused -remove? char summaryname[50]; */
-	/* TODO - unused -remove? FILE *outfile = NULL; */
 	char* topic = "Persistence test 2";
 	int subsqos = 2;
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
-	/* TODO - unused -remove? MQTTClient_message* m = NULL; */
-	/* TODO - unused -remove? char* topicName = NULL; */
 	MQTTClient_deliveryToken* tokens = NULL;
-	/* TODO - unused -remove? int mytoken = -99; */
 	char buffer[100];
 	int count = 5;
 	int i, rc;
@@ -942,89 +942,6 @@ int test6_messageArrived(void* context, char* topicName, int topicLen, MQTTClien
 }
 
 
-int test6_socket_error(char* aString, int sock)
-{
-#if defined(WIN32)
-	int errno;
-#endif
-
-#if defined(WIN32)
-	errno = WSAGetLastError();
-#endif
-	if (errno != EINTR && errno != EAGAIN && errno != EINPROGRESS && errno != EWOULDBLOCK)
-	{
-		if (strcmp(aString, "shutdown") != 0 || (errno != ENOTCONN && errno != ECONNRESET))
-			printf("Socket error %d in %s for socket %d", errno, aString, sock);
-	}
-	return errno;
-}
-
-#if !defined(SOCKET_ERROR)
-#define SOCKET_ERROR -1
-#endif
-
-int test6_socket_close(int socket)
-{
-	int rc;
-
-#if defined(WIN32)
-	if (shutdown(socket, SD_BOTH) == SOCKET_ERROR)
-		test6_socket_error("shutdown", socket);
-	if ((rc = closesocket(socket)) == SOCKET_ERROR)
-		test6_socket_error("close", socket);
-#else
-	if (shutdown(socket, SHUT_RDWR) == SOCKET_ERROR)
-		test6_socket_error("shutdown", socket);
-	if ((rc = close(socket)) == SOCKET_ERROR)
-		test6_socket_error("close", socket);
-#endif
-	return rc;
-}
-
-typedef struct
-{
-	int socket;
-	time_t lastContact;
-#if defined(OPENSSL)
-	SSL* ssl;
-	SSL_CTX* ctx;
-#endif
-} networkHandles;
-
-
-typedef struct
-{
-	char* clientID;					/**< the string id of the client */
-	char* username;					/**< MQTT v3.1 user name */
-	char* password;					/**< MQTT v3.1 password */
-	unsigned int cleansession : 1;	/**< MQTT clean session flag */
-	unsigned int connected : 1;		/**< whether it is currently connected */
-	unsigned int good : 1; 			/**< if we have an error on the socket we turn this off */
-	unsigned int ping_outstanding : 1;
-	int connect_state : 4;
-	networkHandles net;
-/* ... */
-} Clients;
-
-
-typedef struct
-{
-	char* serverURI;
-	Clients* c;
-	MQTTClient_connectionLost* cl;
-	MQTTClient_messageArrived* ma;
-	MQTTClient_deliveryComplete* dc;
-	void* context;
-
-	int connect_sem;
-	int rc; /* getsockopt return code in connect */
-	int connack_sem;
-	int suback_sem;
-	int unsuback_sem;
-	void* pack;
-} MQTTClients;
-
-
 int test6(struct Options options)
 {
 	char* testname = "test6";
@@ -1032,16 +949,16 @@ int test6(struct Options options)
 	MQTTClient_willOptions wopts =  MQTTClient_willOptions_initializer;
 	MQTTClient_connectOptions opts2 = MQTTClient_connectOptions_initializer;
 	int rc, count;
-	char* mqttsas_topic = "MQTTSAS topic"; 
+	char* mqttsas_topic = "MQTTSAS topic";
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 6 - connectionLost and will messages");
 	fprintf(xml, "<testcase classname=\"test1\" name=\"connectionLost and will messages\"");
 	global_start_time = start_clock();
- 
+
 	opts.keepAliveInterval = 2;
 	opts.cleansession = 1;
-	opts.MQTTVersion = options.MQTTVersion;
+	opts.MQTTVersion = MQTTVERSION_3_1_1;
 	opts.will = &wopts;
 	opts.will->message = test6_will_message;
 	opts.will->qos = 1;
@@ -1054,7 +971,7 @@ int test6(struct Options options)
 	}
 
 	/* Client-1 with Will options */
-	rc = MQTTClient_create(&test6_c1, options.connection, "Client_1", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	rc = MQTTClient_create(&test6_c1, options.proxy_connection, "Client_1", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTCLIENT_SUCCESS)
 		goto exit;
@@ -1089,9 +1006,8 @@ int test6(struct Options options)
 	assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 
 	/* now send the command which will break the connection and cause the will message to be sent */
-	/*rc = MQTTClient_publish(test6_c1, mqttsas_topic, strlen("TERMINATE"), "TERMINATE", 0, 0, NULL);
-	assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);*/
-	test6_socket_close(((MQTTClients*)test6_c1)->c->net.socket); 
+	rc = MQTTClient_publish(test6_c1, mqttsas_topic, (int)strlen("TERMINATE"), "TERMINATE", 0, 0, NULL);
+	assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 
 	MyLog(LOGA_INFO, "Waiting to receive the will message");
 	count = 0;
@@ -1109,21 +1025,129 @@ int test6(struct Options options)
 							"will_message_arrived was %d\n", test6_will_message_arrived);
 	assert("connection lost called", test6_connection_lost_called == 1,
 			         "connection_lost_called %d\n", test6_connection_lost_called);
-	         
+
 	rc = MQTTClient_unsubscribe(test6_c2, test6_will_topic);
 	assert("Good rc from unsubscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
-	
+
 	rc = MQTTClient_isConnected(test6_c2);
 	assert("Client-2 still connected", rc == 1, "isconnected is %d", rc);
 
 	rc = MQTTClient_isConnected(test6_c1);
 	assert("Client-1 not connected", rc == 0, "isconnected is %d", rc);
-	
-	/* rc = MQTTClient_disconnect(test6_c2, 100L); */
-	/* assert("Good rc from disconnect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc); */
+
+	rc = MQTTClient_disconnect(test6_c2, 100L);
+	assert("Good rc from disconnect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
 	MQTTClient_destroy(&test6_c1);
-	/* MQTTClient_destroy(&test6_c2); */
+	MQTTClient_destroy(&test6_c2);
+
+exit:
+	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.\n",
+			(failures == 0) ? "passed" : "failed", testname, tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
+int test6a(struct Options options)
+{
+	char* testname = "test6a";
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_willOptions wopts =  MQTTClient_willOptions_initializer;
+	MQTTClient_connectOptions opts2 = MQTTClient_connectOptions_initializer;
+	int rc, count;
+	char* mqttsas_topic = "MQTTSAS topic";
+
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 6 - connectionLost and binary will messages");
+	fprintf(xml, "<testcase classname=\"test1\" name=\"connectionLost and binary will messages\"");
+	global_start_time = start_clock();
+
+	opts.keepAliveInterval = 2;
+	opts.cleansession = 1;
+	opts.MQTTVersion = MQTTVERSION_3_1_1;
+	opts.will = &wopts;
+	opts.will->payload.data = test6_will_message;
+	opts.will->payload.len = strlen(test6_will_message) + 1;
+	opts.will->qos = 1;
+	opts.will->retained = 0;
+	opts.will->topicName = test6_will_topic;
+	if (options.haconnections != NULL)
+	{
+		opts.serverURIs = options.haconnections;
+		opts.serverURIcount = options.hacount;
+	}
+
+	/* Client-1 with Will options */
+	rc = MQTTClient_create(&test6_c1, options.proxy_connection, "Client_1", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTCLIENT_SUCCESS)
+		goto exit;
+
+	rc = MQTTClient_setCallbacks(test6_c1, (void*)test6_c1, test6_connectionLost, test6_messageArrived, test6_deliveryComplete);
+	assert("good rc from setCallbacks",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTCLIENT_SUCCESS)
+		goto exit;
+
+	/* Connect to the broker */
+	rc = MQTTClient_connect(test6_c1, &opts);
+	assert("good rc from connect",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTCLIENT_SUCCESS)
+		goto exit;
+
+	/* Client - 2 (multi-threaded) */
+	rc = MQTTClient_create(&test6_c2, options.connection, "Client_2", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+
+	/* Set the callback functions for the client */
+	rc = MQTTClient_setCallbacks(test6_c2, (void*)test6_c2, test6_connectionLost, test6_messageArrived, test6_deliveryComplete);
+	assert("good rc from setCallbacks",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+
+	/* Connect to the broker */
+	opts2.keepAliveInterval = 20;
+	opts2.cleansession = 1;
+	MyLog(LOGA_INFO, "Connecting Client_2 ...");
+	rc = MQTTClient_connect(test6_c2, &opts2);
+	assert("Good rc from connect", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+
+	rc = MQTTClient_subscribe(test6_c2, test6_will_topic, 2);
+	assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+
+	/* now send the command which will break the connection and cause the will message to be sent */
+	rc = MQTTClient_publish(test6_c1, mqttsas_topic, (int)strlen("TERMINATE"), "TERMINATE", 0, 0, NULL);
+	assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+
+	MyLog(LOGA_INFO, "Waiting to receive the will message");
+	count = 0;
+	while (++count < 40)
+	{
+		#if defined(WIN32)
+			Sleep(1000L);
+		#else
+			sleep(1);
+		#endif
+		if (test6_will_message_arrived == 1 && test6_connection_lost_called == 1)
+			break;
+	}
+	assert("will message arrived", test6_will_message_arrived == 1,
+							"will_message_arrived was %d\n", test6_will_message_arrived);
+	assert("connection lost called", test6_connection_lost_called == 1,
+			         "connection_lost_called %d\n", test6_connection_lost_called);
+
+	rc = MQTTClient_unsubscribe(test6_c2, test6_will_topic);
+	assert("Good rc from unsubscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+
+	rc = MQTTClient_isConnected(test6_c2);
+	assert("Client-2 still connected", rc == 1, "isconnected is %d", rc);
+
+	rc = MQTTClient_isConnected(test6_c1);
+	assert("Client-1 not connected", rc == 0, "isconnected is %d", rc);
+
+	rc = MQTTClient_disconnect(test6_c2, 100L);
+	assert("Good rc from disconnect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+
+	MQTTClient_destroy(&test6_c1);
+	MQTTClient_destroy(&test6_c2);
 
 exit:
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.\n",
@@ -1135,14 +1159,14 @@ exit:
 int main(int argc, char** argv)
 {
 	int rc = 0;
- 	int (*tests[])() = {NULL, test1, test2, test3, test4, test5, test6};
+ 	int (*tests[])() = {NULL, test1, test2, test3, test4, test5, test6, test6a};
 	int i;
-	
+
 	xml = fopen("TEST-test1.xml", "w");
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
 
 	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
-	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
+	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 0);
 
 	getopts(argc, argv);
 
@@ -1156,13 +1180,13 @@ int main(int argc, char** argv)
 		else
  		   	rc = tests[options.test_no](options); /* run just the selected test */
 	}
-    	
+
  	if (rc == 0)
 		MyLog(LOGA_INFO, "verdict pass");
 	else
 		MyLog(LOGA_INFO, "verdict fail");
 
 	fprintf(xml, "</testsuite>\n");
-	fclose(xml);	
+	fclose(xml);
 	return rc;
 }

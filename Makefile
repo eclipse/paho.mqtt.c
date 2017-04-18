@@ -164,11 +164,12 @@ END_GROUP =
 
 EXTRA_LIB = -ldl
 
-CCFLAGS_SO += -Wno-deprecated-declarations -DUSE_NAMED_SEMAPHORES
+CCFLAGS_SO += -Wno-deprecated-declarations -DOSX
 LDFLAGS_C += -Wl,-install_name,lib$(MQTTLIB_C).so.${MAJOR_VERSION}
 LDFLAGS_CS += -Wl,-install_name,lib$(MQTTLIB_CS).so.${MAJOR_VERSION}
 LDFLAGS_A += -Wl,-install_name,lib${MQTTLIB_A}.so.${MAJOR_VERSION}
 LDFLAGS_AS += -Wl,-install_name,lib${MQTTLIB_AS}.so.${MAJOR_VERSION}
+FLAGS_EXE += -DOSX
 
 endif
 

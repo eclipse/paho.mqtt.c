@@ -3,11 +3,11 @@
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
- * and Eclipse Distribution License v1.0 which accompany this distribution. 
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
- * The Eclipse Public License is available at 
+ * The Eclipse Public License is available at
  *   http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
@@ -17,15 +17,15 @@
  *******************************************************************************/
 
 /*
- 
+
  stdout subscriber for the asynchronous client
- 
+
  compulsory parameters:
- 
+
   --topic topic to subscribe to
- 
+
  defaulted parameters:
- 
+
 	--host localhost
 	--port 1883
 	--qos 2
@@ -33,10 +33,10 @@
 	--clientid stdout-subscriber-async
 	--showtopics off
 	--keepalive 10
-	
+
 	--userid none
 	--password none
- 
+
 */
 
 #include "MQTTAsync.h"
@@ -45,14 +45,13 @@
 #include <stdio.h>
 #include <signal.h>
 #include <memory.h>
+#include <stdlib.h>
 
 
 #if defined(WIN32)
-#include <windows.h>
 #define sleep Sleep
 #else
 #include <sys/time.h>
-#include <stdlib.h>
 #include <unistd.h>
 #endif
 
@@ -108,7 +107,7 @@ void usage(void)
 void getopts(int argc, char** argv)
 {
 	int count = 2;
-	
+
 	while (count < argc)
 	{
 		if (strcmp(argv[count], "--qos") == 0)
@@ -198,7 +197,7 @@ void getopts(int argc, char** argv)
 		}
 		count++;
 	}
-	
+
 }
 
 
@@ -287,10 +286,10 @@ int main(int argc, char** argv)
 	MQTTAsync_disconnectOptions disc_opts = MQTTAsync_disconnectOptions_initializer;
 	int rc = 0;
 	char url[100];
-	
+
 	if (argc < 2)
 		usage();
-	
+
 	topic = argv[1];
 
 	if (strchr(topic, '#') || strchr(topic, '+'))
@@ -298,7 +297,7 @@ int main(int argc, char** argv)
 	if (opts.showtopics)
 		printf("topic is %s\n", topic);
 
-	getopts(argc, argv);	
+	getopts(argc, argv);
 	sprintf(url, "%s:%s", opts.host, opts.port);
 
 	rc = MQTTAsync_create(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL);
@@ -357,5 +356,3 @@ exit:
 
 	return EXIT_SUCCESS;
 }
-
-

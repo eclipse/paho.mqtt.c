@@ -17,7 +17,7 @@
 #if !defined(UTF8_H)
 #define UTF8_H
 
-int UTF8_validate(int len, char* data);
+int UTF8_validate(int len, const char *data);
 int UTF8_validateString(const char* string);
 
 #endif

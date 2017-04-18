@@ -68,7 +68,7 @@ trace_settings_type trace_settings =
 {
 	TRACE_MINIMUM,
 	400,
-	-1
+	INVALID_LEVEL
 };
 
 #define MAX_FUNCTION_NAME_LENGTH 256
@@ -88,7 +88,7 @@ typedef struct
 	int line;
 	int has_rc;
 	int rc;
-	int level;
+	enum LOG_LEVELS level;
 } traceEntry;
 
 static int start_index = -1,
@@ -101,9 +101,17 @@ static char* trace_destination_name = NULL; /**< the name of the trace file */
 static char* trace_destination_backup_name = NULL; /**< the name of the backup trace file */
 static int lines_written = 0; /**< number of lines written to the current output file */
 static int max_lines_per_file = 1000; /**< maximum number of lines to write to one trace file */
-static int trace_output_level = -1;
+static enum LOG_LEVELS trace_output_level = INVALID_LEVEL;
 static Log_traceCallback* trace_callback = NULL;
-static void Log_output(int log_level, char* msg);
+static traceEntry* Log_pretrace(void);
+static char* Log_formatTraceEntry(traceEntry* cur_entry);
+static void Log_output(enum LOG_LEVELS log_level, const char *msg);
+static void Log_posttrace(enum LOG_LEVELS log_level, traceEntry* cur_entry);
+static void Log_trace(enum LOG_LEVELS log_level, const char *buf);
+#if 0
+static FILE* Log_destToFile(const char *dest);
+static int Log_compareEntries(const char *entry1, const char *entry2);
+#endif
 
 static int sametime_count = 0;
 #if defined(GETTIMEOFDAY)
@@ -210,7 +218,7 @@ void Log_setTraceLevel(enum LOG_LEVELS level)
 }
 
 
-void Log_terminate()
+void Log_terminate(void)
 {
 	free(trace_queue);
 	trace_queue = NULL;
@@ -221,18 +229,22 @@ void Log_terminate()
 			fclose(trace_destination);
 		trace_destination = NULL;
 	}
-	if (trace_destination_name)
+	if (trace_destination_name) {
 		free(trace_destination_name);
-	if (trace_destination_backup_name)
+		trace_destination_name = NULL;
+	}
+	if (trace_destination_backup_name) {
 		free(trace_destination_backup_name);
+		trace_destination_backup_name = NULL;
+	}
 	start_index = -1;
 	next_index = 0;
-	trace_output_level = -1;
+	trace_output_level = INVALID_LEVEL;
 	sametime_count = 0;
 }
 
 
-static traceEntry* Log_pretrace()
+static traceEntry* Log_pretrace(void)
 {
 	traceEntry *cur_entry = NULL;
 
@@ -283,7 +295,6 @@ static traceEntry* Log_pretrace()
 	return cur_entry;
 }
 
-
 static char* Log_formatTraceEntry(traceEntry* cur_entry)
 {
 	struct tm *timeinfo;
@@ -309,7 +320,7 @@ static char* Log_formatTraceEntry(traceEntry* cur_entry)
 		strncpy(&msg_buf[buf_pos], cur_entry->name, sizeof(msg_buf)-buf_pos);
 	else
 	{
-		char* format = Messages_get(cur_entry->number, cur_entry->level);
+		const char *format = Messages_get(cur_entry->number, cur_entry->level);
 		if (cur_entry->has_rc == 1)
 			snprintf(&msg_buf[buf_pos], sizeof(msg_buf)-buf_pos, format, cur_entry->thread_id,
 					cur_entry->depth, "", cur_entry->depth, cur_entry->name, cur_entry->line, cur_entry->rc);
@@ -321,7 +332,7 @@ static char* Log_formatTraceEntry(traceEntry* cur_entry)
 }
 
 
-static void Log_output(int log_level, char* msg)
+static void Log_output(enum LOG_LEVELS log_level, const char *msg)
 {
 	if (trace_destination)
 	{
@@ -347,7 +358,7 @@ static void Log_output(int log_level, char* msg)
 }
 
 
-static void Log_posttrace(int log_level, traceEntry* cur_entry)
+static void Log_posttrace(enum LOG_LEVELS log_level, traceEntry* cur_entry)
 {
 	if (((trace_output_level == -1) ? log_level >= trace_settings.trace_level : log_level >= trace_output_level))
 	{
@@ -361,7 +372,7 @@ static void Log_posttrace(int log_level, traceEntry* cur_entry)
 }
 
 
-static void Log_trace(int log_level, char* buf)
+static void Log_trace(enum LOG_LEVELS log_level, const char *buf)
 {
 	traceEntry *cur_entry = NULL;
 
@@ -390,11 +401,11 @@ static void Log_trace(int log_level, char* buf)
  * @param aFormat the printf format string to be used if the message id does not exist
  * @param ... the printf inserts
  */
-void Log(int log_level, int msgno, char* format, ...)
+void Log(enum LOG_LEVELS log_level, int msgno, const char *format, ...)
 {
 	if (log_level >= trace_settings.trace_level)
 	{
-		char* temp = NULL;
+		const char *temp = NULL;
 		static char msg_buf[512];
 		va_list args;
 
@@ -429,7 +440,7 @@ void Log(int log_level, int msgno, char* format, ...)
  * @param aFormat the printf format string to be used if the message id does not exist
  * @param ... the printf inserts
  */
-void Log_stackTrace(int log_level, int msgno, int thread_id, int current_depth, const char* name, int line, int* rc)
+void Log_stackTrace(enum LOG_LEVELS log_level, int msgno, int thread_id, int current_depth, const char* name, int line, int* rc)
 {
 	traceEntry *cur_entry = NULL;
 
@@ -463,7 +474,8 @@ void Log_stackTrace(int log_level, int msgno, int thread_id, int current_depth, 
 }
 
 
-FILE* Log_destToFile(char* dest)
+#if 0
+static FILE* Log_destToFile(const char *dest)
 {
 	FILE* file = NULL;
 
@@ -482,7 +494,7 @@ FILE* Log_destToFile(char* dest)
 }
 
 
-int Log_compareEntries(char* entry1, char* entry2)
+static int Log_compareEntries(const char *entry1, const char *entry2)
 {
 	int comp = strncmp(&entry1[7], &entry2[7], 19);
 
@@ -494,7 +506,6 @@ int Log_compareEntries(char* entry1, char* entry2)
 }
 
 
-#if 0
 /**
  * Write the contents of the stored trace to a stream
  * @param dest string which contains a file name or the special strings stdout or stderr

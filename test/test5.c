@@ -1,29 +1,23 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 IBM Corp.
+ * Copyright (c) 2012, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
- * and Eclipse Distribution License v1.0 which accompany this distribution. 
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
- * The Eclipse Public License is available at 
+ * The Eclipse Public License is available at
  *    http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
  *    Allan Stockdill-Mander - initial API and implementation and/or initial documentation
+ *    Ian Craggs - fix Windows includes
  *******************************************************************************/
-
 
 /**
  * @file
  * SSL tests for the MQ Telemetry Asynchronous MQTT C client
- */
-
-/*
- #if !defined(_RTSHEADER)
- #include <rts.h>
- #endif
  */
 
 #include "MQTTAsync.h"
@@ -31,37 +25,31 @@
 #include <stdlib.h>
 #include "Thread.h"
 
-#if !defined(_WINDOWS)
+#if defined(_WINDOWS)
+#include <windows.h>
+#include <openssl/applink.c>
+#define MAXHOSTNAMELEN 256
+#define snprintf _snprintf
+#else
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
-#else
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#define MAXHOSTNAMELEN 256
-#define EAGAIN WSAEWOULDBLOCK
-#define EINTR WSAEINTR
-#define EINPROGRESS WSAEINPROGRESS
-#define EWOULDBLOCK WSAEWOULDBLOCK
-#define ENOTCONN WSAENOTCONN
-#define ECONNRESET WSAECONNRESET
-#define snprintf _snprintf
 #endif
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
-void usage()
+void usage(void)
 {
 	printf("Options:\n");
 	printf("\t--test_no <test_no> - Run test number <test_no>\n");
-	printf("\t--server <hostname> - Connect to <hostname> for tests\n");
+	printf("\t--hostname <hostname> - Connect to <hostname> for tests\n");
 	printf("\t--client_key <key_file> - Use <key_file> as the client certificate for SSL authentication\n");
 	printf("\t--client_key_pass <password> - Use <password> to access the private key in the client certificate\n");
 	printf("\t--server_key <key_file> - Use <key_file> as the trusted certificate for server\n");
 	printf("\t--verbose - Enable verbose output \n");
 	printf("\t--help - This help output\n");
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 struct Options
@@ -79,7 +67,7 @@ struct Options
 	int test_no;
 	int size;
 } options =
-{ 
+{
 	"ssl://m2m.eclipse.org:18883",
 	"ssl://m2m.eclipse.org:18884",
 	"ssl://m2m.eclipse.org:18887",
@@ -174,10 +162,7 @@ void getopts(int argc, char** argv)
 	}
 }
 
-#if 0
-#include <logaX.h>   /* For general log messages                      */
-#define MyLog logaLine
-#else
+
 #define LOGA_DEBUG 0
 #define LOGA_INFO 1
 #include <stdarg.h>
@@ -208,7 +193,7 @@ void MyLog(int LOGA_level, char* format, ...)
 	printf("%s\n", msg_buf);
 	fflush(stdout);
 }
-#endif
+
 
 #if defined(WIN32) || defined(_WINDOWS)
 #define mqsleep(A) Sleep(1000*A)
@@ -278,15 +263,15 @@ char output[3000];
 char* cur_output = output;
 
 
-void write_test_result()
+void write_test_result(void)
 {
 	long duration = elapsed(global_start_time);
 
-	fprintf(xml, " time=\"%ld.%.3ld\" >\n", duration / 1000, duration % 1000); 
+	fprintf(xml, " time=\"%ld.%.3ld\" >\n", duration / 1000, duration % 1000);
 	if (cur_output != output)
 	{
 		fprintf(xml, "%s", output);
-		cur_output = output;	
+		cur_output = output;
 	}
 	fprintf(xml, "</testcase>\n");
 }
@@ -307,7 +292,7 @@ void myassert(char* filename, int lineno, char* description, int value,
 		vprintf(format, args);
 		va_end(args);
 
-		cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n", 
+		cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n",
                         description, filename, lineno);
 	}
 	else
@@ -907,7 +892,7 @@ void test2cOnConnectFailure(void* context, MQTTAsync_failureData* response)
 
 void test2cOnConnect(void* context, MQTTAsync_successData* response)
 {
-	MyLog(LOGA_DEBUG, "In test2cOnConnectFailure callback, context %p", context);
+	MyLog(LOGA_DEBUG, "In test2cOnConnect callback, context %p", context);
 
 	assert("This connect should not succeed. ", 0, "test2cOnConnect callback was called\n", 0);
 	test2cFinished = 1;
@@ -932,7 +917,7 @@ int test2c(struct Options options)
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	rc = MQTTAsync_create(&c, options.nocert_mutual_auth_connection, 
+	rc = MQTTAsync_create(&c, options.nocert_mutual_auth_connection,
             "test2c", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
@@ -986,6 +971,123 @@ int test2c(struct Options options)
 	write_test_result();
 	return failures;
 }
+
+
+/*********************************************************************
+
+ Test2d: Mutual SSL Authentication - client has no certs
+
+ *********************************************************************/
+
+int test2dFinished;
+
+void test2dOnConnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	MyLog(LOGA_DEBUG, "In test2dOnConnectFailure callback, context %p", context);
+
+	assert("This test should call test2dOnConnectFailure. ", 1, "test2dOnConnectFailure callback was called\n", 0);
+	test2dFinished = 1;
+}
+
+void test2dOnConnect(void* context, MQTTAsync_successData* response)
+{
+	MyLog(LOGA_DEBUG, "In test2dOnConnect callback, context %p", context);
+
+	assert("This connect should not succeed. ", 0, "test2dOnConnect callback was called\n", 0);
+	test2dFinished = 1;
+}
+
+int test2d(struct Options options)
+{
+	char* testname = "test2d";
+	int subsqos = 2;
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
+	int rc = 0;
+	char* test_topic = "C client test2d";
+	int count = 0;
+        unsigned int iteration = 0;
+
+	failures = 0;
+	MyLog(
+			LOGA_INFO,
+			"Starting test 2d - connection to SSL MQTT server, server auth enabled but unknown cert");
+	fprintf(xml, "<testcase classname=\"test2d\" name=\"%s\"", testname);
+	global_start_time = start_clock();
+
+        // As reported in https://github.com/eclipse/paho.mqtt.c/issues/190
+        // there is/was some race condition, which caused _sometimes_ that the library failed to detect,
+        // that the connect attempt has already failed.
+        // Therefore we need to test this several times!
+        for (iteration = 0; !failures && (iteration < 20) ; iteration++)
+        {
+		rc = MQTTAsync_create(&c, options.mutual_auth_connection,
+				      "test2d", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+		assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+		if (rc != MQTTASYNC_SUCCESS)
+		{
+			MQTTAsync_destroy(&c);
+			failures++;
+			break;
+		}
+
+		opts.keepAliveInterval = 60;
+		opts.cleansession = 1;
+
+		opts.will = &wopts;
+		opts.will->message = "will message";
+		opts.will->qos = 1;
+		opts.will->retained = 0;
+		opts.will->topicName = "will topic";
+		opts.will = NULL;
+		opts.onSuccess = test2dOnConnect;
+		opts.onFailure = test2dOnConnectFailure;
+		opts.context = c;
+
+		opts.ssl = &sslopts;
+		if (options.server_key_file != NULL) opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
+		opts.ssl->keyStore = NULL; /*file of certificate for client to present to server - In this test the client has no certificate! */
+		//if (options.client_key_pass != NULL)
+		//	opts.ssl->privateKeyPassword = options.client_key_pass;
+		//opts.ssl->enabledCipherSuites = "DEFAULT";
+		//opts.ssl->enabledServerCertAuth = 0;
+
+		test2dFinished = 0;
+		MyLog(LOGA_DEBUG, "Connecting");
+		rc = MQTTAsync_connect(c, &opts);
+		assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+		if (rc != MQTTASYNC_SUCCESS)
+		{
+			failures++;
+			MyLog(LOGA_INFO, "Failed in iteration %d\n",iteration);
+			MQTTAsync_destroy(&c);
+			break;
+		}
+#define TEST2D_COUNT 1000
+		while (!test2dFinished && ++count < TEST2D_COUNT)
+		{
+#if defined(WIN32)
+			Sleep(100);
+#else
+			usleep(10000L);
+#endif
+		}
+		if (!test2dFinished && count >= TEST2D_COUNT)
+		{
+			MyLog(LOGA_INFO, "Failed in iteration %d\n",iteration);
+			failures++;
+		}
+		MQTTAsync_destroy(&c);
+        }
+	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", testname, tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
 
 /*********************************************************************
 
@@ -2036,7 +2138,7 @@ int main(int argc, char** argv)
 	int* numtests = &tests;
 	int rc = 0;
 	int (*tests[])() =
-	{ NULL, test1, test2a, test2b, test2c, test3a, test3b, test4, /* test5a,
+            { NULL, test1, test2a, test2b, test2c, test2d, test3a, test3b, test4, /* test5a,
 			test5b, test5c, */ test6, test7 };
 
 	xml = fopen("TEST-test5.xml", "w");
@@ -2072,3 +2174,7 @@ int main(int argc, char** argv)
 	return rc;
 }
 
+/* Local Variables: */
+/* indent-tabs-mode: t */
+/* c-basic-offset: 8 */
+/* End: */

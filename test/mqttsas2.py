@@ -1,16 +1,16 @@
 """
 *******************************************************************
-  Copyright (c) 2013, 2016 IBM Corp.
- 
+  Copyright (c) 2013, 2017 IBM Corp.
+
   All rights reserved. This program and the accompanying materials
   are made available under the terms of the Eclipse Public License v1.0
-  and Eclipse Distribution License v1.0 which accompany this distribution. 
- 
-  The Eclipse Public License is available at 
+  and Eclipse Distribution License v1.0 which accompany this distribution.
+
+  The Eclipse Public License is available at
      http://www.eclipse.org/legal/epl-v10.html
-  and the Eclipse Distribution License is available at 
+  and the Eclipse Distribution License is available at
     http://www.eclipse.org/org/documents/edl-v10.php.
- 
+
   Contributors:
      Ian Craggs - initial implementation and/or documentation
 *******************************************************************
@@ -45,7 +45,8 @@ class MyHandler(socketserver.StreamRequestHandler):
       clients = self.request
       brokers = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       brokers.connect((brokerhost, brokerport))
-      while inbuf != None:
+      terminated = False
+      while inbuf != None and not terminated:
         (i, o, e) = select.select([clients, brokers], [], [])
         for s in i:
           if s == clients:
@@ -60,6 +61,7 @@ class MyHandler(socketserver.StreamRequestHandler):
                 print("Terminating client", self.ids[id(clients)])
                 brokers.close()
                 clients.close()
+                terminated = True
                 break
               elif packet.fh.MessageType == MQTTV3.CONNECT:
                 self.ids[id(clients)] = packet.ClientIdentifier
@@ -93,11 +95,11 @@ class ThreadingTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
 def run():
   global brokerhost, brokerport
-  myhost = 'localhost'
+  myhost = '127.0.0.1'
   if len(sys.argv) > 1:
     brokerhost = sys.argv[1]
   else:
-    brokerhost = 'localhost'
+    brokerhost = '127.0.0.1'
 
   if len(sys.argv) > 2:
     brokerport = int(sys.argv[2])
@@ -110,7 +112,7 @@ def run():
     myport = 1883
 
   print("Listening on port", str(myport)+", broker on port", brokerport)
-  s = ThreadingTCPServer(("", myport), MyHandler)
+  s = ThreadingTCPServer(("127.0.0.1", myport), MyHandler)
   s.serve_forever()
 
 if __name__ == "__main__":

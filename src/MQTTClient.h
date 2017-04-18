@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2015 IBM Corp.
+ * Copyright (c) 2009, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -40,7 +40,7 @@
  * @endcond
  * @cond MQTTClient_main
  * @mainpage MQTT Client library for C
- * &copy; Copyright IBM Corp. 2009, 2015
+ * &copy; Copyright IBM Corp. 2009, 2017
  * 
  * @brief An MQTT client library in C.
  *
@@ -48,7 +48,7 @@
  * considered easier to use.  Some of the calls will block.  For the new
  * totally asynchronous API where no calls block, which is especially suitable
  * for use in windowed environments, see the
- * <a href="../Casync/index.html">MQTT C Client Asynchronous API Documentation</a>.
+ * <a href="../../MQTTAsync/html/index.html">MQTT C Client Asynchronous API Documentation</a>.
  * The MQTTClient API is not thread safe, whereas the MQTTAsync API is.
  *
  * An MQTT client application connects to MQTT-capable servers.
@@ -380,8 +380,6 @@ DLLExport int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTClie
  * <i>tcp://localhost:1883</i>.
  * @param clientId The client identifier passed to the server when the
  * client connects to it. It is a null-terminated UTF-8 encoded string. 
- * ClientIDs must be no longer than 23 characters according to the MQTT 
- * specification.
  * @param persistence_type The type of persistence to be used by the client:
  * <br>
  * ::MQTTCLIENT_PERSISTENCE_NONE: Use in-memory persistence. If the device or 
@@ -427,24 +425,32 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTW. */
 	const char struct_id[4];
-	/** The version number of this structure.  Must be 0 */
+	/** The version number of this structure.  Must be 0 or 1 
+		   0 means there is no binary payload option
+	 */
 	int struct_version;
 	/** The LWT topic to which the LWT message will be published. */
 	const char* topicName;
-	/** The LWT payload. */
+	/** The LWT payload in string form. */
 	const char* message;
 	/**
-      * The retained flag for the LWT message (see MQTTClient_message.retained).
-      */
+	 * The retained flag for the LWT message (see MQTTClient_message.retained).
+	 */
 	int retained;
 	/** 
-      * The quality of service setting for the LWT message (see 
-      * MQTTClient_message.qos and @ref qos).
-      */
+	 * The quality of service setting for the LWT message (see 
+	 * MQTTClient_message.qos and @ref qos).
+	 */
 	int qos;
+  /** The LWT payload in binary form. This is only checked and used if the message option is NULL */
+	struct
+	{
+  	int len;            /**< binary payload length */
+		const void* data;  /**< binary payload data */
+	} payload;
 } MQTTClient_willOptions;
 
-#define MQTTClient_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 0, NULL, NULL, 0, 0 }
+#define MQTTClient_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 1, NULL, NULL, 0, 0, {0, NULL} }
 
 /**
 * MQTTClient_sslProperties defines the settings to establish an SSL/TLS connection using the 
@@ -515,11 +521,12 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	const char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1, 2, 3 or 4.  
+	/** The version number of this structure.  Must be 0, 1, 2, 3, 4 or 5.  
 	 * 0 signifies no SSL options and no serverURIs
 	 * 1 signifies no serverURIs 
 	 * 2 signifies no MQTTVersion
 	 * 3 signifies no returned values
+	 * 4 signifies no binary password option
 	 */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -626,9 +633,16 @@ typedef struct
 		int MQTTVersion;     /**< the MQTT version used to connect with */
 		int sessionPresent;  /**< if the MQTT version is 3.1.1, the value of sessionPresent returned in the connack */
 	} returned;
+	/** 
+   * Optional binary password.  Only checked and used if the password option is NULL
+   */
+  struct {
+  	int len;            /**< binary password length */
+		const void* data;  /**< binary password data */
+	} binarypwd;
 } MQTTClient_connectOptions;
 
-#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 4, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, 0, {NULL, 0, 0} }
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 5, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, 0,         {NULL, 0, 0}, {0, NULL} }
 
 /**
   * MQTTClient_libraryInfo is used to store details relating to the currently used
@@ -1063,7 +1077,7 @@ int main(int argc, char* argv[])
     if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to connect, return code %d\n", rc);
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
     pubmsg.payload = PAYLOAD;
     pubmsg.payloadlen = strlen(PAYLOAD);
@@ -1148,7 +1162,7 @@ int main(int argc, char* argv[])
     if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to connect, return code %d\n", rc);
-        exit(-1);	
+        exit(EXIT_FAILURE);
     }
     pubmsg.payload = PAYLOAD;
     pubmsg.payloadlen = strlen(PAYLOAD);
@@ -1231,7 +1245,7 @@ int main(int argc, char* argv[])
     if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to connect, return code %d\n", rc);
-        exit(-1);	
+        exit(EXIT_FAILURE);
     }
     printf("Subscribing to topic %s\nfor client %s using QoS%d\n\n"
            "Press Q<Enter> to quit\n\n", TOPIC, CLIENTID, QOS);

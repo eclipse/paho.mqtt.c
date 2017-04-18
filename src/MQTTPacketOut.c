@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,6 +15,7 @@
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - MQTT 3.1.1 support
  *    Rong Xiang, Ian Craggs - C++ compatibility
+ *    Ian Craggs - binary password and will payload
  *******************************************************************************/
 
 /**
@@ -53,11 +54,11 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion)
 
 	len = ((MQTTVersion == 3) ? 12 : 10) + (int)strlen(client->clientID)+2;
 	if (client->will)
-		len += (int)strlen(client->will->topic)+2 + (int)strlen(client->will->msg)+2;
+		len += (int)strlen(client->will->topic)+2 + client->will->payloadlen+2;
 	if (client->username)
 		len += (int)strlen(client->username)+2;
 	if (client->password)
-		len += (int)strlen(client->password)+2;
+		len += client->passwordlen+2;
 
 	ptr = buf = malloc(len);
 	if (MQTTVersion == 3)
@@ -93,12 +94,12 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion)
 	if (client->will)
 	{
 		writeUTF(&ptr, client->will->topic);
-		writeUTF(&ptr, client->will->msg);
+		writeData(&ptr, client->will->payload, client->will->payloadlen);
 	}
 	if (client->username)
 		writeUTF(&ptr, client->username);
 	if (client->password)
-		writeUTF(&ptr, client->password);
+		writeData(&ptr, client->password, client->passwordlen);
 
 	rc = MQTTPacket_send(&client->net, packet.header, buf, len, 1);
 	Log(LOG_PROTOCOL, 0, NULL, client->net.socket, client->clientID, client->cleansession, rc);

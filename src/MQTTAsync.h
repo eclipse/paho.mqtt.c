@@ -595,7 +595,7 @@ typedef struct
 	} payload;
 } MQTTAsync_willOptions;
 
-#define MQTTAsync_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 1, NULL, NULL, 0, 0 }
+#define MQTTAsync_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 1, NULL, NULL, 0, 0, { 0, NULL } }
 
 /**
 * MQTTAsync_sslProperties defines the settings to establish an SSL/TLS connection using the 

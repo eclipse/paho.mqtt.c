@@ -62,8 +62,8 @@ class MyHandler(socketserver.StreamRequestHandler):
                 print("Terminating client", self.ids.get(id(clients),defaultValue))
                 brokers.close()
                 clients.close()
-                brokers = None
-                clients = None
+                brokers = 0
+                clients = 0
                 terminated = True
                 break
               elif packet.fh.MessageType == MQTTV3.CONNECT:
@@ -76,15 +76,28 @@ class MyHandler(socketserver.StreamRequestHandler):
               traceback.print_exc()
             brokers.send(inbuf)       # pass it on
           elif s == brokers:
-            inbuf = MQTTV3.getPacket(brokers) # get one packet
-            if inbuf == None:
+            try:
+              inbuf = MQTTV3.getPacket(brokers) # get one packet
+              if inbuf == None:
+                break
+            except:
+              traceback.print_exc()
               break
             try:
-              unpackedData = MQTTV3.unpackPacket(inbuf)
-              DataString = repr(unpackedData)
+              DataString = " * no printable data *"
+              if isinstance(inbuf, list) :
+                if len(inbuf) > 1 :
+                  unpackedData = MQTTV3.unpackPacket(inbuf)
+                  try:
+                    DataString = repr(unpackedData)
+                  except:
+                    traceback.print_exc()
               print(timestamp(), "S to C", self.ids.get(id(clients),defaultValue), DataString)
             except:
               traceback.print_exc()
+              break
+            if inbuf == None:
+              break
             try:
               clients.send(inbuf)
             except:

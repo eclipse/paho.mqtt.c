@@ -41,6 +41,7 @@ class MyHandler(socketserver.StreamRequestHandler):
       self.versions = {}
     inbuf = True
     i = o = e = None
+    defaultValue = "unknown"
     try:
       clients = self.request
       brokers = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -58,33 +59,53 @@ class MyHandler(socketserver.StreamRequestHandler):
               if packet.fh.MessageType == MQTTV3.PUBLISH and \
                   packet.topicName == "MQTTSAS topic" and \
                   packet.data == b"TERMINATE":
-                print("Terminating client", self.ids[id(clients)])
+                print("Terminating client", self.ids.get(id(clients),defaultValue))
                 brokers.close()
                 clients.close()
+                brokers = 0
+                clients = 0
                 terminated = True
                 break
               elif packet.fh.MessageType == MQTTV3.CONNECT:
                 self.ids[id(clients)] = packet.ClientIdentifier
                 self.versions[id(clients)] = 3
-              print(timestamp() , "C to S", self.ids[id(clients)], repr(packet))
+              print(timestamp() , "C to S", self.ids.get(id(clients),defaultValue), repr(packet))
               #print([hex(b) for b in inbuf])
               #print(inbuf)
             except:
               traceback.print_exc()
             brokers.send(inbuf)       # pass it on
           elif s == brokers:
-            inbuf = MQTTV3.getPacket(brokers) # get one packet
+            try:
+              inbuf = MQTTV3.getPacket(brokers) # get one packet
+              if inbuf == None:
+                break
+            except:
+              traceback.print_exc()
+              break
+            try:
+              DataString = " * no printable data *"
+              if isinstance(inbuf, list) :
+                if len(inbuf) > 1 :
+                  unpackedData = MQTTV3.unpackPacket(inbuf)
+                  try:
+                    DataString = repr(unpackedData)
+                  except:
+                    traceback.print_exc()
+              print(timestamp(), "S to C", self.ids.get(id(clients),defaultValue), DataString)
+            except:
+              traceback.print_exc()
+              break
             if inbuf == None:
               break
             try:
-              print(timestamp(), "S to C", self.ids[id(clients)], repr(MQTTV3.unpackPacket(inbuf)))
+              clients.send(inbuf)
             except:
               traceback.print_exc()
-            clients.send(inbuf)
-      print(timestamp()+" client "+self.ids[id(clients)]+" connection closing")
+      print(timestamp()+" client "+self.ids.get(id(clients),defaultValue)+" connection closing")
     except:
-      print(repr((i, o, e)), repr(inbuf))
       traceback.print_exc()
+      print(repr((i, o, e)), repr(inbuf))
     if id(clients) in self.ids.keys():
       del self.ids[id(clients)]
     elif id(clients) in self.versions.keys():

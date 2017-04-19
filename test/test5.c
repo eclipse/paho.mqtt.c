@@ -1008,6 +1008,7 @@ int test2d(struct Options options)
 	int rc = 0;
 	char* test_topic = "C client test2d";
 	int count = 0;
+        unsigned int iteration = 0;
 
 	failures = 0;
 	MyLog(
@@ -1016,55 +1017,70 @@ int test2d(struct Options options)
 	fprintf(xml, "<testcase classname=\"test2d\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	rc = MQTTAsync_create(&c, options.mutual_auth_connection,
-            "test2d", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
-	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
-	if (rc != MQTTASYNC_SUCCESS)
-	{
-		MQTTAsync_destroy(&c);
-		goto exit;
-	}
+        // As reported in https://github.com/eclipse/paho.mqtt.c/issues/190
+        // there is/was some race condition, which caused _sometimes_ that the library failed to detect,
+        // that the connect attempt has already failed.
+        // Therefore we need to test this several times!
+        for (iteration = 0; !failures && (iteration < 20) ; iteration++)
+        {
+		rc = MQTTAsync_create(&c, options.mutual_auth_connection,
+				      "test2d", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+		assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+		if (rc != MQTTASYNC_SUCCESS)
+		{
+			MQTTAsync_destroy(&c);
+			failures++;
+			break;
+		}
 
-	opts.keepAliveInterval = 20;
-	opts.cleansession = 1;
-	opts.username = "testuser";
-	opts.password = "testpassword";
+		opts.keepAliveInterval = 60;
+		opts.cleansession = 1;
 
-	opts.will = &wopts;
-	opts.will->message = "will message";
-	opts.will->qos = 1;
-	opts.will->retained = 0;
-	opts.will->topicName = "will topic";
-	opts.will = NULL;
-	opts.onSuccess = test2dOnConnect;
-	opts.onFailure = test2dOnConnectFailure;
-	opts.context = c;
+		opts.will = &wopts;
+		opts.will->message = "will message";
+		opts.will->qos = 1;
+		opts.will->retained = 0;
+		opts.will->topicName = "will topic";
+		opts.will = NULL;
+		opts.onSuccess = test2dOnConnect;
+		opts.onFailure = test2dOnConnectFailure;
+		opts.context = c;
 
-	opts.ssl = &sslopts;
-	//if (options.server_key_file != NULL) opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
-	//opts.ssl->keyStore = options.client_key_file; /*file of certificate for client to present to server*/
-	//if (options.client_key_pass != NULL)
-	//	opts.ssl->privateKeyPassword = options.client_key_pass;
-	//opts.ssl->enabledCipherSuites = "DEFAULT";
-	//opts.ssl->enabledServerCertAuth = 0;
+		opts.ssl = &sslopts;
+		if (options.server_key_file != NULL) opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
+		opts.ssl->keyStore = NULL; /*file of certificate for client to present to server - In this test the client has no certificate! */
+		//if (options.client_key_pass != NULL)
+		//	opts.ssl->privateKeyPassword = options.client_key_pass;
+		//opts.ssl->enabledCipherSuites = "DEFAULT";
+		//opts.ssl->enabledServerCertAuth = 0;
 
-	MyLog(LOGA_DEBUG, "Connecting");
-	rc = MQTTAsync_connect(c, &opts);
-	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
-	if (rc != MQTTASYNC_SUCCESS)
-	{
-		failures++;
-		goto exit;
-	}
-
-	while (!test2dFinished && ++count < 10000)
+		test2dFinished = 0;
+		MyLog(LOGA_DEBUG, "Connecting");
+		rc = MQTTAsync_connect(c, &opts);
+		assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+		if (rc != MQTTASYNC_SUCCESS)
+		{
+			failures++;
+			MyLog(LOGA_INFO, "Failed in iteration %d\n",iteration);
+			MQTTAsync_destroy(&c);
+			break;
+		}
+#define TEST2D_COUNT 1000
+		while (!test2dFinished && ++count < TEST2D_COUNT)
+		{
 #if defined(WIN32)
-		Sleep(100);
+			Sleep(100);
 #else
-		usleep(10000L);
+			usleep(10000L);
 #endif
-
-	exit: MQTTAsync_destroy(&c);
+		}
+		if (!test2dFinished && count >= TEST2D_COUNT)
+		{
+			MyLog(LOGA_INFO, "Failed in iteration %d\n",iteration);
+			failures++;
+		}
+		MQTTAsync_destroy(&c);
+        }
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 	write_test_result();
@@ -2122,8 +2138,8 @@ int main(int argc, char** argv)
 	int* numtests = &tests;
 	int rc = 0;
 	int (*tests[])() =
-	{ NULL, test1, test2a, test2b, test2c, test3a, test3b, test4, /* test5a,
-			test5b, test5c, */ test6, test7, test2d };
+            { NULL, test1, test2a, test2b, test2c, test2d, test3a, test3b, test4, /* test5a,
+			test5b, test5c, */ test6, test7 };
 
 	xml = fopen("TEST-test5.xml", "w");
 	fprintf(xml, "<testsuite name=\"test5\" tests=\"%lu\">\n", ARRAY_SIZE(tests) - 1);
@@ -2131,18 +2147,18 @@ int main(int argc, char** argv)
 	MQTTAsync_setTraceCallback(handleTrace);
 	getopts(argc, argv);
 
+	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+
 	if (options.test_no == 0)
 	{ /* run all the tests */
 		for (options.test_no = 1; options.test_no < ARRAY_SIZE(tests); ++options.test_no)
 		{
 			failures = 0;
-			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
 			rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */
 		}
 	}
 	else
 	{
-		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
 		rc = tests[options.test_no](options); /* run just the selected test */
 	}
 
@@ -2157,3 +2173,8 @@ int main(int argc, char** argv)
 
 	return rc;
 }
+
+/* Local Variables: */
+/* indent-tabs-mode: t */
+/* c-basic-offset: 8 */
+/* End: */

@@ -17,6 +17,8 @@ if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
   mkdir -p build.paho
   cd build.paho
   echo "travis build dir $TRAVIS_BUILD_DIR pwd $PWD"
+  # Remove stored messages from previous test runs:
+  rm -Rf test/*-localhost-*
   cmake -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE ..
   make
   python ../test/mqttsas2.py &

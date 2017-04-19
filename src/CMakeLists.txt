@@ -161,6 +161,11 @@ IF (PAHO_WITH_SSL)
 
         TARGET_LINK_LIBRARIES(paho-mqtt3cs-static ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
         TARGET_LINK_LIBRARIES(paho-mqtt3as-static ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
+        SET_TARGET_PROPERTIES(
+        paho-mqtt3cs-static paho-mqtt3as-static PROPERTIES
+        VERSION ${CLIENT_VERSION}
+        SOVERSION ${PAHO_VERSION_MAJOR}
+        COMPILE_DEFINITIONS "OPENSSL=1")
 
         INSTALL(TARGETS paho-mqtt3cs-static
             ARCHIVE DESTINATION lib

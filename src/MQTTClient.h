@@ -166,6 +166,10 @@
  * Return code: A QoS value that falls outside of the acceptable range (0,1,2)
  */
 #define MQTTCLIENT_BAD_QOS -9
+/**
+ * Return code: Attempting SSL connection using non-SSL version of library
+ */
+#define MQTTCLIENT_SSL_NOT_SUPPORTED -10
 
 /**
  * Default MQTT version to connect with.  Use 3.1.1 then fall back to 3.1

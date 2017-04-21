@@ -1008,7 +1008,7 @@ int test2d(struct Options options)
 	int rc = 0;
 	char* test_topic = "C client test2d";
 	int count = 0;
-        unsigned int iteration = 0;
+	unsigned int iteration = 0;
 
 	failures = 0;
 	MyLog(
@@ -1023,6 +1023,7 @@ int test2d(struct Options options)
         // Therefore we need to test this several times!
         for (iteration = 0; !failures && (iteration < 20) ; iteration++)
         {
+        count = 0;
 		rc = MQTTAsync_create(&c, options.mutual_auth_connection,
 				      "test2d", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 		assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);

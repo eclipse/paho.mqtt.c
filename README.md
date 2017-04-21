@@ -196,7 +196,7 @@ export MQTT_C_CLIENT_TRACE_LEVEL=PROTOCOL
 
 ## Reporting bugs
 
-Please report bugs under the "MQTT-C" Component in [Eclipse Bugzilla](http://bugs.eclipse.org/bugs/) for the Paho Technology project.
+Please open issues in the Github project: https://github.com/eclipse/paho.mqtt.c/issues.
 
 ## More information
 

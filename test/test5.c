@@ -1017,16 +1017,19 @@ int test2d(struct Options options)
 	fprintf(xml, "<testcase classname=\"test2d\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-        // As reported in https://github.com/eclipse/paho.mqtt.c/issues/190
-        // there is/was some race condition, which caused _sometimes_ that the library failed to detect,
-        // that the connect attempt has already failed.
-        // Therefore we need to test this several times!
-        for (iteration = 0; !failures && (iteration < 20) ; iteration++)
-        {
-        count = 0;
+	// As reported in https://github.com/eclipse/paho.mqtt.c/issues/190
+	// there is/was some race condition, which caused _sometimes_ that the library failed to detect,
+	// that the connect attempt has already failed.
+	// Therefore we need to test this several times!
+	for (iteration = 0; !failures && (iteration < 20) ; iteration++)
+	{
+		count = 0;
+		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+		
 		rc = MQTTAsync_create(&c, options.mutual_auth_connection,
 				      "test2d", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 		assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+
 		if (rc != MQTTASYNC_SUCCESS)
 		{
 			MQTTAsync_destroy(&c);
@@ -1050,10 +1053,6 @@ int test2d(struct Options options)
 		opts.ssl = &sslopts;
 		if (options.server_key_file != NULL) opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
 		opts.ssl->keyStore = NULL; /*file of certificate for client to present to server - In this test the client has no certificate! */
-		//if (options.client_key_pass != NULL)
-		//	opts.ssl->privateKeyPassword = options.client_key_pass;
-		//opts.ssl->enabledCipherSuites = "DEFAULT";
-		//opts.ssl->enabledServerCertAuth = 0;
 
 		test2dFinished = 0;
 		MyLog(LOGA_DEBUG, "Connecting");
@@ -1081,7 +1080,7 @@ int test2d(struct Options options)
 			failures++;
 		}
 		MQTTAsync_destroy(&c);
-        }
+	}
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 	write_test_result();

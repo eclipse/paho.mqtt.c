@@ -107,16 +107,20 @@ INSTALL(FILES MQTTAsync.h MQTTClient.h MQTTClientPersistence.h
     DESTINATION include)
 
 IF (PAHO_WITH_SSL)
-    SET(OPENSSL_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries and includes")
+    
+    IF (OPENSSL_SEARCH_PATH)
+        MESSAGE(STATUS "OpenSSL path: ${OPENSSL_SEARCH_PATH}")
+    ELSE()
+        SET(OPENSSL_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries and includes")
+        IF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+          SET(OPENSSL_SEARCH_PATH "/usr/local/opt/openssl")
+        ENDIF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 
-    IF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-      SET(OPENSSL_SEARCH_PATH "/usr/local/opt/openssl")
-    ENDIF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-
-    IF (WIN32)
-      SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win64")
-    ENDIF ()
-
+        IF (WIN32)
+          SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win64")
+        ENDIF ()
+    ENDIF()
+    
     FIND_PATH(OPENSSL_INCLUDE_DIR openssl/ssl.h
         HINTS ${OPENSSL_SEARCH_PATH}/include)
     FIND_LIBRARY(OPENSSL_LIB NAMES ssl libssl ssleay32

@@ -13,16 +13,21 @@ ELSE ()
 ENDIF ()
 
 IF (PAHO_WITH_SSL)
-    SET(OPENSSL_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries and includes")
+    
+    IF (OPENSSL_SEARCH_PATH)
+        MESSAGE(STATUS "OpenSSL path: ${OPENSSL_SEARCH_PATH}")
+    ELSE()
+        SET(OPENSSL_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries and includes")
 
-    IF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-      SET(OPENSSL_SEARCH_PATH "/usr/local/opt/openssl")
-    ENDIF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+        IF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+          SET(OPENSSL_SEARCH_PATH "/usr/local/opt/openssl")
+        ENDIF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 
-    IF (WIN32)
-      SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win64")
+        IF (WIN32)
+          SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win64")
+        ENDIF ()
     ENDIF ()
-
+    
     FIND_PATH(OPENSSL_INCLUDE_DIR openssl/ssl.h
         HINTS ${OPENSSL_SEARCH_PATH}/include)
 
@@ -45,11 +50,18 @@ TARGET_LINK_LIBRARIES(
 )
 
 IF (WIN32)
-	ADD_CUSTOM_COMMAND(
-		TARGET test1 PRE_BUILD
-		COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/dll-copy.cmake
-		COMMENT "Copying DLLs to test directory"
-	)
+    IF (MSVC)
+        SET(BIN_PATH "Debug/")
+    ELSE()
+        SET(BIN_PATH "")
+    ENDIF()
+    MESSAGE(STATUS "BIN_PATH=${BIN_PATH}")
+    
+    ADD_CUSTOM_COMMAND(
+            TARGET test1 PRE_BUILD
+            COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/dll-copy.cmake ${BIN_PATH}
+            COMMENT "Copying DLLs to test directory"
+        )
 ENDIF()
 
 ADD_TEST(

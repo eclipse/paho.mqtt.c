@@ -50,16 +50,9 @@ TARGET_LINK_LIBRARIES(
 )
 
 IF (WIN32)
-    IF (MSVC)
-        SET(BIN_PATH "Debug/")
-    ELSE()
-        SET(BIN_PATH "")
-    ENDIF()
-    MESSAGE(STATUS "BIN_PATH=${BIN_PATH}")
-    
     ADD_CUSTOM_COMMAND(
             TARGET test1 PRE_BUILD
-            COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/dll-copy.cmake ${BIN_PATH}
+            COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/dll-copy.cmake
             COMMENT "Copying DLLs to test directory"
         )
 ENDIF()

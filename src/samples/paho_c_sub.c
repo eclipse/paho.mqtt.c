@@ -237,7 +237,7 @@ void onSubscribeFailure(void* context, MQTTAsync_failureData* response)
 
 void onConnectFailure(void* context, MQTTAsync_failureData* response)
 {
-	printf("Connect failed, rc %d\n", response->code);
+	printf("Connect failed, rc %d\n", response ? response->code : -99);
 	finished = 1;
 }
 

@@ -173,7 +173,7 @@ int Socket_addSocket(int newSd)
 	FUNC_ENTRY;
 	if (ListFindItem(s.clientsds, &newSd, intcompare) == NULL) /* make sure we don't add the same socket twice */
 	{
-		if (newSd >= FD_SETSIZE)
+		if (s.clientsds->count >= FD_SETSIZE)
 		{
 			Log(LOG_ERROR, -1, "addSocket: exceeded FD_SETSIZE %d", FD_SETSIZE);
 			rc = SOCKET_ERROR;

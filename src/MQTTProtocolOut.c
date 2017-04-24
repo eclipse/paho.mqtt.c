@@ -19,6 +19,7 @@
  *    Ian Craggs - fix for bug 479376
  *    Ian Craggs - SNI support
  *    Ian Craggs - fix for issue #164
+ *    Ian Craggs - fix for issue #179
  *******************************************************************************/
 
 /**
@@ -57,7 +58,7 @@ char* MQTTProtocol_addressPort(const char* uri, int* port)
 			colon_pos = NULL;  /* means it was an IPv6 separator, not for host:port */
 	}
 
-	if (colon_pos)
+	if (colon_pos) /* have to strip off the port */
 	{
 		size_t addr_len = colon_pos - uri;
 		buf = malloc(addr_len + 1);
@@ -69,8 +70,15 @@ char* MQTTProtocol_addressPort(const char* uri, int* port)
 
 	len = strlen(buf);
 	if (buf[len - 1] == ']')
-		buf[len - 1] = '\0';
-
+	{
+		if (buf == (char*)uri)
+		{
+			buf = malloc(len);  /* we are stripping off the final ], so length is 1 shorter */
+			MQTTStrncpy(buf, uri, len);
+		}
+		else
+			buf[len - 1] = '\0';
+	}
 	FUNC_EXIT;
 	return buf;
 }

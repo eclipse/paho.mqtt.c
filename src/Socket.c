@@ -16,6 +16,7 @@
  *    Ian Craggs - fix for bug 484496
  *    Juergen Kosel, Ian Craggs - fix for issue #135
  *    Ian Craggs - issue #217
+ *    Ian Craggs - fix for issue #186
  *******************************************************************************/
 
 /**
@@ -172,12 +173,22 @@ int Socket_addSocket(int newSd)
 	FUNC_ENTRY;
 	if (ListFindItem(s.clientsds, &newSd, intcompare) == NULL) /* make sure we don't add the same socket twice */
 	{
-		int* pnewSd = (int*)malloc(sizeof(newSd));
-		*pnewSd = newSd;
-		ListAppend(s.clientsds, pnewSd, sizeof(newSd));
-		FD_SET(newSd, &(s.rset_saved));
-		s.maxfdp1 = max(s.maxfdp1, newSd + 1);
-		rc = Socket_setnonblocking(newSd);
+		if (newSd >= FD_SETSIZE)
+		{
+			Log(LOG_ERROR, -1, "addSocket: exceeded FD_SETSIZE %d", FD_SETSIZE);
+			rc = SOCKET_ERROR;
+		}
+		else
+		{
+			int* pnewSd = (int*)malloc(sizeof(newSd));
+			*pnewSd = newSd;
+			ListAppend(s.clientsds, pnewSd, sizeof(newSd));
+			FD_SET(newSd, &(s.rset_saved));
+			s.maxfdp1 = max(s.maxfdp1, newSd + 1);
+			rc = Socket_setnonblocking(newSd);
+			if (rc == SOCKET_ERROR)
+				Log(LOG_ERROR, -1, "addSocket: setnonblocking");
+		}
 	}
 	else
 		Log(LOG_ERROR, -1, "addSocket: socket %d already in the list", newSd);
@@ -671,7 +682,7 @@ int Socket_new(char* addr, int port, int* sock)
 
 			Log(TRACE_MIN, -1, "New socket %d for %s, port %d",	*sock, addr, port);
 			if (Socket_addSocket(*sock) == SOCKET_ERROR)
-				rc = Socket_error("setnonblocking", *sock);
+				rc = Socket_error("addSocket", *sock);
 			else
 			{
 				/* this could complete immmediately, even though we are non-blocking */

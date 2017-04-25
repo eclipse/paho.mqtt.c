@@ -806,8 +806,10 @@ typedef struct
       * specify either an IP address or a domain name. For instance, to connect to
       * a server running on the local machines with the default MQTT port, specify
       * <i>tcp://localhost:1883</i>.
-      */
-	char* const* serverURIs;
+      * @note Do not modify the related memory as long as this library needs to use this
+      *       serverURIs for (re)connect!
+      */    
+	char** serverURIs;
 	/**
       * Sets the version of MQTT to be used on the connect.
       * MQTTVERSION_DEFAULT (0) = default: start with 3.1.1, and if that fails, fall back to 3.1

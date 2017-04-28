@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
+ *    Ian Craggs - fix for issue #244
  *******************************************************************************/
 
 /**
@@ -236,6 +237,11 @@ void SocketBuffer_interrupted(int socket, size_t actual_len)
 	else /* new saved queue */
 	{
 		queue = def_queue;
+		/* if SocketBuffer_queueChar() has not yet been called, then the socket number
+		  in def_queue will not have been set.  Issue #244.
+		  If actual_len == 0 then we may not need to do anything - I'll leave that 
+		  optimization for another time. */
+		queue->socket = socket; 
 		ListAppend(queues, def_queue, sizeof(socket_queue)+def_queue->buflen);
 		SocketBuffer_newDefQ();
 	}

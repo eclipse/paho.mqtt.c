@@ -19,6 +19,7 @@
  *    Ian Craggs - automatic reconnect and offline buffering (send while disconnected)
  *    Ian Craggs - binary will message
  *    Ian Craggs - binary password
+ *    Ian Craggs - remove const on eyecatchers #168
  *******************************************************************************/
 
 /********************************************************************/
@@ -539,7 +540,7 @@ DLLExport int MQTTAsync_create(MQTTAsync* handle, const char* serverURI, const c
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQCO. */
-	const char struct_id[4];
+	char struct_id[4];
 	/** The version number of this structure.  Must be 0 */
 	int struct_version;
 	/** Whether to allow messages to be sent when the client library is not connected. */
@@ -569,7 +570,7 @@ DLLExport int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverU
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTW. */
-	const char struct_id[4];
+	char struct_id[4];
 	/** The version number of this structure.  Must be 0 or 1
 	    0 indicates no binary will message support
 	 */
@@ -612,7 +613,7 @@ typedef struct
 typedef struct 
 {
 	/** The eyecatcher for this structure.  Must be MQTS */
-	const char struct_id[4];
+	char struct_id[4];
 	/** The version number of this structure.  Must be 0 */
 	int struct_version;	
 	
@@ -656,7 +657,7 @@ typedef struct
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
-	const char struct_id[4];
+	char struct_id[4];
 	/** The version number of this structure.  Must be 0, 1, 2, 3 4 or 5.  
 	  * 0 signifies no SSL options and no serverURIs
 	  * 1 signifies no serverURIs 
@@ -822,7 +823,7 @@ DLLExport int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions
 typedef struct
 {
 	/** The eyecatcher for this structure. Must be MQTD. */
-	const char struct_id[4];
+	char struct_id[4];
 	/** The version number of this structure.  Must be 0 or 1.  0 signifies no SSL options */
 	int struct_version;
 	/**

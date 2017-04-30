@@ -15,6 +15,7 @@
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - multiple server connection support
  *    Ian Craggs - MQTT 3.1.1 support
+ *    Ian Craggs - remove const from eyecatchers #168
  *******************************************************************************/
 
 /**
@@ -424,7 +425,7 @@ DLLExport int MQTTClient_create(MQTTClient* handle, const char* serverURI, const
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTW. */
-	const char struct_id[4];
+	char struct_id[4];
 	/** The version number of this structure.  Must be 0 or 1 
 		   0 means there is no binary payload option
 	 */
@@ -467,7 +468,7 @@ typedef struct
 typedef struct 
 {
 	/** The eyecatcher for this structure.  Must be MQTS */
-	const char struct_id[4];
+	char struct_id[4];
 	/** The version number of this structure.  Must be 0 */
 	int struct_version;	
 	
@@ -520,7 +521,7 @@ typedef struct
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
-	const char struct_id[4];
+	char struct_id[4];
 	/** The version number of this structure.  Must be 0, 1, 2, 3, 4 or 5.  
 	 * 0 signifies no SSL options and no serverURIs
 	 * 1 signifies no serverURIs 

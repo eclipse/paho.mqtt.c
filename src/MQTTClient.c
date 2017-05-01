@@ -61,6 +61,8 @@
 
 #if defined(OPENSSL)
 #include <openssl/ssl.h>
+#else
+#define URI_SSL "ssl://"
 #endif
 
 #define URI_TCP "tcp://"
@@ -323,13 +325,16 @@ int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* cli
 	memset(m, '\0', sizeof(MQTTClients));
 	if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
 		serverURI += strlen(URI_TCP);
-#if defined(OPENSSL)
 	else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
 	{
+#if defined(OPENSSL)
 		serverURI += strlen(URI_SSL);
 		m->ssl = 1;
-	}
+#else
+        rc = MQTTCLIENT_SSL_NOT_SUPPORTED;
+        goto exit;
 #endif
+	}
 	m->serverURI = MQTTStrdup(serverURI);
 	ListAppend(handles, m, sizeof(MQTTClients));
 

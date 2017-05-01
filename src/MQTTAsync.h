@@ -162,6 +162,10 @@
  * Return code: no more messages can be buffered
  */
 #define MQTTASYNC_MAX_BUFFERED_MESSAGES -12
+/**
+ * Return code: Attempting SSL connection using non-SSL version of library
+ */
+#define MQTTASYNC_SSL_NOT_SUPPORTED -13
 
 /**
  * Default MQTT version to connect with.  Use 3.1.1 then fall back to 3.1

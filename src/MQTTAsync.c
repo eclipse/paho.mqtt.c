@@ -2298,6 +2298,12 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 			m->c->sslopts->enabledCipherSuites = MQTTStrdup(options->ssl->enabledCipherSuites);
 		m->c->sslopts->enableServerCertAuth = options->ssl->enableServerCertAuth;
 	}
+#else
+	if (options->struct_version != 0 && options->ssl)
+	{
+		rc = MQTTASYNC_SSL_NOT_SUPPORTED;
+		goto exit;
+	}
 #endif
 
 	m->c->username = options->username;

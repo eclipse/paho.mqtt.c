@@ -99,16 +99,17 @@ int pstopen(void **handle, const char* clientID, const char* serverURI, void* co
 	while ( (pToken != NULL) && (rc == 0) )
 	{
 		/* Append the next directory level and try to create it */
-		sprintf( pCrtDirName, "%s/%s", pCrtDirName, pToken );
+		strcat( pCrtDirName, "/" );
+		strcat( pCrtDirName, pToken );
 		rc = pstmkdir( pCrtDirName );
 		pToken = strtok_r( NULL, "\\/", &save_ptr );
 	}
 
 	*handle = clientDir;
 
-	free(perserverURI);
 	free(pTokDirName);
 	free(pCrtDirName);
+	free(perserverURI);
 
 	FUNC_EXIT_RC(rc);
 	return rc;

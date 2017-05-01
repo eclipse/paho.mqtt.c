@@ -51,12 +51,12 @@
  * */
  
  
- char* libraries[] = {"paho-mqtt3c", "paho-mqtt3cs", "paho-mqtt3a", "paho-mqtt3as"};
- char* eyecatchers[] = {"MQTTAsyncV3_Version", "MQTTAsyncV3_Timestamp", 
+ static const char* libraries[] = {"paho-mqtt3c", "paho-mqtt3cs", "paho-mqtt3a", "paho-mqtt3as"};
+ static const char* eyecatchers[] = {"MQTTAsyncV3_Version", "MQTTAsyncV3_Timestamp",
  					 "MQTTClientV3_Version", "MQTTClientV3_Timestamp"};
  
 
-char* FindString(char* filename, char* eyecatcher_input);
+char* FindString(char* filename, const char* eyecatcher_input);
 int printVersionInfo(MQTTAsync_nameValue* info);
 int loadandcall(char* libname);
 void printEyecatchers(char* filename);
@@ -68,43 +68,49 @@ void printEyecatchers(char* filename);
  * @param eyecatcher_input the eyecatcher string to look for
  * @return the value found - "" if not found 
  */
-char* FindString(char* filename, char* eyecatcher_input)
+char* FindString(char* filename, const char* eyecatcher_input)
 {
 	FILE* infile = NULL;
 	static char value[100];
-	char* eyecatcher = eyecatcher_input;
+	const char* eyecatcher = eyecatcher_input;
 	
 	memset(value, 0, 100);
 	if ((infile = fopen(filename, "rb")) != NULL)
 	{
 		size_t buflen = strlen(eyecatcher);
 		char* buffer = (char*) malloc(buflen);
-		int count = 0;
-		int c = fgetc(infile);
 
-		while (feof(infile) == 0)
+		if (buffer != NULL)
 		{
-			buffer[count++] = c;
-			if (memcmp(eyecatcher, buffer, buflen) == 0)
+			int c = fgetc(infile);
+
+			while (feof(infile) == 0)
 			{
-				char* ptr = value;
-				c = fgetc(infile); /* skip space */
-				c = fgetc(infile);
-				while (isprint(c))
+				int count = 0;
+				buffer[count++] = c;
+				if (memcmp(eyecatcher, buffer, buflen) == 0)
 				{
-					*ptr++ = c;
+					char* ptr = value;
+					c = fgetc(infile); /* skip space */
 					c = fgetc(infile);
+					while (isprint(c))
+					{
+						*ptr++ = c;
+						c = fgetc(infile);
+					}
+					break;
 				}
-				break;
+				if (count == buflen)
+				{
+					memmove(buffer, &buffer[1], buflen - 1);
+					count--;
+				}
+				c = fgetc(infile);
 			}
-			if (count == buflen)
-			{
-				memmove(buffer, &buffer[1], buflen - 1);
-				count--;
-			}
-			c = fgetc(infile);
+			free(buffer);
 		}
-		free(buffer);
+
+		fclose(infile);
 	}
 	return value;
 }

@@ -1054,9 +1054,9 @@ DLLExport void MQTTClient_destroy(MQTTClient* handle);
   * of messages occurs.
   * @page pubsync Synchronous publication example
 @code
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "MQTTClient.h"
 
 #define ADDRESS     "tcp://localhost:1883"
@@ -1103,9 +1103,9 @@ int main(int argc, char* argv[])
   *
   * @page pubasync Asynchronous publication example
 @code{.c}
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "MQTTClient.h"
 
 #define ADDRESS     "tcp://localhost:1883"
@@ -1187,9 +1187,9 @@ int main(int argc, char* argv[])
   * @endcode
   * @page subasync Asynchronous subscription example
 @code
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "MQTTClient.h"
 
 #define ADDRESS     "tcp://localhost:1883"

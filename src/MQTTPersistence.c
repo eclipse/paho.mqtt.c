@@ -479,7 +479,7 @@ int MQTTPersistence_unpersistQueueEntry(Clients* client, MQTTPersistence_qEntry*
 	char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
 	
 	FUNC_ENTRY;
-	sprintf(key, "%s%d", PERSISTENCE_QUEUE_KEY, qe->seqno);
+	sprintf(key, "%s%u", PERSISTENCE_QUEUE_KEY, qe->seqno);
 	if ((rc = client->persistence->premove(client->phandle, key)) != 0)
 		Log(LOG_ERROR, 0, "Error %d removing qEntry from persistence", rc);
 	FUNC_EXIT_RC(rc);

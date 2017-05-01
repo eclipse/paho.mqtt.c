@@ -1229,9 +1229,9 @@ DLLExport MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void);
  
   * @page publish Publication example
 @code
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "MQTTAsync.h"
 
 #define ADDRESS     "tcp://localhost:1883"
@@ -1364,9 +1364,9 @@ int main(int argc, char* argv[])
   * @endcode
   * @page subscribe Subscription example
 @code
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "MQTTAsync.h"
 
 #define ADDRESS     "tcp://localhost:1883"

@@ -567,7 +567,7 @@ static int MQTTAsync_unpersistCommand(MQTTAsync_queuedCommand* qcmd)
 	char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
 
 	FUNC_ENTRY;
-	sprintf(key, "%s%d", PERSISTENCE_COMMAND_KEY, qcmd->seqno);
+	sprintf(key, "%s%u", PERSISTENCE_COMMAND_KEY, qcmd->seqno);
 	if ((rc = qcmd->client->c->persistence->premove(qcmd->client->c->phandle, key)) != 0)
 		Log(LOG_ERROR, 0, "Error %d removing command from persistence", rc);
 	FUNC_EXIT_RC(rc);

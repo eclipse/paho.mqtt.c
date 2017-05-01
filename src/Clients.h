@@ -24,7 +24,7 @@
 #include <time.h>
 #if defined(OPENSSL)
 #if defined(WIN32) || defined(WIN64)
-#include "winsock2.h"
+#include <winsock2.h>
 #endif
 #include <openssl/ssl.h>
 #endif

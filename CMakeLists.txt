@@ -12,6 +12,7 @@
 #
 #  Contributors:
 #     Rainer Poisel - initial version
+#     Genis Riera Perez - Add support for building debian package
 #*******************************************************************************/
 
 # Note: on OS X you should install XCode and the associated command-line tools
@@ -20,6 +21,9 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 PROJECT("paho" C)
 MESSAGE(STATUS "CMake version: " ${CMAKE_VERSION})
 MESSAGE(STATUS "CMake system name: " ${CMAKE_SYSTEM_NAME})
+
+SET(CMAKE_SCRIPTS "${CMAKE_SOURCE_DIR}/cmake")
+SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 
 ## build settings
 SET(PAHO_VERSION_MAJOR 1)
@@ -61,6 +65,7 @@ SET(PAHO_WITH_SSL FALSE CACHE BOOL "Flag that defines whether to build ssl-enabl
 SET(PAHO_BUILD_STATIC FALSE CACHE BOOL "Build static library")
 SET(PAHO_BUILD_DOCUMENTATION FALSE CACHE BOOL "Create and install the HTML based API documentation (requires Doxygen)")
 SET(PAHO_BUILD_SAMPLES FALSE CACHE BOOL "Build sample programs")
+SET(PAHO_BUILD_DEB_PACKAGE FALSE CACHE BOOL "Build debian package")
 
 ADD_SUBDIRECTORY(src)
 IF(PAHO_BUILD_SAMPLES)
@@ -74,7 +79,13 @@ ENDIF()
 ### packaging settings
 IF (WIN32)
     SET(CPACK_GENERATOR "ZIP")
-ELSEIF(UNIX)
+ELSEIF(PAHO_BUILD_DEB_PACKAGE)
+    SET(CPACK_GENERATOR "DEB")
+    CONFIGURE_FILE(${CMAKE_SCRIPTS}/CPackDebConfig.cmake.in
+        ${CMAKE_BINARY_DIR}/CPackDebConfig.cmake @ONLY)
+    SET(CPACK_PROJECT_CONFIG_FILE ${CMAKE_BINARY_DIR}/CPackDebConfig.cmake)
+    ADD_SUBDIRECTORY(debian)
+ELSE()
     SET(CPACK_GENERATOR "TGZ")
 ENDIF()
 

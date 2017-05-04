@@ -31,9 +31,13 @@
 
 #define URI_SSL "ssl://"
 
+/** if we should handle openssl initialization (bool_value == 1) or depend on it to be initalized externally (bool_value == 0) */
+void SSLSocket_handleOpensslInit(int bool_value);
+
 int SSLSocket_initialize(void);
 void SSLSocket_terminate(void);
 int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, char* hostname);
+
 int SSLSocket_getch(SSL* ssl, int socket, char* c);
 char *SSLSocket_getdata(SSL* ssl, int socket, size_t bytes, size_t* actual_len);
 

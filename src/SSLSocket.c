@@ -68,6 +68,8 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts);
 void SSLSocket_destroyContext(networkHandles* net);
 void SSLSocket_addPendingRead(int sock);
 
+/// 1 ~ we are responsible for initializing openssl; 0 ~ openssl init is done externally 
+static int handle_openssl_init = 1;
 static ssl_mutex_type* sslLocks = NULL;
 static ssl_mutex_type sslCoreMutex;
 
@@ -417,6 +419,13 @@ extern void SSLLocks_callback(int mode, int n, const char *file, int line)
 	}
 }
 
+
+void SSLSocket_handleOpensslInit(int bool_value)
+{
+	handle_openssl_init = bool_value;
+}
+
+
 int SSLSocket_initialize(void)
 {
 	int rc = 0;
@@ -426,41 +435,45 @@ int SSLSocket_initialize(void)
 	
 	FUNC_ENTRY;
 
-	if ((rc = SSL_library_init()) != 1)
-		rc = -1;
+	if (handle_openssl_init)
+	{
+		if ((rc = SSL_library_init()) != 1)
+			rc = -1;
+			
+		ERR_load_crypto_strings();
+		SSL_load_error_strings();
 		
-	ERR_load_crypto_strings();
-	SSL_load_error_strings();
-	
-	/* OpenSSL 0.9.8o and 1.0.0a and later added SHA2 algorithms to SSL_library_init(). 
-	Applications which need to use SHA2 in earlier versions of OpenSSL should call 
-	OpenSSL_add_all_algorithms() as well. */
-	
-	OpenSSL_add_all_algorithms();
-	
-	lockMemSize = CRYPTO_num_locks() * sizeof(ssl_mutex_type);
+		/* OpenSSL 0.9.8o and 1.0.0a and later added SHA2 algorithms to SSL_library_init(). 
+		Applications which need to use SHA2 in earlier versions of OpenSSL should call 
+		OpenSSL_add_all_algorithms() as well. */
+		
+		OpenSSL_add_all_algorithms();
+		
+		lockMemSize = CRYPTO_num_locks() * sizeof(ssl_mutex_type);
 
-	sslLocks = malloc(lockMemSize);
-	if (!sslLocks)
-	{
-		rc = -1;
-		goto exit;
-	}
-	else
-		memset(sslLocks, 0, lockMemSize);
+		sslLocks = malloc(lockMemSize);
+		if (!sslLocks)
+		{
+			rc = -1;
+			goto exit;
+		}
+		else
+			memset(sslLocks, 0, lockMemSize);
 
-	for (i = 0; i < CRYPTO_num_locks(); i++)
-	{
-		/* prc = */SSL_create_mutex(&sslLocks[i]);
-	}
+		for (i = 0; i < CRYPTO_num_locks(); i++)
+		{
+			/* prc = */SSL_create_mutex(&sslLocks[i]);
+		}
 
 #if (OPENSSL_VERSION_NUMBER >= 0x010000000)
-	CRYPTO_THREADID_set_callback(SSLThread_id);
+		CRYPTO_THREADID_set_callback(SSLThread_id);
 #else
-	CRYPTO_set_id_callback(SSLThread_id);
+		CRYPTO_set_id_callback(SSLThread_id);
 #endif
-	CRYPTO_set_locking_callback(SSLLocks_callback);
-
+		CRYPTO_set_locking_callback(SSLLocks_callback);
+		
+	}
+	
 	SSL_create_mutex(&sslCoreMutex);
 
 exit:
@@ -471,19 +484,26 @@ exit:
 void SSLSocket_terminate(void)
 {
 	FUNC_ENTRY;
-	EVP_cleanup();
-	ERR_free_strings();
-	CRYPTO_set_locking_callback(NULL);
-	if (sslLocks)
+	
+	if (handle_openssl_init)
 	{
-		int i = 0;
-
-		for (i = 0; i < CRYPTO_num_locks(); i++)
+		EVP_cleanup();
+		ERR_free_strings();
+		CRYPTO_set_locking_callback(NULL);
+		if (sslLocks)
 		{
-			SSL_destroy_mutex(&sslLocks[i]);
+			int i = 0;
+
+			for (i = 0; i < CRYPTO_num_locks(); i++)
+			{
+				SSL_destroy_mutex(&sslLocks[i]);
+			}
+			free(sslLocks);
 		}
-		free(sslLocks);
 	}
+	
+	SSL_destroy_mutex(&sslCoreMutex);
+	
 	FUNC_EXIT;
 }
 

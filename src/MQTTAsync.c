@@ -66,6 +66,13 @@
 const char *client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
 const char *client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
 
+void MQTTAsync_global_init(int handle_openssl_init)
+{
+#if defined(OPENSSL)
+	SSLSocket_handleOpensslInit(handle_openssl_init);
+#endif
+}
+
 #if !defined(min)
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
@@ -1395,8 +1402,9 @@ static void MQTTAsync_checkTimeouts(void)
 		/* check disconnect timeout */
 		if (m->c->connect_state == -2)
 			MQTTAsync_checkDisconnect(m, &m->disconnect);
+
 		/* check connect timeout */
-		else if (m->c->connect_state != 0 && MQTTAsync_elapsed(m->connect.start_time) > (m->connectTimeout * 1000))
+		if (m->c->connect_state != 0 && MQTTAsync_elapsed(m->connect.start_time) > (m->connectTimeout * 1000))
 		{
 			nextOrClose(m, MQTTASYNC_FAILURE, "TCP connect timeout");
 			continue;

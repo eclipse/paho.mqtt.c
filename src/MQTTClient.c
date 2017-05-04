@@ -69,8 +69,16 @@
 
 #include "VersionInfo.h"
 
+
 const char *client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
 const char *client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
+
+void MQTTClient_global_init(int handle_openssl_init)
+{
+#if defined(OPENSSL)
+	SSLSocket_handleOpensslInit(handle_openssl_init);
+#endif
+}
 
 static ClientStates ClientState =
 {

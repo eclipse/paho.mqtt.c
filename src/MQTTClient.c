@@ -167,7 +167,6 @@ void MQTTClient_init(void)
 
 static volatile int initialized = 0;
 static List* handles = NULL;
-static time_t last;
 static int running = 0;
 static int tostop = 0;
 static thread_id_type run_id = 0;
@@ -1007,6 +1006,20 @@ exit:
   return rc;
 }
 
+static int retryLoopInterval = 5;
+
+static void setRetryLoopInterval(int keepalive)
+{
+	int proposed = keepalive / 10;
+	
+	if (proposed < 1)
+		proposed = 1;
+	else if (proposed > 5)
+		proposed = 5;
+	if (proposed < retryLoopInterval)
+		retryLoopInterval = proposed;
+}
+
 
 static int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options, const char* serverURI)
 {
@@ -1021,6 +1034,7 @@ static int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* o
 	start = MQTTClient_start_clock();
 
 	m->c->keepAliveInterval = options->keepAliveInterval;
+	setRetryLoopInterval(options->keepAliveInterval);
 	m->c->cleansession = options->cleansession;
 	m->c->maxInflightMessages = (options->reliable) ? 1 : 10;
 
@@ -1625,11 +1639,12 @@ exit:
 
 static void MQTTClient_retry(void)
 {
+	static time_t last = 0L;
 	time_t now;
 
 	FUNC_ENTRY;
 	time(&(now));
-	if (difftime(now, last) > 5)
+	if (difftime(now, last) > retryLoopInterval)
 	{
 		time(&(last));
 		MQTTProtocol_keepalive(now);

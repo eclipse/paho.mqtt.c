@@ -2154,6 +2154,21 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 }
 
 
+static int retryLoopInterval = 5;
+
+static void setRetryLoopInterval(int keepalive)
+{
+	int proposed = keepalive / 10;
+	
+	if (proposed < 1)
+		proposed = 1;
+	else if (proposed > 5)
+		proposed = 5;
+	if (proposed < retryLoopInterval)
+		retryLoopInterval = proposed;
+}
+
+
 int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 {
 	MQTTAsyncs* m = handle;
@@ -2222,6 +2237,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	}
 
 	m->c->keepAliveInterval = options->keepAliveInterval;
+	setRetryLoopInterval(options->keepAliveInterval);
 	m->c->cleansession = options->cleansession;
 	m->c->maxInflightMessages = options->maxInflight;
 	if (options->struct_version >= 3)
@@ -2736,7 +2752,7 @@ static void MQTTAsync_retry(void)
 
 	FUNC_ENTRY;
 	time(&(now));
-	if (difftime(now, last) > 5)
+	if (difftime(now, last) > retryLoopInterval)
 	{
 		time(&(last));
 		MQTTProtocol_keepalive(now);

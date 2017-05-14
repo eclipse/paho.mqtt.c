@@ -32,6 +32,7 @@
  *    Ian Craggs - fix for bug 486548
  *    Ian Craggs - SNI support
  *    Ian Craggs - auto reconnect timing fix #218
+ *    Ian Craggs - fix for issue #190
  *******************************************************************************/
 
 /**
@@ -64,6 +65,13 @@
 
 const char *client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
 const char *client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
+
+void MQTTAsync_global_init(int handle_openssl_init)
+{
+#if defined(OPENSSL)
+	SSLSocket_handleOpensslInit(handle_openssl_init);
+#endif
+}
 
 #if !defined(min)
 #define min(a, b) (((a) < (b)) ? (a) : (b))
@@ -566,7 +574,7 @@ static int MQTTAsync_unpersistCommand(MQTTAsync_queuedCommand* qcmd)
 	char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
 
 	FUNC_ENTRY;
-	sprintf(key, "%s%d", PERSISTENCE_COMMAND_KEY, qcmd->seqno);
+	sprintf(key, "%s%u", PERSISTENCE_COMMAND_KEY, qcmd->seqno);
 	if ((rc = qcmd->client->c->persistence->premove(qcmd->client->c->phandle, key)) != 0)
 		Log(LOG_ERROR, 0, "Error %d removing command from persistence", rc);
 	FUNC_EXIT_RC(rc);
@@ -1337,6 +1345,39 @@ exit:
 }
 
 
+static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
+{
+	if (MQTTAsync_checkConn(&m->connect, m))
+	{
+		MQTTAsync_queuedCommand* conn;
+
+		MQTTAsync_closeOnly(m->c);
+		/* put the connect command back to the head of the command queue, using the next serverURI */
+		conn = malloc(sizeof(MQTTAsync_queuedCommand));
+		memset(conn, '\0', sizeof(MQTTAsync_queuedCommand));
+		conn->client = m;
+		conn->command = m->connect;
+		Log(TRACE_MIN, -1, "Connect failed, more to try");
+		MQTTAsync_addCommand(conn, sizeof(m->connect));
+	}
+	else
+	{
+		MQTTAsync_closeSession(m->c);
+	  if (m->connect.onFailure)
+		{
+			MQTTAsync_failureData data;
+
+			data.token = 0;
+			data.code = rc;
+			data.message = message;
+			Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
+			(*(m->connect.onFailure))(m->connect.context, &data);
+		}
+		MQTTAsync_startConnectRetry(m);
+	}			
+}
+
+
 static void MQTTAsync_checkTimeouts(void)
 {
 	ListElement* current = NULL;
@@ -1361,38 +1402,11 @@ static void MQTTAsync_checkTimeouts(void)
 		/* check disconnect timeout */
 		if (m->c->connect_state == -2)
 			MQTTAsync_checkDisconnect(m, &m->disconnect);
+
 		/* check connect timeout */
-		else if (m->c->connect_state != 0 && MQTTAsync_elapsed(m->connect.start_time) > (m->connectTimeout * 1000))
+		if (m->c->connect_state != 0 && MQTTAsync_elapsed(m->connect.start_time) > (m->connectTimeout * 1000))
 		{
-			if (MQTTAsync_checkConn(&m->connect, m))
-			{
-				MQTTAsync_queuedCommand* conn;
-
-				MQTTAsync_closeOnly(m->c);
-				/* put the connect command back to the head of the command queue, using the next serverURI */
-				conn = malloc(sizeof(MQTTAsync_queuedCommand));
-				memset(conn, '\0', sizeof(MQTTAsync_queuedCommand));
-				conn->client = m;
-				conn->command = m->connect;
-				Log(TRACE_MIN, -1, "Connect failed with timeout, more to try");
-				MQTTAsync_addCommand(conn, sizeof(m->connect));
-			}
-			else
-			{
-				MQTTAsync_closeSession(m->c);
-				Log(TRACE_MIN, -1, "Connect failed with timeout, no to try");
-				if (m->connect.onFailure)
-				{
-					MQTTAsync_failureData data;
-
-					data.token = 0;
-					data.code = MQTTASYNC_FAILURE;
-					data.message = "TCP connect timeout";
-					Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
-					(*(m->connect.onFailure))(m->connect.context, &data);
-				}
-				MQTTAsync_startConnectRetry(m);
-			}
+			nextOrClose(m, MQTTASYNC_FAILURE, "TCP connect timeout");
 			continue;
 		}
 
@@ -1677,6 +1691,7 @@ static int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack)
 	return rc;
 }
 
+
 /* This is the thread function that handles the calling of callback functions if set */
 static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 {
@@ -1725,6 +1740,8 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 				MQTTAsync_disconnect_internal(m, 0);
 				MQTTAsync_lock_mutex(mqttasync_mutex);
 			}
+			else if (m->c->connect_state != 0)
+				nextOrClose(m, rc, "socket error");
 			else /* calling disconnect_internal won't have any effect if we're already disconnected */
 				MQTTAsync_closeOnly(m->c);
 		}
@@ -1791,36 +1808,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 						}
 					}
 					else
-					{
-						if (MQTTAsync_checkConn(&m->connect, m))
-						{
-							MQTTAsync_queuedCommand* conn;
-
-							MQTTAsync_closeOnly(m->c);
-							/* put the connect command back to the head of the command queue, using the next serverURI */
-							conn = malloc(sizeof(MQTTAsync_queuedCommand));
-							memset(conn, '\0', sizeof(MQTTAsync_queuedCommand));
-							conn->client = m;
-							conn->command = m->connect;
-							Log(TRACE_MIN, -1, "Connect failed, more to try");
-							MQTTAsync_addCommand(conn, sizeof(m->connect));
-						}
-						else
-						{
-							MQTTAsync_closeSession(m->c);
-							if (m->connect.onFailure)
-							{
-								MQTTAsync_failureData data;
-
-								data.token = 0;
-								data.code = rc;
-								data.message = "CONNACK return code";
-								Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
-								(*(m->connect.onFailure))(m->connect.context, &data);
-							}
-							MQTTAsync_startConnectRetry(m);
-						}
-					}
+						nextOrClose(m, rc, "CONNACK return code");
 				}
 				else if (pack->header.bits.type == SUBACK)
 				{
@@ -2166,6 +2154,21 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 }
 
 
+static int retryLoopInterval = 5;
+
+static void setRetryLoopInterval(int keepalive)
+{
+	int proposed = keepalive / 10;
+	
+	if (proposed < 1)
+		proposed = 1;
+	else if (proposed > 5)
+		proposed = 5;
+	if (proposed < retryLoopInterval)
+		retryLoopInterval = proposed;
+}
+
+
 int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 {
 	MQTTAsyncs* m = handle;
@@ -2234,6 +2237,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	}
 
 	m->c->keepAliveInterval = options->keepAliveInterval;
+	setRetryLoopInterval(options->keepAliveInterval);
 	m->c->cleansession = options->cleansession;
 	m->c->maxInflightMessages = options->maxInflight;
 	if (options->struct_version >= 3)
@@ -2317,6 +2321,12 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		if (options->ssl->enabledCipherSuites)
 			m->c->sslopts->enabledCipherSuites = MQTTStrdup(options->ssl->enabledCipherSuites);
 		m->c->sslopts->enableServerCertAuth = options->ssl->enableServerCertAuth;
+	}
+#else
+	if (options->struct_version != 0 && options->ssl)
+	{
+		rc = MQTTASYNC_SSL_NOT_SUPPORTED;
+		goto exit;
 	}
 #endif
 
@@ -2742,7 +2752,7 @@ static void MQTTAsync_retry(void)
 
 	FUNC_ENTRY;
 	time(&(now));
-	if (difftime(now, last) > 5)
+	if (difftime(now, last) > retryLoopInterval)
 	{
 		time(&(last));
 		MQTTProtocol_keepalive(now);
@@ -2845,36 +2855,8 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 
 exit:
 	if ((rc != 0 && rc != TCPSOCKET_INTERRUPTED && m->c->connect_state != 2) || (rc == SSL_FATAL))
-	{
-		if (MQTTAsync_checkConn(&m->connect, m))
-		{
-			MQTTAsync_queuedCommand* conn;
+		nextOrClose(m, MQTTASYNC_FAILURE, "TCP/TLS connect failure");
 
-			MQTTAsync_closeOnly(m->c);
-			/* put the connect command back to the head of the command queue, using the next serverURI */
-			conn = malloc(sizeof(MQTTAsync_queuedCommand));
-			memset(conn, '\0', sizeof(MQTTAsync_queuedCommand));
-			conn->client = m;
-			conn->command = m->connect;
-			Log(TRACE_MIN, -1, "Connect failed, more to try");
-			MQTTAsync_addCommand(conn, sizeof(m->connect));
-		}
-		else
-		{
-			MQTTAsync_closeSession(m->c);
-			if (m->connect.onFailure)
-			{
-				MQTTAsync_failureData data;
-
-				data.token = 0;
-				data.code = MQTTASYNC_FAILURE;
-				data.message = "TCP/TLS connect failure";
-				Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
-				(*(m->connect.onFailure))(m->connect.context, &data);
-			}
-			MQTTAsync_startConnectRetry(m);
-		}
-	}
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -2922,34 +2904,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 			if (m->c->connect_state == 3 && *rc == SOCKET_ERROR)
 			{
 				Log(TRACE_MINIMUM, -1, "CONNECT sent but MQTTPacket_Factory has returned SOCKET_ERROR");
-				if (MQTTAsync_checkConn(&m->connect, m))
-				{
-					MQTTAsync_queuedCommand* conn;
-
-					MQTTAsync_closeOnly(m->c);
-					/* put the connect command back to the head of the command queue, using the next serverURI */
-					conn = malloc(sizeof(MQTTAsync_queuedCommand));
-					memset(conn, '\0', sizeof(MQTTAsync_queuedCommand));
-					conn->client = m;
-					conn->command = m->connect;
-					Log(TRACE_MIN, -1, "Connect failed, more to try");
-					MQTTAsync_addCommand(conn, sizeof(m->connect));
-				}
-				else
-				{
-					MQTTAsync_closeSession(m->c);
-					if (m->connect.onFailure)
-					{
-						MQTTAsync_failureData data;
-
-						data.token = 0;
-						data.code = MQTTASYNC_FAILURE;
-						data.message = "TCP connect completion failure";
-						Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
-						(*(m->connect.onFailure))(m->connect.context, &data);
-					}
-					MQTTAsync_startConnectRetry(m);
-				}
+				nextOrClose(m, MQTTASYNC_FAILURE, "TCP connect completion failure");
 			}
 			else
 			{

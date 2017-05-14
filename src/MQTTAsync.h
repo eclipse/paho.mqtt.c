@@ -19,6 +19,7 @@
  *    Ian Craggs - automatic reconnect and offline buffering (send while disconnected)
  *    Ian Craggs - binary will message
  *    Ian Craggs - binary password
+ *    Ian Craggs - remove const on eyecatchers #168
  *******************************************************************************/
 
 /********************************************************************/
@@ -161,6 +162,10 @@
  * Return code: no more messages can be buffered
  */
 #define MQTTASYNC_MAX_BUFFERED_MESSAGES -12
+/**
+ * Return code: Attempting SSL connection using non-SSL version of library
+ */
+#define MQTTASYNC_SSL_NOT_SUPPORTED -13
 
 /**
  * Default MQTT version to connect with.  Use 3.1.1 then fall back to 3.1
@@ -178,6 +183,13 @@
  * Bad return code from subscribe, as defined in the 3.1.1 specification
  */
 #define MQTT_BAD_SUBSCRIBE 0x80
+
+/** 
+ * Global init of mqtt library. Call once on program start to set global behaviour.
+ * handle_openssl_init - if mqtt library should handle openssl init (1) or rely on the caller to init it before using mqtt (0)
+ */
+void MQTTAsync_global_init(int handle_openssl_init);
+
 
 /**
  * A handle representing an MQTT client. A valid client handle is available
@@ -539,7 +551,7 @@ DLLExport int MQTTAsync_create(MQTTAsync* handle, const char* serverURI, const c
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQCO. */
-	const char struct_id[4];
+	char struct_id[4];
 	/** The version number of this structure.  Must be 0 */
 	int struct_version;
 	/** Whether to allow messages to be sent when the client library is not connected. */
@@ -569,7 +581,7 @@ DLLExport int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverU
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTW. */
-	const char struct_id[4];
+	char struct_id[4];
 	/** The version number of this structure.  Must be 0 or 1
 	    0 indicates no binary will message support
 	 */
@@ -595,7 +607,7 @@ typedef struct
 	} payload;
 } MQTTAsync_willOptions;
 
-#define MQTTAsync_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 1, NULL, NULL, 0, 0 }
+#define MQTTAsync_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 1, NULL, NULL, 0, 0, { 0, NULL } }
 
 /**
 * MQTTAsync_sslProperties defines the settings to establish an SSL/TLS connection using the 
@@ -612,7 +624,7 @@ typedef struct
 typedef struct 
 {
 	/** The eyecatcher for this structure.  Must be MQTS */
-	const char struct_id[4];
+	char struct_id[4];
 	/** The version number of this structure.  Must be 0 */
 	int struct_version;	
 	
@@ -656,7 +668,7 @@ typedef struct
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
-	const char struct_id[4];
+	char struct_id[4];
 	/** The version number of this structure.  Must be 0, 1, 2, 3 4 or 5.  
 	  * 0 signifies no SSL options and no serverURIs
 	  * 1 signifies no serverURIs 
@@ -822,7 +834,7 @@ DLLExport int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions
 typedef struct
 {
 	/** The eyecatcher for this structure. Must be MQTD. */
-	const char struct_id[4];
+	char struct_id[4];
 	/** The version number of this structure.  Must be 0 or 1.  0 signifies no SSL options */
 	int struct_version;
 	/**
@@ -1224,9 +1236,9 @@ DLLExport MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void);
  
   * @page publish Publication example
 @code
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "MQTTAsync.h"
 
 #define ADDRESS     "tcp://localhost:1883"
@@ -1359,9 +1371,9 @@ int main(int argc, char* argv[])
   * @endcode
   * @page subscribe Subscription example
 @code
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "MQTTAsync.h"
 
 #define ADDRESS     "tcp://localhost:1883"

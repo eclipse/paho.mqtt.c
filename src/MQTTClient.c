@@ -61,14 +61,24 @@
 
 #if defined(OPENSSL)
 #include <openssl/ssl.h>
+#else
+#define URI_SSL "ssl://"
 #endif
 
 #define URI_TCP "tcp://"
 
 #include "VersionInfo.h"
 
+
 const char *client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
 const char *client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
+
+void MQTTClient_global_init(int handle_openssl_init)
+{
+#if defined(OPENSSL)
+	SSLSocket_handleOpensslInit(handle_openssl_init);
+#endif
+}
 
 static ClientStates ClientState =
 {
@@ -157,7 +167,6 @@ void MQTTClient_init(void)
 
 static volatile int initialized = 0;
 static List* handles = NULL;
-static time_t last;
 static int running = 0;
 static int tostop = 0;
 static thread_id_type run_id = 0;
@@ -323,13 +332,16 @@ int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* cli
 	memset(m, '\0', sizeof(MQTTClients));
 	if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
 		serverURI += strlen(URI_TCP);
-#if defined(OPENSSL)
 	else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
 	{
+#if defined(OPENSSL)
 		serverURI += strlen(URI_SSL);
 		m->ssl = 1;
-	}
+#else
+        rc = MQTTCLIENT_SSL_NOT_SUPPORTED;
+        goto exit;
 #endif
+	}
 	m->serverURI = MQTTStrdup(serverURI);
 	ListAppend(handles, m, sizeof(MQTTClients));
 
@@ -994,6 +1006,20 @@ exit:
   return rc;
 }
 
+static int retryLoopInterval = 5;
+
+static void setRetryLoopInterval(int keepalive)
+{
+	int proposed = keepalive / 10;
+	
+	if (proposed < 1)
+		proposed = 1;
+	else if (proposed > 5)
+		proposed = 5;
+	if (proposed < retryLoopInterval)
+		retryLoopInterval = proposed;
+}
+
 
 static int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options, const char* serverURI)
 {
@@ -1008,6 +1034,7 @@ static int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* o
 	start = MQTTClient_start_clock();
 
 	m->c->keepAliveInterval = options->keepAliveInterval;
+	setRetryLoopInterval(options->keepAliveInterval);
 	m->c->cleansession = options->cleansession;
 	m->c->maxInflightMessages = (options->reliable) ? 1 : 10;
 
@@ -1612,11 +1639,12 @@ exit:
 
 static void MQTTClient_retry(void)
 {
+	static time_t last = 0L;
 	time_t now;
 
 	FUNC_ENTRY;
 	time(&(now));
-	if (difftime(now, last) > 5)
+	if (difftime(now, last) > retryLoopInterval)
 	{
 		time(&(last));
 		MQTTProtocol_keepalive(now);

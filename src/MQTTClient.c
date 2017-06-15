@@ -1100,7 +1100,7 @@ static int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* o
 	m->c->username = options->username;
 	m->c->password = options->password;
 	if (options->password)
-		m->c->passwordlen = strlen(options->password) + 1;
+		m->c->passwordlen = strlen(options->password);
 	else if (options->struct_version >= 5 && options->binarypwd.data)
 	{
 		m->c->password = options->binarypwd.data;

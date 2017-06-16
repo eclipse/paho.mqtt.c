@@ -10,7 +10,8 @@ if [ "$TRAVIS_OS_NAME" == "osx" ]; then
   make
   python ../test/mqttsas2.py &
   ctest -VV --timeout 600
-  kill %1 %2
+  kill %1 
+  killall mosquitto
 fi
 
 if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
@@ -21,5 +22,6 @@ if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
   make
   python ../test/mqttsas2.py &
   ctest -VV --timeout 600
-  kill %1 %2
+  kill %1
+  killall mosquitto
 fi

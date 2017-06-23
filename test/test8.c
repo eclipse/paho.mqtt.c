@@ -876,6 +876,216 @@ exit:
 }
 
 
+int test5_onConnect_called = 0;
+int test5_onFailure_called = 0;
+
+void test5_onConnect(void* context, MQTTAsync_successData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+
+	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
+
+	test5_onConnect_called++;
+	test_finished = 1;
+}
+
+void test5_onConnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+
+	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
+
+	test5_onFailure_called++;
+	test_finished = 1;
+}
+
+/*********************************************************************
+
+Test5a: All HA connections out of service.
+
+*********************************************************************/
+int test5a(struct Options options)
+{
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	int rc = 0;
+	char* test_topic = "C client test5a";
+	char* serverURIs[3] = {"tcp://localhost:1880", "tcp://localhost:1881", "tcp://localhost:1882"};
+
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 5a - All HA connections out of service");
+
+	rc = MQTTAsync_create(&c, "rubbish", "all_ha_down",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
+
+	opts.keepAliveInterval = 20;
+	opts.cleansession = 1;
+	opts.username = "testuser";
+	opts.password = "testpassword";
+
+	opts.onSuccess = test5_onConnect;
+	opts.onFailure = test5_onConnectFailure;
+	opts.context = c;
+	opts.serverURIcount = 3;
+	opts.serverURIs = serverURIs;
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	rc = 0;
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (!test_finished)
+		#if defined(WIN32)
+			Sleep(100);
+		#else
+			usleep(10000L);
+		#endif
+
+	MQTTAsync_destroy(&c);
+
+exit:
+	assert("Connect onFailure should be called once", test5_onFailure_called == 1,
+			"connect onFailure was called %d times", test5_onFailure_called);
+
+	MyLog(LOGA_INFO, "TEST5a: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+
+	return failures;
+}
+
+/*********************************************************************
+
+Test5b: All HA connections out of service except the last one.
+
+*********************************************************************/
+int test5b(struct Options options)
+{
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	int rc = 0;
+	char* test_topic = "C client test5b";
+	char* serverURIs[3] = {"tcp://localhost:1880", "tcp://localhost:1881", options.connection};
+
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 5b - All HA connections out of service except the last one");
+
+	rc = MQTTAsync_create(&c, "rubbish", "all_ha_down_except_last_one",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
+
+	opts.keepAliveInterval = 20;
+	opts.cleansession = 1;
+	opts.username = "testuser";
+	opts.password = "testpassword";
+
+	opts.onSuccess = test5_onConnect;
+	opts.onFailure = test5_onConnectFailure;
+	opts.context = c;
+	opts.serverURIcount = 3;
+	opts.serverURIs = serverURIs;
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	rc = 0;
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (!test_finished)
+		#if defined(WIN32)
+			Sleep(100);
+		#else
+			usleep(10000L);
+		#endif
+
+	MQTTAsync_destroy(&c);
+
+exit:
+	assert("Connect onConnect should be called once", test5_onConnect_called == 1,
+			"connect onConnect was called %d times", test5_onConnect_called);
+
+	MyLog(LOGA_INFO, "TEST5b: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+
+	return failures;
+}
+
+/*********************************************************************
+
+Test5c: All HA connections out of service except the first one.
+
+*********************************************************************/
+int test5c(struct Options options)
+{
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	int rc = 0;
+	char* test_topic = "C client test5c";
+	char* serverURIs[3] = {options.connection, "tcp://localhost:1881", "tcp://localhost:1882"};
+
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 5c - All HA connections out of service except the first one");
+
+	rc = MQTTAsync_create(&c, "rubbish", "all_ha_down_except_first_one",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
+
+	opts.keepAliveInterval = 20;
+	opts.cleansession = 1;
+	opts.username = "testuser";
+	opts.password = "testpassword";
+
+	opts.onSuccess = test5_onConnect;
+	opts.onFailure = test5_onConnectFailure;
+	opts.context = c;
+	opts.serverURIcount = 3;
+	opts.serverURIs = serverURIs;
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	rc = 0;
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (!test_finished)
+		#if defined(WIN32)
+			Sleep(100);
+		#else
+			usleep(10000L);
+		#endif
+
+	MQTTAsync_destroy(&c);
+
+exit:
+	assert("Connect onConnect should be called once", test5_onConnect_called == 1,
+			"connect onConnect was called %d times", test5_onConnect_called);
+
+	MyLog(LOGA_INFO, "TEST5c: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+
+	return failures;
+}
+
+
 void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 {
 	if (strstr(message, "onnect") && !strstr(message, "isconnect"))
@@ -886,7 +1096,7 @@ void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 int main(int argc, char** argv)
 {
 	int rc = 0;
- 	int (*tests[])() = {NULL, test1, test2, test3, test4}; /* indexed starting from 1 */
+	int (*tests[])() = {NULL, test1, test2, test3, test4, test5a, test5b, test5c}; /* indexed starting from 1 */
 	MQTTAsync_nameValue* info;
 
 	getopts(argc, argv);

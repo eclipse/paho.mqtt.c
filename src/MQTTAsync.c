@@ -66,10 +66,10 @@
 const char *client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
 const char *client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
 
-void MQTTAsync_global_init(int handle_openssl_init)
+void MQTTAsync_global_init(MQTTAsync_init_options* inits)
 {
 #if defined(OPENSSL)
-	SSLSocket_handleOpensslInit(handle_openssl_init);
+	SSLSocket_handleOpensslInit(inits->do_openssl_init);
 #endif
 }
 
@@ -1374,7 +1374,7 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 			(*(m->connect.onFailure))(m->connect.context, &data);
 		}
 		MQTTAsync_startConnectRetry(m);
-	}			
+	}
 }
 
 
@@ -2159,7 +2159,7 @@ static int retryLoopInterval = 5;
 static void setRetryLoopInterval(int keepalive)
 {
 	int proposed = keepalive / 10;
-	
+
 	if (proposed < 1)
 		proposed = 1;
 	else if (proposed > 5)

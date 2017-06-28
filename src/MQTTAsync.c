@@ -430,7 +430,7 @@ static int MQTTAsync_checkConn(MQTTAsync_command* command, MQTTAsyncs* client)
 	int rc;
 
 	FUNC_ENTRY;
-	rc = command->details.conn.currentURI < client->serverURIcount ||
+	rc = command->details.conn.currentURI + 1 < client->serverURIcount ||
 		(command->details.conn.MQTTVersion == 4 && client->c->MQTTVersion == MQTTVERSION_DEFAULT);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -1162,17 +1162,6 @@ static int MQTTAsync_processCommand(void)
 
 			if (command->client->serverURIcount > 0)
 			{
-				if (command->client->c->MQTTVersion == MQTTVERSION_DEFAULT)
-				{
-					if (command->command.details.conn.MQTTVersion == MQTTVERSION_3_1)
-					{
-						command->command.details.conn.currentURI++;
-						command->command.details.conn.MQTTVersion = MQTTVERSION_DEFAULT;
-					}
-				}
-				else
-					command->command.details.conn.currentURI++;
-
 				serverURI = command->client->serverURIs[command->command.details.conn.currentURI];
 
 				if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
@@ -1321,6 +1310,18 @@ static int MQTTAsync_processCommand(void)
 		if (command->command.type == CONNECT && MQTTAsync_checkConn(&command->command, command->client))
 		{
 			Log(TRACE_MIN, -1, "Connect failed, more to try");
+
+                        if (command->client->c->MQTTVersion == MQTTVERSION_DEFAULT)
+                        {
+                            if (command->command.details.conn.MQTTVersion == MQTTVERSION_3_1)
+                            {
+                                command->command.details.conn.currentURI++;
+                                command->command.details.conn.MQTTVersion = MQTTVERSION_DEFAULT;
+                            }
+                        }
+                        else
+                            command->command.details.conn.currentURI++;
+
 			/* put the connect command back to the head of the command queue, using the next serverURI */
 			rc = MQTTAsync_addCommand(command, sizeof(command->command.details.conn));
 		}
@@ -1358,6 +1359,18 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 		conn->client = m;
 		conn->command = m->connect;
 		Log(TRACE_MIN, -1, "Connect failed, more to try");
+
+                if (conn->client->c->MQTTVersion == MQTTVERSION_DEFAULT)
+                {
+                    if (conn->command.details.conn.MQTTVersion == MQTTVERSION_3_1)
+                    {
+                        conn->command.details.conn.currentURI++;
+                        conn->command.details.conn.MQTTVersion = MQTTVERSION_DEFAULT;
+                    }
+                }
+                else
+                    conn->command.details.conn.currentURI++;
+
 		MQTTAsync_addCommand(conn, sizeof(m->connect));
 	}
 	else

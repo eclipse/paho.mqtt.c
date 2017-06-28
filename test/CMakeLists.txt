@@ -373,11 +373,29 @@ ADD_TEST(
 	COMMAND test8 "--test_no" "4" "--connection" ${MQTT_TEST_BROKER} "--size" "500000"
 )
 
+ADD_TEST(
+	NAME test8-5a-all-ha-connections-out-of-service
+	COMMAND test8 "--test_no" "5" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test8-5b-all-ha-connections-out-of-service-except-the-last-one
+	COMMAND test8 "--test_no" "6" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test8-5c-all-ha-connections-out-of-service-except-the-first-one
+	COMMAND test8 "--test_no" "7" "--connection" ${MQTT_TEST_BROKER}
+)
+
 SET_TESTS_PROPERTIES(
 	test8-1-basic-connect-subscribe-receive
 	test8-2-connect-timeout
 	test8-3-multiple-client-objects-simultaneous-working
 	test8-4-send-receive-big-messages
+        test8-5a-all-ha-connections-out-of-service
+        test8-5b-all-ha-connections-out-of-service-except-the-last-one
+        test8-5c-all-ha-connections-out-of-service-except-the-first-one
 	PROPERTIES TIMEOUT 540
 )
 

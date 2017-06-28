@@ -345,7 +345,7 @@ static void MQTTAsync_terminate(void);
 static int MQTTAsync_unpersistCommand(MQTTAsync_queuedCommand* qcmd);
 static int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd);
 static MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int buflen);
-static void MQTTAsync_insertInOrder(List* list, void* content, int size);
+/*static void MQTTAsync_insertInOrder(List* list, void* content, int size);*/
 static int MQTTAsync_restoreCommands(MQTTAsyncs* client);
 #endif
 static int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size);
@@ -377,7 +377,7 @@ static int MQTTAsync_countBufferedMessages(MQTTAsyncs* m);
 static void MQTTAsync_retry(void);
 static int MQTTAsync_connecting(MQTTAsyncs* m);
 static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc);
-static int pubCompare(void* a, void* b);
+/*static int pubCompare(void* a, void* b);*/
 
 
 void MQTTAsync_sleep(long milliseconds)
@@ -771,7 +771,7 @@ static MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int bufle
 	return qcommand;
 }
 
-
+/*
 static void MQTTAsync_insertInOrder(List* list, void* content, int size)
 {
 	ListElement* index = NULL;
@@ -786,7 +786,7 @@ static void MQTTAsync_insertInOrder(List* list, void* content, int size)
 
 	ListInsert(list, content, size, index);
 	FUNC_EXIT;
-}
+}*/
 
 
 static int MQTTAsync_restoreCommands(MQTTAsyncs* client)
@@ -2996,12 +2996,12 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 	return pack;
 }
 
-
+/*
 static int pubCompare(void* a, void* b)
 {
 	Messages* msg = (Messages*)a;
 	return msg->publish == (Publications*)b;
-}
+}*/
 
 
 int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens)

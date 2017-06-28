@@ -3,11 +3,11 @@
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
- * and Eclipse Distribution License v1.0 which accompany this distribution. 
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
- * The Eclipse Public License is available at 
+ * The Eclipse Public License is available at
  *    http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
@@ -74,7 +74,7 @@ static const char *errmsg = "Memory allocation error";
 
 static size_t Heap_roundup(size_t size);
 static int ptrCompare(void* a, void* b, int value);
-static void Heap_check(char* string, void* ptr);
+/*static void Heap_check(char* string, void* ptr);*/
 static void checkEyecatchers(char* file, int line, void* p, size_t size);
 static int Internal_heap_unlink(char* file, int line, void* p);
 static void HeapScan(enum LOG_LEVELS log_level);
@@ -112,11 +112,10 @@ static int ptrCompare(void* a, void* b, int value)
 	return (a > b) ? -1 : (a == b) ? 0 : 1;
 }
 
-
+/*
 static void Heap_check(char* string, void* ptr)
 {
-	return;
-	/*Node* curnode = NULL;
+	Node* curnode = NULL;
 	storageElement* prev, *s = NULL;
 
 	printf("Heap_check start %p\n", ptr);
@@ -135,8 +134,8 @@ static void Heap_check(char* string, void* ptr)
 		else
 			printf("%s: heap order good %d %p %p\n", string, ptrCompare(s, prev, 1), prev->ptr, s->ptr);
 		}
-	}*/
-}
+	}
+}*/
 
 
 /**
@@ -187,7 +186,7 @@ void* mymalloc(char* file, int line, size_t size)
 	state.current_size += size;
 	if (state.current_size > state.max_size)
 		state.max_size = state.current_size;
-	Thread_unlock_mutex(heap_mutex);		
+	Thread_unlock_mutex(heap_mutex);
 	return ((int*)(s->ptr)) + 1;	/* skip start eyecatcher */
 }
 
@@ -287,7 +286,7 @@ void *myrealloc(char* file, int line, void* p, size_t size)
 {
 	void* rc = NULL;
 	storageElement* s = NULL;
-	
+
 	Thread_lock_mutex(heap_mutex);
 	s = TreeRemoveKey(&heap, ((int*)p)-1);
 	if (s == NULL)
@@ -348,7 +347,7 @@ void* Heap_findItem(void* p)
 static void HeapScan(enum LOG_LEVELS log_level)
 {
 	Node* current = NULL;
-	
+
 	Thread_lock_mutex(heap_mutex);
 	Log(log_level, -1, "Heap scan start, total %d bytes", state.current_size);
 	while ((current = TreeNextElement(&heap, current)) != NULL)

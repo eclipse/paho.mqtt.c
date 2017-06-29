@@ -77,7 +77,7 @@
 
   <target name="version" depends="init" description="replace tags with the right levels">
     <property name="build.level" value="${DSTAMP}${TSTAMP}" />
-    <copy file="src/VersionInfo.h.in" tofile="src/VersionInfo.h" />
+    <copy file="src/VersionInfo.h.in" tofile="src/VersionInfo.h" overwrite="true"/>
     <replace file="src/VersionInfo.h" token="@BUILD_TIMESTAMP@" value="${build.level}" />
     <replace file="src/VersionInfo.h" token="@CLIENT_VERSION@" value="${release.version}" />
   </target>

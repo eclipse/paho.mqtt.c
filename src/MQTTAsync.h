@@ -75,6 +75,8 @@
  * <li>@ref wildcard</li>
  * <li>@ref qos</li>
  * <li>@ref tracing</li>
+ * <li>@ref auto_reconnect</li>
+ * <li>@ref offline_publish</li>
  * </ul>
  * @endcond
  */
@@ -1168,6 +1170,39 @@ DLLExport MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void);
   * delivered in the callback would not yet be known to the application program (see
   * Race condition for MQTTAsync_token in MQTTAsync.c
   * https://bugs.eclipse.org/bugs/show_bug.cgi?id=444093)
+  *
+  * @page auto_reconnect Automatic Reconnect
+  * The ability for the client library to reconnect automatically in the event
+  * of a connection failure was added in 1.1.  The connection lost callback
+  * allows a flexible response to the loss of a connection, so almost any
+  * behaviour can be implemented in that way.  Automatic reconnect does have the
+  * advantage of being a little simpler to use.
+  *
+  * To switch on automatic reconnect, the connect options field
+  * automaticReconnect should be set to non-zero.  The minimum and maximum times
+  * before the next connection attempt can also be set, the defaults being 1 and
+  * 60 seconds.  At each failure to reconnect, the retry interval is doubled until
+  * the maximum value is reached, and there it stays until the connection is
+  * successfully re-established whereupon it is reset.
+  *
+  * When a reconnection attempt is successful, the ::MQTTAsync_connected callback
+  * function is invoked, if set by calling ::MQTTAsync_setConnected.  This allows
+  * the application to take any actions needed, such as amending subscriptions.
+  *
+  * @page offline_publish Publish While Disconnected
+  * This feature was not originally available because with persistence enabled,
+  * messages could be stored locally without ever knowing if they could be sent.
+  * The client application could have created the client with an erroneous broker
+  * address or port for instance.
+  *
+  * To enable messages to be published when the application is disconnected
+  * ::MQTTAsync_createWithOptions must be used instead of ::MQTTAsync_create to
+  * create the client object.  The ::createOptions field sendWhileDisconnected
+  * must be set to non-zero, and the maxBufferedMessages field set as required -
+  * the default being 100.
+  *
+  * ::MQTTAsync_getPendingTokens can be called to return the ids of the messages
+  * waiting to be sent, or for which the sending process has not completed.
   *
   * @page wildcard Subscription wildcards
   * Every MQTT message includes a topic that classifies it. MQTT servers use

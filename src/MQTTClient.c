@@ -286,7 +286,7 @@ static int MQTTClient_disconnect_internal(MQTTClient handle, int timeout);
 static void MQTTClient_retry(void);
 static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc);
 static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long timeout);
-static int pubCompare(void* a, void* b);
+/*static int pubCompare(void* a, void* b); */
 static void MQTTProtocol_checkPendingWrites(void);
 static void MQTTClient_writeComplete(int socket);
 
@@ -1922,12 +1922,12 @@ exit:
 	FUNC_EXIT;
 }
 
-
+/*
 static int pubCompare(void* a, void* b)
 {
 	Messages* msg = (Messages*)a;
 	return msg->publish == (Publications*)b;
-}
+}*/
 
 
 int MQTTClient_waitForCompletion(MQTTClient handle, MQTTClient_deliveryToken mdt, unsigned long timeout)

@@ -219,7 +219,7 @@ int Thread_wait_sem(sem_type sem, int timeout)
  * so I've used trywait in a loop instead. Ian Craggs 23/7/2010
  */
 	int rc = -1;
-#if !defined(WIN32) && !defined(WIN64)
+#if !defined(WIN32) && !defined(WIN64) && !defined(OSX)
 #define USE_TRYWAIT
 #if defined(USE_TRYWAIT)
 	int i = 0;

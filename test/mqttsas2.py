@@ -106,10 +106,13 @@ def run():
   else:
     brokerport = 1883
 
-  if brokerhost == myhost:
-    myport = brokerport + 1
+  if len(sys.argv) > 3:
+    myport = int(sys.argv[3])
   else:
-    myport = 1883
+    if brokerhost == myhost:
+      myport = brokerport + 1
+    else:
+      myport = 1883
 
   print("Listening on port", str(myport)+", broker on port", brokerport)
   s = ThreadingTCPServer(("127.0.0.1", myport), MyHandler)

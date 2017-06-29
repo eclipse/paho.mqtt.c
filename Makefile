@@ -1,5 +1,5 @@
 #*******************************************************************************
-#  Copyright (c) 2009, 2016 IBM Corp.
+#  Copyright (c) 2009, 2017 IBM Corp.
 # 
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,7 @@ SHELL = /bin/sh
 .PHONY: clean, mkdir, install, uninstall, html
 
 ifndef release.version
-  release.version = 1.1.0
+  release.version = 1.2.0
 endif
 
 # determine current platform

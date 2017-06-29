@@ -780,7 +780,7 @@ int test4_run(int qos)
 		do
 		{
     		dup = 0;
-			MQTTClient_receive(c, &topicName, &topicLen, &m, 1000);
+			MQTTClient_receive(c, &topicName, &topicLen, &m, 5000);
 			if (m && m->dup)
 			{
 				assert("No duplicates should be received for qos 2", qos == 1, "qos is %d", qos);

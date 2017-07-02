@@ -36,6 +36,7 @@
 #include "SSLSocket.h"
 #endif
 
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
@@ -98,10 +99,6 @@ int Socket_setnonblocking(int sock)
  */
 int Socket_error(char* aString, int sock)
 {
-#if defined(WIN32) || defined(WIN64)
-	int errno;
-#endif
-
 	FUNC_ENTRY;
 #if defined(WIN32) || defined(WIN64)
 	errno = WSAGetLastError();

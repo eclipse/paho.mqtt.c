@@ -40,7 +40,7 @@
 
 #include <stdio.h>
 #include <signal.h>
-#include <memory.h>
+#include <string.h>
 #include <stdlib.h>
 
 #if defined(WIN32)
@@ -166,7 +166,7 @@ int main(int argc, char** argv)
 			buffer[data_len++] = getchar();
 			if (data_len > delim_len)
 			{
-			//printf("comparing %s %s\n", opts.delimiter, &buffer[data_len - delim_len]);
+			/* printf("comparing %s %s\n", opts.delimiter, &buffer[data_len - delim_len]); */
 			if (strncmp(opts.delimiter, &buffer[data_len - delim_len], delim_len) == 0)
 				break;
 			}

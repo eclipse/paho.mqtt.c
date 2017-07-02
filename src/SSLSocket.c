@@ -68,7 +68,7 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts);
 void SSLSocket_destroyContext(networkHandles* net);
 void SSLSocket_addPendingRead(int sock);
 
-/// 1 ~ we are responsible for initializing openssl; 0 ~ openssl init is done externally 
+/* 1 ~ we are responsible for initializing openssl; 0 ~ openssl init is done externally */
 static int handle_openssl_init = 1;
 static ssl_mutex_type* sslLocks = NULL;
 static ssl_mutex_type sslCoreMutex;

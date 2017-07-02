@@ -42,6 +42,7 @@
 
 #define _GNU_SOURCE /* for pthread_mutexattr_settype */
 #include <stdlib.h>
+#include <string.h>
 #if !defined(WIN32) && !defined(WIN64)
 	#include <sys/time.h>
 #endif
@@ -64,6 +65,8 @@
 #else
 #define URI_SSL "ssl://"
 #endif
+
+#include "OsWrapper.h"
 
 #define URI_TCP "tcp://"
 
@@ -149,7 +152,11 @@ void MQTTClient_init(void)
 	int rc;
 
 	pthread_mutexattr_init(&attr);
+#if !defined(_WRS_KERNEL)
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+#else
+	/* #warning "no pthread_mutexattr_settype" */
+#endif /* !defined(_WRS_KERNEL) */
 	if ((rc = pthread_mutex_init(mqttclient_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing client_mutex\n", rc);
 	if ((rc = pthread_mutex_init(socket_mutex, &attr)) != 0)

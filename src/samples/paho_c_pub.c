@@ -45,6 +45,7 @@
 #include <stdlib.h>
 
 #if defined(WIN32)
+#include <Windows.h>
 #define sleep Sleep
 #else
 #include <unistd.h>

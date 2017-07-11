@@ -174,7 +174,7 @@ exit:
  * @param buflen the length of the data in buffer to be written
  * @return the completion code (TCPSOCKET_COMPLETE etc)
  */
-int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buflen, int free)
+int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buflen, int freeData)
 {
 	int rc;
 	size_t buf0len;
@@ -196,10 +196,10 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 
 #if defined(OPENSSL)
 	if (net->ssl)
-		rc = SSLSocket_putdatas(net->ssl, net->socket, buf, buf0len, 1, &buffer, &buflen, &free);
+		rc = SSLSocket_putdatas(net->ssl, net->socket, buf, buf0len, 1, &buffer, &buflen, &freeData);
 	else
 #endif
-		rc = Socket_putdatas(net->socket, buf, buf0len, 1, &buffer, &buflen, &free);
+		rc = Socket_putdatas(net->socket, buf, buf0len, 1, &buffer, &buflen, &freeData);
 		
 	if (rc == TCPSOCKET_COMPLETE)
 		time(&(net->lastSent));

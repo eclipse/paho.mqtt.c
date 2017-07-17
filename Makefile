@@ -1,15 +1,15 @@
 #*******************************************************************************
 #  Copyright (c) 2009, 2017 IBM Corp.
-# 
+#
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
-#  and Eclipse Distribution License v1.0 which accompany this distribution. 
-# 
-#  The Eclipse Public License is available at 
+#  and Eclipse Distribution License v1.0 which accompany this distribution.
+#
+#  The Eclipse Public License is available at
 #     http://www.eclipse.org/legal/epl-v10.html
-#  and the Eclipse Distribution License is available at 
+#  and the Eclipse Distribution License is available at
 #    http://www.eclipse.org/org/documents/edl-v10.php.
-# 
+#
 #  Contributors:
 #     Ian Craggs - initial API and implementation and/or initial documentation
 #     Allan Stockdill-Mander - SSL updates
@@ -84,13 +84,13 @@ HEADERS = $(srcdir)/*.h
 HEADERS_C = $(filter-out $(srcdir)/MQTTAsync.h, $(HEADERS))
 HEADERS_A = $(HEADERS)
 
-SAMPLE_FILES_C = paho_cs_pub paho_cs_sub MQTTClient_publish MQTTClient_publish_async MQTTClient_subscribe 
+SAMPLE_FILES_C = paho_cs_pub paho_cs_sub MQTTClient_publish MQTTClient_publish_async MQTTClient_subscribe
 SYNC_SAMPLES = ${addprefix ${blddir}/samples/,${SAMPLE_FILES_C}}
 
 SAMPLE_FILES_A = paho_c_pub paho_c_sub MQTTAsync_subscribe MQTTAsync_publish
 ASYNC_SAMPLES = ${addprefix ${blddir}/samples/,${SAMPLE_FILES_A}}
 
-TEST_FILES_C = test1 test2 sync_client_test test_mqtt4sync 
+TEST_FILES_C = test1 test2 sync_client_test test_mqtt4sync
 SYNC_TESTS = ${addprefix ${blddir}/test/,${TEST_FILES_C}}
 
 TEST_FILES_CS = test3
@@ -160,16 +160,17 @@ else ifeq ($(OSTYPE),Darwin)
 MQTTCLIENT_INIT = _MQTTClient_init
 MQTTASYNC_INIT = _MQTTAsync_init
 START_GROUP =
-END_GROUP = 
+END_GROUP =
 
 EXTRA_LIB = -ldl
 
-CCFLAGS_SO += -Wno-deprecated-declarations -DOSX
+CCFLAGS_SO += -Wno-deprecated-declarations -DOSX -I /usr/local/opt/openssl/include
 LDFLAGS_C += -Wl,-install_name,lib$(MQTTLIB_C).so.${MAJOR_VERSION}
-LDFLAGS_CS += -Wl,-install_name,lib$(MQTTLIB_CS).so.${MAJOR_VERSION}
+LDFLAGS_CS += -Wl,-install_name,lib$(MQTTLIB_CS).so.${MAJOR_VERSION} -L /usr/local/opt/openssl/lib
 LDFLAGS_A += -Wl,-install_name,lib${MQTTLIB_A}.so.${MAJOR_VERSION}
-LDFLAGS_AS += -Wl,-install_name,lib${MQTTLIB_AS}.so.${MAJOR_VERSION}
+LDFLAGS_AS += -Wl,-install_name,lib${MQTTLIB_AS}.so.${MAJOR_VERSION} -L /usr/local/opt/openssl/lib
 FLAGS_EXE += -DOSX
+FLAGS_EXES += -L /usr/local/opt/openssl/lib
 
 endif
 
@@ -179,6 +180,7 @@ build: | mkdir ${MQTTLIB_C_TARGET} ${MQTTLIB_CS_TARGET} ${MQTTLIB_A_TARGET} ${MQ
 
 clean:
 	rm -rf ${blddir}/*
+	rm -rf ${blddir_work}/*
 
 mkdir:
 	-mkdir -p ${blddir}/samples

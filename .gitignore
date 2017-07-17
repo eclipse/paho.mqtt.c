@@ -2,4 +2,5 @@
 /build/
 /build.paho/
 *.swp
+*.pyc
 /build.paho

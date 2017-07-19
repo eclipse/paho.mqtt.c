@@ -3,6 +3,8 @@
 set -e
 
 if [ "$TRAVIS_OS_NAME" == "osx" ]; then
+  ./bootstrap && rm -rf build.paho.autotools/ && mkdir build.paho.autotools && pushd build.paho.autotools && ../configure --enable-samples --disable-doc --without-ssl && make && popd ..
+
   mkdir build.paho
   cd build.paho
   echo "travis build dir $TRAVIS_BUILD_DIR pwd $PWD"
@@ -15,6 +17,8 @@ if [ "$TRAVIS_OS_NAME" == "osx" ]; then
 fi
 
 if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+  ./bootstrap && rm -rf build.paho.autotools/ && mkdir build.paho.autotools && pushd build.paho.autotools && ../configure --enable-samples --enable-doc --with-ssl && make && popd ..
+
   mkdir build.paho
   cd build.paho
   echo "travis build dir $TRAVIS_BUILD_DIR pwd $PWD"

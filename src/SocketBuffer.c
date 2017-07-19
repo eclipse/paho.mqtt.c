@@ -3,17 +3,17 @@
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
- * and Eclipse Distribution License v1.0 which accompany this distribution. 
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
- * The Eclipse Public License is available at 
+ * The Eclipse Public License is available at
  *    http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
- *    Ian Craggs - fix for issue #244
+ *    Ian Craggs - fix for issue #244, issue #20
  *******************************************************************************/
 
 /**
@@ -133,6 +133,7 @@ void SocketBuffer_terminate(void)
 void SocketBuffer_cleanup(int socket)
 {
 	FUNC_ENTRY;
+	SocketBuffer_writeComplete(socket); /* clean up write buffers */
 	if (ListFindItem(queues, &socket, socketcompare))
 	{
 		free(((socket_queue*)(queues->current->content))->buf);
@@ -239,9 +240,9 @@ void SocketBuffer_interrupted(int socket, size_t actual_len)
 		queue = def_queue;
 		/* if SocketBuffer_queueChar() has not yet been called, then the socket number
 		  in def_queue will not have been set.  Issue #244.
-		  If actual_len == 0 then we may not need to do anything - I'll leave that 
+		  If actual_len == 0 then we may not need to do anything - I'll leave that
 		  optimization for another time. */
-		queue->socket = socket; 
+		queue->socket = socket;
 		ListAppend(queues, def_queue, sizeof(socket_queue)+def_queue->buflen);
 		SocketBuffer_newDefQ();
 	}

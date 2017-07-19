@@ -1744,7 +1744,7 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 	START_TIME_TYPE start = MQTTClient_start_clock();
 
 	FUNC_ENTRY;
-	if (((MQTTClients*)handle) == NULL)
+	if (((MQTTClients*)handle) == NULL || timeout <= 0L)
 	{
 		*rc = MQTTCLIENT_FAILURE;
 		goto exit;

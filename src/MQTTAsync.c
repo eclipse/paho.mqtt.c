@@ -3122,11 +3122,13 @@ int MQTTAsync_waitForCompletion(MQTTAsync handle, MQTTAsync_token dt, unsigned l
 
 	if (m == NULL || m->c == NULL)
 	{
+		MQTTAsync_unlock_mutex(mqttasync_mutex);
 		rc = MQTTASYNC_FAILURE;
 		goto exit;
 	}
 	if (m->c->connected == 0)
 	{
+		MQTTAsync_unlock_mutex(mqttasync_mutex);
 		rc = MQTTASYNC_DISCONNECTED;
 		goto exit;
 	}

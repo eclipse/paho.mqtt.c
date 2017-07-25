@@ -44,16 +44,6 @@ IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
   ENDIF()
 ENDIF()
 
-# Uses the correct directory for libraries on Red Hat-based distributions.
-SET(PAHO_LIBRARY_DIR_NAME "lib")
-IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
-  IF(EXISTS "/etc/redhat-release")
-    IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    	SET(PAHO_LIBRARY_DIR_NAME "lib64")
-    ENDIF()
-  ENDIF()
-ENDIF()
-
 IF(WIN32)
   ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE -DWIN32_LEAN_AND_MEAN -MD)
 ELSEIF(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")

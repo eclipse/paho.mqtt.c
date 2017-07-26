@@ -42,12 +42,12 @@ Development documentation files for the the Paho MQTT C Client.
 
 %build
 mkdir build.paho && cd build.paho
-cmake -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=TRUE -DPAHO_BUILD_SAMPLES=TRUE -DCMAKE_INSTALL_PREFIX=%{buildroot}/usr ..
-make
+%cmake -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=TRUE -DPAHO_BUILD_SAMPLES=TRUE ..
+make %{?_smp_mflags}
 
 %install
 cd build.paho
-make install
+make install DESTDIR=%{buildroot}
 
 %files
 %doc edl-v10 epl-v10

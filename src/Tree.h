@@ -18,7 +18,7 @@
 #if !defined(TREE_H)
 #define TREE_H
 
-#include <stdlib.h> // for size_t definition
+#include <stdlib.h> /* for size_t definition */
 
 /*BE
 defm defTree(T) // macro to define a tree

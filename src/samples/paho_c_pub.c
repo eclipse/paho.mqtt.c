@@ -41,10 +41,11 @@
 
 #include <stdio.h>
 #include <signal.h>
-#include <memory.h>
+#include <string.h>
 #include <stdlib.h>
 
 #if defined(WIN32)
+#include <windows.h>
 #define sleep Sleep
 #else
 #include <unistd.h>
@@ -52,6 +53,7 @@
 #include <unistd.h>
 #endif
 
+#include <OsWrapper.h>
 
 volatile int toStop = 0;
 
@@ -132,8 +134,6 @@ void onConnectFailure(void* context, MQTTAsync_failureData* response)
 
 void onConnect(void* context, MQTTAsync_successData* response)
 {
-	MQTTAsync client = (MQTTAsync)context;
-
 	printf("Connected\n");
 	connected = 1;
 }
@@ -175,8 +175,6 @@ void onPublishFailure(void* context, MQTTAsync_failureData* response)
 
 void onPublish(void* context, MQTTAsync_successData* response)
 {
-	MQTTAsync client = (MQTTAsync)context;
-
 	published = 1;
 }
 
@@ -253,7 +251,7 @@ int main(int argc, char** argv)
 			buffer[data_len++] = getchar();
 			if (data_len > delim_len)
 			{
-			//printf("comparing %s %s\n", opts.delimiter, &buffer[data_len - delim_len]);
+			/* printf("comparing %s %s\n", opts.delimiter, &buffer[data_len - delim_len]); */
 			if (strncmp(opts.delimiter, &buffer[data_len - delim_len], delim_len) == 0)
 				break;
 			}

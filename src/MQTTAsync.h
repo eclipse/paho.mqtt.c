@@ -82,7 +82,9 @@
  */
 
 
+/*
 /// @cond EXCLUDE
+*/
 #if defined(__cplusplus)
  extern "C" {
 #endif
@@ -99,7 +101,9 @@
 #endif
 
 #include <stdio.h>
+/*
 /// @endcond
+*/
 
 #if !defined(NO_PERSISTENCE)
 #include "MQTTClientPersistence.h"

@@ -367,7 +367,7 @@ int MQTTPersistence_put(int socket, char* buf0, size_t buf0len, int count,
 			bufs[i+1] = buffers[i];
 		}
 
-		// key
+		/* key */
 		if ( scr == 0 )
 		{  /* sending */
 			if (htype == PUBLISH)   /* PUBLISH QoS1 and QoS2*/

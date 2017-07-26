@@ -35,7 +35,6 @@
 char* Broker_recordFFDC(char* symptoms);
 #endif /* HEAP_UNIT_TESTS */
 
-#include <memory.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -228,7 +227,7 @@ static int Internal_heap_unlink(char* file, int line, void* p)
 		Log(TRACE_MAX, -1, "Freeing %d bytes in heap at file %s line %d, heap use now %d bytes\n",
 											 s->size, file, line, state.current_size);
 		checkEyecatchers(file, line, p, s->size);
-		//free(s->ptr);
+		/* free(s->ptr); */
 		free(s->file);
 		state.current_size -= s->size;
 		TreeRemoveNodeIndex(&heap, e, 0);

@@ -29,6 +29,8 @@
 
 #if !defined(NO_PERSISTENCE)
 
+#include "OsWrapper.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -53,7 +55,6 @@
 #include "MQTTPersistenceDefault.h"
 #include "StackTrace.h"
 #include "Heap.h"
-
 
 /** Create persistence directory for the client: context/clientID-serverURI.
  *  See ::Persistence_open
@@ -128,7 +129,11 @@ int pstmkdir( char *pPathname )
 	{
 #else
 	/* Create a directory with read, write and execute access for the owner and read access for the group */
+#if !defined(_WRS_KERNEL)
 	if ( mkdir( pPathname, S_IRWXU | S_IRGRP ) != 0 )
+#else
+	if ( mkdir( pPathname ) != 0 )
+#endif /* !defined(_WRS_KERNEL) */
 	{
 #endif
 		if ( errno != EEXIST )
@@ -739,7 +744,7 @@ int main (int argc, char *argv[])
 		buflens[i]=strlen(bufs[i]);
 
 	/* open */
-	//printf("Persistence directory : %s\n", perdir);
+	/* printf("Persistence directory : %s\n", perdir); */
 	rc = pstopen((void**)&handle, clientID, serverURI, perdir);
 	printf("%s Persistence directory for client %s : %s\n", RC, clientID, handle);
 

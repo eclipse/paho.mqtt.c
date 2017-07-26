@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <memory.h>
 
 #include "Heap.h"
 
@@ -533,7 +532,7 @@ int TreeIntCompare(void* a, void* b, int content)
 	int i = *((int*)a);
 	int j = *((int*)b);
 
-	//printf("comparing %d %d\n", *((int*)a), *((int*)b));
+	/* printf("comparing %d %d\n", *((int*)a), *((int*)b)); */
 	return (i > j) ? -1 : (i == j) ? 0 : 1;
 }
 
@@ -581,14 +580,14 @@ int traverse(Tree *t, int lookfor)
 
 	printf("Traversing\n");
 	curnode = TreeNextElement(t, curnode);
-	//printf("content int %d\n", *(int*)(curnode->content));
+	/* printf("content int %d\n", *(int*)(curnode->content)); */
 	while (curnode)
 	{
 		Node* prevnode = curnode;
 
 		curnode = TreeNextElement(t, curnode);
-		//if (curnode)
-		//	printf("content int %d\n", *(int*)(curnode->content));
+		/* if (curnode)
+			printf("content int %d\n", *(int*)(curnode->content)); */
 		if (prevnode && curnode && (*(int*)(curnode->content) < *(int*)(prevnode->content)))
 		{
 			printf("out of order %d < %d\n", *(int*)(curnode->content), *(int*)(prevnode->content));

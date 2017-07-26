@@ -15,12 +15,14 @@
  *******************************************************************************/
 
 #include <stdio.h>
+
+#if !defined(_WRS_KERNEL)
+
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
-#include <memory.h>
 #include <ctype.h>
 #include "MQTTAsync.h"
 
@@ -219,3 +221,10 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+#else
+int main(void)
+{
+    fprintf(stderr, "This tool is not supported on this platform yet.\n");
+    return 1;
+}
+#endif /* !defined(_WRS_KERNEL) */

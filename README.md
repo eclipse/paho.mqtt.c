@@ -6,6 +6,10 @@ This code builds libraries which enable applications to connect to an [MQTT](htt
 
 Both synchronous and asynchronous modes of operation are supported.
 
+## Build Status
+
+Linux Build Status: [![Linux Build Status](https://travis-ci.org/eclipse/paho.mqtt.c.svg?branch=master)](https://travis-ci.org/eclipse/paho.mqtt.c)
+
 ## Libraries
 
 The Paho C client comprises four shared libraries:

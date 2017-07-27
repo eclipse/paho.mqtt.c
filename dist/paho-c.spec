@@ -1,6 +1,3 @@
-%global _enable_debug_package 0
-%global debug_package %{nil}
-
 Summary:            MQTT C Client
 Name:               paho-c
 Version:            1.2.0
@@ -61,6 +58,9 @@ make install DESTDIR=%{buildroot}
 %{_datadir}/*
 
 %changelog
+* Thu Jul 27 2017 Otavio R. Piske <opiske@redhat.com> - 1.2.0-4
+- Enabled generation of debuginfo package
+
 * Thu Jul 27 2017 Otavio R. Piske <opiske@redhat.com> - 1.2.0-3
 - Fixed changelog issues pointed by rpmlint
 

@@ -17,7 +17,7 @@
 
 # Note: on OS X you should install XCode and the associated command-line tools
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.4)
 PROJECT("paho" C)
 MESSAGE(STATUS "CMake version: " ${CMAKE_VERSION})
 MESSAGE(STATUS "CMake system name: " ${CMAKE_SYSTEM_NAME})
@@ -31,28 +31,10 @@ SET(PAHO_VERSION_MINOR 2)
 SET(PAHO_VERSION_PATCH 0)
 SET(CLIENT_VERSION ${PAHO_VERSION_MAJOR}.${PAHO_VERSION_MINOR}.${PAHO_VERSION_PATCH})
 
+INCLUDE(GNUInstallDirs)
+
 STRING(TIMESTAMP BUILD_TIMESTAMP UTC)
 MESSAGE(STATUS "Timestamp is ${BUILD_TIMESTAMP}")
-
-# Uses the correct directory for libraries on Red Hat-based distributions.
-SET(PAHO_LIBRARY_DIR_NAME "lib")
-IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
-  IF(EXISTS "/etc/redhat-release")
-    IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    	SET(PAHO_LIBRARY_DIR_NAME "lib64")
-    ENDIF()
-  ENDIF()
-ENDIF()
-
-# Uses the correct directory for libraries on Red Hat-based distributions.
-SET(PAHO_LIBRARY_DIR_NAME "lib")
-IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
-  IF(EXISTS "/etc/redhat-release")
-    IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    	SET(PAHO_LIBRARY_DIR_NAME "lib64")
-    ENDIF()
-  ENDIF()
-ENDIF()
 
 IF(WIN32)
   ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE -DWIN32_LEAN_AND_MEAN -MD)

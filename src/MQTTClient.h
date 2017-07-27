@@ -208,7 +208,7 @@ typedef struct
  * Global init of mqtt library. Call once on program start to set global behaviour.
  * do_openssl_init - if mqtt library should initialize OpenSSL (1) or rely on the caller to do it before using the library (0)
  */
-void MQTTClient_global_init(MQTTClient_init_options* inits);
+DLLExport void MQTTClient_global_init(MQTTClient_init_options* inits);
 
 /**
  * A handle representing an MQTT client. A valid client handle is available

@@ -19,7 +19,7 @@
 #if !defined(LINKEDLIST_H)
 #define LINKEDLIST_H
 
-#include <stdlib.h> // for size_t definition
+#include <stdlib.h> /* for size_t definition */
 
 /*BE
 defm defList(T)

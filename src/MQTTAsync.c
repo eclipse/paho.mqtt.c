@@ -43,6 +43,7 @@
 
 #define _GNU_SOURCE /* for pthread_mutexattr_settype */
 #include <stdlib.h>
+#include <string.h>
 #if !defined(WIN32) && !defined(WIN64)
 	#include <sys/time.h>
 #endif
@@ -58,6 +59,7 @@
 #include "SocketBuffer.h"
 #include "StackTrace.h"
 #include "Heap.h"
+#include "OsWrapper.h"
 
 #define URI_TCP "tcp://"
 
@@ -156,7 +158,11 @@ void MQTTAsync_init(void)
 	int rc;
 
 	pthread_mutexattr_init(&attr);
+#if !defined(_WRS_KERNEL)
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+#else
+	/* #warning "no pthread_mutexattr_settype" */
+#endif
 	if ((rc = pthread_mutex_init(mqttasync_mutex, &attr)) != 0)
 		printf("MQTTAsync: error %d initializing async_mutex\n", rc);
 	if ((rc = pthread_mutex_init(mqttcommand_mutex, &attr)) != 0)

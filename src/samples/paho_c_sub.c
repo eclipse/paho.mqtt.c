@@ -44,17 +44,19 @@
 
 #include <stdio.h>
 #include <signal.h>
-#include <memory.h>
+#include <string.h>
 #include <stdlib.h>
 
 
 #if defined(WIN32)
+#include <windows.h>
 #define sleep Sleep
 #else
 #include <sys/time.h>
 #include <unistd.h>
 #endif
 
+#include <OsWrapper.h>
 
 volatile int finished = 0;
 char* topic = NULL;
@@ -246,7 +248,6 @@ void onConnect(void* context, MQTTAsync_successData* response)
 {
 	MQTTAsync client = (MQTTAsync)context;
 	MQTTAsync_responseOptions ropts = MQTTAsync_responseOptions_initializer;
-	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	int rc;
 
 	if (opts.showtopics)

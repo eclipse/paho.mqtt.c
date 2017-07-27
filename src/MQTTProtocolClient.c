@@ -28,6 +28,7 @@
 
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "MQTTProtocolClient.h"
 #if !defined(NO_PERSISTENCE)

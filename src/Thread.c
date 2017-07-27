@@ -45,8 +45,9 @@
 #include <sys/stat.h>
 #include <limits.h>
 #endif
-#include <memory.h>
 #include <stdlib.h>
+
+#include "OsWrapper.h"
 
 /**
  * Start a new thread
@@ -190,10 +191,10 @@ sem_type Thread_create_sem(void)
 	FUNC_ENTRY;
 	#if defined(WIN32) || defined(WIN64)
 		sem = CreateEvent(
-		        NULL,               // default security attributes
-		        FALSE,              // manual-reset event?
-		        FALSE,              // initial state is nonsignaled
-		        NULL                // object name
+		        NULL,               /* default security attributes */
+		        FALSE,              /* manual-reset event? */
+		        FALSE,              /* initial state is nonsignaled */
+		        NULL                /* object name */
 		        );
 	#elif defined(OSX)
 		sem = dispatch_semaphore_create(0L);

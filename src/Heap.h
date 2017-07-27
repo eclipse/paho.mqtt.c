@@ -24,7 +24,6 @@
 #endif
 
 #include <stdio.h>
-#include <memory.h>
 #include <stdlib.h>
 
 #if !defined(NO_HEAP_TRACKING)

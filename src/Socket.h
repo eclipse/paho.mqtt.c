@@ -45,9 +45,14 @@
 #else
 #define INVALID_SOCKET SOCKET_ERROR
 #include <sys/socket.h>
+#if !defined(_WRS_KERNEL)
 #include <sys/param.h>
 #include <sys/time.h>
 #include <sys/select.h>
+#include <sys/uio.h>
+#else
+#include <selectLib.h>
+#endif
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
@@ -57,7 +62,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/uio.h>
 #define ULONG size_t
 #endif
 

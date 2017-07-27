@@ -28,7 +28,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <memory.h>
 
 #include "Heap.h"
 
@@ -474,7 +473,7 @@ int main(int argc, char *argv[])
 	while (ListPrevElement(l, &current) != NULL)
 		printf("List element: %d\n", *((int*)(current->content)));
 
-	//if ListFindItem(l, *ip, intcompare)->content
+	/* if ListFindItem(l, *ip, intcompare)->content */
 
 	printf("List contents having deleted element %d:\n", *todelete);
 	ListRemove(l, todelete);

@@ -53,10 +53,14 @@
  * may be required to diagnose a persistence mechanism failure.
  */
 
+/*
 /// @cond EXCLUDE
+*/
 #if !defined(MQTTCLIENTPERSISTENCE_H)
 #define MQTTCLIENTPERSISTENCE_H
+/*
 /// @endcond
+*/
 
 /**
   * This <i>persistence_type</i> value specifies the default file system-based 

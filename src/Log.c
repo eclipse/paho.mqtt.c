@@ -301,7 +301,7 @@ static char* Log_formatTraceEntry(traceEntry* cur_entry)
 	int buf_pos = 31;
 
 #if defined(GETTIMEOFDAY)
-	timeinfo = localtime(&cur_entry->ts.tv_sec);
+	timeinfo = localtime((time_t *)&cur_entry->ts.tv_sec);
 #else
 	timeinfo = localtime(&cur_entry->ts.time);
 #endif

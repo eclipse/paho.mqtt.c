@@ -178,7 +178,7 @@ int MQTTPacket_send_subscribe(List* topics, List* qoss, int msgid, int dup, netw
 	header.bits.qos = 1;
 	header.bits.retain = 0;
 
-	datalen = 2 + topics->count * 3; // utf length + char qos == 3
+	datalen = 2 + topics->count * 3; /* utf length + char qos == 3 */
 	while (ListNextElement(topics, &elem))
 		datalen += (int)strlen((char*)(elem->content));
 	ptr = data = malloc(datalen);
@@ -251,7 +251,7 @@ int MQTTPacket_send_unsubscribe(List* topics, int msgid, int dup, networkHandles
 	header.bits.qos = 1;
 	header.bits.retain = 0;
 
-	datalen = 2 + topics->count * 2; // utf length == 2
+	datalen = 2 + topics->count * 2; /* utf length == 2 */
 	while (ListNextElement(topics, &elem))
 		datalen += (int)strlen((char*)(elem->content));
 	ptr = data = malloc(datalen);

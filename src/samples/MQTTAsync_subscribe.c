@@ -25,6 +25,8 @@
 #include <windows.h>
 #endif
 
+#include <OsWrapper.h>
+
 #define ADDRESS     "tcp://localhost:1883"
 #define CLIENTID    "ExampleClientSub"
 #define TOPIC       "MQTT Examples"
@@ -111,7 +113,6 @@ void onConnect(void* context, MQTTAsync_successData* response)
 {
 	MQTTAsync client = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	int rc;
 
 	printf("Successful connection\n");
@@ -137,8 +138,6 @@ int main(int argc, char* argv[])
 	MQTTAsync client;
 	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
 	MQTTAsync_disconnectOptions disc_opts = MQTTAsync_disconnectOptions_initializer;
-	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-	MQTTAsync_token token;
 	int rc;
 	int ch;
 

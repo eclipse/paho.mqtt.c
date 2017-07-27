@@ -4,7 +4,7 @@
 Summary:            MQTT C Client
 Name:               paho-c
 Version:            1.2.0
-Release:            1%{?dist}
+Release:            2%{?dist}
 License:            Eclipse Distribution License 1.0 and Eclipse Public License 1.0
 Group:              Development/Tools
 Source:             https://github.com/eclipse/paho.mqtt.c/archive/v%{version}.tar.gz
@@ -61,5 +61,15 @@ make install DESTDIR=%{buildroot}
 %{_datadir}/*
 
 %changelog
-* Sat Dec 31 2016 Otavio R. Piske <opiske@redhat.com> - 20161231
+* Wed Jun 26 2017 Otavio R. Piske <opiske@redhat.com> - 1.2.0-2
+- Updated changelog to comply with Fedora packaging guidelines
+
+* Wed Jun 26 2017 Otavio R. Piske <opiske@redhat.com> - 1.2.0-1
+- Fixed rpmlint warnings: replaced cmake call with builtin macro
+- Fixed rpmlint warnings: removed buildroot reference from build section
+
+* Fri Jun 30 2017 Otavio R. Piske <opiske@redhat.com> - 1.2.0-0
+- Updated package to version 1.2.0
+
+* Sat Dec 31 2016 Otavio R. Piske <opiske@redhat.com> - 1.1.0
 - Initial packaging

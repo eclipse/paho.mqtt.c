@@ -1557,7 +1557,7 @@ int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen,
 			Log(TRACE_MIN, -1, "Blocking publish on queue full for client %s", m->c->clientID);
 		}
 		Thread_unlock_mutex(mqttclient_mutex);
-		MQTTClient_yield();
+		MQTTClient_yield_sleepParam(1);
 		Thread_lock_mutex(mqttclient_mutex);
 		if (m->c->connected == 0)
 		{
@@ -1592,7 +1592,7 @@ int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen,
 		while (m->c->connected == 1 && SocketBuffer_getWrite(m->c->net.socket))
 		{
 			Thread_unlock_mutex(mqttclient_mutex);
-			MQTTClient_yield();
+			MQTTClient_yield_sleepParam(1);
 			Thread_lock_mutex(mqttclient_mutex);
 		}
 		rc = (qos > 0 || m->c->connected == 1) ? MQTTCLIENT_SUCCESS : MQTTCLIENT_FAILURE;
@@ -1894,6 +1894,36 @@ exit:
 	return rc;
 }
 
+void MQTTClient_yield_sleepParam(int timeoutInMilliseconds)
+{
+  START_TIME_TYPE start = MQTTClient_start_clock();
+  unsigned long elapsed = 0L;
+  int rc = 0;
+
+  FUNC_ENTRY;
+  if (running)
+  {
+    MQTTClient_sleep(timeoutInMilliseconds);
+    goto exit;
+  }
+
+  elapsed = MQTTClient_elapsed(start);
+  do
+  {
+    int sock = -1;
+    MQTTClient_cycle(&sock, (timeoutInMilliseconds > elapsed) ? timeoutInMilliseconds - elapsed : 0L, &rc);
+    if (rc == SOCKET_ERROR && ListFindItem(handles, &sock, clientSockCompare))
+    {
+      MQTTClients* m = (MQTTClient)(handles->current->content);
+      if (m->c->connect_state != -2)
+        MQTTClient_disconnect_internal(m, 0);
+    }
+    elapsed = MQTTClient_elapsed(start);
+  }
+  while (elapsed < timeoutInMilliseconds);
+exit:
+  FUNC_EXIT;
+}
 
 void MQTTClient_yield(void)
 {
@@ -1967,7 +1997,7 @@ int MQTTClient_waitForCompletion(MQTTClient handle, MQTTClient_deliveryToken mdt
 			goto exit;
 		}
 		Thread_unlock_mutex(mqttclient_mutex);
-		MQTTClient_yield();
+		MQTTClient_yield_sleepParam(1);
 		Thread_lock_mutex(mqttclient_mutex);
 		elapsed = MQTTClient_elapsed(start);
 	}

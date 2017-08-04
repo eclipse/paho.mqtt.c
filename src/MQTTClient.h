@@ -896,6 +896,15 @@ DLLExport int MQTTClient_getPendingDeliveryTokens(MQTTClient handle, MQTTClient_
   * to allow processing of message retries and to send MQTT keepalive pings.
   * If the application is calling MQTTClient_receive() regularly, then it is
   * not necessary to call this function.
+  * @param timeoutInMilliseconds The length of time to sleep in miliseconds.
+  */
+DLLExport void MQTTClient_yield_sleepParam(int timeoutInMilliseconds);
+
+/**
+  * When implementing a single-threaded client, call this function periodically
+  * to allow processing of message retries and to send MQTT keepalive pings.
+  * If the application is calling MQTTClient_receive() regularly, then it is
+  * not necessary to call this function.
   */
 DLLExport void MQTTClient_yield(void);
 

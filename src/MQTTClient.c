@@ -1912,12 +1912,14 @@ void MQTTClient_yield_sleepParam(int timeoutInMilliseconds)
   {
     int sock = -1;
     MQTTClient_cycle(&sock, (timeoutInMilliseconds > elapsed) ? timeoutInMilliseconds - elapsed : 0L, &rc);
+    Thread_lock_mutex(mqttclient_mutex);
     if (rc == SOCKET_ERROR && ListFindItem(handles, &sock, clientSockCompare))
     {
       MQTTClients* m = (MQTTClient)(handles->current->content);
       if (m->c->connect_state != -2)
         MQTTClient_disconnect_internal(m, 0);
     }
+    Thread_unlock_mutex(mqttclient_mutex);
     elapsed = MQTTClient_elapsed(start);
   }
   while (elapsed < timeoutInMilliseconds);

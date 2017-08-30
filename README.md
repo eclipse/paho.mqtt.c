@@ -174,7 +174,7 @@ apt-get install gcc-mingw-w64-x86-64 gcc-mingw-w64-i686
 
 ## Usage and API
 
-Detailed API documentation is available by building the Doxygen docs in the  ``doc`` directory. A [snapshot is also available online](http://www.eclipse.org/paho/files/mqttdoc/Cclient/index.html).
+Detailed API documentation is available by building the Doxygen docs in the  ``doc`` directory. A [snapshot is also available online](https://www.eclipse.org/paho/files/mqttdoc/MQTTClient/html/index.html).
 
 Samples are available in the Doxygen docs and also in ``src/samples`` for reference.
 

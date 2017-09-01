@@ -1856,6 +1856,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 
 									data.token = command->command.token;
 									data.code = *(int*)(sub->qoss->first->content);
+									data.message = NULL;
 									Log(TRACE_MIN, -1, "Calling subscribe failure for client %s", m->c->clientID);
 									(*(command->command.onFailure))(command->command.context, &data);
 								}

@@ -630,6 +630,11 @@ typedef struct
 
 #define MQTTAsync_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 1, NULL, NULL, 0, 0, { 0, NULL } }
 
+#define MQTT_SSL_VERSION_DEFAULT 0
+#define MQTT_SSL_VERSION_TLS_1_0 1
+#define MQTT_SSL_VERSION_TLS_1_1 2
+#define MQTT_SSL_VERSION_TLS_1_2 3
+
 /**
 * MQTTAsync_sslProperties defines the settings to establish an SSL/TLS connection using the
 * OpenSSL library. It covers the following scenarios:
@@ -646,7 +651,7 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  Must be MQTS */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0 */
+	/** The version number of this structure.    Must be 0, or 1 to enable TLS version selection. */
 	int struct_version;
 
 	/** The file in PEM format containing the public digital certificates trusted by the client. */
@@ -677,9 +682,15 @@ typedef struct
     /** True/False option to enable verification of the server certificate **/
     int enableServerCertAuth;
 
+    /** The SSL/TLS version to use. Specify one of MQTT_SSL_VERSION_DEFAULT (0),
+    * MQTT_SSL_VERSION_TLS_1_0 (1), MQTT_SSL_VERSION_TLS_1_1 (2) or MQTT_SSL_VERSION_TLS_1_2 (3).
+    * Only used if struct_version is >= 1.
+    */
+    int sslVersion;
+
 } MQTTAsync_SSLOptions;
 
-#define MQTTAsync_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 0, NULL, NULL, NULL, NULL, NULL, 1 }
+#define MQTTAsync_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 1, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT }
 
 /**
  * MQTTAsync_connectOptions defines several settings that control the way the

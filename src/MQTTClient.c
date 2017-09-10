@@ -1104,6 +1104,7 @@ static int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* o
 	{
 		m->c->sslopts = malloc(sizeof(MQTTClient_SSLOptions));
 		memset(m->c->sslopts, '\0', sizeof(MQTTClient_SSLOptions));
+		m->c->sslopts->struct_version = options->ssl->struct_version;
 		if (options->ssl->trustStore)
 			m->c->sslopts->trustStore = MQTTStrdup(options->ssl->trustStore);
 		if (options->ssl->keyStore)
@@ -1115,6 +1116,8 @@ static int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* o
 		if (options->ssl->enabledCipherSuites)
 			m->c->sslopts->enabledCipherSuites = MQTTStrdup(options->ssl->enabledCipherSuites);
 		m->c->sslopts->enableServerCertAuth = options->ssl->enableServerCertAuth;
+		if (m->c->sslopts->struct_version >= 1)
+			m->c->sslopts->sslVersion = options->ssl->sslVersion;
 	}
 #endif
 
@@ -1180,7 +1183,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 #if defined(OPENSSL)
 	if (options->struct_version != 0 && options->ssl) /* check validity of SSL options structure */
 	{
-		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version != 0)
+		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version < 0 || options->ssl->struct_version > 1)
 		{
 			rc = MQTTCLIENT_BAD_STRUCTURE;
 			goto exit;

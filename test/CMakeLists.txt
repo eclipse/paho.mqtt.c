@@ -1,4 +1,4 @@
-PROJECT(mqtt-tests)
+PROJECT(mqtt-tests C)
 
 IF (WIN32)
   SET(MQTT_TEST_BROKER "tcp://mqtt.iotree.co.uk:1883" CACHE STRING "Hostname of a test MQTT broker to use")

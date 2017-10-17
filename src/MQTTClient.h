@@ -110,11 +110,18 @@
 #define MQTTCLIENT_H
 
 #if defined(WIN32) || defined(WIN64)
-  #define DLLImport __declspec(dllimport)
-  #define DLLExport __declspec(dllexport)
+	#if defined(MQTT_EXPORTS)
+		#define LIBMQTT_API __declspec(dllexport)
+	#else
+		#define LIBMQTT_API __declspec(dllimport)
+	#endif
+
 #else
-  #define DLLImport extern
-  #define DLLExport __attribute__ ((visibility ("default")))
+	#if defined(MQTT_EXPORTS)
+		#define LIBMQTT_API  __attribute__ ((visibility ("default")))
+	#else
+		#define LIBMQTT_API extern
+	#endif
 #endif
 
 #include <stdio.h>
@@ -212,7 +219,7 @@ typedef struct
  * Global init of mqtt library. Call once on program start to set global behaviour.
  * do_openssl_init - if mqtt library should initialize OpenSSL (1) or rely on the caller to do it before using the library (0)
  */
-DLLExport void MQTTClient_global_init(MQTTClient_init_options* inits);
+LIBMQTT_API void MQTTClient_global_init(MQTTClient_init_options* inits);
 
 /**
  * A handle representing an MQTT client. A valid client handle is available
@@ -390,7 +397,7 @@ typedef void MQTTClient_connectionLost(void* context, char* cause);
  * @return ::MQTTCLIENT_SUCCESS if the callbacks were correctly set,
  * ::MQTTCLIENT_FAILURE if an error occurred.
  */
-DLLExport int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTClient_connectionLost* cl,
+LIBMQTT_API int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTClient_connectionLost* cl,
 									MQTTClient_messageArrived* ma, MQTTClient_deliveryComplete* dc);
 
 
@@ -436,7 +443,7 @@ DLLExport int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTClie
  * @return ::MQTTCLIENT_SUCCESS if the client is successfully created, otherwise
  * an error code is returned.
  */
-DLLExport int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* clientId,
+LIBMQTT_API int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context);
 
 /**
@@ -692,7 +699,7 @@ typedef struct
   * no trace information will be returned.
   * @return an array of strings describing the library.  The last entry is a NULL pointer.
   */
-DLLExport MQTTClient_nameValue* MQTTClient_getVersionInfo(void);
+LIBMQTT_API MQTTClient_nameValue* MQTTClient_getVersionInfo(void);
 
 /**
   * This function attempts to connect a previously-created client (see
@@ -714,7 +721,7 @@ DLLExport MQTTClient_nameValue* MQTTClient_getVersionInfo(void);
   * <b>5</b>: Connection refused: Not authorized<br>
   * <b>6-255</b>: Reserved for future use<br>
   */
-DLLExport int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options);
+LIBMQTT_API int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options);
 
 /**
   * This function attempts to disconnect the client from the MQTT
@@ -734,7 +741,7 @@ DLLExport int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* o
   * the server. An error code is returned if the client was unable to disconnect
   * from the server
   */
-DLLExport int MQTTClient_disconnect(MQTTClient handle, int timeout);
+LIBMQTT_API int MQTTClient_disconnect(MQTTClient handle, int timeout);
 
 /**
   * This function allows the client application to test whether or not a
@@ -743,7 +750,7 @@ DLLExport int MQTTClient_disconnect(MQTTClient handle, int timeout);
   * MQTTClient_create().
   * @return Boolean true if the client is connected, otherwise false.
   */
-DLLExport int MQTTClient_isConnected(MQTTClient handle);
+LIBMQTT_API int MQTTClient_isConnected(MQTTClient handle);
 
 
 /* Subscribe is synchronous.  QoS list parameter is changed on return to granted QoSs.
@@ -762,7 +769,7 @@ DLLExport int MQTTClient_isConnected(MQTTClient handle);
   * An error code is returned if there was a problem registering the
   * subscription.
   */
-DLLExport int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos);
+LIBMQTT_API int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos);
 
 /**
   * This function attempts to subscribe a client to a list of topics, which may
@@ -780,7 +787,7 @@ DLLExport int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos
   * An error code is returned if there was a problem registering the
   * subscriptions.
   */
-DLLExport int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, int* qos);
+LIBMQTT_API int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, int* qos);
 
 /**
   * This function attempts to remove an existing subscription made by the
@@ -793,7 +800,7 @@ DLLExport int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const
   * An error code is returned if there was a problem removing the
   * subscription.
   */
-DLLExport int MQTTClient_unsubscribe(MQTTClient handle, const char* topic);
+LIBMQTT_API int MQTTClient_unsubscribe(MQTTClient handle, const char* topic);
 
 /**
   * This function attempts to remove existing subscriptions to a list of topics
@@ -806,7 +813,7 @@ DLLExport int MQTTClient_unsubscribe(MQTTClient handle, const char* topic);
   * @return ::MQTTCLIENT_SUCCESS if the subscriptions are removed.
   * An error code is returned if there was a problem removing the subscriptions.
   */
-DLLExport int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic);
+LIBMQTT_API int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic);
 
 /**
   * This function attempts to publish a message to a given topic (see also
@@ -829,7 +836,7 @@ DLLExport int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* con
   * @return ::MQTTCLIENT_SUCCESS if the message is accepted for publication.
   * An error code is returned if there was a problem accepting the message.
   */
-DLLExport int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, void* payload, int qos, int retained,
+LIBMQTT_API int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, void* payload, int qos, int retained,
 																 MQTTClient_deliveryToken* dt);
 /**
   * This function attempts to publish a message to a given topic (see also
@@ -850,7 +857,7 @@ DLLExport int MQTTClient_publish(MQTTClient handle, const char* topicName, int p
   * @return ::MQTTCLIENT_SUCCESS if the message is accepted for publication.
   * An error code is returned if there was a problem accepting the message.
   */
-DLLExport int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClient_message* msg, MQTTClient_deliveryToken* dt);
+LIBMQTT_API int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClient_message* msg, MQTTClient_deliveryToken* dt);
 
 
 /**
@@ -868,7 +875,7 @@ DLLExport int MQTTClient_publishMessage(MQTTClient handle, const char* topicName
   * An error code is returned if the timeout expires or there was a problem
   * checking the token.
   */
-DLLExport int MQTTClient_waitForCompletion(MQTTClient handle, MQTTClient_deliveryToken dt, unsigned long timeout);
+LIBMQTT_API int MQTTClient_waitForCompletion(MQTTClient handle, MQTTClient_deliveryToken dt, unsigned long timeout);
 
 
 /**
@@ -889,7 +896,7 @@ DLLExport int MQTTClient_waitForCompletion(MQTTClient handle, MQTTClient_deliver
   * An error code is returned if there was a problem obtaining the list of
   * pending tokens.
   */
-DLLExport int MQTTClient_getPendingDeliveryTokens(MQTTClient handle, MQTTClient_deliveryToken **tokens);
+LIBMQTT_API int MQTTClient_getPendingDeliveryTokens(MQTTClient handle, MQTTClient_deliveryToken **tokens);
 
 /**
   * When implementing a single-threaded client, call this function periodically
@@ -897,7 +904,7 @@ DLLExport int MQTTClient_getPendingDeliveryTokens(MQTTClient handle, MQTTClient_
   * If the application is calling MQTTClient_receive() regularly, then it is
   * not necessary to call this function.
   */
-DLLExport void MQTTClient_yield(void);
+LIBMQTT_API void MQTTClient_yield(void);
 
 /**
   * This function performs a synchronous receive of incoming messages. It should
@@ -930,7 +937,7 @@ DLLExport void MQTTClient_yield(void);
   * timeout expired, in which case <i>message</i> is NULL. An error code is
   * returned if there was a problem trying to receive a message.
   */
-DLLExport int MQTTClient_receive(MQTTClient handle, char** topicName, int* topicLen, MQTTClient_message** message,
+LIBMQTT_API int MQTTClient_receive(MQTTClient handle, char** topicName, int* topicLen, MQTTClient_message** message,
 		unsigned long timeout);
 
 /**
@@ -943,7 +950,7 @@ DLLExport int MQTTClient_receive(MQTTClient handle, char** topicName, int* topic
   * @param msg The address of a pointer to the ::MQTTClient_message structure
   * to be freed.
   */
-DLLExport void MQTTClient_freeMessage(MQTTClient_message** msg);
+LIBMQTT_API void MQTTClient_freeMessage(MQTTClient_message** msg);
 
 /**
   * This function frees memory allocated by the MQTT C client library, especially the
@@ -953,7 +960,7 @@ DLLExport void MQTTClient_freeMessage(MQTTClient_message** msg);
   * allocated memory.
   * @param ptr The pointer to the client library storage to be freed.
   */
-DLLExport void MQTTClient_free(void* ptr);
+LIBMQTT_API void MQTTClient_free(void* ptr);
 
 /**
   * This function frees the memory allocated to an MQTT client (see
@@ -962,7 +969,7 @@ DLLExport void MQTTClient_free(void* ptr);
   * @param handle A pointer to the handle referring to the ::MQTTClient
   * structure to be freed.
   */
-DLLExport void MQTTClient_destroy(MQTTClient* handle);
+LIBMQTT_API void MQTTClient_destroy(MQTTClient* handle);
 
 #endif
 #ifdef __cplusplus

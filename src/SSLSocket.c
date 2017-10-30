@@ -513,6 +513,14 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	const char* ciphers = NULL;
 	
 	FUNC_ENTRY;
+	
+	if (!opts)
+	{
+		rc = -1;
+		SSLSocket_error("MQTTClient_SSLOptions not filled", NULL, net->socket, rc); 
+		goto exit;
+	}
+
 	if (net->ctx == NULL)
 		if ((net->ctx = SSL_CTX_new(SSLv23_client_method())) == NULL)	/* SSLv23 for compatibility with SSLv2, SSLv3 and TLSv1 */
 		{

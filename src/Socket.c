@@ -427,7 +427,7 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 	*bytes = 0L;
         assert(count > 0);
 	rc = writev(socket, iovecs, count);
-	if (rc == SOCKET_ERROR)
+	if (rc < 0)
 	{
 		int err = Socket_error("writev - putdatas", socket);
 		if (err == EWOULDBLOCK || err == EAGAIN)
@@ -435,7 +435,6 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 	}
 	else
         {
-		assert(rc >= 0);
 		*bytes = rc;
         }
 #endif
@@ -477,7 +476,7 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 	iovecs[0].iov_base = buf0;
 	iovecs[0].iov_len = (ULONG)buf0len;
 	frees1[0] = 1;
-	assert(count < 5);
+	assert(count <= 5);
 	for (i = 0; i < count; i++)
 	{
 		iovecs[i+1].iov_base = buffers[i];
@@ -485,10 +484,9 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 		frees1[i+1] = frees[i];
 	}
 
-	if ((rc = Socket_writev(socket, iovecs, count+1, &bytes)) != SOCKET_ERROR)
+	rc = Socket_writev(socket, iovecs, count+1, &bytes);
+	if (rc >= 0)
 	{
-		if (rc < 0) Log(LOG_SEVERE, -1,"unexpected return value %d of Socket_writev",rc);
-		assert(rc >= 0);
 		if (bytes == total)
 			rc = TCPSOCKET_COMPLETE;
 		else
@@ -774,10 +772,9 @@ int Socket_continueWrite(int socket)
 		curbuflen += pw->iovecs[i].iov_len;
 	}
 
-	if ((rc = Socket_writev(socket, iovecs1, curbuf+1, &bytes)) != SOCKET_ERROR)
+	rc = Socket_writev(socket, iovecs1, curbuf+1, &bytes);
+	if (rc >= 0)
 	{
-		if (rc < 0) Log(LOG_SEVERE, -1,"unexpected return value %d of Socket_writev",rc);
-		assert(rc >= 0);
 		pw->bytes += bytes;
 		if ((rc = (pw->bytes == pw->total)))
 		{  /* topic and payload buffers are freed elsewhere, when all references to them have been removed */
@@ -903,6 +900,7 @@ int main(int argc, char *argv[])
 }
 
 #endif
+
 /* Local Variables: */
 /* indent-tabs-mode: t */
 /* c-basic-offset: 8 */

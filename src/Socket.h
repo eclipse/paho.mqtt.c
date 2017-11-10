@@ -25,6 +25,9 @@
 #include <ws2tcpip.h>
 #define MAXHOSTNAMELEN 256
 #if !defined(SSLSOCKET_H)
+#if (_MSC_VER < 1900) /* otherwise VS 2013 includes errno.h after our redefine*/
+#include <errno.h>
+#endif
 #undef EAGAIN
 #define EAGAIN WSAEWOULDBLOCK
 #undef EINTR

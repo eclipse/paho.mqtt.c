@@ -36,9 +36,6 @@
 #include "SSLSocket.h"
 #endif
 
-#if !defined(WIN32) && !defined(WIN64)
-#include <errno.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>

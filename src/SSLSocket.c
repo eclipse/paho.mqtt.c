@@ -513,6 +513,14 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	const char* ciphers = NULL;
 	
 	FUNC_ENTRY;
+	
+	if (!opts)
+	{
+		rc = -1; 
+		SSLSocket_error("MQTTClient_SSLOptions not filled", NULL, net->socket, rc); 
+		goto exit;
+	}
+
 	if (net->ctx == NULL)
 	{
 		int sslVersion = MQTT_SSL_VERSION_DEFAULT;

@@ -132,7 +132,25 @@ void SocketBuffer_terminate(void)
  */
 void SocketBuffer_cleanup(int socket)
 {
+	pending_writes* pw;
+
 	FUNC_ENTRY;
+	/* Clean up the write data queued for the socket */
+	do
+	{
+		int i;
+
+		pw = SocketBuffer_getWrite(socket);
+		if (pw)
+		{
+			for (i = 0; i < pw->count; i++)
+			{
+				if (pw->frees[i])
+					free(pw->iovecs[i].iov_base);
+			}
+		}
+	}
+	while (pw);
 	SocketBuffer_writeComplete(socket); /* clean up write buffers */
 	if (ListFindItem(queues, &socket, socketcompare))
 	{
@@ -411,3 +429,8 @@ pending_writes* SocketBuffer_updateWrite(int socket, char* topic, char* payload)
 	FUNC_EXIT;
 	return pw;
 }
+
+/* Local Variables: */
+/* indent-tabs-mode: t */
+/* c-basic-offset: 8 */
+/* End: */

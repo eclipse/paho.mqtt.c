@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include "Heap.h"
+#include <assert.h>
 
 #if defined(WIN32) || defined(WIN64)
 #define iov_len len
@@ -340,6 +341,7 @@ void SocketBuffer_pendingWrite(int socket, int count, iobuf* iovecs, int* frees,
 	pw->bytes = bytes;
 	pw->total = total;
 	pw->count = count;
+        assert(count <= 5);
 	for (i = 0; i < count; i++)
 	{
 		pw->iovecs[i] = iovecs[i];

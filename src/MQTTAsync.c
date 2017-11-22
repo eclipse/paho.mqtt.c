@@ -1094,9 +1094,11 @@ static void MQTTAsync_writeComplete(int socket)
 				(*(command->onSuccess))(command->context, &data);
 			}
 			m->pending_write = NULL;
-
-			ListDetach(m->responses, com);
-			MQTTAsync_freeCommand(com);
+			if (com)
+			{
+				ListDetach(m->responses, com);
+				MQTTAsync_freeCommand(com);
+			}
 		}
 	}
 	FUNC_EXIT;

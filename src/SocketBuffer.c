@@ -138,20 +138,22 @@ void SocketBuffer_cleanup(int socket)
 	/* Clean up the write data queued for the socket */
 	do
 	{
-		int i;
-
 		pw = SocketBuffer_getWrite(socket);
 		if (pw)
 		{
+			int i;
+
+			/* clean up data which is referenced only _in_ the write buffer */
 			for (i = 0; i < pw->count; i++)
 			{
 				if (pw->frees[i])
 					free(pw->iovecs[i].iov_base);
 			}
+			pw->count = 0;
 		}
+		SocketBuffer_writeComplete(socket); /* clean up write buffers */
 	}
 	while (pw);
-	SocketBuffer_writeComplete(socket); /* clean up write buffers */
 	if (ListFindItem(queues, &socket, socketcompare))
 	{
 		free(((socket_queue*)(queues->current->content))->buf);

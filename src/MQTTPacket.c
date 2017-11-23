@@ -251,9 +251,11 @@ int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffe
 		
 	if (rc == TCPSOCKET_COMPLETE)
 		time(&(net->lastSent));
-	
+
+         /* for TCPSOCKET_INTERRUPTED buf should be freed
+          * in Socket_continueWrite() or SocketBuffer_cleanup() */
 	if (rc != TCPSOCKET_INTERRUPTED)
-	  free(buf);
+		free(buf);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -711,6 +713,8 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 		ptr = topiclen;
 		writeInt(&ptr, (int)lens[1]);
 		rc = MQTTPacket_sends(net, header, 4, bufs, lens, frees);
+                /* for TCPSOCKET_INTERRUPTED buf should be freed
+                 * in Socket_continueWrite() or SocketBuffer_cleanup() */
 		if (rc != TCPSOCKET_INTERRUPTED)
 			free(buf);
 	}
@@ -724,6 +728,8 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 		writeInt(&ptr, (int)lens[1]);
 		rc = MQTTPacket_sends(net, header, 3, bufs, lens, frees);
 	}
+         /* for TCPSOCKET_INTERRUPTED topiclen should be freed
+          * in Socket_continueWrite() or SocketBuffer_cleanup() */
 	if (rc != TCPSOCKET_INTERRUPTED)
 		free(topiclen);
 	if (qos == 0)

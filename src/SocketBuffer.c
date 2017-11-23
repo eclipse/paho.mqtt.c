@@ -426,6 +426,8 @@ pending_writes* SocketBuffer_updateWrite(int socket, char* topic, char* payload)
 			pw->iovecs[2].iov_base = topic;
 			pw->iovecs[3].iov_base = payload;
 		}
+		else
+			Log(LOG_SEVERE, 0, "Error updating write: unexpected count %d",pw->count);
 	}
 
 	FUNC_EXIT;

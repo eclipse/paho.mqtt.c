@@ -253,8 +253,6 @@ int MQTTPacket_send_pubrec(int msgid, networkHandles* net, const char* clientID)
 int MQTTPacket_send_pubrel(int msgid, int dup, networkHandles* net, const char* clientID);
 int MQTTPacket_send_pubcomp(int msgid, networkHandles* net, const char* clientID);
 
-void MQTTPacket_free_packet(MQTTPacket* pack);
-
 #if !defined(NO_BRIDGE)
 	#include "MQTTPacketOut.h"
 #endif

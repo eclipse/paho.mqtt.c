@@ -142,15 +142,21 @@ void SocketBuffer_cleanup(int socket)
 		if (pw)
 		{
 			int i;
-
+			Log(LOG_FATAL, -1, "Removing subbuffer of %p",pw);
 			/* clean up data which is referenced only _in_ the write buffer */
 			for (i = 0; i < pw->count; i++)
 			{
 				if (pw->frees[i])
+				{
+					Log(LOG_FATAL, -1, "Removing subbuffer %d: %p",i,pw->iovecs[i].iov_base);
 					free(pw->iovecs[i].iov_base);
+					pw->iovecs[i].iov_base = NULL;
+					pw->frees[i] = 0;
+				}
 			}
-			pw->count = 0;
 		}
+		else
+			Log(LOG_FATAL, -1, "No subbuffer to remove");
 		SocketBuffer_writeComplete(socket); /* clean up write buffers */
 	}
 	while (pw);

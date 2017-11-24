@@ -738,7 +738,7 @@ static MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int bufle
 
 			for (i = 0; i < command->details.unsub.count; ++i)
 			{
-				size_t data_size = strlen(ptr) + 1;
+				data_size = strlen(ptr) + 1;
 
 				command->details.unsub.topics[i] = malloc(data_size);
 				strcpy(command->details.unsub.topics[i], ptr);

@@ -40,7 +40,7 @@
 #include <string.h>
 #include <signal.h>
 #include <ctype.h>
-
+#include <assert.h>
 #include "Heap.h"
 
 int Socket_setnonblocking(int sock);
@@ -428,15 +428,18 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 	}
 #else
 	*bytes = 0L;
+        assert(count > 0);
 	rc = writev(socket, iovecs, count);
-	if (rc == SOCKET_ERROR)
+	if (rc < 0)
 	{
 		int err = Socket_error("writev - putdatas", socket);
 		if (err == EWOULDBLOCK || err == EAGAIN)
 			rc = TCPSOCKET_INTERRUPTED;
 	}
 	else
+        {
 		*bytes = rc;
+        }
 #endif
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -476,6 +479,7 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 	iovecs[0].iov_base = buf0;
 	iovecs[0].iov_len = (ULONG)buf0len;
 	frees1[0] = 1;
+	assert(count <= 5);
 	for (i = 0; i < count; i++)
 	{
 		iovecs[i+1].iov_base = buffers[i];
@@ -483,7 +487,8 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 		frees1[i+1] = frees[i];
 	}
 
-	if ((rc = Socket_writev(socket, iovecs, count+1, &bytes)) != SOCKET_ERROR)
+	rc = Socket_writev(socket, iovecs, count+1, &bytes);
+	if (rc >= 0)
 	{
 		if (bytes == total)
 			rc = TCPSOCKET_COMPLETE;
@@ -750,6 +755,7 @@ int Socket_continueWrite(int socket)
 	}
 #endif
 
+	assert(5 >= pw->count);
 	for (i = 0; i < pw->count; ++i)
 	{
 		if (pw->bytes <= curbuflen)
@@ -769,7 +775,8 @@ int Socket_continueWrite(int socket)
 		curbuflen += pw->iovecs[i].iov_len;
 	}
 
-	if ((rc = Socket_writev(socket, iovecs1, curbuf+1, &bytes)) != SOCKET_ERROR)
+	rc = Socket_writev(socket, iovecs1, curbuf+1, &bytes);
+	if (rc >= 0)
 	{
 		pw->bytes += bytes;
 		if ((rc = (pw->bytes == pw->total)))
@@ -896,3 +903,8 @@ int main(int argc, char *argv[])
 }
 
 #endif
+
+/* Local Variables: */
+/* indent-tabs-mode: t */
+/* c-basic-offset: 8 */
+/* End: */

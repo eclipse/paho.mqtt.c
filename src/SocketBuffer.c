@@ -132,8 +132,34 @@ void SocketBuffer_terminate(void)
  */
 void SocketBuffer_cleanup(int socket)
 {
+	pending_writes* pw;
+
 	FUNC_ENTRY;
-	SocketBuffer_writeComplete(socket); /* clean up write buffers */
+	/* Clean up the write data queued for the socket */
+	do
+	{
+		pw = SocketBuffer_getWrite(socket);
+		if (pw)
+		{
+			int i;
+			Log(LOG_FATAL, -1, "Removing subbuffer of %p",pw);
+			/* clean up data which is referenced only _in_ the write buffer */
+			for (i = 0; i < pw->count; i++)
+			{
+				if (pw->frees[i])
+				{
+					Log(LOG_FATAL, -1, "Removing subbuffer %d: %p",i,pw->iovecs[i].iov_base);
+					free(pw->iovecs[i].iov_base);
+					pw->iovecs[i].iov_base = NULL;
+					pw->frees[i] = 0;
+				}
+			}
+		}
+		else
+			Log(LOG_FATAL, -1, "No subbuffer to remove");
+		SocketBuffer_writeComplete(socket); /* clean up write buffers */
+	}
+	while (pw);
 	if (ListFindItem(queues, &socket, socketcompare))
 	{
 		free(((socket_queue*)(queues->current->content))->buf);
@@ -406,8 +432,15 @@ pending_writes* SocketBuffer_updateWrite(int socket, char* topic, char* payload)
 			pw->iovecs[2].iov_base = topic;
 			pw->iovecs[3].iov_base = payload;
 		}
+		else
+			Log(LOG_SEVERE, 0, "Error updating write: unexpected count %d",pw->count);
 	}
 
 	FUNC_EXIT;
 	return pw;
 }
+
+/* Local Variables: */
+/* indent-tabs-mode: t */
+/* c-basic-offset: 8 */
+/* End: */

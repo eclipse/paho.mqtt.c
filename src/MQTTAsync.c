@@ -1038,7 +1038,10 @@ static void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command)
 	{
 		/* qos 1 and 2 topics are freed in the protocol code when the flows are completed */
 		if (command->command.details.pub.destinationName)
+		{
 			free(command->command.details.pub.destinationName);
+			command->command.details.pub.destinationName = NULL;
+		}
 		free(command->command.details.pub.payload);
 	}
 }
@@ -1094,9 +1097,11 @@ static void MQTTAsync_writeComplete(int socket)
 				(*(command->onSuccess))(command->context, &data);
 			}
 			m->pending_write = NULL;
-
-			ListDetach(m->responses, com);
-			MQTTAsync_freeCommand(com);
+			if (com)
+			{
+				ListDetach(m->responses, com);
+				MQTTAsync_freeCommand(com);
+			}
 		}
 	}
 	FUNC_EXIT;
@@ -1268,7 +1273,6 @@ static int MQTTAsync_processCommand(void)
 			}
 			else
 			{
-				command->command.details.pub.destinationName = NULL; /* this will be freed by the protocol code */
 				command->client->pending_write = &command->command;
 			}
 		}

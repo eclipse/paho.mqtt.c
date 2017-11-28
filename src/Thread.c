@@ -232,7 +232,7 @@ int Thread_wait_sem(sem_type sem, int timeout)
 
 	FUNC_ENTRY;
 	#if defined(WIN32) || defined(WIN64)
-		rc = WaitForSingleObject(sem, timeout);
+		rc = WaitForSingleObject(sem, timeout < 0 ? 0 : timeout);
   #elif defined(OSX)
 		rc = (int)dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, (int64_t)timeout*1000000L));
 	#elif defined(USE_TRYWAIT)

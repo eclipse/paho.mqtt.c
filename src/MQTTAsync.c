@@ -1268,7 +1268,7 @@ static int MQTTAsync_processCommand(void)
 			}
 			else
 			{
-				command->command.details.pub.destinationName = NULL; /* this will be freed by the protocol code */
+				//command->command.details.pub.destinationName = NULL; /* this will be freed by the protocol code */
 				command->client->pending_write = &command->command;
 			}
 		}
@@ -1295,7 +1295,8 @@ static int MQTTAsync_processCommand(void)
 		command->client->disconnect = command->command;
 		MQTTAsync_freeCommand(command);
 	}
-	else if (command->command.type == PUBLISH && command->command.details.pub.qos == 0)
+	else if (command->command.type == PUBLISH && command->command.details.pub.qos == 0 &&
+			rc != SOCKET_ERROR && rc != MQTTASYNC_PERSISTENCE_ERROR)
 	{
 		if (rc == TCPSOCKET_INTERRUPTED)
 			ListAppend(command->client->responses, command, sizeof(command));
@@ -1313,25 +1314,25 @@ static int MQTTAsync_processCommand(void)
 		else
 			MQTTAsync_disconnect_internal(command->client, 0);
 
-		if (command->command.type == CONNECT && MQTTAsync_checkConn(&command->command, command->client))
+		if (command->command.type == CONNECT
+				&& MQTTAsync_checkConn(&command->command, command->client))
 		{
 			Log(TRACE_MIN, -1, "Connect failed, more to try");
 
-                        if (command->client->c->MQTTVersion == MQTTVERSION_DEFAULT)
-                        {
-                            if (command->command.details.conn.MQTTVersion == MQTTVERSION_3_1)
-                            {
-                                command->command.details.conn.currentURI++;
-                                command->command.details.conn.MQTTVersion = MQTTVERSION_DEFAULT;
-                            }
-                        }
-                        else
-                            command->command.details.conn.currentURI++;
+			if (command->client->c->MQTTVersion == MQTTVERSION_DEFAULT)
+			{
+				if (command->command.details.conn.MQTTVersion == MQTTVERSION_3_1)
+				{
+					command->command.details.conn.currentURI++;
+					command->command.details.conn.MQTTVersion = 	MQTTVERSION_DEFAULT;
+				}
+			} else
+				command->command.details.conn.currentURI++;
 
 			/* put the connect command back to the head of the command queue, using the next serverURI */
-			rc = MQTTAsync_addCommand(command, sizeof(command->command.details.conn));
-		}
-		else
+			rc = MQTTAsync_addCommand(command,
+					sizeof(command->command.details.conn));
+		} else
 		{
 			if (command->command.onFailure)
 			{
@@ -2029,7 +2030,8 @@ static void MQTTAsync_closeOnly(Clients* client)
 	client->ping_outstanding = 0;
 	if (client->net.socket > 0)
 	{
-		if (client->connected)
+		MQTTProtocol_checkPendingWrites();
+		if (client->connected && Socket_noPendingWrites(client->net.socket))
 			MQTTPacket_send_disconnect(&client->net, client->clientID);
 		Thread_lock_mutex(socket_mutex);
 #if defined(OPENSSL)

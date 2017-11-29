@@ -418,6 +418,7 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 	int rc;
 
 	FUNC_ENTRY;
+	*bytes = 0L;
 #if defined(WIN32) || defined(WIN64)
 	rc = WSASend(socket, iovecs, count, (LPDWORD)bytes, 0, NULL, NULL);
 	if (rc == SOCKET_ERROR)
@@ -427,7 +428,6 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 			rc = TCPSOCKET_INTERRUPTED;
 	}
 #else
-	*bytes = 0L;
 	rc = writev(socket, iovecs, count);
 	if (rc == SOCKET_ERROR)
 	{
@@ -475,7 +475,7 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 
 	iovecs[0].iov_base = buf0;
 	iovecs[0].iov_len = (ULONG)buf0len;
-	frees1[0] = 1;
+	frees1[0] = 1; /* this buffer should be freed by SocketBuffer if the write is interrupted */
 	for (i = 0; i < count; i++)
 	{
 		iovecs[i+1].iov_base = buffers[i];
@@ -735,7 +735,7 @@ int Socket_continueWrite(int socket)
 	int rc = 0;
 	pending_writes* pw;
 	unsigned long curbuflen = 0L, /* cumulative total of buffer lengths */
-		bytes;
+		bytes = 0L;
 	int curbuf = -1, i;
 	iobuf iovecs1[5];
 

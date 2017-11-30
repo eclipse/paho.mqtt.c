@@ -1268,7 +1268,8 @@ static int MQTTAsync_processCommand(void)
 			}
 			else
 			{
-				//command->command.details.pub.destinationName = NULL; /* this will be freed by the protocol code */
+				if (rc != SOCKET_ERROR)
+				  command->command.details.pub.destinationName = NULL; /* this will be freed by the protocol code */
 				command->client->pending_write = &command->command;
 			}
 		}

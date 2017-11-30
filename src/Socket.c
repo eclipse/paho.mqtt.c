@@ -428,6 +428,31 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 			rc = TCPSOCKET_INTERRUPTED;
 	}
 #else
+//#define TESTING
+#if defined(TESTING)
+  static int i = 0;
+	if (++i == 100)
+	{
+		if (0)
+		{
+		  printf("Deliberately simulating TCPSOCKET_INTERRUPTED\n");
+		  rc = TCPSOCKET_INTERRUPTED; /* simulate a network wait */
+	  }
+		else
+		{
+			printf("Deliberately simulating SOCKET_ERROR\n");
+		  rc = SOCKET_ERROR;
+		}
+		/* should *bytes always be 0? */
+		if (1)
+		{
+		  printf("Shutdown socket\n");
+		  shutdown(socket, SHUT_WR);
+	  }
+	}
+	else
+	{
+#endif
 	rc = writev(socket, iovecs, count);
 	if (rc == SOCKET_ERROR)
 	{
@@ -437,6 +462,9 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 	}
 	else
 		*bytes = rc;
+#if defined(TESTING)
+	}
+#endif
 #endif
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -783,6 +811,14 @@ int Socket_continueWrite(int socket)
 		}
 		else
 			Log(TRACE_MIN, -1, "ContinueWrite wrote +%lu bytes on socket %d", bytes, socket);
+	}
+	else /* if we got SOCKET_ERROR we need to clean up anyway - a partial write is no good anymore */
+	{
+		for (i = 0; i < pw->count; i++)
+		{
+			if (pw->frees[i])
+				free(pw->iovecs[i].iov_base);
+		}
 	}
 #if defined(OPENSSL)
 exit:

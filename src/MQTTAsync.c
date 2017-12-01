@@ -1080,23 +1080,25 @@ static void MQTTAsync_writeComplete(int socket)
 					break;
 			}
 
-			if (cur_response && command->onSuccess)
+			if (cur_response) /* we found a response */
 			{
-				MQTTAsync_successData data;
+				if (command->onSuccess)
+				{
+				  MQTTAsync_successData data;
 
-				data.token = command->token;
-				data.alt.pub.destinationName = command->details.pub.destinationName;
-				data.alt.pub.message.payload = command->details.pub.payload;
-				data.alt.pub.message.payloadlen = command->details.pub.payloadlen;
-				data.alt.pub.message.qos = command->details.pub.qos;
-				data.alt.pub.message.retained = command->details.pub.retained;
-				Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
-				(*(command->onSuccess))(command->context, &data);
+				  data.token = command->token;
+				  data.alt.pub.destinationName = command->details.pub.destinationName;
+				  data.alt.pub.message.payload = command->details.pub.payload;
+				  data.alt.pub.message.payloadlen = command->details.pub.payloadlen;
+				  data.alt.pub.message.qos = command->details.pub.qos;
+				  data.alt.pub.message.retained = command->details.pub.retained;
+				  Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
+				  (*(command->onSuccess))(command->context, &data);
+			  }
+				ListDetach(m->responses, com);
+				MQTTAsync_freeCommand(com);
 			}
 			m->pending_write = NULL;
-
-			ListDetach(m->responses, com);
-			MQTTAsync_freeCommand(com);
 		}
 	}
 	FUNC_EXIT;

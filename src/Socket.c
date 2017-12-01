@@ -431,9 +431,9 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 //#define TESTING
 #if defined(TESTING)
   static int i = 0;
-	if (++i == 100)
+	if (++i % 100 == 1)
 	{
-		if (0)
+		if (1)
 		{
 		  printf("Deliberately simulating TCPSOCKET_INTERRUPTED\n");
 		  rc = TCPSOCKET_INTERRUPTED; /* simulate a network wait */
@@ -807,10 +807,14 @@ int Socket_continueWrite(int socket)
 				if (pw->frees[i])
 					free(pw->iovecs[i].iov_base);
 			}
+			rc = 1; /* signal complete */
 			Log(TRACE_MIN, -1, "ContinueWrite: partial write now complete for socket %d", socket);
 		}
 		else
+		{
+			rc = 0; /* signal not complete */
 			Log(TRACE_MIN, -1, "ContinueWrite wrote +%lu bytes on socket %d", bytes, socket);
+		}
 	}
 	else /* if we got SOCKET_ERROR we need to clean up anyway - a partial write is no good anymore */
 	{
@@ -842,7 +846,9 @@ int Socket_continueWrites(fd_set* pwset)
 	while (curpending)
 	{
 		int socket = *(int*)(curpending->content);
-		if (FD_ISSET(socket, pwset) && Socket_continueWrite(socket))
+		int rc = 0;
+
+		if (FD_ISSET(socket, pwset) && (rc = Socket_continueWrite(socket)))
 		{
 			if (!SocketBuffer_writeComplete(socket))
 				Log(LOG_SEVERE, -1, "Failed to remove pending write from socket buffer list");
@@ -854,7 +860,7 @@ int Socket_continueWrites(fd_set* pwset)
 			}
 			curpending = s.write_pending->current;
 
-			if (writecomplete)
+			if (rc == 1 && writecomplete)
 				(*writecomplete)(socket);
 		}
 		else

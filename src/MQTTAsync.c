@@ -1082,7 +1082,7 @@ static void MQTTAsync_writeComplete(int socket)
 
 			if (cur_response) /* we found a response */
 			{
-				if (command->onSuccess)
+				if (command->type == PUBLISH && command->onSuccess)
 				{
 				  MQTTAsync_successData data;
 
@@ -1095,8 +1095,11 @@ static void MQTTAsync_writeComplete(int socket)
 				  Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
 				  (*(command->onSuccess))(command->context, &data);
 			  }
-				ListDetach(m->responses, com);
-				MQTTAsync_freeCommand(com);
+				if (com)
+				{
+				  ListDetach(m->responses, com);
+				  MQTTAsync_freeCommand(com);
+			  }
 			}
 			m->pending_write = NULL;
 		}

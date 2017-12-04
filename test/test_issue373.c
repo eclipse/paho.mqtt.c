@@ -338,10 +338,14 @@ int test_373(struct Options options)
 #if !defined(_WINDOWS)
 	mqtt_mem = Heap_get_info();
 	MyLog(LOGA_INFO, "MQTT mem current %ld, max %ld",mqtt_mem->current_size,mqtt_mem->max_size);
-	if (mqtt_mem->current_size > 0) failures++; /* consider any not freed memory as failure */
 #endif
 exit:
 	MQTTAsync_destroy(&mqttasyncContext);
+#if !defined(_WINDOWS)
+	mqtt_mem = Heap_get_info();
+	MyLog(LOGA_INFO, "MQTT mem current %ld, max %ld",mqtt_mem->current_size,mqtt_mem->max_size);
+	if (mqtt_mem->current_size > 0) failures++; /* consider any not freed memory as failure */
+#endif
 	return failures;
 }
 

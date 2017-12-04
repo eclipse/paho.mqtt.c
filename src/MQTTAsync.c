@@ -361,7 +361,7 @@ static void MQTTProtocol_checkPendingWrites(void);
 static void MQTTAsync_freeServerURIs(MQTTAsyncs* m);
 static void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command);
 static void MQTTAsync_freeCommand(MQTTAsync_queuedCommand *command);
-static void MQTTAsync_writeComplete(int socket);
+static void MQTTAsync_writeComplete(int socket, int rc);
 static int MQTTAsync_processCommand(void);
 static void MQTTAsync_checkTimeouts(void);
 static thread_return_type WINAPI MQTTAsync_sendThread(void* n);
@@ -1050,7 +1050,7 @@ static void MQTTAsync_freeCommand(MQTTAsync_queuedCommand *command)
 }
 
 
-static void MQTTAsync_writeComplete(int socket)
+static void MQTTAsync_writeComplete(int socket, int rc)
 {
 	ListElement* found = NULL;
 
@@ -1082,19 +1082,32 @@ static void MQTTAsync_writeComplete(int socket)
 
 			if (cur_response) /* we found a response */
 			{
-				if (command->type == PUBLISH && command->onSuccess)
+				if (command->type == PUBLISH)
 				{
-				  MQTTAsync_successData data;
+					if (rc == 1 && command->onSuccess)
+					{
+						MQTTAsync_successData data;
 
-				  data.token = command->token;
-				  data.alt.pub.destinationName = command->details.pub.destinationName;
-				  data.alt.pub.message.payload = command->details.pub.payload;
-				  data.alt.pub.message.payloadlen = command->details.pub.payloadlen;
-				  data.alt.pub.message.qos = command->details.pub.qos;
-				  data.alt.pub.message.retained = command->details.pub.retained;
-				  Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
-				  (*(command->onSuccess))(command->context, &data);
-			  }
+						data.token = command->token;
+						data.alt.pub.destinationName = command->details.pub.destinationName;
+						data.alt.pub.message.payload = command->details.pub.payload;
+						data.alt.pub.message.payloadlen = command->details.pub.payloadlen;
+						data.alt.pub.message.qos = command->details.pub.qos;
+						data.alt.pub.message.retained = command->details.pub.retained;
+						Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
+						(*(command->onSuccess))(command->context, &data);
+					}
+					else if (rc == -1 && command->onFailure)
+					{
+						MQTTAsync_failureData data;
+
+						data.token = command->token;
+						data.code = rc;
+						data.message = NULL;
+						Log(TRACE_MIN, -1, "Calling publish failure for client %s", m->c->clientID);
+						(*(command->onFailure))(command->context, &data);
+					}
+				}
 				if (com)
 				{
 				  ListDetach(m->responses, com);

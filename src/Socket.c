@@ -428,10 +428,10 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 			rc = TCPSOCKET_INTERRUPTED;
 	}
 #else
-//#define TESTING
+#define TESTING
 #if defined(TESTING)
   static int i = 0;
-	if (++i % 100 == 1)
+	if (++i >= 10 && i < 21)
 	{
 		if (1)
 		{
@@ -444,7 +444,7 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 		  rc = SOCKET_ERROR;
 		}
 		/* should *bytes always be 0? */
-		if (1)
+		if (i == 20)
 		{
 		  printf("Shutdown socket\n");
 		  shutdown(socket, SHUT_WR);
@@ -756,7 +756,7 @@ void Socket_setWriteCompleteCallback(Socket_writeComplete* mywritecomplete)
 /**
  *  Continue an outstanding write for a particular socket
  *  @param socket that socket
- *  @return completion code
+ *  @return completion code: 0=incomplete, 1=complete, -1=socket error
  */
 int Socket_continueWrite(int socket)
 {
@@ -848,7 +848,7 @@ int Socket_continueWrites(fd_set* pwset)
 		int socket = *(int*)(curpending->content);
 		int rc = 0;
 
-		if (FD_ISSET(socket, pwset) && (rc = Socket_continueWrite(socket)))
+		if (FD_ISSET(socket, pwset) && ((rc = Socket_continueWrite(socket)) != 0))
 		{
 			if (!SocketBuffer_writeComplete(socket))
 				Log(LOG_SEVERE, -1, "Failed to remove pending write from socket buffer list");
@@ -860,8 +860,8 @@ int Socket_continueWrites(fd_set* pwset)
 			}
 			curpending = s.write_pending->current;
 
-			if (rc == 1 && writecomplete)
-				(*writecomplete)(socket);
+			if (writecomplete)
+				(*writecomplete)(socket, rc);
 		}
 		else
 			ListNextElement(s.write_pending, &curpending);

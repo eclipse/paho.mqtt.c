@@ -295,7 +295,7 @@ static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc);
 static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long timeout);
 /*static int pubCompare(void* a, void* b); */
 static void MQTTProtocol_checkPendingWrites(void);
-static void MQTTClient_writeComplete(int socket);
+static void MQTTClient_writeComplete(int socket, int rc);
 
 
 int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* clientId,
@@ -2082,7 +2082,7 @@ static void MQTTProtocol_checkPendingWrites(void)
 }
 
 
-static void MQTTClient_writeComplete(int socket)
+static void MQTTClient_writeComplete(int socket, int rc)
 {
 	ListElement* found = NULL;
 

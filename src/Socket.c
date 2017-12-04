@@ -428,7 +428,7 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 			rc = TCPSOCKET_INTERRUPTED;
 	}
 #else
-#define TESTING
+//#define TESTING
 #if defined(TESTING)
   static int i = 0;
 	if (++i >= 10 && i < 21)

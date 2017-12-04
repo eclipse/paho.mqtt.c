@@ -286,15 +286,17 @@ int test_373(struct Options options)
 		goto exit;
 	}
 	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
-	while (connectCnt < 5)
+	while (connectCnt < 10)
 	{
-		MyLog(LOGA_INFO, "Connected %d connectCnt %d\n",connected,connectCnt);
-		mqtt_mem = Heap_get_info();
-		MyLog(LOGA_INFO, "PublishCnt %d, FailedCnt %d, Pending %d maxPending %d",
-		      goodPublishCnt,failedPublishCnt,pendingMessageCnt,pendingMessageCntMax);
-		MyLog(LOGA_INFO, "MQTT mem current %ld, max %ld",mqtt_mem->current_size,mqtt_mem->max_size);
 		if (!connected)
 		{
+			MyLog(LOGA_INFO, "Connected %d connectCnt %d\n",connected,connectCnt);
+			MyLog(LOGA_INFO, "PublishCnt %d, FailedCnt %d, Pending %d maxPending %d",
+			      goodPublishCnt,failedPublishCnt,pendingMessageCnt,pendingMessageCntMax);
+#if !defined(_WINDOWS)
+			mqtt_mem = Heap_get_info();
+			MyLog(LOGA_INFO, "MQTT mem current %ld, max %ld",mqtt_mem->current_size,mqtt_mem->max_size);
+#endif
 			/* (re)connect to the broker */
 			if (connecting)
 			{
@@ -320,20 +322,24 @@ int test_373(struct Options options)
 				rc = test373SendPublishMessage(mqttasyncContext,topicId);
 				if (rc != MQTTASYNC_SUCCESS) break;
 			}
-			MySleep(1000);
+			MySleep(100);
 		}
 	}
 	MySleep(5000);
 	MyLog(LOGA_INFO, "PublishCnt %d, FailedCnt %d, Pending %d maxPending %d",
 	      goodPublishCnt,failedPublishCnt,pendingMessageCnt,pendingMessageCntMax);
+#if !defined(_WINDOWS)
 	mqtt_mem = Heap_get_info();
 	MyLog(LOGA_INFO, "MQTT mem current %ld, max %ld",mqtt_mem->current_size,mqtt_mem->max_size);
+#endif
 	MQTTAsync_disconnect(mqttasyncContext, NULL);
-	mqtt_mem = Heap_get_info();
 	MyLog(LOGA_INFO, "PublishCnt %d, FailedCnt %d, Pending %d maxPending %d",
 	      goodPublishCnt,failedPublishCnt,pendingMessageCnt,pendingMessageCntMax);
+#if !defined(_WINDOWS)
+	mqtt_mem = Heap_get_info();
 	MyLog(LOGA_INFO, "MQTT mem current %ld, max %ld",mqtt_mem->current_size,mqtt_mem->max_size);
 	if (mqtt_mem->current_size > 0) failures++; /* consider any not freed memory as failure */
+#endif
 exit:
 	MQTTAsync_destroy(&mqttasyncContext);
 	return failures;

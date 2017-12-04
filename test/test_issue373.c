@@ -206,16 +206,17 @@ void test373ConnectionLost(void* context, char* cause)
 
 void test373DeliveryComplete(void* context, MQTTAsync_token token)
 {
-	pendingMessageCnt--;
 }
 
 void test373_onWriteSuccess(void* context, MQTTAsync_successData* response)
 {
+	pendingMessageCnt--;
 	goodPublishCnt++;
 }
 
 void test373_onWriteFailure(void* context, MQTTAsync_failureData* response)
 {
+	pendingMessageCnt--;
 	failedPublishCnt++;
 }
 

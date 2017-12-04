@@ -326,11 +326,14 @@ int test_373(struct Options options)
 	MySleep(5000);
 	MyLog(LOGA_INFO, "PublishCnt %d, FailedCnt %d, Pending %d maxPending %d",
 	      goodPublishCnt,failedPublishCnt,pendingMessageCnt,pendingMessageCntMax);
+	mqtt_mem = Heap_get_info();
 	MyLog(LOGA_INFO, "MQTT mem current %ld, max %ld",mqtt_mem->current_size,mqtt_mem->max_size);
 	MQTTAsync_disconnect(mqttasyncContext, NULL);
+	mqtt_mem = Heap_get_info();
 	MyLog(LOGA_INFO, "PublishCnt %d, FailedCnt %d, Pending %d maxPending %d",
 	      goodPublishCnt,failedPublishCnt,pendingMessageCnt,pendingMessageCntMax);
 	MyLog(LOGA_INFO, "MQTT mem current %ld, max %ld",mqtt_mem->current_size,mqtt_mem->max_size);
+	if (mqtt_mem->current_size > 0) failures++; /* consider any not freed memory as failure */
 exit:
 	MQTTAsync_destroy(&mqttasyncContext);
 	return failures;

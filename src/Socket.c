@@ -679,6 +679,13 @@ int Socket_new(char* addr, int port, int* sock)
 			if (setsockopt(*sock, SOL_SOCKET, SO_NOSIGPIPE, (void*)&opt, sizeof(opt)) != 0)
 				Log(LOG_ERROR, -1, "Could not set SO_NOSIGPIPE for socket %d", *sock);
 #endif
+#if 1
+                        {
+                            int optsend = 2 * 1440;
+                            if (setsockopt(*sock, SOL_SOCKET, SO_SNDBUF, (void*)&optsend, sizeof(optsend)) != 0)
+				Log(LOG_ERROR, -1, "Could not set SO_SNDBUF for socket %d", *sock);
+                        }
+#endif
 
 			Log(TRACE_MIN, -1, "New socket %d for %s, port %d",	*sock, addr, port);
 			if (Socket_addSocket(*sock) == SOCKET_ERROR)

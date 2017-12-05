@@ -428,6 +428,31 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 			rc = TCPSOCKET_INTERRUPTED;
 	}
 #else
+//#define TESTING
+#if defined(TESTING)
+  static int i = 0;
+	if (++i >= 10 && i < 21)
+	{
+		if (1)
+		{
+		  printf("Deliberately simulating TCPSOCKET_INTERRUPTED\n");
+		  rc = TCPSOCKET_INTERRUPTED; /* simulate a network wait */
+	  }
+		else
+		{
+			printf("Deliberately simulating SOCKET_ERROR\n");
+		  rc = SOCKET_ERROR;
+		}
+		/* should *bytes always be 0? */
+		if (i == 20)
+		{
+		  printf("Shutdown socket\n");
+		  shutdown(socket, SHUT_WR);
+	  }
+	}
+	else
+	{
+#endif
 	rc = writev(socket, iovecs, count);
 	if (rc == SOCKET_ERROR)
 	{
@@ -437,6 +462,9 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 	}
 	else
 		*bytes = rc;
+#if defined(TESTING)
+	}
+#endif
 #endif
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -728,7 +756,7 @@ void Socket_setWriteCompleteCallback(Socket_writeComplete* mywritecomplete)
 /**
  *  Continue an outstanding write for a particular socket
  *  @param socket that socket
- *  @return completion code
+ *  @return completion code: 0=incomplete, 1=complete, -1=socket error
  */
 int Socket_continueWrite(int socket)
 {
@@ -779,10 +807,22 @@ int Socket_continueWrite(int socket)
 				if (pw->frees[i])
 					free(pw->iovecs[i].iov_base);
 			}
+			rc = 1; /* signal complete */
 			Log(TRACE_MIN, -1, "ContinueWrite: partial write now complete for socket %d", socket);
 		}
 		else
+		{
+			rc = 0; /* signal not complete */
 			Log(TRACE_MIN, -1, "ContinueWrite wrote +%lu bytes on socket %d", bytes, socket);
+		}
+	}
+	else /* if we got SOCKET_ERROR we need to clean up anyway - a partial write is no good anymore */
+	{
+		for (i = 0; i < pw->count; i++)
+		{
+			if (pw->frees[i])
+				free(pw->iovecs[i].iov_base);
+		}
 	}
 #if defined(OPENSSL)
 exit:
@@ -806,7 +846,9 @@ int Socket_continueWrites(fd_set* pwset)
 	while (curpending)
 	{
 		int socket = *(int*)(curpending->content);
-		if (FD_ISSET(socket, pwset) && Socket_continueWrite(socket))
+		int rc = 0;
+
+		if (FD_ISSET(socket, pwset) && ((rc = Socket_continueWrite(socket)) != 0))
 		{
 			if (!SocketBuffer_writeComplete(socket))
 				Log(LOG_SEVERE, -1, "Failed to remove pending write from socket buffer list");
@@ -819,7 +861,7 @@ int Socket_continueWrites(fd_set* pwset)
 			curpending = s.write_pending->current;
 
 			if (writecomplete)
-				(*writecomplete)(socket);
+				(*writecomplete)(socket, rc);
 		}
 		else
 			ListNextElement(s.write_pending, &curpending);

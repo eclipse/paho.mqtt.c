@@ -1860,7 +1860,7 @@ void test7cConnected(void* context, char* cause)
 
 void test7cOnConnectFailure(void* context, MQTTAsync_failureData* response)
 {
-	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
+	MyLog(LOGA_DEBUG, "In c connect onFailure callback, context %p", context);
 
 	test7OnFailureCalled++;
 	test7Finished = 1;
@@ -1990,7 +1990,11 @@ int test7(struct Options options)
 	/* wait until d is ready: connected and subscribed */
 	count = 0;
 	while (!test7dReady && ++count < 10000)
+	{
+		if (test7Finished)
+		  goto exit;
 		MySleep(100);
+	}
 	assert("Count should be less than 10000", count < 10000, "count was %d", count); /* wrong */
 
 	rc = MQTTAsync_setConnected(c, c, test7cConnected);
@@ -2007,6 +2011,9 @@ int test7(struct Options options)
 	opts.onFailure = test7cOnConnectFailure;
 	opts.context = c;
 	opts.cleansession = 0;
+	/*opts.automaticReconnect = 1;
+	opts.minRetryInterval = 3;
+	opts.maxRetryInterval = 6;*/
 
 	MyLog(LOGA_DEBUG, "Connecting client c");
 	rc = MQTTAsync_connect(c, &opts);
@@ -2029,21 +2036,26 @@ int test7(struct Options options)
 	MyLog(LOGA_DEBUG, "Now we can send some messages to be buffered by TCP");
 
 	test7c_connected = 0;
-	char buf[20000];
+	char buf[5000000];
 	/* send some messages.  Then reconnect (check connected callback), and check that those messages are received */
 	for (i = 0; i < 50000; ++i)
 	{
 	  MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-	  MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	  MQTTAsync_responseOptions pubopts = MQTTAsync_responseOptions_initializer;
 		pubmsg.qos = 0; /*i % 3;*/
 	  sprintf(buf, "QoS %d message", pubmsg.qos);
 	  pubmsg.payload = buf;
-	  pubmsg.payloadlen = 20000; //(int)(strlen(pubmsg.payload) + 1);
+	  pubmsg.payloadlen = 5000000; //(int)(strlen(pubmsg.payload) + 1);
 	  pubmsg.retained = 0;
-	  rc = MQTTAsync_sendMessage(c, test_topic, &pubmsg, &opts);
+	  rc = MQTTAsync_sendMessage(c, test_topic, &pubmsg, &pubopts);
 	  assert("Good rc from sendMessage", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 		if (rc != 0)
+		{
+		  //MyLog(LOGA_DEBUG, "Connecting client c");
+		  //rc = MQTTAsync_connect(c, &opts);
+			//MySleep(1000);
 		  break;
+		}
 	}
 
 #if 0
@@ -2081,13 +2093,13 @@ int test7(struct Options options)
  	assert("Number of getPendingTokens should be 0", i == 0, "i was %d ", i);
 #endif
 
+exit:
 	rc = MQTTAsync_disconnect(c, NULL);
  	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
 
 	rc = MQTTAsync_disconnect(d, NULL);
  	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
 
-exit:
 	MySleep(200);
 	MQTTAsync_destroy(&c);
 	MQTTAsync_destroy(&d);

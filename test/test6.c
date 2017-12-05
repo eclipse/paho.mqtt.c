@@ -58,6 +58,7 @@ struct
 	char* password;
 	int verbose;
 	int persistence;
+	int payload_len;
 } opts =
 {
 	"tcp://localhost:1884",
@@ -68,12 +69,13 @@ struct
 	"Eclipse/Paho/restart_test/control",
 	"C_broken_client",
 	1,    /* slot_no */
-	2,    /* QoS */
+	0,    /* QoS */
 	0,    /* retained */
 	NULL,
 	NULL,
 	0,
 	1,
+	1000
 };
 
 void getopts(int argc, char** argv)
@@ -233,6 +235,40 @@ START_TIME_TYPE start_clock(void)
 	return start_time;
 }
 #endif
+
+int tests = 0;
+int failures = 0;
+FILE* xml;
+START_TIME_TYPE global_start_time;
+char output[3000];
+char* cur_output = output;
+
+#define assert(a, b, c, d) myassert(__FILE__, __LINE__, a, b, c, d)
+#define assert1(a, b, c, d, e) myassert(__FILE__, __LINE__, a, b, c, d, e)
+
+void myassert(char* filename, int lineno, char* description, int value,
+		char* format, ...)
+{
+	++tests;
+	if (!value)
+	{
+		va_list args;
+
+		++failures;
+		MyLog(LOGA_INFO, "Assertion failed, file %s, line %d, description: %s", filename,
+				lineno, description);
+
+		va_start(args, format);
+		vprintf(format, args);
+		va_end(args);
+
+		cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n",
+                        description, filename, lineno);
+	}
+	else
+		MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s",
+				filename, lineno, description);
+}
 
 
 #if defined(WIN32)
@@ -616,6 +652,7 @@ void one_iteration(void)
 	START_TIME_TYPE start_time;
 	int last_expected_count = expectedCount;
 	int test_interval = 30;
+	char* payload = malloc(opts.payload_len);
 
 	if (control_wait("start_measuring") == 0)
 		goto exit;
@@ -630,11 +667,9 @@ void one_iteration(void)
 	global_start_time = start_clock();
 	for (i = 1; i <= test_count; ++i)
 	{
-		char payload[128];
-
 		sprintf(payload, "message number %d", i);
 
-		rc = MQTTAsync_send(client, opts.topic, (int)(strlen(payload)+1), payload,
+		rc = MQTTAsync_send(client, opts.topic, opts.payload_len, payload,
 				        opts.qos, opts.retained, NULL);
 		while (rc != MQTTASYNC_SUCCESS)
 		{
@@ -687,6 +722,7 @@ void one_iteration(void)
 		sprintf(payload, "message number %d", seqno);
 		rc = MQTTAsync_send(client, opts.topic, (int)(strlen(payload)+1), payload,
 				opts.qos, opts.retained, &ropts);
+		assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
 		while (rc != MQTTASYNC_SUCCESS)
 		{
 			MyLog(LOGA_DEBUG, "Rc %d from publish with payload %s, retrying", rc, payload);
@@ -697,6 +733,7 @@ void one_iteration(void)
 			mysleep(1);
 			rc = MQTTAsync_send(client, opts.topic, (int)(strlen(payload)+1), payload,
 				opts.qos, opts.retained, &ropts);
+			assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
 		}
 		//MyLog(LOGA_DEBUG, "Successful publish with payload %s", payload);
 		while (seqno - messagesSent > 2000)
@@ -807,6 +844,7 @@ int sendAndReceive(void)
 
 	/* connect cleansession, and then disconnect, to clean up */
 	conn_opts.keepAliveInterval = 10;
+	conn_opts.maxInflight = test_count;
 	conn_opts.username = opts.username;
 	conn_opts.password = opts.password;
 	conn_opts.cleansession = 1;

@@ -290,7 +290,7 @@ int test_373(struct Options options)
 		goto exit;
 	}
 	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
-	while (connectCnt < 10)
+	while (connectCnt < 40)
 	{
 		if (!connected)
 		{
@@ -319,9 +319,9 @@ int test_373(struct Options options)
 		}
 		else
 		{
-			/* while connected send 1000 message per second */
+			/* while connected send 100 message per second */
 			int topicId;
-			for(topicId=0; topicId < 1000; topicId++)
+			for(topicId=0; topicId < 100; topicId++)
 			{
 				rc = test373SendPublishMessage(mqttasyncContext,topicId);
 				if (rc != MQTTASYNC_SUCCESS) break;

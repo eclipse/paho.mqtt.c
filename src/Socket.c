@@ -532,7 +532,7 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 		}
 	}
 exit:
-#if 1
+#if 0
         if (rc == TCPSOCKET_INTERRUPTED)
         {
             Log(LOG_ERROR, -1, "Socket_putdatas: TCPSOCKET_INTERRUPTED");

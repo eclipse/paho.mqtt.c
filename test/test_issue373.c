@@ -54,12 +54,16 @@ struct Options
 	char* proxy_connection;      /**< connection to proxy */
 	int verbose;
 	int test_no;
+	unsigned int QoS;
+	unsigned int iterrations;
 } options =
 {
 	"iot.eclipse.org:1883",
 	"localhost:1883",
 	0,
 	0,
+	0,
+	5
 };
 
 void getopts(int argc, char** argv)
@@ -227,7 +231,7 @@ int test373_messageArrived(void* context, char* topicName, int topicLen, MQTTAsy
 
 static char test373Payload[] = "No one is interested in this payload";
 
-int test373SendPublishMessage(MQTTAsync handle,int id)
+int test373SendPublishMessage(MQTTAsync handle,int id, const unsigned int QoS)
 {
 	int rc = 0;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
@@ -240,7 +244,7 @@ int test373SendPublishMessage(MQTTAsync handle,int id)
 
 	pubmsg.payload = test373Payload;
 	pubmsg.payloadlen = sizeof(test373Payload);
-	pubmsg.qos = 0;
+	pubmsg.qos = QoS;
 	rc = MQTTAsync_sendMessage( handle, topic,&pubmsg,&opts);
 	if (rc == MQTTASYNC_SUCCESS)
 	{
@@ -264,7 +268,9 @@ int test_373(struct Options options)
 	char clientid[30 + sizeof(unique)];
 	heap_info* mqtt_mem = 0;
 
+	MyLog(LOGA_INFO, "Running test373 with QoS=%u, iterrations=%u\n",options.QoS,options.iterrations);
 	sprintf(clientid, "paho-test373-%s", unique);
+	connectCnt = 0;
 	rc = MQTTAsync_create(&mqttasyncContext, options.proxy_connection, clientid,
 			      MQTTCLIENT_PERSISTENCE_NONE,
 			      NULL);
@@ -290,7 +296,7 @@ int test_373(struct Options options)
 		goto exit;
 	}
 	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
-	while (connectCnt < 10)
+	while (connectCnt < options.iterrations)
 	{
 		if (!connected)
 		{
@@ -319,11 +325,11 @@ int test_373(struct Options options)
 		}
 		else
 		{
-			/* while connected send 1000 message per second */
+			/* while connected send 100 message per second */
 			int topicId;
-			for(topicId=0; topicId < 1000; topicId++)
+			for(topicId=0; topicId < 100; topicId++)
 			{
-				rc = test373SendPublishMessage(mqttasyncContext,topicId);
+				rc = test373SendPublishMessage(mqttasyncContext,topicId,options.QoS);
 				if (rc != MQTTASYNC_SUCCESS) break;
 			}
 			MySleep(100);
@@ -337,6 +343,7 @@ int test_373(struct Options options)
 	MyLog(LOGA_INFO, "MQTT mem current %ld, max %ld",mqtt_mem->current_size,mqtt_mem->max_size);
 #endif
 	MQTTAsync_disconnect(mqttasyncContext, NULL);
+	connected = 0;
 	MyLog(LOGA_INFO, "PublishCnt %d, FailedCnt %d, Pending %d maxPending %d",
 	      goodPublishCnt,failedPublishCnt,pendingMessageCnt,pendingMessageCntMax);
 #if !defined(_WINDOWS)
@@ -363,6 +370,7 @@ int main(int argc, char** argv)
 	int* numtests = &tests;
 	int rc = 0;
 	int (*tests[])() = { NULL, test_373};
+	unsigned int QoS;
 
 	sprintf(unique, "%u", rand());
 	MyLog(LOGA_INFO, "Random prefix/suffix is %s", unique);
@@ -374,9 +382,24 @@ int main(int argc, char** argv)
 	{ /* run all the tests */
 		for (options.test_no = 1; options.test_no < ARRAY_SIZE(tests); ++options.test_no)
 		{
-			failures = 0;
-			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
-			rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */
+			/* test with QoS 0, 1 and 2 and just 5 iterrations */
+			for (QoS = 0; QoS < 3; QoS++)
+			{
+				failures = 0;
+				options.QoS = QoS;
+				options.iterrations = 5;
+				MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+				rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */
+			}
+			if (rc == 0)
+			{
+				/* Test with much more iterrations for QoS = 0 */
+				failures = 0;
+				options.QoS = 0;
+				options.iterrations = 100;
+				MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+				rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */
+			}
 		}
 	}
 	else

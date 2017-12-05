@@ -247,6 +247,10 @@ int test373SendPublishMessage(MQTTAsync handle,int id)
 		pendingMessageCnt++;
 		if (pendingMessageCnt > pendingMessageCntMax) pendingMessageCntMax = pendingMessageCnt;
 	}
+	else
+	{
+		MyLog(LOGA_INFO, "Failed to queue message for send with retvalue %d",rc);
+	}
 	return rc;
 }
 

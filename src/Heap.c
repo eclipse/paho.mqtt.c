@@ -254,6 +254,10 @@ void myfree(char* file, int line, void* p)
 			free(((int*)p)-1);
 		Thread_unlock_mutex(heap_mutex);
 	}
+	else
+	{
+		Log(LOG_ERROR, -1, "Call of free(NULL) in %s,%d",file,line);
+	}
 }
 
 

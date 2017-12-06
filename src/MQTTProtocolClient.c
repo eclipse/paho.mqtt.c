@@ -668,11 +668,13 @@ void MQTTProtocol_freeClient(Clients* client)
 	MQTTProtocol_freeMessageList(client->inboundMsgs);
 	ListFree(client->messageQueue);
 	free(client->clientID);
+        client->clientID = NULL;
 	if (client->will)
 	{
 		free(client->will->payload);
 		free(client->will->topic);
 		free(client->will);
+                client->will = NULL;
 	}
 #if defined(OPENSSL)
 	if (client->sslopts)
@@ -688,6 +690,7 @@ void MQTTProtocol_freeClient(Clients* client)
 		if (client->sslopts->enabledCipherSuites)
 			free((void*)client->sslopts->enabledCipherSuites);
 		free(client->sslopts);
+                client->sslopts = NULL;
 	}
 #endif
 	/* don't free the client structure itself... this is done elsewhere */

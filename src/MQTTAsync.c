@@ -1008,8 +1008,10 @@ static void MQTTAsync_freeServerURIs(MQTTAsyncs* m)
 
 	for (i = 0; i < m->serverURIcount; ++i)
 		free(m->serverURIs[i]);
+	m->serverURIcount = 0;
 	if (m->serverURIs)
 		free(m->serverURIs);
+	m->serverURIs = NULL;
 }
 
 
@@ -1023,7 +1025,9 @@ static void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command)
 			free(command->command.details.sub.topics[i]);
 
 		free(command->command.details.sub.topics);
+		command->command.details.sub.topics = NULL;
 		free(command->command.details.sub.qoss);
+		command->command.details.sub.qoss = NULL;
 	}
 	else if (command->command.type == UNSUBSCRIBE)
 	{
@@ -1033,13 +1037,16 @@ static void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command)
 			free(command->command.details.unsub.topics[i]);
 
 		free(command->command.details.unsub.topics);
+		command->command.details.unsub.topics = NULL;
 	}
 	else if (command->command.type == PUBLISH)
 	{
 		/* qos 1 and 2 topics are freed in the protocol code when the flows are completed */
 		if (command->command.details.pub.destinationName)
 			free(command->command.details.pub.destinationName);
+		command->command.details.pub.destinationName = NULL;
 		free(command->command.details.pub.payload);
+		command->command.details.pub.payload = NULL;
 	}
 }
 

@@ -818,7 +818,10 @@ int Socket_continueWrite(int socket)
 			for (i = 0; i < pw->count; i++)
 			{
 				if (pw->frees[i])
+                                {
 					free(pw->iovecs[i].iov_base);
+                                        pw->iovecs[i].iov_base = NULL;
+                                }
 			}
 			rc = 1; /* signal complete */
 			Log(TRACE_MIN, -1, "ContinueWrite: partial write now complete for socket %d", socket);
@@ -834,7 +837,10 @@ int Socket_continueWrite(int socket)
 		for (i = 0; i < pw->count; i++)
 		{
 			if (pw->frees[i])
+                        {
 				free(pw->iovecs[i].iov_base);
+                                pw->iovecs[i].iov_base = NULL;
+                        }
 		}
 	}
 #if defined(OPENSSL)

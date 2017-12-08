@@ -973,6 +973,17 @@ static void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* comma
 	FUNC_EXIT;
 }
 
+/**
+ * Call Socket_noPendingWrites(int socket) with protection by socket_mutex, see https://github.com/eclipse/paho.mqtt.c/issues/385
+ */
+static int MQTTAsync_Socket_noPendingWrites(int socket)
+{
+    int rc;
+    Thread_lock_mutex(socket_mutex);
+    rc = Socket_noPendingWrites(socket);
+    Thread_unlock_mutex(socket_mutex);
+    return rc;
+}
 
 /**
  * See if any pending writes have been completed, and cleanup if so.
@@ -1154,7 +1165,7 @@ static int MQTTAsync_processCommand(void)
 			continue;
 
 		if (cmd->command.type == CONNECT || cmd->command.type == DISCONNECT || (cmd->client->c->connected &&
-			cmd->client->c->connect_state == 0 && Socket_noPendingWrites(cmd->client->c->net.socket)))
+			cmd->client->c->connect_state == 0 && MQTTAsync_Socket_noPendingWrites(cmd->client->c->net.socket)))
 		{
 			if ((cmd->command.type == PUBLISH || cmd->command.type == SUBSCRIBE || cmd->command.type == UNSUBSCRIBE) &&
 				cmd->client->c->outboundMsgs->count >= MAX_MSG_ID - 1)

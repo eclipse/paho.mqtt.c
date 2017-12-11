@@ -1689,8 +1689,8 @@ static int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack)
 
 				while (ListNextElement(m->c->outboundMsgs, &outcurrent))
 				{
-					Messages* m = (Messages*)(outcurrent->content);
-					m->lastTouch = 0;
+					Messages* messages = (Messages*)(outcurrent->content);
+					messages->lastTouch = 0;
 				}
 				MQTTProtocol_retry((time_t)0, 1, 1);
 				if (m->c->connected != 1)

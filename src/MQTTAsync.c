@@ -1299,7 +1299,20 @@ static int MQTTAsync_processCommand(void)
 	{
 		if (command->client->c->connect_state != 0 || command->client->c->connected != 0)
 		{
-			command->client->c->connect_state = -2;
+			if (command->client->c->connect_state != 0)
+			{
+				command->client->c->connect_state = -2;
+				if (command->client->connect.onFailure)
+				{
+					MQTTAsync_failureData data;
+
+					data.token = 0;
+					data.code = -2;
+					data.message = NULL;
+					Log(TRACE_MIN, -1, "Calling connect failure for client %s", command->client->c->clientID);
+					(*(command->client->connect.onFailure))(command->client->connect.context, &data);
+				}
+			}
 			MQTTAsync_checkDisconnect(command->client, &command->command);
 		}
 	}
@@ -1386,16 +1399,16 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 		conn->command = m->connect;
 		Log(TRACE_MIN, -1, "Connect failed, more to try");
 
-                if (conn->client->c->MQTTVersion == MQTTVERSION_DEFAULT)
-                {
-                    if (conn->command.details.conn.MQTTVersion == MQTTVERSION_3_1)
-                    {
-                        conn->command.details.conn.currentURI++;
-                        conn->command.details.conn.MQTTVersion = MQTTVERSION_DEFAULT;
-                    }
-                }
-                else
-                    conn->command.details.conn.currentURI++;
+		if (conn->client->c->MQTTVersion == MQTTVERSION_DEFAULT)
+		{
+			if (conn->command.details.conn.MQTTVersion == MQTTVERSION_3_1)
+			{
+				conn->command.details.conn.currentURI++;
+				conn->command.details.conn.MQTTVersion = MQTTVERSION_DEFAULT;
+			}
+		}
+		else
+			conn->command.details.conn.currentURI++;
 
 		MQTTAsync_addCommand(conn, sizeof(m->connect));
 	}

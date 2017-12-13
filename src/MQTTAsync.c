@@ -1663,6 +1663,8 @@ void MQTTAsync_destroy(MQTTAsync* handle)
 	if (m == NULL)
 		goto exit;
 
+	MQTTAsync_closeSession(m->c);
+
 	MQTTAsync_removeResponsesAndCommands(m);
 	ListFree(m->responses);
 

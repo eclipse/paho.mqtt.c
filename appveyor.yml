@@ -1,5 +1,7 @@
 version: 1.2.{build}
-image: Visual Studio 2015
+image:
+  - Visual Studio 2013
+  - Visual Studio 2015
 configuration: Debug
 install:
   - cmd: openssl version

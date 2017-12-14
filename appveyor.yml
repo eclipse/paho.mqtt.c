@@ -14,13 +14,13 @@ install:
 
   - ps: Start-Process python -ArgumentList 'test\mqttsas2.py'
 
-  - cmd: python36 --version
+  - cmd: C:\Python36\python --version
 
   - cmd: git clone git@github.com:eclipse/paho.mqtt.testing.git
 
   - cmd: cd paho.mqtt.testing\interoperability
 
-  - ps: Start-Process python36 -ArgumentList 'startbroker.py'
+  - ps: Start-Process C:\Python36\python -ArgumentList 'startbroker.py'
 
   - cmd: cd ..
 

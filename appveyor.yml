@@ -16,7 +16,7 @@ install:
 
   - cmd: C:\Python36\python --version
 
-  - cmd: git clone git@github.com:eclipse/paho.mqtt.testing.git
+  - cmd: git clone https://github.com/eclipse/paho.mqtt.testing.git
 
   - cmd: cd paho.mqtt.testing\interoperability
 

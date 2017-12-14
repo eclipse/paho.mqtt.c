@@ -12,7 +12,17 @@ install:
 
   - cmd: netsh advfirewall set allprofiles state off
 
-  - ps: Start-Process python -ArgumentList 'test\mqttsas2.py', 'mqtt.iotree.co.uk'
+  - ps: Start-Process python -ArgumentList 'test\mqttsas2.py'
+
+  - cmd: python3 --version
+
+  - cmd: git clone git@github.com:eclipse/paho.mqtt.testing.git
+
+  - cmd: cd paho.mqtt.testing\interoperability
+
+  - ps: Start-Process python3 -ArgumentList 'startbroker.py'
+
+  - cmd: cd ..
 
 build_script:
 - cmd: >-

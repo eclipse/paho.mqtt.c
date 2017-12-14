@@ -32,11 +32,13 @@ build_script:
 
     cd build.paho
 
-    if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2015" (
+    echo %APPVEYOR_BUILD_WORKER_IMAGE%
+
+    if %APPVEYOR_BUILD_WORKER_IMAGE%=="Visual Studio 2015" (
     "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
     )
 
-    if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2013" (
+    if %APPVEYOR_BUILD_WORKER_IMAGE%=="Visual Studio 2013" (
     "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x64
     )
 

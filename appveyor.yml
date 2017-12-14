@@ -22,7 +22,7 @@ install:
 
   - ps: Start-Process C:\Python36\python -ArgumentList 'startbroker.py'
 
-  - cmd: cd ..
+  - cmd: cd ..\..
 
 build_script:
 - cmd: >-

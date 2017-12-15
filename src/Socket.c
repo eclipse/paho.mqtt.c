@@ -429,8 +429,11 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 			rc = TCPSOCKET_INTERRUPTED;
 	}
 #else
-//#define TESTING
-#if defined(TESTING)
+/*#define TCPSOCKET_INTERRUPTED_TESTING
+This section forces the occasional return of TCPSOCKET_INTERRUPTED,
+for testing purposes only!
+*/
+#if defined(TCPSOCKET_INTERRUPTED_TESTING)
   static int i = 0;
 	if (++i >= 10 && i < 21)
 	{
@@ -463,7 +466,7 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 	}
 	else
 		*bytes = rc;
-#if defined(TESTING)
+#if defined(TCPSOCKET_INTERRUPTED_TESTING)
 	}
 #endif
 #endif
@@ -525,7 +528,6 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 #if defined(OPENSSL)
 			SocketBuffer_pendingWrite(socket, NULL, count+1, iovecs, frees1, total, bytes);
 #else
-      //printf("Partial write for socket %d pending write created\n", socket);
 			StackTrace_printStack(stdout);
 			SocketBuffer_pendingWrite(socket, count+1, iovecs, frees1, total, bytes);
 #endif
@@ -600,7 +602,6 @@ int Socket_close_only(int socket)
 void Socket_close(int socket)
 {
 	FUNC_ENTRY;
-	//printf("Closing socket %d\n", socket);
 	Socket_close_only(socket);
 	FD_CLR(socket, &(s.rset_saved));
 	if (FD_ISSET(socket, &(s.pending_wset)))
@@ -713,8 +714,11 @@ int Socket_new(char* addr, int port, int* sock)
 			if (setsockopt(*sock, SOL_SOCKET, SO_NOSIGPIPE, (void*)&opt, sizeof(opt)) != 0)
 				Log(LOG_ERROR, -1, "Could not set SO_NOSIGPIPE for socket %d", *sock);
 #endif
-//#define TESTING1
-#if defined(TESTING1)
+/*#define SMALL_TCP_BUFFER_TESTING
+  This section sets the TCP send buffer to a small amount to provoke TCPSOCKET_INTERRUPTED
+	return codes from send, for testing only!
+*/
+#if defined(SMALL_TCP_BUFFER_TESTING)
         if (1)
 				{
 					int optsend = 100; //2 * 1440;
@@ -825,7 +829,6 @@ int Socket_continueWrite(int socket)
 					free(pw->iovecs[i].iov_base);
 			}
 			rc = 1; /* signal complete */
-			//printf("Partial write complete for socket %d\n", socket);
 			Log(TRACE_MIN, -1, "ContinueWrite: partial write now complete for socket %d", socket);
 		}
 		else
@@ -841,7 +844,6 @@ int Socket_continueWrite(int socket)
 			if (pw->frees[i])
 				free(pw->iovecs[i].iov_base);
 		}
-		//printf("Partial write aborted for socket %d\n", socket);
 	}
 #if defined(OPENSSL)
 exit:
@@ -863,16 +865,12 @@ int Socket_abortWrite(int socket)
 	pending_writes* pw;
 
 	FUNC_ENTRY;
-	//printf("In abortWrite for socket %d\n", socket);
 	if ((pw = SocketBuffer_getWrite(socket)) == NULL)
 	  goto exit;
 
 #if defined(OPENSSL)
 	if (pw->ssl)
-	{
-		//rc = SSLSocket_continueWrite(pw);
 		goto exit;
-	}
 #endif
 
 	for (i = 0; i < pw->count; i++)
@@ -884,7 +882,6 @@ int Socket_abortWrite(int socket)
 		}
 	}
 exit:
-	//printf("Exit abortWrite for socket %d\n", socket);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

@@ -718,7 +718,7 @@ static MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int bufle
 		case SUBSCRIBE:
 			command->details.sub.count = *(int*)ptr;
 			ptr += sizeof(int);
-			
+
 			if (command->details.sub.count > 0)
 			{
 					command->details.sub.topics = (char **)malloc(sizeof(char *) * command->details.sub.count);
@@ -741,10 +741,10 @@ static MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int bufle
 		case UNSUBSCRIBE:
 			command->details.unsub.count = *(int*)ptr;
 			ptr += sizeof(int);
-			
+
 			if (command->details.unsub.count > 0)
 			{
-					command->details.unsub.topics = (char **)malloc(sizeof(char *) * command->details.unsub.count);					
+					command->details.unsub.topics = (char **)malloc(sizeof(char *) * command->details.unsub.count);
 			}
 
 			for (i = 0; i < command->details.unsub.count; ++i)
@@ -1827,11 +1827,11 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 
 				if (rc)
 				{
-					ListRemove(m->c->messageQueue, qe);
 #if !defined(NO_PERSISTENCE)
 					if (m->c->persistence)
 						MQTTPersistence_unpersistQueueEntry(m->c, (MQTTPersistence_qEntry*)qe);
 #endif
+					ListRemove(m->c->messageQueue, qe); /* qe is freed here */
 				}
 				else
 					Log(TRACE_MIN, -1, "False returned from messageArrived for client %s, message remains on queue",

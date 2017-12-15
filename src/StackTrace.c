@@ -1,13 +1,13 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
- * and Eclipse Distribution License v1.0 which accompany this distribution. 
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
- * The Eclipse Public License is available at 
+ * The Eclipse Public License is available at
  *    http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
@@ -170,13 +170,11 @@ void StackTrace_printStack(FILE* dest)
 }
 
 
-char* StackTrace_get(thread_id_type threadid)
+char* StackTrace_get(thread_id_type threadid, char* buf, int bufsize)
 {
-	int bufsize = 256;
-	char* buf = NULL;
 	int t = 0;
 
-	if ((buf = malloc(bufsize)) == NULL)
+	if (bufsize < 100)
 		goto exit;
 	buf[0] = '\0';
 	for (t = 0; t < thread_count; ++t)
@@ -204,4 +202,3 @@ char* StackTrace_get(thread_id_type threadid)
 exit:
 	return buf;
 }
-

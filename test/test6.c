@@ -512,12 +512,11 @@ int recreateReconnect(void)
 		MQTTAsync_destroy(&client); /* destroy the client object so that we force persistence to be read on recreate */
 #if !defined(_WINDOWS)
 		heap_info* mqtt_mem = 0;
-		mqtt_mem = Heap_get_info();
+		/*mqtt_mem = Heap_get_info();
 		MyLog(LOGA_INFO, "MQTT mem current %ld, max %ld",mqtt_mem->current_size,mqtt_mem->max_size);
+		if (mqtt_mem->current_size > 20)
+		  HeapScan(5); */
 #endif
-		//if (mqtt_mem->current_size > 20)
-		//  HeapScan(5);
-
 		rc = MQTTAsync_create(&client, opts.connection, opts.clientid, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 		if (rc != MQTTASYNC_SUCCESS)
 		{

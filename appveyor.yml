@@ -1,5 +1,7 @@
 version: 1.2.{build}
-image: Visual Studio 2015
+image:
+  - Visual Studio 2013
+  - Visual Studio 2015
 configuration: Debug
 install:
   - cmd: openssl version
@@ -12,7 +14,17 @@ install:
 
   - cmd: netsh advfirewall set allprofiles state off
 
-  - ps: Start-Process python -ArgumentList 'test\mqttsas2.py', 'mqtt.iotree.co.uk'
+  - ps: Start-Process python -ArgumentList 'test\mqttsas2.py'
+
+  - cmd: C:\Python36\python --version
+
+  - cmd: git clone https://github.com/eclipse/paho.mqtt.testing.git
+
+  - cmd: cd paho.mqtt.testing\interoperability
+
+  - ps: Start-Process C:\Python36\python -ArgumentList 'startbroker.py'
+
+  - cmd: cd ..\..
 
 build_script:
 - cmd: >-
@@ -20,7 +32,11 @@ build_script:
 
     cd build.paho
 
-    "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
+    echo %APPVEYOR_BUILD_WORKER_IMAGE%
+
+    if "%APPVEYOR_BUILD_WORKER_IMAGE%" == "Visual Studio 2015" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
+
+    if "%APPVEYOR_BUILD_WORKER_IMAGE%" == "Visual Studio 2013" call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x64
 
     cmake -G "NMake Makefiles" -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=TRUE ..
 

@@ -319,6 +319,7 @@ void SocketBuffer_queueChar(int socket, char c)
  * @param socket the socket for which the write was interrupted
  * @param count the number of iovec buffers
  * @param iovecs buffer array
+ * @param frees a set of flags indicating which of the iovecs array should be freed
  * @param total total data length to be written
  * @param bytes actual data length that was written
  */

@@ -418,6 +418,7 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 	int rc;
 
 	FUNC_ENTRY;
+	*bytes = 0L;
 #if defined(WIN32) || defined(WIN64)
 	rc = WSASend(socket, iovecs, count, (LPDWORD)bytes, 0, NULL, NULL);
 	if (rc == SOCKET_ERROR)
@@ -427,7 +428,31 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 			rc = TCPSOCKET_INTERRUPTED;
 	}
 #else
-	*bytes = 0L;
+//#define TESTING
+#if defined(TESTING)
+  static int i = 0;
+	if (++i >= 10 && i < 21)
+	{
+		if (1)
+		{
+		  printf("Deliberately simulating TCPSOCKET_INTERRUPTED\n");
+		  rc = TCPSOCKET_INTERRUPTED; /* simulate a network wait */
+	  }
+		else
+		{
+			printf("Deliberately simulating SOCKET_ERROR\n");
+		  rc = SOCKET_ERROR;
+		}
+		/* should *bytes always be 0? */
+		if (i == 20)
+		{
+		  printf("Shutdown socket\n");
+		  shutdown(socket, SHUT_WR);
+	  }
+	}
+	else
+	{
+#endif
 	rc = writev(socket, iovecs, count);
 	if (rc == SOCKET_ERROR)
 	{
@@ -437,6 +462,9 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 	}
 	else
 		*bytes = rc;
+#if defined(TESTING)
+	}
+#endif
 #endif
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -475,7 +503,7 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 
 	iovecs[0].iov_base = buf0;
 	iovecs[0].iov_len = (ULONG)buf0len;
-	frees1[0] = 1;
+	frees1[0] = 1; /* this buffer should be freed by SocketBuffer if the write is interrupted */
 	for (i = 0; i < count; i++)
 	{
 		iovecs[i+1].iov_base = buffers[i];
@@ -504,6 +532,12 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 		}
 	}
 exit:
+#if 0
+        if (rc == TCPSOCKET_INTERRUPTED)
+        {
+            Log(LOG_ERROR, -1, "Socket_putdatas: TCPSOCKET_INTERRUPTED");
+        }
+#endif
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -679,6 +713,13 @@ int Socket_new(char* addr, int port, int* sock)
 			if (setsockopt(*sock, SOL_SOCKET, SO_NOSIGPIPE, (void*)&opt, sizeof(opt)) != 0)
 				Log(LOG_ERROR, -1, "Could not set SO_NOSIGPIPE for socket %d", *sock);
 #endif
+#if defined(TESTING)
+                        {
+                            int optsend = 2 * 1440;
+                            if (setsockopt(*sock, SOL_SOCKET, SO_SNDBUF, (void*)&optsend, sizeof(optsend)) != 0)
+				Log(LOG_ERROR, -1, "Could not set SO_SNDBUF for socket %d", *sock);
+                        }
+#endif
 
 			Log(TRACE_MIN, -1, "New socket %d for %s, port %d",	*sock, addr, port);
 			if (Socket_addSocket(*sock) == SOCKET_ERROR)
@@ -728,14 +769,14 @@ void Socket_setWriteCompleteCallback(Socket_writeComplete* mywritecomplete)
 /**
  *  Continue an outstanding write for a particular socket
  *  @param socket that socket
- *  @return completion code
+ *  @return completion code: 0=incomplete, 1=complete, -1=socket error
  */
 int Socket_continueWrite(int socket)
 {
 	int rc = 0;
 	pending_writes* pw;
 	unsigned long curbuflen = 0L, /* cumulative total of buffer lengths */
-		bytes;
+		bytes = 0L;
 	int curbuf = -1, i;
 	iobuf iovecs1[5];
 
@@ -777,12 +818,30 @@ int Socket_continueWrite(int socket)
 			for (i = 0; i < pw->count; i++)
 			{
 				if (pw->frees[i])
+                                {
 					free(pw->iovecs[i].iov_base);
+                                        pw->iovecs[i].iov_base = NULL;
+                                }
 			}
+			rc = 1; /* signal complete */
 			Log(TRACE_MIN, -1, "ContinueWrite: partial write now complete for socket %d", socket);
 		}
 		else
+		{
+			rc = 0; /* signal not complete */
 			Log(TRACE_MIN, -1, "ContinueWrite wrote +%lu bytes on socket %d", bytes, socket);
+		}
+	}
+	else /* if we got SOCKET_ERROR we need to clean up anyway - a partial write is no good anymore */
+	{
+		for (i = 0; i < pw->count; i++)
+		{
+			if (pw->frees[i])
+                        {
+				free(pw->iovecs[i].iov_base);
+                                pw->iovecs[i].iov_base = NULL;
+                        }
+		}
 	}
 #if defined(OPENSSL)
 exit:
@@ -806,7 +865,9 @@ int Socket_continueWrites(fd_set* pwset)
 	while (curpending)
 	{
 		int socket = *(int*)(curpending->content);
-		if (FD_ISSET(socket, pwset) && Socket_continueWrite(socket))
+		int rc = 0;
+
+		if (FD_ISSET(socket, pwset) && ((rc = Socket_continueWrite(socket)) != 0))
 		{
 			if (!SocketBuffer_writeComplete(socket))
 				Log(LOG_SEVERE, -1, "Failed to remove pending write from socket buffer list");
@@ -819,7 +880,7 @@ int Socket_continueWrites(fd_set* pwset)
 			curpending = s.write_pending->current;
 
 			if (writecomplete)
-				(*writecomplete)(socket);
+				(*writecomplete)(socket, rc);
 		}
 		else
 			ListNextElement(s.write_pending, &curpending);

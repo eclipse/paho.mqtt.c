@@ -137,7 +137,7 @@ char* Socket_getpeer(int sock);
 void Socket_addPendingWrite(int socket);
 void Socket_clearPendingWrite(int socket);
 
-typedef void Socket_writeComplete(int socket);
+typedef void Socket_writeComplete(int socket, int rc);
 void Socket_setWriteCompleteCallback(Socket_writeComplete*);
 
 #endif /* SOCKET_H */

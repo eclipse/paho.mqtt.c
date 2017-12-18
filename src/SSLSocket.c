@@ -855,7 +855,10 @@ int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int cou
 		for (i = 0; i < count; ++i)
 		{
 			if (frees[i])
+                        {
 				free(buffers[i]);
+                                buffers[i] = NULL;
+                        }
 		}	
 	}
 	FUNC_EXIT_RC(rc); 

@@ -106,6 +106,7 @@ void SocketBuffer_freeDefQ(void)
 {
 	free(def_queue->buf);
 	free(def_queue);
+        def_queue = NULL;
 }
 
 

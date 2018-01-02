@@ -22,7 +22,7 @@ install:
 
   - cmd: cd paho.mqtt.testing\interoperability
 
-  - ps: Start-Process C:\Python36\python -ArgumentList 'startbroker.py' '-c' 'client_testing.conf'
+  - ps: Start-Process C:\Python36\python -ArgumentList 'startbroker.py -c client_testing.conf'
 
   - cmd: cd ..\..
 

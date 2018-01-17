@@ -267,7 +267,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
 MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
 
 
-void connectionLost(void *context, char *cause)
+void connectionLost(void *context, const char *cause)
 {
 	MQTTAsync client = (MQTTAsync)context;
 	int rc;

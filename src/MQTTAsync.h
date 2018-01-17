@@ -355,7 +355,7 @@ typedef void MQTTAsync_deliveryComplete(void* context, MQTTAsync_token token);
  * @param cause The reason for the disconnection.
  * Currently, <i>cause</i> is always set to NULL.
  */
-typedef void MQTTAsync_connectionLost(void* context, char* cause);
+typedef void MQTTAsync_connectionLost(void* context, const char* cause);
 
 
 /**
@@ -370,7 +370,7 @@ typedef void MQTTAsync_connectionLost(void* context, char* cause);
  * @param cause The reason for the disconnection.
  * Currently, <i>cause</i> is always set to NULL.
  */
-typedef void MQTTAsync_connected(void* context, char* cause);
+typedef void MQTTAsync_connected(void* context, const char* cause);
 
 
 
@@ -401,12 +401,12 @@ typedef struct
 		struct
 		{
 			MQTTAsync_message message;
-			char* destinationName;
+			const char* destinationName;
 		} pub;
 		/* For connect, the server connected to, MQTT version used, and sessionPresent flag */
 		struct
 		{
-			char* serverURI;
+			const char* serverURI;
 			int MQTTVersion;
 			int sessionPresent;
 		} connect;

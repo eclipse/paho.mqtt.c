@@ -280,7 +280,7 @@ int control_found = 0;
 long last_completion_time = -1;
 int test_count = 1000;
 
-void control_connectionLost(void* context, char* cause)
+void control_connectionLost(void* context, const char* cause)
 {
 	MyLog(LOGA_ALWAYS, "Control connection lost - stopping");
 
@@ -459,7 +459,7 @@ void client_onReconnectFailure(void* context, MQTTAsync_failureData* response)
 }
 
 
-void connectionLost(void* context, char* cause)
+void connectionLost(void* context, const char* cause)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	int rc = 0;

@@ -40,7 +40,7 @@ int disc_finished = 0;
 int subscribed = 0;
 int finished = 0;
 
-void connlost(void *context, char *cause)
+void connlost(void *context, const char *cause)
 {
 	MQTTAsync client = (MQTTAsync)context;
 	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;

@@ -361,7 +361,7 @@ void test1dOnConnect(void* context, MQTTAsync_successData* response)
 
 int test1c_connected = 0;
 
-void test1cConnected(void* context, char* cause)
+void test1cConnected(void* context, const char* cause)
 {
 	MQTTAsync c = (MQTTAsync)context;
 
@@ -637,7 +637,7 @@ void test2dOnConnect(void* context, MQTTAsync_successData* response)
 
 int test2c_connected = 0;
 
-void test2cConnected(void* context, char* cause)
+void test2cConnected(void* context, const char* cause)
 {
 	MQTTAsync c = (MQTTAsync)context;
 
@@ -914,7 +914,7 @@ void test3dOnConnect(void* context, MQTTAsync_successData* response)
 
 int test3c_connected = 0;
 
-void test3cConnected(void* context, char* cause)
+void test3cConnected(void* context, const char* cause)
 {
 	MQTTAsync c = (MQTTAsync)context;
 
@@ -1189,7 +1189,7 @@ void test4dOnConnect(void* context, MQTTAsync_successData* response)
 
 int test4c_connected = 0;
 
-void test4cConnected(void* context, char* cause)
+void test4cConnected(void* context, const char* cause)
 {
 	MQTTAsync c = (MQTTAsync)context;
 
@@ -1462,7 +1462,7 @@ void test5dOnConnect(void* context, MQTTAsync_successData* response)
 		test5Finished = 1;
 }
 
-void test5cConnected(void* context, char* cause)
+void test5cConnected(void* context, const char* cause)
 {
 	MQTTAsync c = (MQTTAsync)context;
 
@@ -1850,7 +1850,7 @@ int test7_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 	return 1;
 }
 
-void test7cConnected(void* context, char* cause)
+void test7cConnected(void* context, const char* cause)
 {
 	MQTTAsync c = (MQTTAsync)context;
 

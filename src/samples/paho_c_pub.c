@@ -179,7 +179,7 @@ void onPublish(void* context, MQTTAsync_successData* response)
 }
 
 
-void connectionLost(void* context, char* cause)
+void connectionLost(void* context, const char* cause)
 {
 	MQTTAsync client = (MQTTAsync)context;
 	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;

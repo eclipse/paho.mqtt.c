@@ -243,7 +243,7 @@ typedef struct
 	/** The length of the MQTT message payload in bytes. */
 	int payloadlen;
 	/** A pointer to the payload of the MQTT message. */
-	void* payload;
+	const void* payload;
 	/**
      * The quality of service (QoS) assigned to the message.
      * There are three levels of QoS:
@@ -1011,7 +1011,7 @@ DLLExport int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* const
   * @return ::MQTTASYNC_SUCCESS if the message is accepted for publication.
   * An error code is returned if there was a problem accepting the message.
   */
-DLLExport int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen, void* payload, int qos, int retained,
+DLLExport int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen, const void* payload, int qos, int retained,
 																 MQTTAsync_responseOptions* response);
 
 

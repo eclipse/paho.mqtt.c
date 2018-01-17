@@ -392,7 +392,7 @@ int messageArrived(void* context, char* topicName, int topicLen,
 	int seqno = -1;
 	char* token = NULL;
 
-	token = strtok(m->payload, " ");
+	token = strtok((void*) m->payload, " ");
 	token = strtok(NULL, " ");
 	token = strtok(NULL, " ");
 

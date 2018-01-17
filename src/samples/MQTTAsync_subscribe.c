@@ -64,7 +64,7 @@ void connlost(void *context, char *cause)
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTAsync_message *message)
 {
     int i;
-    char* payloadptr;
+    const char* payloadptr;
 
     printf("Message arrived\n");
     printf("     topic: %s\n", topicName);

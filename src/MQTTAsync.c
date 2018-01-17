@@ -1566,7 +1566,7 @@ static void MQTTAsync_emptyMessageQueue(Clients* client)
 		{
 			qEntry* qe = (qEntry*)(current->content);
 			free(qe->topicName);
-			free(qe->msg->payload);
+			free((void*) qe->msg->payload);
 			free(qe->msg);
 		}
 		ListEmpty(client->messageQueue);
@@ -1697,7 +1697,7 @@ exit:
 void MQTTAsync_freeMessage(MQTTAsync_message** message)
 {
 	FUNC_ENTRY;
-	free((*message)->payload);
+	free((void*) (*message)->payload);
 	free(*message);
 	*message = NULL;
 	FUNC_EXIT;
@@ -2176,8 +2176,9 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 		mm->payload = publish->payload;
 	else
 	{
-		mm->payload = malloc(publish->payloadlen);
-		memcpy(mm->payload, publish->payload, publish->payloadlen);
+		void *payload = malloc(publish->payloadlen);
+		memcpy(payload, publish->payload, publish->payloadlen);
+		mm->payload = payload;
 	}
 
 	mm->payloadlen = publish->payloadlen;
@@ -2736,7 +2737,7 @@ static int MQTTAsync_countBufferedMessages(MQTTAsyncs* m)
 }
 
 
-int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen, void* payload,
+int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen, const void* payload,
 							 int qos, int retained, MQTTAsync_responseOptions* response)
 {
 	int rc = MQTTASYNC_SUCCESS;

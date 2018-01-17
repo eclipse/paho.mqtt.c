@@ -298,7 +298,9 @@ typedef struct MQTTAsync_struct
 	MQTTAsync_connectionLost* cl;
 	MQTTAsync_messageArrived* ma;
 	MQTTAsync_deliveryComplete* dc;
-	void* context; /* the context to be associated with the main callbacks*/
+	void* clContext; /* the context to be associated with the conn lost callback*/
+	void* maContext; /* the context to be associated with the msg arrived callback*/
+	void* dcContext; /* the context to be associated with the deliv complete callback*/
 
 	MQTTAsync_connected* connected;
 	void* connected_context; /* the context to be associated with the connected callback*/
@@ -971,7 +973,7 @@ static void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* comma
 			if (m->cl && was_connected)
 			{
 				Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
-				(*(m->cl))(m->context, NULL);
+				(*(m->cl))(m->clContext, NULL);
 			}
 			MQTTAsync_startConnectRetry(m);
 		}
@@ -2034,7 +2036,7 @@ int MQTTAsync_setCallbacks(MQTTAsync handle, void* context,
 		rc = MQTTASYNC_FAILURE;
 	else
 	{
-		m->context = context;
+		m->clContext = m->maContext = m->dcContext = context;
 		m->cl = cl;
 		m->ma = ma;
 		m->dc = dc;
@@ -2044,6 +2046,74 @@ int MQTTAsync_setCallbacks(MQTTAsync handle, void* context,
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
+
+int MQTTAsync_setConnectionLostCallback(MQTTAsync handle, void* context, 
+										MQTTAsync_connectionLost* cl)
+{
+	int rc = MQTTASYNC_SUCCESS;
+	MQTTAsyncs* m = handle;
+
+	FUNC_ENTRY;
+	MQTTAsync_lock_mutex(mqttasync_mutex);
+
+	if (m == NULL || m->c->connect_state != 0)
+		rc = MQTTASYNC_FAILURE;
+	else
+	{
+		m->clContext = context;
+		m->cl = cl;
+	}
+
+	MQTTAsync_unlock_mutex(mqttasync_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+int MQTTAsync_setMessageArrivedCallback(MQTTAsync handle, void* context, 
+										MQTTAsync_messageArrived* ma)
+{
+	int rc = MQTTASYNC_SUCCESS;
+	MQTTAsyncs* m = handle;
+
+	FUNC_ENTRY;
+	MQTTAsync_lock_mutex(mqttasync_mutex);
+
+	if (m == NULL || ma == NULL || m->c->connect_state != 0)
+		rc = MQTTASYNC_FAILURE;
+	else
+	{
+		m->maContext = context;
+		m->ma = ma;
+	}
+
+	MQTTAsync_unlock_mutex(mqttasync_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+int MQTTAsync_setDeliveryCompleteCallback(MQTTAsync handle, void* context, 
+										  MQTTAsync_deliveryComplete* dc)
+{
+	int rc = MQTTASYNC_SUCCESS;
+	MQTTAsyncs* m = handle;
+
+	FUNC_ENTRY;
+	MQTTAsync_lock_mutex(mqttasync_mutex);
+
+	if (m == NULL || m->c->connect_state != 0)
+		rc = MQTTASYNC_FAILURE;
+	else
+	{
+		m->dcContext = context;
+		m->dc = dc;
+	}
+
+	MQTTAsync_unlock_mutex(mqttasync_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
 
 
 int MQTTAsync_setConnected(MQTTAsync handle, void* context, MQTTAsync_connected* connected)
@@ -2152,7 +2222,7 @@ static int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, size_t topic
 
 	Log(TRACE_MIN, -1, "Calling messageArrived for client %s, queue depth %d",
 					m->c->clientID, m->c->messageQueue->count);
-	rc = (*(m->ma))(m->context, topicName, (int)topicLen, mm);
+	rc = (*(m->ma))(m->maContext, topicName, (int)topicLen, mm);
 	/* if 0 (false) is returned by the callback then it failed, so we don't remove the message from
 	 * the queue, and it will be retried later.  If 1 is returned then the message data may have been freed,
 	 * so we must be careful how we use it.
@@ -3006,7 +3076,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 					if (m->dc)
 					{
 						Log(TRACE_MIN, -1, "Calling deliveryComplete for client %s, msgid %d", m->c->clientID, msgid);
-						(*(m->dc))(m->context, msgid);
+						(*(m->dc))(m->dcContext, msgid);
 					}
 					/* use the msgid to find the callback to be called */
 					while (ListNextElement(m->responses, &current))

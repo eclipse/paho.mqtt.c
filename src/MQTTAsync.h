@@ -496,8 +496,76 @@ typedef struct
  * ::MQTTASYNC_FAILURE if an error occurred.
  */
 DLLExport int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_connectionLost* cl,
-									MQTTAsync_messageArrived* ma, MQTTAsync_deliveryComplete* dc);
+									 MQTTAsync_messageArrived* ma, MQTTAsync_deliveryComplete* dc);
 
+/**
+ * This function sets the callback function for a connection lost event for
+ * a specific client. Any necessary message acknowledgements and status
+ * communications are handled in the background without any intervention
+ * from the client application.
+ *
+ * <b>Note:</b> The MQTT client must be disconnected when this function is
+ * called.
+ * @param handle A valid client handle from a successful call to
+ * MQTTAsync_create().
+ * @param context A pointer to any application-specific context. The
+ * the <i>context</i> pointer is passed the callback functions to provide
+ * access to the context information in the callback.
+ * @param cl A pointer to an MQTTAsync_connectionLost() callback
+ * function. You can set this to NULL if your application doesn't handle
+ * disconnections.
+ * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
+ * ::MQTTASYNC_FAILURE if an error occurred.
+ */
+
+DLLExport int MQTTAsync_setConnectionLostCallback(MQTTAsync handle, void* context, 
+												  MQTTAsync_connectionLost* cl);
+
+/**
+ * This function sets the callback function for a message arrived event for
+ * a specific client. Any necessary message acknowledgements and status
+ * communications are handled in the background without any intervention
+ * from the client application.  If you do not set a messageArrived callback
+ * function, you will not be notified of the receipt of any messages as a
+ * result of a subscription.
+ *
+ * <b>Note:</b> The MQTT client must be disconnected when this function is
+ * called.
+ * @param handle A valid client handle from a successful call to
+ * MQTTAsync_create().
+ * @param context A pointer to any application-specific context. The
+ * the <i>context</i> pointer is passed to the callback functions to provide
+ * access to the context information in the callback.
+ * @param ma A pointer to an MQTTAsync_messageArrived() callback
+ * function.  You can set this to NULL if your application doesn't handle
+ * receipt of messages.
+ * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
+ * ::MQTTASYNC_FAILURE if an error occurred.
+ */
+DLLExport int MQTTAsync_setMessageArrivedCallback(MQTTAsync handle, void* context, 
+												  MQTTAsync_messageArrived* ma);
+
+/**
+ * This function sets the callback function for a delivery complete event
+ * for a specific client. Any necessary message acknowledgements and status
+ * communications are handled in the background without any intervention
+ * from the client application.
+ *
+ * <b>Note:</b> The MQTT client must be disconnected when this function is
+ * called.
+ * @param handle A valid client handle from a successful call to
+ * MQTTAsync_create().
+ * @param context A pointer to any application-specific context. The
+ * the <i>context</i> pointer is passed to the callback functions to provide
+ * access to the context information in the callback.
+ * @param dc A pointer to an MQTTAsync_deliveryComplete() callback
+ * function. You can set this to NULL if you do not want to check
+ * for successful delivery.
+ * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
+ * ::MQTTASYNC_FAILURE if an error occurred.
+ */
+DLLExport int MQTTAsync_setDeliveryCompleteCallback(MQTTAsync handle, void* context, 
+													MQTTAsync_deliveryComplete* dc);
 
 /**
  * Sets the MQTTAsync_connected() callback function for a client.

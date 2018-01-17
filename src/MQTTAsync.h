@@ -751,7 +751,7 @@ typedef struct
       * application does not make use of the Last Will and Testament feature,
       * set this pointer to NULL.
       */
-	MQTTAsync_willOptions* will;
+	const MQTTAsync_willOptions* will;
 	/**
       * MQTT servers that support the MQTT v3.1 protocol provide authentication
       * and authorisation by user name and password. This is the user name
@@ -776,7 +776,7 @@ typedef struct
       * This is a pointer to an MQTTAsync_SSLOptions structure. If your
       * application does not make use of SSL, set this pointer to NULL.
       */
-	MQTTAsync_SSLOptions* ssl;
+	const MQTTAsync_SSLOptions* ssl;
 	/**
       * A pointer to a callback function to be called if the connect successfully
       * completes.  Can be set to NULL, in which case no indication of successful

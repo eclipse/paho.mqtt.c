@@ -381,10 +381,10 @@ int test1(struct Options options)
 	opts.MQTTVersion = options.MQTTVersion;
 
 	opts.will = &wopts;
-	opts.will->message = "will message";
-	opts.will->qos = 1;
-	opts.will->retained = 0;
-	opts.will->topicName = "will topic";
+	wopts.message = "will message";
+	wopts.qos = 1;
+	wopts.retained = 0;
+	wopts.topicName = "will topic";
 	opts.will = NULL;
 	opts.onSuccess = test1_onConnect;
 	opts.onFailure = NULL;
@@ -475,10 +475,10 @@ int test2(struct Options options)
 	opts.MQTTVersion = options.MQTTVersion;
 
 	opts.will = &wopts;
-	opts.will->message = "will message";
-	opts.will->qos = 1;
-	opts.will->retained = 0;
-	opts.will->topicName = "will topic";
+	wopts.message = "will message";
+	wopts.qos = 1;
+	wopts.retained = 0;
+	wopts.topicName = "will topic";
 	opts.will = NULL;
 	opts.onSuccess = test2_onConnect;
 	opts.onFailure = test2_onFailure;
@@ -687,10 +687,10 @@ int test3(struct Options options)
 		opts.MQTTVersion = options.MQTTVersion;
 
 		opts.will = &wopts;
-		opts.will->message = "will message";
-		opts.will->qos = 1;
-		opts.will->retained = 0;
-		opts.will->topicName = "will topic";
+		wopts.message = "will message";
+		wopts.qos = 1;
+		wopts.retained = 0;
+		wopts.topicName = "will topic";
 		opts.onSuccess = test3_onConnect;
 		opts.onFailure = test3_onFailure;
 		opts.context = &clientdata[i];
@@ -875,10 +875,10 @@ int test4(struct Options options)
 	opts.MQTTVersion = options.MQTTVersion;
 
 	opts.will = &wopts;
-	opts.will->message = "will message";
-	opts.will->qos = 1;
-	opts.will->retained = 0;
-	opts.will->topicName = "will topic";
+	wopts.message = "will message";
+	wopts.qos = 1;
+	wopts.retained = 0;
+	wopts.topicName = "will topic";
 	opts.will = NULL;
 	opts.onSuccess = test4_onConnect;
 	opts.onFailure = NULL;
@@ -1268,10 +1268,10 @@ int test7(struct Options options)
 	opts.MQTTVersion = options.MQTTVersion;
 
 	opts.will = &wopts;
-	opts.will->message = "will message";
-	opts.will->qos = 1;
-	opts.will->retained = 0;
-	opts.will->topicName = "will topic";
+	wopts.message = "will message";
+	wopts.qos = 1;
+	wopts.retained = 0;
+	wopts.topicName = "will topic";
 	opts.will = NULL;
 
 	opts.onFailure = NULL;

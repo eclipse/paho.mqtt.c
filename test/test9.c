@@ -446,10 +446,10 @@ int test1(struct Options options)
 
 	/* let client c go: connect, and send disconnect command to proxy */
 	opts.will = &wopts;
-	opts.will->message = "will message";
-	opts.will->qos = 1;
-	opts.will->retained = 0;
-	opts.will->topicName = willTopic;
+	wopts.message = "will message";
+	wopts.qos = 1;
+	wopts.retained = 0;
+	wopts.topicName = willTopic;
 	opts.onSuccess = test1cOnConnect;
 	opts.onFailure = test1cOnFailure;
 	opts.context = c;
@@ -721,10 +721,10 @@ int test2(struct Options options)
 
 	/* let client c go: connect, and send disconnect command to proxy */
 	opts.will = &wopts;
-	opts.will->message = "will message";
-	opts.will->qos = 1;
-	opts.will->retained = 0;
-	opts.will->topicName = willTopic;
+	wopts.message = "will message";
+	wopts.qos = 1;
+	wopts.retained = 0;
+	wopts.topicName = willTopic;
 	opts.onSuccess = test2cOnConnect;
 	opts.onFailure = test2cOnFailure;
 	opts.context = c;
@@ -999,10 +999,10 @@ int test3(struct Options options)
 
 	/* let client c go: connect, and send disconnect command to proxy */
 	opts.will = &wopts;
-	opts.will->message = "will message";
-	opts.will->qos = 1;
-	opts.will->retained = 0;
-	opts.will->topicName = willTopic;
+	wopts.message = "will message";
+	wopts.qos = 1;
+	wopts.retained = 0;
+	wopts.topicName = willTopic;
 	opts.onSuccess = test3cOnConnect;
 	opts.onFailure = test3cOnFailure;
 	opts.context = c;
@@ -1273,10 +1273,10 @@ int test4(struct Options options)
 
 	/* let client c go: connect, and send disconnect command to proxy */
 	opts.will = &wopts;
-	opts.will->message = "will message";
-	opts.will->qos = 1;
-	opts.will->retained = 0;
-	opts.will->topicName = willTopic;
+	wopts.message = "will message";
+	wopts.qos = 1;
+	wopts.retained = 0;
+	wopts.topicName = willTopic;
 	opts.onSuccess = test4cOnConnect;
 	opts.onFailure = test4cOnFailure;
 	opts.context = c;
@@ -1548,10 +1548,10 @@ int test5(struct Options options)
 
 	/* let client c go: connect, and send disconnect command to proxy */
 	opts.will = &wopts;
-	opts.will->message = "will message";
-	opts.will->qos = 1;
-	opts.will->retained = 0;
-	opts.will->topicName = willTopic;
+	wopts.message = "will message";
+	wopts.qos = 1;
+	wopts.retained = 0;
+	wopts.topicName = willTopic;
 	opts.onSuccess = test5cOnConnect;
 	opts.onFailure = test5cOnFailure;
 	opts.context = c;
@@ -1725,11 +1725,11 @@ int test6(struct Options options)
 
 	/* let client c go: connect, and send disconnect command to proxy */
 	opts.will = &wopts;
-	opts.will->payload.data = "will message";
-	opts.will->payload.len = strlen(opts.will->payload.data) + 1;
-	opts.will->qos = 1;
-	opts.will->retained = 0;
-	opts.will->topicName = willTopic;
+	wopts.payload.data = "will message";
+	wopts.payload.len = strlen(wopts.payload.data) + 1;
+	wopts.qos = 1;
+	wopts.retained = 0;
+	wopts.topicName = willTopic;
 	opts.onSuccess = test5cOnConnect;
 	opts.onFailure = test5cOnFailure;
 	opts.context = c;
@@ -2002,11 +2002,11 @@ int test7(struct Options options)
 
 	/* let client c go: connect, and send disconnect command to proxy */
 	opts.will = &wopts;
-	opts.will->payload.data = "will message";
-	opts.will->payload.len = strlen(opts.will->payload.data) + 1;
-	opts.will->qos = 1;
-	opts.will->retained = 0;
-	opts.will->topicName = willTopic;
+	wopts.payload.data = "will message";
+	wopts.payload.len = strlen(wopts.payload.data) + 1;
+	wopts.qos = 1;
+	wopts.retained = 0;
+	wopts.topicName = willTopic;
 	opts.onSuccess = test7cOnConnectSuccess;
 	opts.onFailure = test7cOnConnectFailure;
 	opts.context = c;

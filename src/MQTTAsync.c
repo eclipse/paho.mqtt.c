@@ -2574,7 +2574,7 @@ static int MQTTAsync_assignMsgId(MQTTAsyncs* m)
 }
 
 
-int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int* qos, MQTTAsync_responseOptions* response)
+int MQTTAsync_subscribeMany(MQTTAsync handle, int count, const char* const* topic, const int* qos, MQTTAsync_responseOptions* response)
 {
 	MQTTAsyncs* m = handle;
 	int i = 0;
@@ -2644,7 +2644,7 @@ exit:
 int MQTTAsync_subscribe(MQTTAsync handle, const char* topic, int qos, MQTTAsync_responseOptions* response)
 {
 	int rc = 0;
-	char *const topics[] = {(char*)topic};
+	const char *topics[] = {topic};
 	FUNC_ENTRY;
 	rc = MQTTAsync_subscribeMany(handle, 1, topics, &qos, response);
 	FUNC_EXIT_RC(rc);
@@ -2652,7 +2652,7 @@ int MQTTAsync_subscribe(MQTTAsync handle, const char* topic, int qos, MQTTAsync_
 }
 
 
-int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* const* topic, MQTTAsync_responseOptions* response)
+int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, const char* const* topic, MQTTAsync_responseOptions* response)
 {
 	MQTTAsyncs* m = handle;
 	int i = 0;
@@ -2713,7 +2713,7 @@ exit:
 int MQTTAsync_unsubscribe(MQTTAsync handle, const char* topic, MQTTAsync_responseOptions* response)
 {
 	int rc = 0;
-	char *const topics[] = {(char*)topic};
+	const char *topics[] = {topic};
 	FUNC_ENTRY;
 	rc = MQTTAsync_unsubscribeMany(handle, 1, topics, response);
 	FUNC_EXIT_RC(rc);

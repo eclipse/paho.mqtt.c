@@ -461,6 +461,11 @@ typedef struct
     * provide access to the context information in the callback.
     */
 	void* context;
+	/**
+	 * This gets the message ID for the packet. 
+	 * The value is assigned by the API call in order to return the token 
+	 * value back to the application. 
+	 */
 	MQTTAsync_token token;   /* output */
 } MQTTAsync_responseOptions;
 
@@ -962,7 +967,7 @@ DLLExport int MQTTAsync_subscribe(MQTTAsync handle, const char* topic, int qos, 
   * An error code is returned if there was a problem registering the
   * subscriptions.
   */
-DLLExport int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int* qos, MQTTAsync_responseOptions* response);
+DLLExport int MQTTAsync_subscribeMany(MQTTAsync handle, int count, const char* const* topic, const int* qos, MQTTAsync_responseOptions* response);
 
 /**
   * This function attempts to remove an existing subscription made by the
@@ -990,7 +995,7 @@ DLLExport int MQTTAsync_unsubscribe(MQTTAsync handle, const char* topic, MQTTAsy
   * @return ::MQTTASYNC_SUCCESS if the subscriptions are removed.
   * An error code is returned if there was a problem removing the subscriptions.
   */
-DLLExport int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* const* topic, MQTTAsync_responseOptions* response);
+DLLExport int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, const char* const* topic, MQTTAsync_responseOptions* response);
 
 
 /**

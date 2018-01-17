@@ -347,7 +347,7 @@ void test1dOnConnect(void* context, MQTTAsync_successData* response)
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	int rc;
 	int qoss[2] = {2, 2};
-	char* topics[2] = {willTopic, test_topic};
+	const char* topics[2] = {willTopic, test_topic};
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client c, context %p\n", context);
 	opts.onSuccess = test1donSubscribe;
@@ -623,7 +623,7 @@ void test2dOnConnect(void* context, MQTTAsync_successData* response)
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	int rc;
 	int qoss[2] = {2, 2};
-	char* topics[2] = {willTopic, test_topic};
+	const char* topics[2] = {willTopic, test_topic};
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client c, context %p\n", context);
 	opts.onSuccess = test2donSubscribe;
@@ -900,7 +900,7 @@ void test3dOnConnect(void* context, MQTTAsync_successData* response)
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	int rc;
 	int qoss[2] = {2, 2};
-	char* topics[2] = {willTopic, test_topic};
+	const char* topics[2] = {willTopic, test_topic};
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client c, context %p\n", context);
 	opts.onSuccess = test3donSubscribe;
@@ -1175,7 +1175,7 @@ void test4dOnConnect(void* context, MQTTAsync_successData* response)
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	int rc;
 	int qoss[2] = {2, 2};
-	char* topics[2] = {willTopic, test_topic};
+	const char* topics[2] = {willTopic, test_topic};
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client c, context %p\n", context);
 	opts.onSuccess = test4donSubscribe;
@@ -1450,7 +1450,7 @@ void test5dOnConnect(void* context, MQTTAsync_successData* response)
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	int rc;
 	int qoss[2] = {2, 2};
-	char* topics[2] = {willTopic, test_topic};
+	const char* topics[2] = {willTopic, test_topic};
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client c, context %p\n", context);
 	opts.onSuccess = test5donSubscribe;

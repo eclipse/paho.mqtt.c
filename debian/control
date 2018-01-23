@@ -1,0 +1,12 @@
+Source: libpahomqttc
+Maintainer: Leon Anavi <leon@anavi.org> 
+Build-Depends: debhelper (>= 10.2.5)
+Standards-Version: 3.9.8
+Section: utils
+
+Package: libpahomqttc
+Priority: extra
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Paho MQTT Client in C
+ Library that implements MQTT client.

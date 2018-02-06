@@ -71,9 +71,11 @@
 #include "OsWrapper.h"
 
 #define URI_TCP "tcp://"
+#define URI_WS "ws://"
+#define URI_WSS "wss://"
 
 #include "VersionInfo.h"
-
+#include "WebSocket.h"
 
 const char *client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
 const char *client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
@@ -195,6 +197,7 @@ typedef struct
 #if defined(OPENSSL)
 	int ssl;
 #endif
+	int websocket;
 	Clients* c;
 	MQTTClient_connectionLost* cl;
 	MQTTClient_messageArrived* ma;
@@ -350,19 +353,36 @@ int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* cli
 #endif
 		initialized = 1;
 	}
+
 	m = malloc(sizeof(MQTTClients));
 	*handle = m;
 	memset(m, '\0', sizeof(MQTTClients));
 	if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
 		serverURI += strlen(URI_TCP);
+	else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
+	{
+		serverURI += strlen(URI_WS);
+		m->websocket = 1;
+	}
 	else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
 	{
 #if defined(OPENSSL)
 		serverURI += strlen(URI_SSL);
 		m->ssl = 1;
 #else
-        rc = MQTTCLIENT_SSL_NOT_SUPPORTED;
-        goto exit;
+		rc = MQTTCLIENT_SSL_NOT_SUPPORTED;
+		goto exit;
+#endif
+	}
+	else if (strncmp(URI_WSS, serverURI, strlen(URI_WSS)) == 0)
+	{
+#if defined(OPENSSL)
+		serverURI += strlen(URI_WSS);
+		m->ssl = 1;
+		m->websocket = 1;
+#else
+		rc = MQTTCLIENT_SSL_NOT_SUPPORTED;
+		goto exit;
 #endif
 	}
 	m->serverURI = MQTTStrdup(serverURI);
@@ -407,10 +427,7 @@ static void MQTTClient_terminate(void)
 		ListFree(bstate->clients);
 		ListFree(handles);
 		handles = NULL;
-		Socket_outTerminate();
-#if defined(OPENSSL)
-		SSLSocket_terminate();
-#endif
+		WebSocket_terminate();
 		#if defined(HEAP_H)
 			Heap_terminate();
 		#endif
@@ -681,6 +698,12 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 				}
 			}
 #endif
+			else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS && !Thread_check_sem(m->connect_sem))
+			{
+				Log(TRACE_MIN, -1, "Posting websocket handshake for client %s rc %d", m->c->clientID, m->rc);
+				m->c->connect_state = WAIT_FOR_CONNACK;
+				Thread_post_sem(m->connect_sem);
+			}
 		}
 	}
 	run_id = 0;
@@ -769,6 +792,8 @@ static void MQTTClient_closeSession(Clients* client)
 		if (client->connected)
 			MQTTPacket_send_disconnect(&client->net, client->clientID);
 		Thread_lock_mutex(socket_mutex);
+		WebSocket_close(&client->net, WebSocket_CLOSE_NORMAL, NULL);
+
 #if defined(OPENSSL)
 		SSLSocket_close(&client->net);
 #endif
@@ -870,9 +895,9 @@ static int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOpt
 
 	Log(TRACE_MIN, -1, "Connecting to serverURI %s with MQTT version %d", serverURI, MQTTVersion);
 #if defined(OPENSSL)
-	rc = MQTTProtocol_connect(serverURI, m->c, m->ssl, MQTTVersion);
+	rc = MQTTProtocol_connect(serverURI, m->c, m->ssl, m->websocket, MQTTVersion);
 #else
-	rc = MQTTProtocol_connect(serverURI, m->c, MQTTVersion);
+	rc = MQTTProtocol_connect(serverURI, m->c, m->websocket, MQTTVersion);
 #endif
 	if (rc == SOCKET_ERROR)
 		goto exit;
@@ -893,18 +918,17 @@ static int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOpt
 			rc = SOCKET_ERROR;
 			goto exit;
 		}
-
 #if defined(OPENSSL)
 		if (m->ssl)
 		{
 			int port;
-			char* hostname;
+			size_t hostname_len;
+			const char *topic;
 			int setSocketForSSLrc = 0;
 
-			hostname = MQTTProtocol_addressPort(m->serverURI, &port);
-			setSocketForSSLrc = SSLSocket_setSocketForSSL(&m->c->net, m->c->sslopts, hostname);
-			if (hostname != m->serverURI)
-				free(hostname);
+			hostname_len = MQTTProtocol_addressPort(m->serverURI, &port, &topic);
+			setSocketForSSLrc = SSLSocket_setSocketForSSL(&m->c->net, m->c->sslopts,
+				m->serverURI, hostname_len);
 
 			if (setSocketForSSLrc != MQTTCLIENT_SUCCESS)
 			{
@@ -922,15 +946,25 @@ static int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOpt
 				}
 				else if (rc == 1)
 				{
-					rc = MQTTCLIENT_SUCCESS;
-					m->c->connect_state = WAIT_FOR_CONNACK;
-					if (MQTTPacket_send_connect(m->c, MQTTVersion) == SOCKET_ERROR)
+					if (m->websocket)
 					{
-						rc = SOCKET_ERROR;
-						goto exit;
+						m->c->connect_state = WEBSOCKET_IN_PROGRESS;
+						rc = WebSocket_connect(&m->c->net,m->serverURI);
+						if ( rc == SOCKET_ERROR )
+							goto exit;
 					}
-					if (!m->c->cleansession && m->c->session == NULL)
-						m->c->session = SSL_get1_session(m->c->net.ssl);
+					else if ( rc == 1 )
+					{
+						rc = MQTTCLIENT_SUCCESS;
+						m->c->connect_state = WAIT_FOR_CONNACK;
+						if (MQTTPacket_send_connect(m->c, MQTTVersion) == SOCKET_ERROR)
+						{
+							rc = SOCKET_ERROR;
+							goto exit;
+						}
+						if (!m->c->cleansession && m->c->session == NULL)
+							m->c->session = SSL_get1_session(m->c->net.ssl);
+					}
 				}
 			}
 			else
@@ -939,18 +973,25 @@ static int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOpt
 				goto exit;
 			}
 		}
+#endif
+		else if (m->websocket)
+		{
+			m->c->connect_state = WEBSOCKET_IN_PROGRESS;
+			if ( WebSocket_connect(&m->c->net, m->serverURI) == SOCKET_ERROR )
+			{
+				rc = SOCKET_ERROR;
+				goto exit;
+			}
+		}
 		else
 		{
-#endif
 			m->c->connect_state = WAIT_FOR_CONNACK; /* TCP connect completed, in which case send the MQTT connect packet */
 			if (MQTTPacket_send_connect(m->c, MQTTVersion) == SOCKET_ERROR)
 			{
 				rc = SOCKET_ERROR;
 				goto exit;
 			}
-#if defined(OPENSSL)
 		}
-#endif
 	}
 
 #if defined(OPENSSL)
@@ -966,19 +1007,45 @@ static int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOpt
 		}
 		if(!m->c->cleansession && m->c->session == NULL)
 			m->c->session = SSL_get1_session(m->c->net.ssl);
-		m->c->connect_state = WAIT_FOR_CONNACK; /* TCP connect completed, in which case send the MQTT connect packet */
+		if ( m->websocket )
+		{
+			/* wait for websocket connect */
+			m->c->connect_state = WEBSOCKET_IN_PROGRESS;
+			rc = WebSocket_connect( &m->c->net, m->serverURI );
+			if ( rc != 1 )
+			{
+				rc = SOCKET_ERROR;
+				goto exit;
+			}
+		}
+		else
+		{
+			m->c->connect_state = WAIT_FOR_CONNACK; /* TCP connect completed, in which case send the MQTT connect packet */
+			if (MQTTPacket_send_connect(m->c, MQTTVersion) == SOCKET_ERROR)
+			{
+				rc = SOCKET_ERROR;
+				goto exit;
+			}
+		}
+	}
+#endif
+
+	if (m->c->connect_state == WEBSOCKET_IN_PROGRESS) /* websocket request sent - wait for upgrade */
+	{
+		Thread_unlock_mutex(mqttclient_mutex);
+		MQTTClient_waitfor(handle, CONNECT, &rc, millisecsTimeout - MQTTClient_elapsed(start));
+		Thread_lock_mutex(mqttclient_mutex);
+		m->c->connect_state = WAIT_FOR_CONNACK; /* websocket upgrade complete */
 		if (MQTTPacket_send_connect(m->c, MQTTVersion) == SOCKET_ERROR)
 		{
 			rc = SOCKET_ERROR;
 			goto exit;
 		}
 	}
-#endif
 
 	if (m->c->connect_state == WAIT_FOR_CONNACK) /* MQTT connect sent - wait for CONNACK */
 	{
 		MQTTPacket* pack = NULL;
-
 		Thread_unlock_mutex(mqttclient_mutex);
 		pack = MQTTClient_waitfor(handle, CONNACK, &rc, millisecsTimeout - MQTTClient_elapsed(start));
 		Thread_lock_mutex(mqttclient_mutex);
@@ -1255,11 +1322,22 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 
 			if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
 				serverURI += strlen(URI_TCP);
+			else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
+			{
+				serverURI += strlen(URI_WS);
+				m->websocket = 1;
+			}
 #if defined(OPENSSL)
 			else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
 			{
 				serverURI += strlen(URI_SSL);
 				m->ssl = 1;
+			}
+			else if (strncmp(URI_WSS, serverURI, strlen(URI_WSS)) == 0)
+			{
+				serverURI += strlen(URI_WSS);
+				m->ssl = 1;
+				m->websocket = 1;
 			}
 #endif
 			if ((rc = MQTTClient_connectURI(handle, options, serverURI)) == MQTTCLIENT_SUCCESS)
@@ -1743,6 +1821,8 @@ static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
 		{
 			if (m->c->connect_state == TCP_IN_PROGRESS || m->c->connect_state == SSL_IN_PROGRESS)
 				*rc = 0;  /* waiting for connect state to clear */
+			else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS)
+				*rc = WebSocket_upgrade(&m->c->net);
 			else
 			{
 				pack = MQTTPacket_Factory(&m->c->net, rc);
@@ -1857,7 +1937,8 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 					}
 				}
 #endif
-				else if (m->c->connect_state == WAIT_FOR_CONNACK)
+				else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS ||
+				         m->c->connect_state == WAIT_FOR_CONNACK)
 				{
 					int error;
 					socklen_t len = sizeof(error);

@@ -46,6 +46,12 @@ SET(common_src
     SocketBuffer.c
     Heap.c
     LinkedList.c
+    Base64.c
+    Base64.h
+    SHA1.c
+    SHA1.h
+    WebSocket.c
+    WebSocket.h
     )
 
 IF (WIN32)

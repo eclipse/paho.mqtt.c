@@ -131,7 +131,7 @@ int Socket_getch(int socket, char* c);
 char *Socket_getdata(int socket, size_t bytes, size_t* actual_len);
 int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens, int* frees);
 void Socket_close(int socket);
-int Socket_new(char* addr, int port, int* socket);
+int Socket_new(const char* addr, size_t addr_len, int port, int* socket);
 
 int Socket_noPendingWrites(int socket);
 char* Socket_getpeer(int sock);

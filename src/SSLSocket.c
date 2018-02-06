@@ -37,6 +37,7 @@
 
 #include "Heap.h"
 
+#include <string.h> /* for strerror */
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/crypto.h>
@@ -102,7 +103,9 @@ int SSLSocket_error(char* aString, SSL* ssl, int sock, int rc)
         static char buf[120];
 
         if (strcmp(aString, "shutdown") != 0)
-        	Log(TRACE_MIN, -1, "SSLSocket error %s(%d) in %s for socket %d rc %d errno %d %s\n", buf, error, aString, sock, rc, errno, strerror(errno));
+	{
+		Log(TRACE_MIN, -1, "SSLSocket error %s(%d) in %s for socket %d rc %d errno %d %s\n", buf, error, aString, sock, rc, errno, strerror(errno));
+	}
          ERR_print_errors_fp(stderr);
 		if (error == SSL_ERROR_SSL || error == SSL_ERROR_SYSCALL)
 			error = SSL_FATAL;

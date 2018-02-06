@@ -36,7 +36,7 @@ void SSLSocket_handleOpensslInit(int bool_value);
 
 int SSLSocket_initialize(void);
 void SSLSocket_terminate(void);
-int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, char* hostname);
+int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, const char* hostname, size_t hostname_len);
 
 int SSLSocket_getch(SSL* ssl, int socket, char* c);
 char *SSLSocket_getdata(SSL* ssl, int socket, size_t bytes, size_t* actual_len);

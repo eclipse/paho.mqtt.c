@@ -60,8 +60,11 @@
 #include "StackTrace.h"
 #include "Heap.h"
 #include "OsWrapper.h"
+#include "WebSocket.h"
 
 #define URI_TCP "tcp://"
+#define URI_WS  "ws://"
+#define URI_WSS "wss://"
 
 #include "VersionInfo.h"
 
@@ -292,6 +295,7 @@ typedef struct MQTTAsync_struct
 {
 	char* serverURI;
 	int ssl;
+	int websocket;
 	Clients* c;
 
 	/* "Global", to the client, callback definitions */
@@ -491,11 +495,22 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 	memset(m, '\0', sizeof(MQTTAsyncs));
 	if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
 		serverURI += strlen(URI_TCP);
+	else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
+	{
+		serverURI += strlen(URI_WS);
+		m->websocket = 1;
+	}
 #if defined(OPENSSL)
 	else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
 	{
 		serverURI += strlen(URI_SSL);
 		m->ssl = 1;
+	}
+	else if (strncmp(URI_WSS, serverURI, strlen(URI_WSS)) == 0)
+	{
+		serverURI += strlen(URI_WSS);
+		m->ssl = 1;
+		m->websocket = 1;
 	}
 #endif
 	m->serverURI = MQTTStrdup(serverURI);
@@ -559,10 +574,7 @@ static void MQTTAsync_terminate(void)
 			MQTTAsync_freeCommand1((MQTTAsync_queuedCommand*)(elem->content));
 		ListFree(commands);
 		handles = NULL;
-		Socket_outTerminate();
-#if defined(OPENSSL)
-		SSLSocket_terminate();
-#endif
+		WebSocket_terminate();
 		#if defined(HEAP_H)
 			Heap_terminate();
 		#endif
@@ -1204,9 +1216,9 @@ static int MQTTAsync_processCommand(void)
 
 			Log(TRACE_MIN, -1, "Connecting to serverURI %s with MQTT version %d", serverURI, command->command.details.conn.MQTTVersion);
 #if defined(OPENSSL)
-			rc = MQTTProtocol_connect(serverURI, command->client->c, command->client->ssl, command->command.details.conn.MQTTVersion);
+			rc = MQTTProtocol_connect(serverURI, command->client->c, command->client->ssl, command->client->websocket, command->command.details.conn.MQTTVersion);
 #else
-			rc = MQTTProtocol_connect(serverURI, command->client->c, command->command.details.conn.MQTTVersion);
+			rc = MQTTProtocol_connect(serverURI, command->client->c, command->client->websocket, command->command.details.conn.MQTTVersion);
 #endif
 			if (command->client->c->connect_state == NOT_IN_PROGRESS)
 				rc = SOCKET_ERROR;
@@ -2043,6 +2055,7 @@ static void MQTTAsync_closeOnly(Clients* client)
 		if (client->connected)
 			MQTTPacket_send_disconnect(&client->net, client->clientID);
 		Thread_lock_mutex(socket_mutex);
+		WebSocket_close(&client->net, WebSocket_CLOSE_NORMAL, NULL);
 #if defined(OPENSSL)
 		SSLSocket_close(&client->net);
 #endif
@@ -2820,13 +2833,12 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 		if (m->ssl)
 		{
 			int port;
-			char* hostname;
+			size_t hostname_len;
 			int setSocketForSSLrc = 0;
 
-			hostname = MQTTProtocol_addressPort(m->serverURI, &port);
-			setSocketForSSLrc = SSLSocket_setSocketForSSL(&m->c->net, m->c->sslopts, hostname);
-			if (hostname != m->serverURI)
-				free(hostname);
+			hostname_len = MQTTProtocol_addressPort(m->serverURI, &port, NULL);
+			setSocketForSSLrc = SSLSocket_setSocketForSSL(&m->c->net, m->c->sslopts,
+				m->serverURI, hostname_len);
 
 			if (setSocketForSSLrc != MQTTASYNC_SUCCESS)
 			{
@@ -2846,12 +2858,21 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 				}
 				else if (rc == 1)
 				{
-					rc = MQTTCLIENT_SUCCESS;
-					m->c->connect_state = WAIT_FOR_CONNACK;
-					if (MQTTPacket_send_connect(m->c, m->connect.details.conn.MQTTVersion) == SOCKET_ERROR)
+					if ( m->websocket )
 					{
-						rc = SOCKET_ERROR;
-						goto exit;
+						m->c->connect_state = WEBSOCKET_IN_PROGRESS;
+						if ((rc = WebSocket_connect(&m->c->net, m->serverURI)) == SOCKET_ERROR )
+							goto exit;
+					}
+					else
+					{
+						rc = MQTTCLIENT_SUCCESS;
+						m->c->connect_state = WAIT_FOR_CONNACK;
+						if (MQTTPacket_send_connect(m->c, m->connect.details.conn.MQTTVersion) == SOCKET_ERROR)
+						{
+							rc = SOCKET_ERROR;
+							goto exit;
+						}
 					}
 					if (!m->c->cleansession && m->c->session == NULL)
 						m->c->session = SSL_get1_session(m->c->net.ssl);
@@ -2866,9 +2887,18 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 		else
 		{
 #endif
-			m->c->connect_state = WAIT_FOR_CONNACK; /* TCP/SSL connect completed, in which case send the MQTT connect packet */
-			if ((rc = MQTTPacket_send_connect(m->c, m->connect.details.conn.MQTTVersion)) == SOCKET_ERROR)
-				goto exit;
+			if ( m->websocket )
+			{
+				m->c->connect_state = WEBSOCKET_IN_PROGRESS;
+				if ((rc = WebSocket_connect(&m->c->net, m->serverURI)) == SOCKET_ERROR )
+					goto exit;
+			}
+			else
+			{
+				m->c->connect_state = WAIT_FOR_CONNACK; /* TCP/SSL connect completed, in which case send the MQTT connect packet */
+				if ((rc = MQTTPacket_send_connect(m->c, m->connect.details.conn.MQTTVersion)) == SOCKET_ERROR)
+					goto exit;
+			}
 #if defined(OPENSSL)
 		}
 #endif
@@ -2881,14 +2911,34 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 
 		if(!m->c->cleansession && m->c->session == NULL)
 			m->c->session = SSL_get1_session(m->c->net.ssl);
-		m->c->connect_state = WAIT_FOR_CONNACK; /* SSL connect completed, in which case send the MQTT connect packet */
-		if ((rc = MQTTPacket_send_connect(m->c, m->connect.details.conn.MQTTVersion)) == SOCKET_ERROR)
-			goto exit;
+		if ( m->websocket )
+		{
+			m->c->connect_state = WEBSOCKET_IN_PROGRESS;
+			if ((rc = WebSocket_connect(&m->c->net, m->serverURI)) == SOCKET_ERROR )
+				goto exit;
+		}
+		else
+		{
+			m->c->connect_state = WAIT_FOR_CONNACK; /* SSL connect completed, in which case send the MQTT connect packet */
+			if ((rc = MQTTPacket_send_connect(m->c, m->connect.details.conn.MQTTVersion)) == SOCKET_ERROR)
+				goto exit;
+		}
 	}
 #endif
+	else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS) /* Websocket connect sent - wait for completion */
+	{
+		if ((rc = WebSocket_upgrade( &m->c->net ) ) == SOCKET_ERROR )
+			goto exit;
+		else
+		{
+			m->c->connect_state = WAIT_FOR_CONNACK; /* Websocket upgrade completed, in which case send the MQTT connect packet */
+			if ((rc = MQTTPacket_send_connect(m->c, m->connect.details.conn.MQTTVersion)) == SOCKET_ERROR)
+				goto exit;
+		}
+	}
 
 exit:
-	if ((rc != 0 && rc != TCPSOCKET_INTERRUPTED && m->c->connect_state != SSL_IN_PROGRESS) || (rc == SSL_FATAL))
+	if ((rc != 0 && rc != TCPSOCKET_INTERRUPTED && (m->c->connect_state != SSL_IN_PROGRESS && m->c->connect_state != WEBSOCKET_IN_PROGRESS)) || (rc == SSL_FATAL))
 		nextOrClose(m, MQTTASYNC_FAILURE, "TCP/TLS connect failure");
 
 	FUNC_EXIT_RC(rc);
@@ -2931,7 +2981,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 		if (m != NULL)
 		{
 			Log(TRACE_MINIMUM, -1, "m->c->connect_state = %d",m->c->connect_state);
-			if (m->c->connect_state == TCP_IN_PROGRESS || m->c->connect_state == SSL_IN_PROGRESS)
+			if (m->c->connect_state == TCP_IN_PROGRESS || m->c->connect_state == SSL_IN_PROGRESS || m->c->connect_state == WEBSOCKET_IN_PROGRESS)
 				*rc = MQTTAsync_connecting(m);
 			else
 				pack = MQTTPacket_Factory(&m->c->net, rc);

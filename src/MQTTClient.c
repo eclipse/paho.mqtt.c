@@ -576,12 +576,12 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 				MQTTClient_disconnect_internal(m, 0);
 			else
 			{
-				if (m->c->connect_state == 2 && !Thread_check_sem(m->connect_sem))
+				if (m->c->connect_state == SSL_IN_PROGRESS && !Thread_check_sem(m->connect_sem))
 				{
 					Log(TRACE_MIN, -1, "Posting connect semaphore for client %s", m->c->clientID);
 					Thread_post_sem(m->connect_sem);
 				}
-				if (m->c->connect_state == 3 && !Thread_check_sem(m->connack_sem))
+				if (m->c->connect_state == WAIT_FOR_CONNACK && !Thread_check_sem(m->connack_sem))
 				{
 					Log(TRACE_MIN, -1, "Posting connack semaphore for client %s", m->c->clientID);
 					Thread_post_sem(m->connack_sem);
@@ -640,7 +640,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 					Thread_post_sem(m->unsuback_sem);
 				}
 			}
-			else if (m->c->connect_state == 1 && !Thread_check_sem(m->connect_sem))
+			else if (m->c->connect_state == TCP_IN_PROGRESS && !Thread_check_sem(m->connect_sem))
 			{
 				int error;
 				socklen_t len = sizeof(error);
@@ -651,7 +651,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 				Thread_post_sem(m->connect_sem);
 			}
 #if defined(OPENSSL)
-			else if (m->c->connect_state == 2 && !Thread_check_sem(m->connect_sem))
+			else if (m->c->connect_state == SSL_IN_PROGRESS && !Thread_check_sem(m->connect_sem))
 			{
 				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket);
 				if (rc == 1 || rc == SSL_FATAL)
@@ -689,7 +689,7 @@ static void MQTTClient_stop(void)
 			/* find out how many handles are still connected */
 			while (ListNextElement(handles, &current))
 			{
-				if (((MQTTClients*)(current->content))->c->connect_state > 0 ||
+				if (((MQTTClients*)(current->content))->c->connect_state > NOT_IN_PROGRESS ||
 						((MQTTClients*)(current->content))->c->connected)
 					++conn_count;
 			}
@@ -726,7 +726,7 @@ int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTClient_connect
 	FUNC_ENTRY;
 	Thread_lock_mutex(mqttclient_mutex);
 
-	if (m == NULL || ma == NULL || m->c->connect_state != 0)
+	if (m == NULL || ma == NULL || m->c->connect_state != NOT_IN_PROGRESS)
 		rc = MQTTCLIENT_FAILURE;
 	else
 	{
@@ -763,7 +763,7 @@ static void MQTTClient_closeSession(Clients* client)
 #endif
 	}
 	client->connected = 0;
-	client->connect_state = 0;
+	client->connect_state = NOT_IN_PROGRESS;
 
 	if (client->cleansession)
 		MQTTClient_cleanSession(client);
@@ -860,13 +860,13 @@ static int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOpt
 	if (rc == SOCKET_ERROR)
 		goto exit;
 
-	if (m->c->connect_state == 0)
+	if (m->c->connect_state == NOT_IN_PROGRESS)
 	{
 		rc = SOCKET_ERROR;
 		goto exit;
 	}
 
-	if (m->c->connect_state == 1) /* TCP connect started - wait for completion */
+	if (m->c->connect_state == TCP_IN_PROGRESS) /* TCP connect started - wait for completion */
 	{
 		Thread_unlock_mutex(mqttclient_mutex);
 		MQTTClient_waitfor(handle, CONNECT, &rc, millisecsTimeout - MQTTClient_elapsed(start));
@@ -896,7 +896,7 @@ static int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOpt
 						Log(TRACE_MIN, -1, "Failed to set SSL session with stored data, non critical");
 				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket);
 				if (rc == TCPSOCKET_INTERRUPTED)
-					m->c->connect_state = 2;  /* the connect is still in progress */
+					m->c->connect_state = SSL_IN_PROGRESS;  /* the connect is still in progress */
 				else if (rc == SSL_FATAL)
 				{
 					rc = SOCKET_ERROR;
@@ -905,7 +905,7 @@ static int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOpt
 				else if (rc == 1)
 				{
 					rc = MQTTCLIENT_SUCCESS;
-					m->c->connect_state = 3;
+					m->c->connect_state = WAIT_FOR_CONNACK;
 					if (MQTTPacket_send_connect(m->c, MQTTVersion) == SOCKET_ERROR)
 					{
 						rc = SOCKET_ERROR;
@@ -924,7 +924,7 @@ static int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOpt
 		else
 		{
 #endif
-			m->c->connect_state = 3; /* TCP connect completed, in which case send the MQTT connect packet */
+			m->c->connect_state = WAIT_FOR_CONNACK; /* TCP connect completed, in which case send the MQTT connect packet */
 			if (MQTTPacket_send_connect(m->c, MQTTVersion) == SOCKET_ERROR)
 			{
 				rc = SOCKET_ERROR;
@@ -936,7 +936,7 @@ static int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOpt
 	}
 
 #if defined(OPENSSL)
-	if (m->c->connect_state == 2) /* SSL connect sent - wait for completion */
+	if (m->c->connect_state == SSL_IN_PROGRESS) /* SSL connect sent - wait for completion */
 	{
 		Thread_unlock_mutex(mqttclient_mutex);
 		MQTTClient_waitfor(handle, CONNECT, &rc, millisecsTimeout - MQTTClient_elapsed(start));
@@ -948,7 +948,7 @@ static int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOpt
 		}
 		if(!m->c->cleansession && m->c->session == NULL)
 			m->c->session = SSL_get1_session(m->c->net.ssl);
-		m->c->connect_state = 3; /* TCP connect completed, in which case send the MQTT connect packet */
+		m->c->connect_state = WAIT_FOR_CONNACK; /* TCP connect completed, in which case send the MQTT connect packet */
 		if (MQTTPacket_send_connect(m->c, MQTTVersion) == SOCKET_ERROR)
 		{
 			rc = SOCKET_ERROR;
@@ -957,7 +957,7 @@ static int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOpt
 	}
 #endif
 
-	if (m->c->connect_state == 3) /* MQTT connect sent - wait for CONNACK */
+	if (m->c->connect_state == WAIT_FOR_CONNACK) /* MQTT connect sent - wait for CONNACK */
 	{
 		MQTTPacket* pack = NULL;
 
@@ -974,7 +974,7 @@ static int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOpt
 			{
 				m->c->connected = 1;
 				m->c->good = 1;
-				m->c->connect_state = 0;
+				m->c->connect_state = NOT_IN_PROGRESS;
 				if (MQTTVersion == 4)
 					sessionPresent = connack->flags.bits.sessionPresent;
 				if (m->c->cleansession)
@@ -1255,7 +1255,7 @@ static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int call_conne
 		rc = MQTTCLIENT_FAILURE;
 		goto exit;
 	}
-	if (m->c->connected == 0 && m->c->connect_state == 0)
+	if (m->c->connected == 0 && m->c->connect_state == NOT_IN_PROGRESS)
 	{
 		rc = MQTTCLIENT_DISCONNECTED;
 		goto exit;
@@ -1264,7 +1264,7 @@ static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int call_conne
 	if (m->c->connected != 0)
 	{
 		start = MQTTClient_start_clock();
-		m->c->connect_state = -2; /* indicate disconnecting */
+		m->c->connect_state = DISCONNECTING; /* indicate disconnecting */
 		while (m->c->inboundMsgs->count > 0 || m->c->outboundMsgs->count > 0)
 		{ /* wait for all inflight message flows to finish, up to timeout */
 			if (MQTTClient_elapsed(start) >= timeout)
@@ -1698,7 +1698,7 @@ static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
 			m = (MQTTClient)(handles->current->content);
 		if (m != NULL)
 		{
-			if (m->c->connect_state == 1 || m->c->connect_state == 2)
+			if (m->c->connect_state == TCP_IN_PROGRESS || m->c->connect_state == SSL_IN_PROGRESS)
 				*rc = 0;  /* waiting for connect state to clear */
 			else
 			{
@@ -1790,7 +1790,7 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 					break;
 				if (pack && (pack->header.bits.type == packet_type))
 					break;
-				if (m->c->connect_state == 1)
+				if (m->c->connect_state == TCP_IN_PROGRESS)
 				{
 					int error;
 					socklen_t len = sizeof(error);
@@ -1800,7 +1800,7 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 					break;
 				}
 #if defined(OPENSSL)
-				else if (m->c->connect_state == 2)
+				else if (m->c->connect_state == SSL_IN_PROGRESS)
 				{
 					*rc = SSLSocket_connect(m->c->net.ssl, sock);
 					if (*rc == SSL_FATAL)
@@ -1813,7 +1813,7 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 					}
 				}
 #endif
-				else if (m->c->connect_state == 3)
+				else if (m->c->connect_state == WAIT_FOR_CONNACK)
 				{
 					int error;
 					socklen_t len = sizeof(error);
@@ -1921,7 +1921,7 @@ void MQTTClient_yield(void)
 		if (rc == SOCKET_ERROR && ListFindItem(handles, &sock, clientSockCompare))
 		{
 			MQTTClients* m = (MQTTClient)(handles->current->content);
-			if (m->c->connect_state != -2)
+			if (m->c->connect_state != DISCONNECTING)
 				MQTTClient_disconnect_internal(m, 0);
 		}
 		Thread_unlock_mutex(mqttclient_mutex);

@@ -30,6 +30,7 @@
 
 #include "SocketBuffer.h"
 #include "MQTTClient.h"
+#include "MQTTProtocolOut.h"
 #include "SSLSocket.h"
 #include "Log.h"
 #include "StackTrace.h"
@@ -37,6 +38,7 @@
 
 #include "Heap.h"
 
+#include <string.h> /* for strerror */
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/crypto.h>
@@ -102,7 +104,9 @@ int SSLSocket_error(char* aString, SSL* ssl, int sock, int rc)
         static char buf[120];
 
         if (strcmp(aString, "shutdown") != 0)
-        	Log(TRACE_MIN, -1, "SSLSocket error %s(%d) in %s for socket %d rc %d errno %d %s\n", buf, error, aString, sock, rc, errno, strerror(errno));
+	{
+		Log(TRACE_MIN, -1, "SSLSocket error %s(%d) in %s for socket %d rc %d errno %d %s\n", buf, error, aString, sock, rc, errno, strerror(errno));
+	}
          ERR_print_errors_fp(stderr);
 		if (error == SSL_ERROR_SSL || error == SSL_ERROR_SYSCALL)
 			error = SSL_FATAL;
@@ -617,7 +621,8 @@ exit:
 }
 
 
-int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, char* hostname)
+int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts,
+	const char* hostname, size_t hostname_len)
 {
 	int rc = 1;
 	
@@ -625,6 +630,7 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, 
 	
 	if (net->ctx != NULL || (rc = SSLSocket_createContext(net, opts)) == 1)
 	{
+		char *hostname_plus_null;
 		int i;
 
 		SSL_CTX_set_info_callback(net->ctx, SSL_CTX_info_callback);
@@ -645,8 +651,11 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, 
 		if ((rc = SSL_set_fd(net->ssl, net->socket)) != 1)
 			SSLSocket_error("SSL_set_fd", net->ssl, net->socket, rc);
 
-		if ((rc = SSL_set_tlsext_host_name(net->ssl, hostname)) != 1)
+		hostname_plus_null = malloc(hostname_len + 1u );
+		MQTTStrncpy(hostname_plus_null, hostname, hostname_len + 1u);
+		if ((rc = SSL_set_tlsext_host_name(net->ssl, hostname_plus_null)) != 1)
 			SSLSocket_error("SSL_set_tlsext_host_name", NULL, net->socket, rc);
+		free(hostname_plus_null);
 	}
 		
 	FUNC_EXIT_RC(rc);

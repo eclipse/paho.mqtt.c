@@ -1,5 +1,5 @@
 #*******************************************************************************
-#  Copyright (c) 2009, 2017 IBM Corp.
+#  Copyright (c) 2009, 2018 IBM Corp.
 #
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
@@ -96,7 +96,7 @@ SYNC_TESTS = ${addprefix ${blddir}/test/,${TEST_FILES_C}}
 TEST_FILES_CS = test3
 SYNC_SSL_TESTS = ${addprefix ${blddir}/test/,${TEST_FILES_CS}}
 
-TEST_FILES_A = test4 test6 test9 test_mqtt4async test_issue373
+TEST_FILES_A = test4 test6 test9 test_mqtt4async
 ASYNC_TESTS = ${addprefix ${blddir}/test/,${TEST_FILES_A}}
 
 TEST_FILES_AS = test5

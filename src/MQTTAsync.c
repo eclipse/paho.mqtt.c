@@ -2585,7 +2585,9 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int
 		sub->command.onSuccess = response->onSuccess;
 		sub->command.onFailure = response->onFailure;
 		sub->command.context = response->context;
-		sub->command.token = response->token;
+		/* Replace token to provided in response, if it is valid. */
+		if (response->token)
+			sub->command.token = response->token;
 	}
 	sub->command.type = SUBSCRIBE;
 	sub->command.details.sub.count = count;
@@ -2659,7 +2661,9 @@ int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* const* topic, M
 		unsub->command.onSuccess = response->onSuccess;
 		unsub->command.onFailure = response->onFailure;
 		unsub->command.context = response->context;
-		unsub->command.token = response->token;
+		/* Replace token to provided in response, if it is valid. */
+		if (response->token)
+			unsub->command.token = response->token;
 	}
 	unsub->command.details.unsub.count = count;
 	unsub->command.details.unsub.topics = malloc(sizeof(char*) * count);
@@ -2737,7 +2741,9 @@ int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen
 		pub->command.onSuccess = response->onSuccess;
 		pub->command.onFailure = response->onFailure;
 		pub->command.context = response->context;
-		pub->command.token = response->token;
+		/* Replace token to provided in response, if it is valid. */
+		if (response->token)
+			pub->command.token = response->token;
 	}
 	pub->command.details.pub.destinationName = MQTTStrdup(destinationName);
 	pub->command.details.pub.payloadlen = payloadlen;

@@ -32,7 +32,7 @@ build_script:
 
     nmake
 
-    REM ctest -T test -VV
+    ctest -T test -VV
 
     cd ..
 

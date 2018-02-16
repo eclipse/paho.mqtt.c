@@ -19,22 +19,54 @@ install:
 build_script:
 - cmd: >-
     mkdir build.paho
+
     cd build.paho
+
     echo %APPVEYOR_BUILD_WORKER_IMAGE%
+
     if "%APPVEYOR_BUILD_WORKER_IMAGE%" == "Visual Studio 2015" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
+
     if "%APPVEYOR_BUILD_WORKER_IMAGE%" == "Visual Studio 2013" call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x64
+
     cmake -G "NMake Makefiles" -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=TRUE ..
+
     nmake
-    ctest -T test -VV
+
+    REM ctest -T test -VV
+
     cd ..
 
 after_build:
 - cmd: >-
     set ZIPNAME=eclipse-paho-mqtt-c-windows.zip 
-    7z a %ZIPNAME% %APPVEYOR_BUILD_FOLDER%\build.paho\src\*.dll
-    7z a %ZIPNAME% %APPVEYOR_BUILD_FOLDER%\build.paho\src\*.lib
-    7z a %ZIPNAME% %APPVEYOR_BUILD_FOLDER%\build.paho\src\*.exe -r
-    7z a %ZIPNAME% %APPVEYOR_BUILD_FOLDER%\src\MQTTClient.h %APPVEYOR_BUILD_FOLDER%\src\MQTTAsync.h
+
+    7z a %ZIPNAME% %APPVEYOR_BUILD_FOLDER%\*.html
+
+    7z a %ZIPNAME% %APPVEYOR_BUILD_FOLDER%\*.md
+
+    7z a %ZIPNAME% %APPVEYOR_BUILD_FOLDER%\*-v10
+
+    7z a %ZIPNAME% build.paho\src\*.dll
+
+    7z a %ZIPNAME% build.paho\src\*.lib
+
+    7z rn %ZIPNAME% build.paho\src lib
+
+    7z a %ZIPNAME% build.paho\src\samples\*.exe
+
+    7z rn %ZIPNAME% build.paho\src\samples bin
+
+    7z a %ZIPNAME% %APPVEYOR_BUILD_FOLDER%\build.paho\src\MQTTVersion.exe
+
+    7z rn %ZIPNAME% MQTTVersion.exe bin\MQTTVersion.exe
+
+    7z a %ZIPNAME% src\MQTTClient.h src\MQTTAsync.h src\MQTTClientPersistence.h
+
+    7z rn %ZIPNAME% src include
+
+    7z a %ZIPNAME% src\samples\*.c
+
+    7z rn %ZIPNAME% src\samples samples
 
 artifacts:
 - path: eclipse-paho-mqtt-c-windows.zip

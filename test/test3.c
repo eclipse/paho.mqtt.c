@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2017 IBM Corp.
+ * Copyright (c) 2012, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Allan Stockdill-Mander - initial API and implementation and/or initial documentation
+ *    Ian Craggs - add SSL options NULL test
  *******************************************************************************/
 
 /**
@@ -570,6 +571,9 @@ int test1(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"SSL connect fail to nonSSL MQTT server\"");
 	global_start_time = start_clock();
 
+	rc = MQTTClient_create(&c, "a b://wrong protocol", "test1",	MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
+	assert("bad rc from create", rc == MQTTCLIENT_BAD_PROTOCOL, "rc was %d \n", rc);
+
 	rc = MQTTClient_create(&c, options.connection, "test1",	MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
 	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d \n", rc)))
 		goto exit;
@@ -583,6 +587,10 @@ int test1(struct Options options)
 		opts.serverURIs = options.haconnections;
 		opts.serverURIcount = options.hacount;
 	}
+
+	/* Try with ssl opts == NULL - should get error */
+	rc = MQTTClient_connect(c, &opts);
+	assert("Connect should fail", rc == MQTTCLIENT_NULL_PARAMETER, "rc was %d ", rc);
 
 	opts.ssl = &sslopts;
 	if (options.server_key_file != NULL)

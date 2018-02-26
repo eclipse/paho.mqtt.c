@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -33,6 +33,7 @@
  *    Ian Craggs - SNI support
  *    Ian Craggs - auto reconnect timing fix #218
  *    Ian Craggs - fix for issue #190
+ *    Ian Craggs - check for NULL SSL options #334
  *******************************************************************************/
 
 /**
@@ -462,6 +463,20 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 	{
 		rc = MQTTASYNC_BAD_UTF8_STRING;
 		goto exit;
+	}
+
+	if (strstr(serverURI, "://") != NULL)
+	{
+		if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) != 0
+#if defined(OPENSSL)
+            && strncmp(URI_SSL, serverURI, strlen(URI_SSL)) != 0
+
+#endif
+			)
+		{
+			rc = MQTTASYNC_BAD_PROTOCOL;
+			goto exit;
+		}
 	}
 
 	if (options && (strncmp(options->struct_id, "MQCO", 4) != 0 || options->struct_version != 0))
@@ -2254,6 +2269,15 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		rc = MQTTASYNC_BAD_STRUCTURE;
 		goto exit;
 	}
+
+#if defined(OPENSSL)
+	if (m->ssl && options->ssl == NULL)
+	{
+		rc = MQTTCLIENT_NULL_PARAMETER;
+		goto exit;
+	}
+#endif
+
 	if (options->will) /* check validity of will options structure */
 	{
 		if (strncmp(options->will->struct_id, "MQTW", 4) != 0 || (options->will->struct_version != 0 && options->will->struct_version != 1))

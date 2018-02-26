@@ -179,6 +179,10 @@
   * Return code: unrecognized MQTT version
   */
  #define MQTTCLIENT_BAD_MQTT_VERSION -11
+/**
+ * Return code: protocol prefix in serverURI should be tcp:// or ssl://
+ */
+#define MQTTCLIENT_BAD_PROTOCOL -14
 
 /**
  * Default MQTT version to connect with.  Use 3.1.1 then fall back to 3.1

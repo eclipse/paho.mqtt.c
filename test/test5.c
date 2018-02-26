@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2017 IBM Corp.
+ * Copyright (c) 2012, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -613,6 +613,10 @@ int test1(struct Options options)
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
+	rc = MQTTAsync_create(&c, "rubbish://wrong", "test1", MQTTCLIENT_PERSISTENCE_DEFAULT,
+			NULL);
+	assert("bad rc from create", rc == MQTTASYNC_BAD_PROTOCOL, "rc was %d \n", rc);
+
 	rc = MQTTAsync_create(&c, options.connection, "test1", MQTTCLIENT_PERSISTENCE_DEFAULT,
 			NULL);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
@@ -636,6 +640,9 @@ int test1(struct Options options)
 	opts.onSuccess = test1OnConnect;
 	opts.onFailure = test1OnFailure;
 	opts.context = c;
+
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Bad rc from connect", rc == MQTTASYNC_NULL_PARAMETER, "rc was %d ", rc);
 
 	opts.ssl = &sslopts;
 	opts.ssl->enableServerCertAuth = 0;

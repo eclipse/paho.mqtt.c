@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -32,6 +32,7 @@
  *    Ian Craggs - SNI support, message queue unpersist bug
  *    Ian Craggs - binary will message support
  *    Ian Craggs - waitforCompletion fix #240
+ *    Ian Craggs - check for NULL SSL options #334
  *******************************************************************************/
 
 /**
@@ -317,6 +318,20 @@ int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* cli
 	{
 		rc = MQTTCLIENT_BAD_UTF8_STRING;
 		goto exit;
+	}
+
+	if (strstr(serverURI, "://") != NULL)
+	{
+		if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) != 0
+#if defined(OPENSSL)
+            && strncmp(URI_SSL, serverURI, strlen(URI_SSL)) != 0
+
+#endif
+			)
+		{
+			rc = MQTTCLIENT_BAD_PROTOCOL;
+			goto exit;
+		}
 	}
 
 	if (!initialized)
@@ -1171,6 +1186,14 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 		goto exit;
 	}
 
+#if defined(OPENSSL)
+	if (m->ssl && options->ssl == NULL)
+	{
+		rc = MQTTCLIENT_NULL_PARAMETER;
+		goto exit;
+	}
+#endif
+
 	if (options->will) /* check validity of will options structure */
 	{
 		if (strncmp(options->will->struct_id, "MQTW", 4) != 0 || (options->will->struct_version != 0 && options->will->struct_version != 1))
@@ -1179,6 +1202,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 			goto exit;
 		}
 	}
+
 
 #if defined(OPENSSL)
 	if (options->struct_version != 0 && options->ssl) /* check validity of SSL options structure */

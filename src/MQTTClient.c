@@ -1198,6 +1198,13 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 		goto exit;
 	}
 
+	if (options->MQTTVersion != MQTTVERSION_DEFAULT &&
+			(options->MQTTVersion < MQTTVERSION_3_1 || options->MQTTVersion > MQTTVERSION_5))
+	{
+		rc = MQTTCLIENT_BAD_MQTT_VERSION;
+		goto exit;
+	}
+
 	if (options->struct_version < 2 || options->serverURIcount == 0)
 		rc = MQTTClient_connectURI(handle, options, m->serverURI);
 	else

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -48,6 +48,8 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion)
 	Connect packet;
 	int rc = -1, len;
 
+	MQTTProperties connectProperties = MQTTProperties_initializer;
+
 	FUNC_ENTRY;
 	packet.header.byte = 0;
 	packet.header.bits.type = CONNECT;
@@ -59,6 +61,13 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion)
 		len += (int)strlen(client->username)+2;
 	if (client->password)
 		len += client->passwordlen+2;
+	if (MQTTVersion >= 5)
+	{
+      //if (connectProperties)
+	    len += MQTTProperties_len(&connectProperties);
+	  /*if (client->will && willProperties)
+		  len += MQTTProperties_len(willProperties);*/
+	}
 
 	ptr = buf = malloc(len);
 	if (MQTTVersion == 3)
@@ -66,10 +75,10 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion)
 		writeUTF(&ptr, "MQIsdp");
 		writeChar(&ptr, (char)3);
 	}
-	else if (MQTTVersion == 4)
+	else if (MQTTVersion == 4 || MQTTVersion == 5)
 	{
 		writeUTF(&ptr, "MQTT");
-		writeChar(&ptr, (char)4);
+		writeChar(&ptr, (char)MQTTVersion);
 	}
 	else
 		goto exit;
@@ -90,6 +99,8 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion)
 
 	writeChar(&ptr, packet.flags.all);
 	writeInt(&ptr, client->keepAliveInterval);
+	if (MQTTVersion == 5)
+	  MQTTProperties_write(&ptr, &connectProperties);
 	writeUTF(&ptr, client->clientID);
 	if (client->will)
 	{

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,6 +15,7 @@
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - MQTT 3.1.1 support
  *    Ian Craggs - big endian Linux reversed definition
+ *    Ian Craggs - MQTT 5.0 support
  *******************************************************************************/
 
 #if !defined(MQTTPACKET_H)
@@ -255,8 +256,7 @@ int MQTTPacket_send_pubcomp(int msgid, networkHandles* net, const char* clientID
 
 void MQTTPacket_free_packet(MQTTPacket* pack);
 
-#if !defined(NO_BRIDGE)
-	#include "MQTTPacketOut.h"
-#endif
+#include "MQTTPacketOut.h"
+#include "MQTTV5Packet.h"
 
 #endif /* MQTTPACKET_H */

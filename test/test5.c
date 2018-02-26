@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2017 IBM Corp.
+ * Copyright (c) 2012, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -636,6 +636,9 @@ int test1(struct Options options)
 	opts.onSuccess = test1OnConnect;
 	opts.onFailure = test1OnFailure;
 	opts.context = c;
+
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Bad rc from connect", rc == MQTTASYNC_NULL_PARAMETER, "rc was %d ", rc);
 
 	opts.ssl = &sslopts;
 	opts.ssl->enableServerCertAuth = 0;

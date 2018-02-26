@@ -571,6 +571,9 @@ int test1(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"SSL connect fail to nonSSL MQTT server\"");
 	global_start_time = start_clock();
 
+	rc = MQTTClient_create(&c, "a b://wrong protocol", "test1",	MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
+	assert("bad rc from create", rc == MQTTCLIENT_BAD_PROTOCOL, "rc was %d \n", rc);
+
 	rc = MQTTClient_create(&c, options.connection, "test1",	MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
 	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d \n", rc)))
 		goto exit;

@@ -613,6 +613,10 @@ int test1(struct Options options)
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
+	rc = MQTTAsync_create(&c, "rubbish://wrong", "test1", MQTTCLIENT_PERSISTENCE_DEFAULT,
+			NULL);
+	assert("bad rc from create", rc == MQTTASYNC_BAD_PROTOCOL, "rc was %d \n", rc);
+
 	rc = MQTTAsync_create(&c, options.connection, "test1", MQTTCLIENT_PERSISTENCE_DEFAULT,
 			NULL);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);

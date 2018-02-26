@@ -320,6 +320,20 @@ int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* cli
 		goto exit;
 	}
 
+	if (strstr(serverURI, "://") != NULL)
+	{
+		if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) != 0
+#if defined(OPENSSL)
+            && strncmp(URI_SSL, serverURI, strlen(URI_SSL)) != 0
+
+#endif
+			)
+		{
+			rc = MQTTCLIENT_BAD_PROTOCOL;
+			goto exit;
+		}
+	}
+
 	if (!initialized)
 	{
 		#if defined(HEAP_H)

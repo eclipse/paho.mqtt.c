@@ -465,6 +465,20 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 		goto exit;
 	}
 
+	if (strstr(serverURI, "://") != NULL)
+	{
+		if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) != 0
+#if defined(OPENSSL)
+            && strncmp(URI_SSL, serverURI, strlen(URI_SSL)) != 0
+
+#endif
+			)
+		{
+			rc = MQTTASYNC_BAD_PROTOCOL;
+			goto exit;
+		}
+	}
+
 	if (options && (strncmp(options->struct_id, "MQCO", 4) != 0 || options->struct_version != 0))
 	{
 		rc = MQTTASYNC_BAD_STRUCTURE;

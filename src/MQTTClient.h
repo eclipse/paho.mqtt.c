@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -175,6 +175,10 @@
  * Return code: Attempting SSL connection using non-SSL version of library
  */
 #define MQTTCLIENT_SSL_NOT_SUPPORTED -10
+/**
+ * Return code: protocol prefix in serverURI should be tcp:// or ssl://
+ */
+#define MQTTCLIENT_BAD_PROTOCOL -14
 
 /**
  * Default MQTT version to connect with.  Use 3.1.1 then fall back to 3.1

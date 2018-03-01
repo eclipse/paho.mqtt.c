@@ -698,9 +698,22 @@ typedef struct
     */
     int sslVersion;
 
+    /**
+     * Whether to carry out post-connect checks, including that a certificate
+     * matches the given host name.
+     * Exists only if struct_version >= 2
+     */
+    int verify;
+
+    /**
+     * From the OpenSSL documentation:
+     * If CApath is not NULL, it points to a directory containing CA certificates in PEM format.
+     * Exists only if struct_version >= 2
+	 */
+	const char* CApath;
 } MQTTAsync_SSLOptions;
 
-#define MQTTAsync_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 1, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT }
+#define MQTTAsync_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 2, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL }
 
 /**
  * MQTTAsync_connectOptions defines several settings that control the way the

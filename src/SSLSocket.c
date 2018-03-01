@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -34,12 +34,14 @@
 #include "Log.h"
 #include "StackTrace.h"
 #include "Socket.h"
+char* MQTTProtocol_addressPort(const char* uri, int* port);
 
 #include "Heap.h"
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/crypto.h>
+#include <openssl/x509v3.h>
 
 extern Sockets s;
 
@@ -653,14 +655,18 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, 
 	return rc;
 }
 
-
-int SSLSocket_connect(SSL* ssl, int sock)      
+/*
+ * Return value: 1 - success, TCPSOCKET_INTERRUPTED - try again, anything else is failure
+ */
+int SSLSocket_connect(SSL* ssl, int sock, char* hostname, int verify)
 {
 	int rc = 0;
 
 	FUNC_ENTRY;
 
+	printf("SSLSocket_connect verify %d\n", verify);
 	rc = SSL_connect(ssl);
+	printf("SSLSocket_connect rc %d\n", rc);
 	if (rc != 1)
 	{
 		int error;
@@ -669,6 +675,28 @@ int SSLSocket_connect(SSL* ssl, int sock)
 			rc = error;
 		if (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE)
 			rc = TCPSOCKET_INTERRUPTED;
+	}
+	else if (verify == 1)
+	{
+		char* peername = NULL;
+		int port;
+		char* addr = NULL;
+
+		X509* cert = SSL_get_peer_certificate(ssl);
+		addr = MQTTProtocol_addressPort(hostname, &port);
+
+		rc = X509_check_host(cert, addr, strlen(addr), 0, &peername);
+		if (rc == 0)
+			rc = SOCKET_ERROR;
+		Log(TRACE_MIN, -1, "rc from X509_check_host is %d", rc);
+		printf("rc from X509_check_host is %d", rc);
+		Log(TRACE_MIN, -1, "peername from X509_check_host is %s", peername);
+		printf("Peername %s\n", peername);
+
+		if (cert)
+			X509_free(cert);
+		if (addr != hostname)
+			free(addr);
 	}
 
 	FUNC_EXIT_RC(rc);

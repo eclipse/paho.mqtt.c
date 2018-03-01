@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -694,6 +694,11 @@ void MQTTProtocol_freeClient(Clients* client)
 			free((void*)client->sslopts->privateKeyPassword);
 		if (client->sslopts->enabledCipherSuites)
 			free((void*)client->sslopts->enabledCipherSuites);
+		if (client->sslopts->struct_version >= 2)
+		{
+			if (client->sslopts->CApath)
+				free((void*)client->sslopts->CApath);
+		}
 		free(client->sslopts);
 	}
 #endif

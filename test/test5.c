@@ -749,6 +749,9 @@ int test2a(struct Options options)
 		opts.ssl->privateKeyPassword = options.client_key_pass;
 	//opts.ssl->enabledCipherSuites = "DEFAULT";
 	//opts.ssl->enabledServerCertAuth = 1;
+	opts.ssl->verify = 1;
+	printf("enableServerCertAuth %d\n", opts.ssl->enableServerCertAuth);
+	printf("verify %d\n", opts.ssl->verify);
 
 	rc = MQTTAsync_setCallbacks(c, &tc, NULL, asyncTestMessageArrived,
 			asyncTestOnDeliveryComplete);

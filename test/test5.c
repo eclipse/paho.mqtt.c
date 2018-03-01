@@ -750,8 +750,8 @@ int test2a(struct Options options)
 	//opts.ssl->enabledCipherSuites = "DEFAULT";
 	//opts.ssl->enabledServerCertAuth = 1;
 	opts.ssl->verify = 1;
-	printf("enableServerCertAuth %d\n", opts.ssl->enableServerCertAuth);
-	printf("verify %d\n", opts.ssl->verify);
+	MyLog(LOGA_DEBUG, "enableServerCertAuth %d\n", opts.ssl->enableServerCertAuth);
+	MyLog(LOGA_DEBUG, "verify %d\n", opts.ssl->verify);
 
 	rc = MQTTAsync_setCallbacks(c, &tc, NULL, asyncTestMessageArrived,
 			asyncTestOnDeliveryComplete);
@@ -1035,7 +1035,7 @@ int test2d(struct Options options)
 	{
 		count = 0;
 		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
-		
+
 		rc = MQTTAsync_create(&c, options.mutual_auth_connection,
 				      "test2d", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 		assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);

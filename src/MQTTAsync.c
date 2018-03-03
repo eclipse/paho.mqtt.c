@@ -2888,7 +2888,7 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 			if (hostname != m->serverURI)
 				free(hostname);
 
-			if (setSocketForSSLrc != MQTTASYNC_SUCCESS)
+            if (setSocketForSSLrc == 1) //SSL_SUCCESS
 			{
 				if (m->c->session != NULL)
 					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)

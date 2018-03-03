@@ -904,7 +904,7 @@ static int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOpt
 			if (hostname != m->serverURI)
 				free(hostname);
 
-			if (setSocketForSSLrc != MQTTCLIENT_SUCCESS)
+			if (setSocketForSSLrc == 1) //SSL_SUCCESS
 			{
 				if (m->c->session != NULL)
 					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)

@@ -37,6 +37,7 @@
 
 #include "Heap.h"
 
+#include <string.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/crypto.h>

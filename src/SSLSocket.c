@@ -38,6 +38,7 @@ char* MQTTProtocol_addressPort(const char* uri, int* port);
 
 #include "Heap.h"
 
+#include <string.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/crypto.h>

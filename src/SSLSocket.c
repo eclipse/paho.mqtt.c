@@ -674,6 +674,7 @@ int SSLSocket_connect(SSL* ssl, int sock, char* hostname, int verify)
 		if (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE)
 			rc = TCPSOCKET_INTERRUPTED;
 	}
+#if (OPENSSL_VERSION_NUMBER >= 0x010002000) /* 1.0.2 and later */
 	else if (verify == 1)
 	{
 		char* peername = NULL;
@@ -694,6 +695,7 @@ int SSLSocket_connect(SSL* ssl, int sock, char* hostname, int verify)
 		if (addr != hostname)
 			free(addr);
 	}
+#endif
 
 	FUNC_EXIT_RC(rc);
 	return rc;

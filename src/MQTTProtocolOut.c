@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -116,7 +116,8 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int MQTTVersi
 		{
 			if (SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts, addr) == 1)
 			{
-				rc = SSLSocket_connect(aClient->net.ssl, aClient->net.socket);
+				rc = SSLSocket_connect(aClient->net.ssl, aClient->net.socket,
+						addr, aClient->sslopts->verify);
 				if (rc == TCPSOCKET_INTERRUPTED)
 					aClient->connect_state = 2; /* SSL connect called - wait for completion */
 			}

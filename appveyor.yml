@@ -13,7 +13,7 @@ install:
   - cmd: C:\Python36\python --version
   - cmd: git clone https://github.com/eclipse/paho.mqtt.testing.git
   - cmd: cd paho.mqtt.testing\interoperability
-  - ps: Start-Process C:\Python36\python -ArgumentList 'startbroker.py -c client_testing.conf'
+  - ps: Start-Process C:\Python36\python -ArgumentList 'startbroker.py -c localhost_testing.conf'
   - cmd: cd ..\..
 
 build_script:

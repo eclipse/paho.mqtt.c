@@ -1,5 +1,5 @@
 #*******************************************************************************
-#  Copyright (c) 2015, 2017 logi.cals GmbH and others
+#  Copyright (c) 2015, 2018 logi.cals GmbH and others
 #
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +13,7 @@
 #  Contributors:
 #     Rainer Poisel - initial version
 #     Ian Craggs (IBM Corp.) - merge master
+#     Ian Craggs - update for MQTTV5 support
 #*******************************************************************************/
 
 # Note: on OS X you should install XCode and the associated command-line tools
@@ -46,6 +47,8 @@ SET(common_src
     SocketBuffer.c
     Heap.c
     LinkedList.c
+    MQTTV5Packet.c
+    MQTTV5Properties.c
     )
 
 IF (WIN32)

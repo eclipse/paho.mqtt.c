@@ -64,7 +64,7 @@ enum PropertyNames {
 DLLExport const char* MQTTPropertyName(enum PropertyNames);
 
 enum PropertyTypes {
-  BYTE,
+  PROPERTY_TYPE_BYTE,
   TWO_BYTE_INTEGER,
   FOUR_BYTE_INTEGER,
   VARIABLE_BYTE_INTEGER,

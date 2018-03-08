@@ -27,7 +27,7 @@ struct nameToType
   enum PropertyTypes type;
 } namesToTypes[] =
 {
-  {PAYLOAD_FORMAT_INDICATOR, BYTE},
+  {PAYLOAD_FORMAT_INDICATOR, PROPERTY_TYPE_BYTE},
   {MESSAGE_EXPIRY_INTERVAL, FOUR_BYTE_INTEGER},
   {CONTENT_TYPE, UTF_8_ENCODED_STRING},
   {RESPONSE_TOPIC, UTF_8_ENCODED_STRING},
@@ -38,22 +38,22 @@ struct nameToType
   {SERVER_KEEP_ALIVE, TWO_BYTE_INTEGER},
   {AUTHENTICATION_METHOD, UTF_8_ENCODED_STRING},
   {AUTHENTICATION_DATA, BINARY_DATA},
-  {REQUEST_PROBLEM_INFORMATION, BYTE},
+  {REQUEST_PROBLEM_INFORMATION, PROPERTY_TYPE_BYTE},
   {WILL_DELAY_INTERVAL, FOUR_BYTE_INTEGER},
-  {REQUEST_RESPONSE_INFORMATION, BYTE},
+  {REQUEST_RESPONSE_INFORMATION, PROPERTY_TYPE_BYTE},
   {RESPONSE_INFORMATION, UTF_8_ENCODED_STRING},
   {SERVER_REFERENCE, UTF_8_ENCODED_STRING},
   {REASON_STRING, UTF_8_ENCODED_STRING},
   {RECEIVE_MAXIMUM, TWO_BYTE_INTEGER},
   {TOPIC_ALIAS_MAXIMUM, TWO_BYTE_INTEGER},
   {TOPIC_ALIAS, TWO_BYTE_INTEGER},
-  {MAXIMUM_QOS, BYTE},
-  {RETAIN_AVAILABLE, BYTE},
+  {MAXIMUM_QOS, PROPERTY_TYPE_BYTE},
+  {RETAIN_AVAILABLE, PROPERTY_TYPE_BYTE},
   {USER_PROPERTY, UTF_8_STRING_PAIR},
   {MAXIMUM_PACKET_SIZE, FOUR_BYTE_INTEGER},
-  {WILDCARD_SUBSCRIPTION_AVAILABLE, BYTE},
-  {SUBSCRIPTION_IDENTIFIER_AVAILABLE, BYTE},
-  {SHARED_SUBSCRIPTION_AVAILABLE, BYTE}
+  {WILDCARD_SUBSCRIPTION_AVAILABLE, PROPERTY_TYPE_BYTE},
+  {SUBSCRIPTION_IDENTIFIER_AVAILABLE, PROPERTY_TYPE_BYTE},
+  {SHARED_SUBSCRIPTION_AVAILABLE, PROPERTY_TYPE_BYTE}
 };
 
 
@@ -96,7 +96,7 @@ int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop)
     /* calculate length */
     switch (type)
     {
-      case BYTE:
+      case PROPERTY_TYPE_BYTE:
         len = 1;
         break;
       case TWO_BYTE_INTEGER:
@@ -130,12 +130,12 @@ int MQTTProperty_write(char** pptr, MQTTProperty* prop)
       type = -1;
 
   type = MQTTProperty_getType(prop->identifier);
-  if (type >= BYTE && type <= UTF_8_STRING_PAIR)
+  if (type >= PROPERTY_TYPE_BYTE && type <= UTF_8_STRING_PAIR)
   {
     writeChar(pptr, prop->identifier);
     switch (type)
     {
-      case BYTE:
+      case PROPERTY_TYPE_BYTE:
         writeChar(pptr, prop->value.byte);
         rc = 1;
         break;
@@ -202,11 +202,11 @@ int MQTTProperty_read(MQTTProperty* prop, char** pptr, char* enddata)
 
   prop->identifier = readChar(pptr);
   type = MQTTProperty_getType(prop->identifier);
-  if (type >= BYTE && type <= UTF_8_STRING_PAIR)
+  if (type >= PROPERTY_TYPE_BYTE && type <= UTF_8_STRING_PAIR)
   {
     switch (type)
     {
-      case BYTE:
+      case PROPERTY_TYPE_BYTE:
         prop->value.byte = readChar(pptr);
         len = 1;
         break;

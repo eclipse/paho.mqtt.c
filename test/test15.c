@@ -362,7 +362,7 @@ void logProperties(MQTTProperties *props)
 
 		switch (MQTTProperty_getType(id))
 		{
-		case BYTE:
+		case PROPERTY_TYPE_BYTE:
 		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.byte);
 		  break;
 		case TWO_BYTE_INTEGER:

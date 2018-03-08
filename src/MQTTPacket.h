@@ -28,16 +28,19 @@
 #include "LinkedList.h"
 #include "Clients.h"
 
-/*BE
-include "Socket"
-include "LinkedList"
-include "Clients"
-BE*/
-
 typedef unsigned int bool;
 typedef void* (*pf)(unsigned char, char*, size_t);
 
-#define BAD_MQTT_PACKET -4
+#include "MQTTProperties.h"
+
+enum errors
+{
+	MQTTPACKET_BAD = -4,
+	MQTTPACKET_BUFFER_TOO_SHORT = -2,
+	MQTTPACKET_READ_ERROR = -1,
+	MQTTPACKET_READ_COMPLETE
+};
+
 
 enum msgTypes
 {
@@ -146,7 +149,8 @@ typedef struct
 		} bits;
 #endif
 	} flags;	 /**< connack flags byte */
-	char rc; /**< connack return code */
+	char rc; /**< connack reason code */
+	MQTTProperties properties; /**< MQTT 5.0 properties.  Not used for MQTT < 5.0 */
 } Connack;
 
 
@@ -256,7 +260,13 @@ int MQTTPacket_send_pubcomp(int msgid, networkHandles* net, const char* clientID
 
 void MQTTPacket_free_packet(MQTTPacket* pack);
 
+void writeInt4(char** pptr, int anInt);
+int readInt4(char** pptr);
+void writeMQTTLenString(char** pptr, MQTTLenString lenstring);
+int MQTTLenStringRead(MQTTLenString* lenstring, char** pptr, char* enddata);
+int MQTTPacket_VBIlen(int rem_len);
+int MQTTPacket_decodeBuf(char* buf, int* value);
+
 #include "MQTTPacketOut.h"
-#include "MQTTV5Packet.h"
 
 #endif /* MQTTPACKET_H */

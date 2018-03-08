@@ -16,6 +16,7 @@
  *    Ian Craggs - MQTT 3.1.1 support
  *    Rong Xiang, Ian Craggs - C++ compatibility
  *    Ian Craggs - binary password and will payload
+ *    Ian Craggs - MQTT 5.0 support
  *******************************************************************************/
 
 /**
@@ -37,18 +38,19 @@
 
 
 /**
- * Send an MQTT CONNECT packet down a socket.
+ * Send an MQTT CONNECT packet down a socket for V5 or later
  * @param client a structure from which to get all the required values
  * @param MQTTVersion the MQTT version to connect with
+ * @param connectProperties MQTT V5 properties for the connect packet
+ * @param willProperties MQTT V5 properties for the will message, if any
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-int MQTTPacket_send_connect(Clients* client, int MQTTVersion)
+int MQTTPacket_send_connect(Clients* client, int MQTTVersion,
+	               MQTTProperties* connectProperties, MQTTProperties* willProperties)
 {
 	char *buf, *ptr;
 	Connect packet;
 	int rc = -1, len;
-
-	MQTTProperties connectProperties = MQTTProperties_initializer;
 
 	FUNC_ENTRY;
 	packet.header.byte = 0;
@@ -63,10 +65,10 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion)
 		len += client->passwordlen+2;
 	if (MQTTVersion >= 5)
 	{
-      //if (connectProperties)
-	    len += MQTTProperties_len(&connectProperties);
-	  /*if (client->will && willProperties)
-		  len += MQTTProperties_len(willProperties);*/
+		if (connectProperties)
+			len += MQTTProperties_len(connectProperties);
+		if (client->will && willProperties)
+			len += MQTTProperties_len(willProperties);
 	}
 
 	ptr = buf = malloc(len);
@@ -91,7 +93,6 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion)
 		packet.flags.bits.willQoS = client->will->qos;
 		packet.flags.bits.willRetain = client->will->retained;
 	}
-
 	if (client->username)
 		packet.flags.bits.username = 1;
 	if (client->password)
@@ -100,10 +101,12 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion)
 	writeChar(&ptr, packet.flags.all);
 	writeInt(&ptr, client->keepAliveInterval);
 	if (MQTTVersion == 5)
-	  MQTTProperties_write(&ptr, &connectProperties);
+		MQTTProperties_write(&ptr, connectProperties);
 	writeUTF(&ptr, client->clientID);
 	if (client->will)
 	{
+		if (MQTTVersion == 5)
+			MQTTProperties_write(&ptr, willProperties);
 		writeUTF(&ptr, client->will->topic);
 		writeData(&ptr, client->will->payload, client->will->payloadlen);
 	}
@@ -136,8 +139,17 @@ void* MQTTPacket_connack(unsigned char aHeader, char* data, size_t datalen)
 
 	FUNC_ENTRY;
 	pack->header.byte = aHeader;
-	pack->flags.all = readChar(&curdata);
-	pack->rc = readChar(&curdata);
+	pack->flags.all = readChar(&curdata); /* connect flags */
+	pack->rc = readChar(&curdata); /* reason code */
+	if (datalen > 2)
+	{
+		MQTTProperties props = MQTTProperties_initializer;
+		pack->properties = props;
+		pack->properties.max_count = 10;
+		pack->properties.array = malloc(sizeof(MQTTProperty) * pack->properties.max_count);
+		if (MQTTProperties_read(&pack->properties, &curdata, curdata + datalen) != 1)
+			pack = NULL; /* signal protocol error */
+	}
 	FUNC_EXIT;
 	return pack;
 }

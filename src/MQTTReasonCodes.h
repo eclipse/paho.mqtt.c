@@ -14,7 +14,7 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
-enum ReasonCodes {
+enum MQTTReasonCodes {
   SUCCESS = 0,
   NORMAL_DISCONNECTION = 0,
   GRANTED_QOS_0 = 0,

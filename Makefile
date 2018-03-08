@@ -90,7 +90,7 @@ SYNC_SAMPLES = ${addprefix ${blddir}/samples/,${SAMPLE_FILES_C}}
 SAMPLE_FILES_A = paho_c_pub paho_c_sub MQTTAsync_subscribe MQTTAsync_publish
 ASYNC_SAMPLES = ${addprefix ${blddir}/samples/,${SAMPLE_FILES_A}}
 
-TEST_FILES_C = test1 test2 sync_client_test test_mqtt4sync
+TEST_FILES_C = test1 test15 test2 sync_client_test test_mqtt4sync
 SYNC_TESTS = ${addprefix ${blddir}/test/,${TEST_FILES_C}}
 
 TEST_FILES_CS = test3

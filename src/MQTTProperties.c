@@ -14,8 +14,10 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
-#include "MQTTV5Properties.h"
+#include "MQTTProperties.h"
+
 #include "MQTTPacket.h"
+#include "Heap.h"
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
@@ -240,12 +242,17 @@ int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata)
   int remlength = 0;
 
   properties->count = 0;
-	if (enddata - (*pptr) > 0) /* enough length to read the VBI? */
+  if (enddata - (*pptr) > 0) /* enough length to read the VBI? */
   {
     *pptr += MQTTPacket_decodeBuf(*pptr, &remlength);
     properties->length = remlength;
-    while (properties->count < properties->max_count && remlength > 0)
+    while (remlength > 0)
     {
+    	  if (properties->count == properties->max_count)
+    	  {
+    		  properties->max_count += 10;
+    		  properties->array = realloc(properties->array, sizeof(MQTTProperty) * properties->max_count);
+    	  }
       remlength -= MQTTProperty_read(&properties->array[properties->count], pptr, enddata);
       properties->count++;
     }
@@ -254,4 +261,75 @@ int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata)
   }
 
   return rc;
+}
+
+struct {
+	enum PropertyNames value;
+	const char* name;
+} nameToString[] =
+{
+  {PAYLOAD_FORMAT_INDICATOR, "PAYLOAD_FORMAT_INDICATOR"},
+  {MESSAGE_EXPIRY_INTERVAL, "MESSAGE_EXPIRY_INTERVAL"},
+  {CONTENT_TYPE, "CONTENT_TYPE"},
+  {RESPONSE_TOPIC, "RESPONSE_TOPIC"},
+  {CORRELATION_DATA, "CORRELATION_DATA"},
+  {SUBSCRIPTION_IDENTIFIER, "SUBSCRIPTION_IDENTIFIER"},
+  {SESSION_EXPIRY_INTERVAL, "SESSION_EXPIRY_INTERVAL"},
+  {ASSIGNED_CLIENT_IDENTIFER, "ASSIGNED_CLIENT_IDENTIFER"},
+  {SERVER_KEEP_ALIVE, "SERVER_KEEP_ALIVE"},
+  {AUTHENTICATION_METHOD, "AUTHENTICATION_METHOD"},
+  {AUTHENTICATION_DATA, "AUTHENTICATION_DATA"},
+  {REQUEST_PROBLEM_INFORMATION, "REQUEST_PROBLEM_INFORMATION"},
+  {WILL_DELAY_INTERVAL, "WILL_DELAY_INTERVAL"},
+  {REQUEST_RESPONSE_INFORMATION, "REQUEST_RESPONSE_INFORMATION"},
+  {RESPONSE_INFORMATION, "RESPONSE_INFORMATION"},
+  {SERVER_REFERENCE, "SERVER_REFERENCE"},
+  {REASON_STRING, "REASON_STRING"},
+  {RECEIVE_MAXIMUM, "RECEIVE_MAXIMUM"},
+  {TOPIC_ALIAS_MAXIMUM, "TOPIC_ALIAS_MAXIMUM"},
+  {TOPIC_ALIAS, "TOPIC_ALIAS"},
+  {MAXIMUM_QOS, "MAXIMUM_QOS"},
+  {RETAIN_AVAILABLE, "RETAIN_AVAILABLE"},
+  {USER_PROPERTY, "USER_PROPERTY"},
+  {MAXIMUM_PACKET_SIZE, "MAXIMUM_PACKET_SIZE"},
+  {WILDCARD_SUBSCRIPTION_AVAILABLE, "WILDCARD_SUBSCRIPTION_AVAILABLE"},
+  {SUBSCRIPTION_IDENTIFIER_AVAILABLE, "SUBSCRIPTION_IDENTIFIER_AVAILABLE"},
+  {SHARED_SUBSCRIPTION_AVAILABLE, "SHARED_SUBSCRIPTION_AVAILABLE"}
+};
+
+const char* MQTTPropertyName(enum PropertyNames value)
+{
+  int i = 0;
+  const char* result = NULL;
+
+  for (i = 0; i < ARRAY_SIZE(nameToString); ++i)
+  {
+    if (nameToString[i].value == value)
+    {
+    	  result = nameToString[i].name;
+    	  break;
+    }
+  }
+  return result;
+}
+
+
+DLLExport void MQTTProperties_free(MQTTProperties* props)
+{
+  int i = 0;
+
+  for (i = 0; i < props->count; ++i)
+  {
+    int id = props->array[i].identifier;
+
+    switch (MQTTProperty_getType(id))
+    {
+    case BINARY_DATA:
+    	case UTF_8_ENCODED_STRING:
+    	  break;
+    	case UTF_8_STRING_PAIR:
+	  break;
+    }
+  }
+  free(props->array);
 }

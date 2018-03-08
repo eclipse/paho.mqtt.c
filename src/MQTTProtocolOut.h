@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,6 +15,7 @@
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - MQTT 3.1.1 support
  *    Ian Craggs - SNI support
+ *    Ian Craggs - MQTT 5.0 support
  *******************************************************************************/
 
 #if !defined(MQTTPROTOCOLOUT_H)
@@ -33,9 +34,11 @@
 char* MQTTProtocol_addressPort(const char* uri, int* port);
 void MQTTProtocol_reconnect(const char* ip_address, Clients* client);
 #if defined(OPENSSL)
-int MQTTProtocol_connect(const char* ip_address, Clients* acClients, int ssl, int MQTTVersion);
+int MQTTProtocol_connect(const char* ip_address, Clients* acClients, int ssl, int MQTTVersion,
+		MQTTProperties* connectProperties, MQTTProperties* willProperties);
 #else
-int MQTTProtocol_connect(const char* ip_address, Clients* acClients, int MQTTVersion);
+int MQTTProtocol_connect(const char* ip_address, Clients* acClients, int MQTTVersion,
+		MQTTProperties* connectProperties, MQTTProperties* willProperties);
 #endif
 int MQTTProtocol_handlePingresps(void* pack, int sock);
 int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss, int msgID);

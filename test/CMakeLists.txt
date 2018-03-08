@@ -95,6 +95,25 @@ SET_TESTS_PROPERTIES(
 	PROPERTIES TIMEOUT 540
 )
 
+ADD_EXECUTABLE(
+	test15
+	test15.c
+)
+
+TARGET_LINK_LIBRARIES(
+	test15
+	paho-mqtt3c
+)
+
+ADD_TEST(
+	NAME test15-1-single-thread-client
+	COMMAND "test15" "--test_no" "1" "--connection" ${MQTT_TEST_BROKER}
+)
+
+SET_TESTS_PROPERTIES(
+	test15-1-single-thread-client
+	PROPERTIES TIMEOUT 540
+)
 
 ADD_EXECUTABLE(
 	test2

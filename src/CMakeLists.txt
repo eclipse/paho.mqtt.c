@@ -47,8 +47,7 @@ SET(common_src
     SocketBuffer.c
     Heap.c
     LinkedList.c
-    MQTTV5Packet.c
-    MQTTV5Properties.c
+    MQTTProperties.c
     )
 
 IF (WIN32)

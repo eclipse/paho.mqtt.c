@@ -34,6 +34,7 @@
  *    Ian Craggs - auto reconnect timing fix #218
  *    Ian Craggs - fix for issue #190
  *    Ian Craggs - check for NULL SSL options #334
+ *    Ian Craggs - MQTT 5.0 support
  *******************************************************************************/
 
 /**
@@ -1237,9 +1238,11 @@ static int MQTTAsync_processCommand(void)
 
 			Log(TRACE_MIN, -1, "Connecting to serverURI %s with MQTT version %d", serverURI, command->command.details.conn.MQTTVersion);
 #if defined(OPENSSL)
-			rc = MQTTProtocol_connect(serverURI, command->client->c, command->client->ssl, command->command.details.conn.MQTTVersion);
+			rc = MQTTProtocol_connect(serverURI, command->client->c, command->client->ssl, command->command.details.conn.MQTTVersion,
+					NULL, NULL);
 #else
-			rc = MQTTProtocol_connect(serverURI, command->client->c, command->command.details.conn.MQTTVersion);
+			rc = MQTTProtocol_connect(serverURI, command->client->c, command->command.details.conn.MQTTVersion,
+					NULL, NULL);
 #endif
 			if (command->client->c->connect_state == 0)
 				rc = SOCKET_ERROR;
@@ -2921,7 +2924,7 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 				{
 					rc = MQTTCLIENT_SUCCESS;
 					m->c->connect_state = 3;
-					if (MQTTPacket_send_connect(m->c, m->connect.details.conn.MQTTVersion) == SOCKET_ERROR)
+					if (MQTTPacket_send_connect(m->c, m->connect.details.conn.MQTTVersion, NULL, NULL) == SOCKET_ERROR)
 					{
 						rc = SOCKET_ERROR;
 						goto exit;
@@ -2940,7 +2943,7 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 		{
 #endif
 			m->c->connect_state = 3; /* TCP/SSL connect completed, in which case send the MQTT connect packet */
-			if ((rc = MQTTPacket_send_connect(m->c, m->connect.details.conn.MQTTVersion)) == SOCKET_ERROR)
+			if ((rc = MQTTPacket_send_connect(m->c, m->connect.details.conn.MQTTVersion, NULL, NULL)) == SOCKET_ERROR)
 				goto exit;
 #if defined(OPENSSL)
 		}
@@ -2956,7 +2959,7 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 		if(!m->c->cleansession && m->c->session == NULL)
 			m->c->session = SSL_get1_session(m->c->net.ssl);
 		m->c->connect_state = 3; /* SSL connect completed, in which case send the MQTT connect packet */
-		if ((rc = MQTTPacket_send_connect(m->c, m->connect.details.conn.MQTTVersion)) == SOCKET_ERROR)
+		if ((rc = MQTTPacket_send_connect(m->c, m->connect.details.conn.MQTTVersion, NULL, NULL)) == SOCKET_ERROR)
 			goto exit;
 	}
 #endif

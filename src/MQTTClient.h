@@ -122,6 +122,8 @@
 /// @endcond
 */
 
+#include "MQTTProperties.h"
+#include "MQTTReasonCodes.h"
 #if !defined(NO_PERSISTENCE)
 #include "MQTTClientPersistence.h"
 #endif
@@ -752,6 +754,16 @@ DLLExport MQTTClient_nameValue* MQTTClient_getVersionInfo(void);
   * <b>6-255</b>: Reserved for future use<br>
   */
 DLLExport int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options);
+
+
+typedef struct MQTTResponse
+{
+	enum MQTTReasonCodes reasonCode;
+	MQTTProperties* properties; /* optional */
+} MQTTResponse;
+
+DLLExport MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connectOptions* options,
+		MQTTProperties* connectProperties, MQTTProperties* willProperties);
 
 /**
   * This function attempts to disconnect the client from the MQTT

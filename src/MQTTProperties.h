@@ -53,6 +53,16 @@ enum PropertyNames {
   SHARED_SUBSCRIPTION_AVAILABLE = 42
 };
 
+#if defined(WIN32) || defined(WIN64)
+  #define DLLImport __declspec(dllimport)
+  #define DLLExport __declspec(dllexport)
+#else
+  #define DLLImport extern
+  #define DLLExport __attribute__ ((visibility ("default")))
+#endif
+
+DLLExport const char* MQTTPropertyName(enum PropertyNames);
+
 enum PropertyTypes {
   BYTE,
   TWO_BYTE_INTEGER,
@@ -62,6 +72,8 @@ enum PropertyTypes {
   UTF_8_ENCODED_STRING,
   UTF_8_STRING_PAIR
 };
+
+DLLExport int MQTTProperty_getType(int identifier);
 
 
 typedef struct
@@ -94,10 +106,12 @@ int MQTTProperties_len(MQTTProperties* props);
  * @param prop
  * @return whether the write succeeded or not, number of bytes written or < 0
  */
-int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop);
+DLLExport int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop);
 
 int MQTTProperties_write(char** pptr, MQTTProperties* properties);
 
 int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata);
+
+DLLExport void MQTTProperties_free(MQTTProperties* properties);
 
 #endif /* MQTTPROPERTIES_H */

@@ -20,6 +20,7 @@
  *    Ian Craggs - SNI support
  *    Ian Craggs - fix for issue #164
  *    Ian Craggs - fix for issue #179
+ *    Ian Craggs - MQTT 5.0 support
  *******************************************************************************/
 
 /**
@@ -94,9 +95,11 @@ char* MQTTProtocol_addressPort(const char* uri, int* port)
  * @return return code
  */
 #if defined(OPENSSL)
-int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int MQTTVersion)
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int MQTTVersion,
+		MQTTProperties* connectProperties, MQTTProperties* willProperties)
 #else
-int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int MQTTVersion)
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int MQTTVersion,
+		MQTTProperties* connectProperties, MQTTProperties* willProperties)
 #endif
 {
 	int rc, port;
@@ -129,7 +132,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int MQTTVersi
 		if (rc == 0)
 		{
 			/* Now send the MQTT connect packet */
-			if ((rc = MQTTPacket_send_connect(aClient, MQTTVersion)) == 0)
+			if ((rc = MQTTPacket_send_connect(aClient, MQTTVersion, connectProperties, willProperties)) == 0)
 				aClient->connect_state = 3; /* MQTT Connect sent - wait for CONNACK */ 
 			else
 				aClient->connect_state = 0;

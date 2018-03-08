@@ -14,6 +14,7 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - MQTT 3.1.1 support
+ *    Ian Craggs - MQTT 5.0 support
  *******************************************************************************/
 
 #if !defined(MQTTPACKETOUT_H)
@@ -21,7 +22,8 @@
 
 #include "MQTTPacket.h"
 
-int MQTTPacket_send_connect(Clients* client, int MQTTVersion);
+int MQTTPacket_send_connect(Clients* client, int MQTTVersion,
+		MQTTProperties* connectProperties, MQTTProperties* willProperties);
 void* MQTTPacket_connack(unsigned char aHeader, char* data, size_t datalen);
 
 int MQTTPacket_send_pingreq(networkHandles* net, const char* clientID);

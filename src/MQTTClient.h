@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -175,6 +175,10 @@
  * Return code: Attempting SSL connection using non-SSL version of library
  */
 #define MQTTCLIENT_SSL_NOT_SUPPORTED -10
+/**
+ * Return code: protocol prefix in serverURI should be tcp:// or ssl://
+ */
+#define MQTTCLIENT_BAD_PROTOCOL -14
 
 /**
  * Default MQTT version to connect with.  Use 3.1.1 then fall back to 3.1
@@ -540,9 +544,23 @@ typedef struct
     */
     int sslVersion;
 
+    /**
+     * Whether to carry out post-connect checks, including that a certificate
+     * matches the given host name.
+     * Exists only if struct_version >= 2
+     */
+    int verify;
+
+    /**
+     * From the OpenSSL documentation:
+     * If CApath is not NULL, it points to a directory containing CA certificates in PEM format.
+     * Exists only if struct_version >= 2
+	 */
+	const char* CApath;
+
 } MQTTClient_SSLOptions;
 
-#define MQTTClient_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 1, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT }
+#define MQTTClient_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 2, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL }
 
 /**
  * MQTTClient_connectOptions defines several settings that control the way the

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -32,6 +32,7 @@
  *    Ian Craggs - SNI support, message queue unpersist bug
  *    Ian Craggs - binary will message support
  *    Ian Craggs - waitforCompletion fix #240
+ *    Ian Craggs - check for NULL SSL options #334
  *******************************************************************************/
 
 /**
@@ -317,6 +318,20 @@ int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* cli
 	{
 		rc = MQTTCLIENT_BAD_UTF8_STRING;
 		goto exit;
+	}
+
+	if (strstr(serverURI, "://") != NULL)
+	{
+		if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) != 0
+#if defined(OPENSSL)
+            && strncmp(URI_SSL, serverURI, strlen(URI_SSL)) != 0
+
+#endif
+			)
+		{
+			rc = MQTTCLIENT_BAD_PROTOCOL;
+			goto exit;
+		}
 	}
 
 	if (!initialized)
@@ -653,7 +668,8 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 #if defined(OPENSSL)
 			else if (m->c->connect_state == 2 && !Thread_check_sem(m->connect_sem))
 			{
-				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket);
+				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket,
+						m->serverURI, m->c->sslopts->verify);
 				if (rc == 1 || rc == SSL_FATAL)
 				{
 					if (rc == 1 && !m->c->cleansession && m->c->session == NULL)
@@ -894,7 +910,8 @@ static int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOpt
 				if (m->c->session != NULL)
 					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)
 						Log(TRACE_MIN, -1, "Failed to set SSL session with stored data, non critical");
-				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket);
+				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket,
+						m->serverURI, m->c->sslopts->verify);
 				if (rc == TCPSOCKET_INTERRUPTED)
 					m->c->connect_state = 2;  /* the connect is still in progress */
 				else if (rc == SSL_FATAL)
@@ -1096,6 +1113,11 @@ static int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* o
 			free((void*)m->c->sslopts->privateKeyPassword);
 		if (m->c->sslopts->enabledCipherSuites)
 			free((void*)m->c->sslopts->enabledCipherSuites);
+		if (m->c->sslopts->struct_version >= 2)
+		{
+			if (m->c->sslopts->CApath)
+				free((void*)m->c->sslopts->CApath);
+		}
 		free(m->c->sslopts);
 		m->c->sslopts = NULL;
 	}
@@ -1118,6 +1140,12 @@ static int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* o
 		m->c->sslopts->enableServerCertAuth = options->ssl->enableServerCertAuth;
 		if (m->c->sslopts->struct_version >= 1)
 			m->c->sslopts->sslVersion = options->ssl->sslVersion;
+		if (m->c->sslopts->struct_version >= 2)
+		{
+			m->c->sslopts->verify = options->ssl->verify;
+			if (m->c->sslopts->CApath)
+				m->c->sslopts->CApath = MQTTStrdup(options->ssl->CApath);
+		}
 	}
 #endif
 
@@ -1171,6 +1199,14 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 		goto exit;
 	}
 
+#if defined(OPENSSL)
+	if (m->ssl && options->ssl == NULL)
+	{
+		rc = MQTTCLIENT_NULL_PARAMETER;
+		goto exit;
+	}
+#endif
+
 	if (options->will) /* check validity of will options structure */
 	{
 		if (strncmp(options->will->struct_id, "MQTW", 4) != 0 || (options->will->struct_version != 0 && options->will->struct_version != 1))
@@ -1180,10 +1216,11 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 		}
 	}
 
+
 #if defined(OPENSSL)
 	if (options->struct_version != 0 && options->ssl) /* check validity of SSL options structure */
 	{
-		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version < 0 || options->ssl->struct_version > 1)
+		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version < 0 || options->ssl->struct_version > 2)
 		{
 			rc = MQTTCLIENT_BAD_STRUCTURE;
 			goto exit;
@@ -1800,7 +1837,8 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 #if defined(OPENSSL)
 				else if (m->c->connect_state == 2)
 				{
-					*rc = SSLSocket_connect(m->c->net.ssl, sock);
+					*rc = SSLSocket_connect(m->c->net.ssl, sock,
+							m->serverURI, m->c->sslopts->verify);
 					if (*rc == SSL_FATAL)
 						break;
 					else if (*rc == 1) /* rc == 1 means SSL connect has finished and succeeded */

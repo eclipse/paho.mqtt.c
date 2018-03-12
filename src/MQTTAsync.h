@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -172,6 +172,11 @@
  * Return code: Attempting SSL connection using non-SSL version of library
  */
 #define MQTTASYNC_SSL_NOT_SUPPORTED -13
+/**
+ * Return code: protocol prefix in serverURI should be tcp:// or ssl://
+ */
+#define MQTTASYNC_BAD_PROTOCOL -14
+
 
 /**
  * Default MQTT version to connect with.  Use 3.1.1 then fall back to 3.1
@@ -455,13 +460,18 @@ typedef struct
     * completion will be received.
     */
 	MQTTAsync_onFailure* onFailure;
-	/**
-	* A pointer to any application-specific context. The
+  /**
+    * A pointer to any application-specific context. The
     * the <i>context</i> pointer is passed to success or failure callback functions to
     * provide access to the context information in the callback.
     */
 	void* context;
-	MQTTAsync_token token;   /* output */
+  /**
+    * A token is returned from the call.  It can be used to track
+    * the state of this request, both in the callbacks and in future calls
+    * such as ::MQTTAsync_waitForCompletion.
+    */
+	MQTTAsync_token token;
 } MQTTAsync_responseOptions;
 
 #define MQTTAsync_responseOptions_initializer { {'M', 'Q', 'T', 'R'}, 0, NULL, NULL, 0, 0 }
@@ -688,9 +698,22 @@ typedef struct
     */
     int sslVersion;
 
+    /**
+     * Whether to carry out post-connect checks, including that a certificate
+     * matches the given host name.
+     * Exists only if struct_version >= 2
+     */
+    int verify;
+
+    /**
+     * From the OpenSSL documentation:
+     * If CApath is not NULL, it points to a directory containing CA certificates in PEM format.
+     * Exists only if struct_version >= 2
+	 */
+	const char* CApath;
 } MQTTAsync_SSLOptions;
 
-#define MQTTAsync_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 1, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT }
+#define MQTTAsync_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 2, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL }
 
 /**
  * MQTTAsync_connectOptions defines several settings that control the way the

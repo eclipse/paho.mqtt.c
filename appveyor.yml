@@ -5,25 +5,15 @@ image:
 configuration: Debug
 install:
   - cmd: openssl version
-
   - cmd: python --version
-
   - cmd: netsh advfirewall firewall add rule name="Python 2.7" dir=in action=allow program="C:\Python27\python.exe" enable=yes
-
   - cmd: netsh advfirewall firewall add rule name="Open Port 1883" dir=in action=allow protocol=TCP localport=1883
-
   - cmd: netsh advfirewall set allprofiles state off
-
   - ps: Start-Process python -ArgumentList 'test\mqttsas2.py'
-
   - cmd: C:\Python36\python --version
-
   - cmd: git clone https://github.com/eclipse/paho.mqtt.testing.git
-
   - cmd: cd paho.mqtt.testing\interoperability
-
-  - ps: Start-Process C:\Python36\python -ArgumentList 'startbroker.py'
-
+  - ps: Start-Process C:\Python36\python -ArgumentList 'startbroker.py -c localhost_testing.conf'
   - cmd: cd ..\..
 
 build_script:
@@ -45,6 +35,42 @@ build_script:
     ctest -T test -VV
 
     cd ..
+
+after_build:
+- cmd: >-
+    set ZIPNAME=eclipse-paho-mqtt-c-windows.zip 
+
+    7z a %ZIPNAME% %APPVEYOR_BUILD_FOLDER%\*.html
+
+    7z a %ZIPNAME% %APPVEYOR_BUILD_FOLDER%\*.md
+
+    7z a %ZIPNAME% %APPVEYOR_BUILD_FOLDER%\*-v10
+
+    7z a %ZIPNAME% build.paho\src\*.dll
+
+    7z a %ZIPNAME% build.paho\src\*.lib
+
+    7z rn %ZIPNAME% build.paho\src lib
+
+    7z a %ZIPNAME% build.paho\src\samples\*.exe
+
+    7z rn %ZIPNAME% build.paho\src\samples bin
+
+    7z a %ZIPNAME% %APPVEYOR_BUILD_FOLDER%\build.paho\src\MQTTVersion.exe
+
+    7z rn %ZIPNAME% MQTTVersion.exe bin\MQTTVersion.exe
+
+    7z a %ZIPNAME% src\MQTTClient.h src\MQTTAsync.h src\MQTTClientPersistence.h
+
+    7z rn %ZIPNAME% src include
+
+    7z a %ZIPNAME% src\samples\*.c
+
+    7z rn %ZIPNAME% src\samples samples
+
+artifacts:
+- path: eclipse-paho-mqtt-c-windows.zip
+  name: paho-mqtt-c
 
 test:
   assemblies: build/Testing/*/Test.xml

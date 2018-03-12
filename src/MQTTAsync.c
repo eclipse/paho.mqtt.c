@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -33,6 +33,7 @@
  *    Ian Craggs - SNI support
  *    Ian Craggs - auto reconnect timing fix #218
  *    Ian Craggs - fix for issue #190
+ *    Ian Craggs - check for NULL SSL options #334
  *******************************************************************************/
 
 /**
@@ -464,6 +465,20 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 		goto exit;
 	}
 
+	if (strstr(serverURI, "://") != NULL)
+	{
+		if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) != 0
+#if defined(OPENSSL)
+            && strncmp(URI_SSL, serverURI, strlen(URI_SSL)) != 0
+
+#endif
+			)
+		{
+			rc = MQTTASYNC_BAD_PROTOCOL;
+			goto exit;
+		}
+	}
+
 	if (options && (strncmp(options->struct_id, "MQCO", 4) != 0 || options->struct_version != 0))
 	{
 		rc = MQTTASYNC_BAD_STRUCTURE;
@@ -718,7 +733,7 @@ static MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int bufle
 		case SUBSCRIBE:
 			command->details.sub.count = *(int*)ptr;
 			ptr += sizeof(int);
-			
+
 			if (command->details.sub.count > 0)
 			{
 					command->details.sub.topics = (char **)malloc(sizeof(char *) * command->details.sub.count);
@@ -741,10 +756,10 @@ static MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int bufle
 		case UNSUBSCRIBE:
 			command->details.unsub.count = *(int*)ptr;
 			ptr += sizeof(int);
-			
+
 			if (command->details.unsub.count > 0)
 			{
-					command->details.unsub.topics = (char **)malloc(sizeof(char *) * command->details.unsub.count);					
+					command->details.unsub.topics = (char **)malloc(sizeof(char *) * command->details.unsub.count);
 			}
 
 			for (i = 0; i < command->details.unsub.count; ++i)
@@ -1753,8 +1768,8 @@ static int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack)
 
 				while (ListNextElement(m->c->outboundMsgs, &outcurrent))
 				{
-					Messages* m = (Messages*)(outcurrent->content);
-					m->lastTouch = 0;
+					Messages* messages = (Messages*)(outcurrent->content);
+					messages->lastTouch = 0;
 				}
 				MQTTProtocol_retry((time_t)0, 1, 1);
 				if (m->c->connected != 1)
@@ -1845,11 +1860,11 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 
 				if (rc)
 				{
-					ListRemove(m->c->messageQueue, qe);
 #if !defined(NO_PERSISTENCE)
 					if (m->c->persistence)
 						MQTTPersistence_unpersistQueueEntry(m->c, (MQTTPersistence_qEntry*)qe);
 #endif
+					ListRemove(m->c->messageQueue, qe); /* qe is freed here */
 				}
 				else
 					Log(TRACE_MIN, -1, "False returned from messageArrived for client %s, message remains on queue",
@@ -2272,6 +2287,15 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		rc = MQTTASYNC_BAD_STRUCTURE;
 		goto exit;
 	}
+
+#if defined(OPENSSL)
+	if (m->ssl && options->ssl == NULL)
+	{
+		rc = MQTTCLIENT_NULL_PARAMETER;
+		goto exit;
+	}
+#endif
+
 	if (options->will) /* check validity of will options structure */
 	{
 		if (strncmp(options->will->struct_id, "MQTW", 4) != 0 || (options->will->struct_version != 0 && options->will->struct_version != 1))
@@ -2287,7 +2311,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	}
 	if (options->struct_version != 0 && options->ssl) /* check validity of SSL options structure */
 	{
-		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version < 0 || options->ssl->struct_version > 1)
+		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version < 0 || options->ssl->struct_version > 2)
 		{
 			rc = MQTTASYNC_BAD_STRUCTURE;
 			goto exit;
@@ -2387,6 +2411,12 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 			free((void*)m->c->sslopts->privateKeyPassword);
 		if (m->c->sslopts->enabledCipherSuites)
 			free((void*)m->c->sslopts->enabledCipherSuites);
+		if (m->c->sslopts->struct_version >= 2)
+		{
+			if (m->c->sslopts->CApath)
+				free((void*)m->c->sslopts->CApath);
+		}
+		free(m->c->sslopts);
 		free((void*)m->c->sslopts);
 		m->c->sslopts = NULL;
 	}
@@ -2409,6 +2439,12 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		m->c->sslopts->enableServerCertAuth = options->ssl->enableServerCertAuth;
 		if (m->c->sslopts->struct_version >= 1)
 			m->c->sslopts->sslVersion = options->ssl->sslVersion;
+		if (m->c->sslopts->struct_version >= 2)
+		{
+			m->c->sslopts->verify = options->ssl->verify;
+			if (m->c->sslopts->CApath)
+				m->c->sslopts->CApath = MQTTStrdup(options->ssl->CApath);
+		}
 	}
 #else
 	if (options->struct_version != 0 && options->ssl)
@@ -2887,7 +2923,8 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 				if (m->c->session != NULL)
 					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)
 						Log(TRACE_MIN, -1, "Failed to set SSL session with stored data, non critical");
-				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket);
+				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket,
+						m->serverURI, m->c->sslopts->verify);
 				if (rc == TCPSOCKET_INTERRUPTED)
 				{
 					rc = MQTTCLIENT_SUCCESS; /* the connect is still in progress */
@@ -2930,7 +2967,8 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 #if defined(OPENSSL)
 	else if (m->c->connect_state == 2) /* SSL connect sent - wait for completion */
 	{
-		if ((rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket)) != 1)
+		if ((rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket,
+				m->serverURI, m->c->sslopts->verify)) != 1)
 			goto exit;
 
 		if(!m->c->cleansession && m->c->session == NULL)

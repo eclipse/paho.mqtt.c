@@ -58,8 +58,8 @@ struct Options
 	unsigned int iterrations;
 } options =
 {
-	"iot.eclipse.org:1883",
 	"localhost:1883",
+	"localhost:1884",
 	0,
 	0,
 	0,

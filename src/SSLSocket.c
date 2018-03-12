@@ -1,13 +1,13 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
- * and Eclipse Distribution License v1.0 which accompany this distribution. 
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
- * The Eclipse Public License is available at 
+ * The Eclipse Public License is available at
  *    http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
@@ -34,12 +34,15 @@
 #include "Log.h"
 #include "StackTrace.h"
 #include "Socket.h"
+char* MQTTProtocol_addressPort(const char* uri, int* port);
 
 #include "Heap.h"
 
+#include <string.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/crypto.h>
+#include <openssl/x509v3.h>
 
 extern Sockets s;
 
@@ -202,8 +205,8 @@ void SSL_CTX_info_callback(const SSL* ssl, int where, int ret)
 {
 	if (where & SSL_CB_LOOP)
 	{
-		Log(TRACE_PROTOCOL, 1, "SSL state %s:%s:%s", 
-                  (where & SSL_ST_CONNECT) ? "connect" : (where & SSL_ST_ACCEPT) ? "accept" : "undef", 
+		Log(TRACE_PROTOCOL, 1, "SSL state %s:%s:%s",
+                  (where & SSL_ST_CONNECT) ? "connect" : (where & SSL_ST_ACCEPT) ? "accept" : "undef",
                     SSL_state_string_long(ssl), SSL_get_cipher_name(ssl));
 	}
 	else if (where & SSL_CB_EXIT)
@@ -215,26 +218,26 @@ void SSL_CTX_info_callback(const SSL* ssl, int where, int ret)
 	else if (where & SSL_CB_ALERT)
 	{
 		Log(TRACE_PROTOCOL, 1, "SSL alert %s:%s:%s",
-                  (where & SSL_CB_READ) ? "read" : "write", 
+                  (where & SSL_CB_READ) ? "read" : "write",
                     SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
 	}
 	else if (where & SSL_CB_HANDSHAKE_START)
 	{
 		Log(TRACE_PROTOCOL, 1, "SSL handshake started %s:%s:%s",
-                  (where & SSL_CB_READ) ? "read" : "write", 
+                  (where & SSL_CB_READ) ? "read" : "write",
                     SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
 	}
 	else if (where & SSL_CB_HANDSHAKE_DONE)
 	{
-		Log(TRACE_PROTOCOL, 1, "SSL handshake done %s:%s:%s", 
+		Log(TRACE_PROTOCOL, 1, "SSL handshake done %s:%s:%s",
                   (where & SSL_CB_READ) ? "read" : "write",
                     SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
-		Log(TRACE_PROTOCOL, 1, "SSL certificate verification: %s", 
+		Log(TRACE_PROTOCOL, 1, "SSL certificate verification: %s",
                     SSL_get_verify_result_string(SSL_get_verify_result(ssl)));
 	}
 	else
 	{
-		Log(TRACE_PROTOCOL, 1, "SSL state %s:%s:%s", SSL_state_string_long(ssl), 
+		Log(TRACE_PROTOCOL, 1, "SSL state %s:%s:%s", SSL_state_string_long(ssl),
                    SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
 	}
 }
@@ -271,7 +274,7 @@ char* SSLSocket_get_version_string(int version)
 			break;
 		}
 	}
-	
+
 	if (retstring == NULL)
 	{
 		sprintf(buf, "%i", version);
@@ -281,11 +284,11 @@ char* SSLSocket_get_version_string(int version)
 }
 
 
-void SSL_CTX_msg_callback(int write_p, int version, int content_type, const void* buf, size_t len, 
+void SSL_CTX_msg_callback(int write_p, int version, int content_type, const void* buf, size_t len,
         SSL* ssl, void* arg)
-{  
+{
 
-/*  
+/*
 called by the SSL/TLS library for a protocol message, the function arguments have the following meaning:
 
 write_p
@@ -308,9 +311,9 @@ The user-defined argument optionally defined by SSL_CTX_set_msg_callback_arg() o
 
 */
 
-	Log(TRACE_PROTOCOL, -1, "%s %s %d buflen %d", (write_p ? "sent" : "received"), 
+	Log(TRACE_PROTOCOL, -1, "%s %s %d buflen %d", (write_p ? "sent" : "received"),
 		SSLSocket_get_version_string(version),
-		content_type, (int)len);	
+		content_type, (int)len);
 }
 
 
@@ -432,23 +435,23 @@ int SSLSocket_initialize(void)
 	/*int prc;*/
 	int i;
 	int lockMemSize;
-	
+
 	FUNC_ENTRY;
 
 	if (handle_openssl_init)
 	{
 		if ((rc = SSL_library_init()) != 1)
 			rc = -1;
-			
+
 		ERR_load_crypto_strings();
 		SSL_load_error_strings();
-		
-		/* OpenSSL 0.9.8o and 1.0.0a and later added SHA2 algorithms to SSL_library_init(). 
-		Applications which need to use SHA2 in earlier versions of OpenSSL should call 
+
+		/* OpenSSL 0.9.8o and 1.0.0a and later added SHA2 algorithms to SSL_library_init().
+		Applications which need to use SHA2 in earlier versions of OpenSSL should call
 		OpenSSL_add_all_algorithms() as well. */
-		
+
 		OpenSSL_add_all_algorithms();
-		
+
 		lockMemSize = CRYPTO_num_locks() * sizeof(ssl_mutex_type);
 
 		sslLocks = malloc(lockMemSize);
@@ -471,9 +474,9 @@ int SSLSocket_initialize(void)
 		CRYPTO_set_id_callback(SSLThread_id);
 #endif
 		CRYPTO_set_locking_callback(SSLLocks_callback);
-		
+
 	}
-	
+
 	SSL_create_mutex(&sslCoreMutex);
 
 exit:
@@ -484,7 +487,7 @@ exit:
 void SSLSocket_terminate(void)
 {
 	FUNC_ENTRY;
-	
+
 	if (handle_openssl_init)
 	{
 		EVP_cleanup();
@@ -501,9 +504,9 @@ void SSLSocket_terminate(void)
 			free(sslLocks);
 		}
 	}
-	
+
 	SSL_destroy_mutex(&sslCoreMutex);
-	
+
 	FUNC_EXIT;
 }
 
@@ -511,7 +514,7 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 {
 	int rc = 1;
 	const char* ciphers = NULL;
-	
+
 	FUNC_ENTRY;
 	if (net->ctx == NULL)
 	{
@@ -550,15 +553,15 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 			goto exit;
 		}
 	}
-	
+
 	if (opts->keyStore)
 	{
 		if ((rc = SSL_CTX_use_certificate_chain_file(net->ctx, opts->keyStore)) != 1)
 		{
 			SSLSocket_error("SSL_CTX_use_certificate_chain_file", NULL, net->socket, rc);
 			goto free_ctx; /*If we can't load the certificate (chain) file then loading the privatekey won't work either as it needs a matching cert already loaded */
-		}	
-			
+		}
+
 		if (opts->privateKey == NULL)
 			opts->privateKey = opts->keyStore;   /* the privateKey can be included in the keyStore */
 
@@ -567,7 +570,7 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 			SSL_CTX_set_default_passwd_cb(net->ctx, pem_passwd_cb);
 			SSL_CTX_set_default_passwd_cb_userdata(net->ctx, (void*)opts->privateKeyPassword);
 		}
-		
+
 		/* support for ASN.1 == DER format? DER can contain only one certificate? */
 		rc = SSL_CTX_use_PrivateKey_file(net->ctx, opts->privateKey, SSL_FILETYPE_PEM);
 		if (opts->privateKey == opts->keyStore)
@@ -576,7 +579,7 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 		{
 			SSLSocket_error("SSL_CTX_use_PrivateKey_file", NULL, net->socket, rc);
 			goto free_ctx;
-		}  
+		}
 	}
 
 	if (opts->trustStore)
@@ -585,7 +588,7 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 		{
 			SSLSocket_error("SSL_CTX_load_verify_locations", NULL, net->socket, rc);
 			goto free_ctx;
-		}                               
+		}
 	}
 	else if ((rc = SSL_CTX_set_default_verify_paths(net->ctx)) != 1)
 	{
@@ -594,7 +597,7 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	}
 
 	if (opts->enabledCipherSuites == NULL)
-		ciphers = "DEFAULT"; 
+		ciphers = "DEFAULT";
 	else
 		ciphers = opts->enabledCipherSuites;
 
@@ -602,15 +605,15 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	{
 		SSLSocket_error("SSL_CTX_set_cipher_list", NULL, net->socket, rc);
 		goto free_ctx;
-	}       
-	
+	}
+
 	SSL_CTX_set_mode(net->ctx, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 
 	goto exit;
 free_ctx:
 	SSL_CTX_free(net->ctx);
 	net->ctx = NULL;
-	
+
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -620,18 +623,18 @@ exit:
 int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, char* hostname)
 {
 	int rc = 1;
-	
+
 	FUNC_ENTRY;
-	
+
 	if (net->ctx != NULL || (rc = SSLSocket_createContext(net, opts)) == 1)
 	{
 		int i;
 
 		SSL_CTX_set_info_callback(net->ctx, SSL_CTX_info_callback);
 		SSL_CTX_set_msg_callback(net->ctx, SSL_CTX_msg_callback);
-   		if (opts->enableServerCertAuth) 
+   		if (opts->enableServerCertAuth)
 			SSL_CTX_set_verify(net->ctx, SSL_VERIFY_PEER, NULL);
-	
+
 		net->ssl = SSL_new(net->ctx);
 
 		/* Log all ciphers available to the SSL sessions (loaded in ctx) */
@@ -641,20 +644,22 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, 
 			if (cipher == NULL)
 				break;
 			Log(TRACE_PROTOCOL, 1, "SSL cipher available: %d:%s", i, cipher);
-	    	}	
+	    	}
 		if ((rc = SSL_set_fd(net->ssl, net->socket)) != 1)
 			SSLSocket_error("SSL_set_fd", net->ssl, net->socket, rc);
 
 		if ((rc = SSL_set_tlsext_host_name(net->ssl, hostname)) != 1)
 			SSLSocket_error("SSL_set_tlsext_host_name", NULL, net->socket, rc);
 	}
-		
+
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
-
-int SSLSocket_connect(SSL* ssl, int sock)      
+/*
+ * Return value: 1 - success, TCPSOCKET_INTERRUPTED - try again, anything else is failure
+ */
+int SSLSocket_connect(SSL* ssl, int sock, char* hostname, int verify)
 {
 	int rc = 0;
 
@@ -670,6 +675,28 @@ int SSLSocket_connect(SSL* ssl, int sock)
 		if (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE)
 			rc = TCPSOCKET_INTERRUPTED;
 	}
+#if (OPENSSL_VERSION_NUMBER >= 0x010002000) /* 1.0.2 and later */
+	else if (verify == 1)
+	{
+		char* peername = NULL;
+		int port;
+		char* addr = NULL;
+
+		X509* cert = SSL_get_peer_certificate(ssl);
+		addr = MQTTProtocol_addressPort(hostname, &port);
+
+		rc = X509_check_host(cert, addr, strlen(addr), 0, &peername);
+		if (rc == 0)
+			rc = SOCKET_ERROR;
+		Log(TRACE_MIN, -1, "rc from X509_check_host is %d", rc);
+		Log(TRACE_MIN, -1, "peername from X509_check_host is %s", peername);
+
+		if (cert)
+			X509_free(cert);
+		if (addr != hostname)
+			free(addr);
+	}
+#endif
 
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -798,7 +825,7 @@ int SSLSocket_close(networkHandles* net)
 }
 
 
-/* No SSL_writev() provided by OpenSSL. Boo. */  
+/* No SSL_writev() provided by OpenSSL. Boo. */
 int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens, int* frees)
 {
 	int rc = 0;
@@ -812,7 +839,7 @@ int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int cou
 	for (i = 0; i < count; i++)
 		iovec.iov_len += (ULONG)buflens[i];
 
-	ptr = iovec.iov_base = (char *)malloc(iovec.iov_len);  
+	ptr = iovec.iov_base = (char *)malloc(iovec.iov_len);
 	memcpy(ptr, buf0, buf0len);
 	ptr += buf0len;
 	for (i = 0; i < count; i++)
@@ -824,10 +851,10 @@ int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int cou
 	SSL_lock_mutex(&sslCoreMutex);
 	if ((rc = SSL_write(ssl, iovec.iov_base, iovec.iov_len)) == iovec.iov_len)
 		rc = TCPSOCKET_COMPLETE;
-	else 
-	{ 
+	else
+	{
 		sslerror = SSLSocket_error("SSL_write", ssl, socket, rc);
-		
+
 		if (sslerror == SSL_ERROR_WANT_WRITE)
 		{
 			int* sockmem = (int*)malloc(sizeof(int));
@@ -841,7 +868,7 @@ int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int cou
 			FD_SET(socket, &(s.pending_wset));
 			rc = TCPSOCKET_INTERRUPTED;
 		}
-		else 
+		else
 			rc = SOCKET_ERROR;
 	}
 	SSL_unlock_mutex(&sslCoreMutex);
@@ -854,14 +881,14 @@ int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int cou
 		free(buf0);
 		for (i = 0; i < count; ++i)
 		{
-			if (frees[i])
-                        {
-				free(buffers[i]);
-                                buffers[i] = NULL;
-                        }
+		    if (frees[i])
+		    {
+			free(buffers[i]);
+			buffers[i] = NULL;
+		    }
 		}	
 	}
-	FUNC_EXIT_RC(rc); 
+	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -886,7 +913,7 @@ void SSLSocket_addPendingRead(int sock)
 int SSLSocket_getPendingRead(void)
 {
 	int sock = -1;
-	
+
 	if (pending_reads.count > 0)
 	{
 		sock = *(int*)(pending_reads.first->content);
@@ -898,8 +925,8 @@ int SSLSocket_getPendingRead(void)
 
 int SSLSocket_continueWrite(pending_writes* pw)
 {
-	int rc = 0; 
-	
+	int rc = 0;
+
 	FUNC_ENTRY;
 	if ((rc = SSL_write(pw->ssl, pw->iovecs[0].iov_base, pw->iovecs[0].iov_len)) == pw->iovecs[0].iov_len)
 	{

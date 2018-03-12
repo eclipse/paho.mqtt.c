@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -34,8 +34,8 @@
 
 int isRed(Node* aNode);
 int isBlack(Node* aNode);
-int TreeWalk(Node* curnode, int depth);
-int TreeMaxDepth(Tree *aTree);
+/*int TreeWalk(Node* curnode, int depth);*/
+/*int TreeMaxDepth(Tree *aTree);*/
 void TreeRotate(Tree* aTree, Node* curnode, int direction, int index);
 Node* TreeBAASub(Tree* aTree, Node* curnode, int which, int index);
 void TreeBalanceAfterAdd(Tree* aTree, Node* curnode, int index);
@@ -110,7 +110,7 @@ int isBlack(Node* aNode)
 	return (aNode == NULL) || (aNode->red == 0);
 }
 
-
+#if 0
 int TreeWalk(Node* curnode, int depth)
 {
 	if (curnode)
@@ -141,7 +141,7 @@ int TreeMaxDepth(Tree *aTree)
 	}*/
 	return rc;
 }
-
+#endif
 
 void TreeRotate(Tree* aTree, Node* curnode, int direction, int index)
 {
@@ -231,7 +231,8 @@ void* TreeAddByIndex(Tree* aTree, void* content, size_t size, int index)
 	if (result == 0)
 	{
 		if (aTree->allow_duplicates)
-			exit(-99);
+			goto exit; /* exit(-99); */
+		else
 		{
 			newel = curnode;
 			rc = newel->content;
@@ -262,6 +263,7 @@ void* TreeAddByIndex(Tree* aTree, void* content, size_t size, int index)
 	newel->content = content;
 	newel->size = size;
 	TreeBalanceAfterAdd(aTree, newel, index);
+exit:
 	return rc;
 }
 

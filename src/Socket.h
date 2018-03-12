@@ -18,7 +18,6 @@
 #if !defined(SOCKET_H)
 #define SOCKET_H
 
-#include "Thread.h" /* Needed for mutex_type */
 #include <sys/types.h>
 
 #if defined(WIN32) || defined(WIN64)
@@ -65,6 +64,8 @@
 #include <unistd.h>
 #define ULONG size_t
 #endif
+
+#include "Thread.h" /* Needed for mutex_type */
 
 /** socket operation completed successfully */
 #define TCPSOCKET_COMPLETE 0

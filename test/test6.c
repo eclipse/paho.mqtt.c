@@ -1028,12 +1028,5 @@ exit:
 destroy_exit:
 	MQTTAsync_destroy(&control_client);
 
-#if !defined(_WINDOWS)
-	heap_info* mqtt_mem = 0;
-	mqtt_mem = Heap_get_info();
-	MyLog(LOGA_INFO, "MQTT mem current %ld, max %ld",mqtt_mem->current_size,mqtt_mem->max_size);
-	/*if (mqtt_mem->current_size > 0) */
-	  /*failures++*/; /* consider any not freed memory as failure */
-#endif
 	return 0;
 }

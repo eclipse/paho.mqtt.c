@@ -228,7 +228,7 @@ int isReady(int socket, fd_set* read_set, fd_set* write_set)
  *  @param tp the timeout to be used for the select, unless overridden
  *  @return the socket next ready, or 0 if none is ready
  */
-int Socket_getReadySocket(int more_work, struct timeval *tp)
+int Socket_getReadySocket(int more_work, struct timeval *tp, mutex_type mutex)
 {
 	int rc = 0;
 	static struct timeval zero = {0L, 0L}; /* 0 seconds */
@@ -236,6 +236,7 @@ int Socket_getReadySocket(int more_work, struct timeval *tp)
 	struct timeval timeout = one;
 
 	FUNC_ENTRY;
+	Thread_lock_mutex(mutex);
 	if (s.clientsds->count == 0)
 		goto exit;
 
@@ -301,6 +302,7 @@ int Socket_getReadySocket(int more_work, struct timeval *tp)
 		ListNextElement(s.clientsds, &s.cur_clientsds);
 	}
 exit:
+	Thread_unlock_mutex(mutex);
 	FUNC_EXIT_RC(rc);
 	return rc;
 } /* end getReadySocket */

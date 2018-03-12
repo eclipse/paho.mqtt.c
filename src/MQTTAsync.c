@@ -2967,10 +2967,8 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 	if ((*sock = SSLSocket_getPendingRead()) == -1)
 	{
 #endif
-		Thread_lock_mutex(socket_mutex);
 		/* 0 from getReadySocket indicates no work to do, -1 == error, but can happen normally */
-		*sock = Socket_getReadySocket(0, &tp);
-		Thread_unlock_mutex(socket_mutex);
+		*sock = Socket_getReadySocket(0, &tp,socket_mutex);
 		if (!tostop && *sock == 0 && (tp.tv_sec > 0L || tp.tv_usec > 0L))
 			MQTTAsync_sleep(100L);
 #if defined(OPENSSL)

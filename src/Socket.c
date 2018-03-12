@@ -259,7 +259,11 @@ int Socket_getReadySocket(int more_work, struct timeval *tp, mutex_type mutex)
 
 		memcpy((void*)&(s.rset), (void*)&(s.rset_saved), sizeof(s.rset));
 		memcpy((void*)&(pwset), (void*)&(s.pending_wset), sizeof(pwset));
-		if ((rc = select(s.maxfdp1, &(s.rset), &pwset, NULL, &timeout)) == SOCKET_ERROR)
+		/* Prevent performance issue by unlocking the socket_mutex while waiting for a ready socket. */
+		Thread_unlock_mutex(mutex);
+		rc = select(s.maxfdp1, &(s.rset), &pwset, NULL, &timeout);
+		Thread_lock_mutex(mutex);
+		if (rc == SOCKET_ERROR)
 		{
 			Socket_error("read select", 0);
 			goto exit;

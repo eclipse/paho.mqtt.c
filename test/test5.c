@@ -747,8 +747,7 @@ int test2a(struct Options options)
 	opts.ssl->keyStore = options.client_key_file; /*file of certificate for client to present to server*/
 	if (options.client_key_pass != NULL)
 		opts.ssl->privateKeyPassword = options.client_key_pass;
-	opts.ssl->enabledCipherSuites = "DEFAULT";
-	opts.ssl->sslVersion = 4;
+	//opts.ssl->enabledCipherSuites = "DEFAULT";
 	//opts.ssl->enabledServerCertAuth = 1;
 	opts.ssl->verify = 1;
 	MyLog(LOGA_DEBUG, "enableServerCertAuth %d\n", opts.ssl->enableServerCertAuth);

@@ -813,6 +813,24 @@ DLLExport int MQTTClient_isConnected(MQTTClient handle);
   */
 DLLExport int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos);
 
+
+typedef struct MQTTSubscribe_options
+{
+	/** The eyecatcher for this structure. Must be MQSO. */
+	char struct_id[4];
+	/** The version number of this structure.  Must be 0.
+	 */
+	int struct_version;
+	unsigned char noLocal; /* 0 or 1 */
+	unsigned char retainAsPublished; /* 0 or 1 */
+	unsigned char retainHandling; /* 0, 1 or 2 */
+} MQTTSubscribe_options;
+
+#define MQTTSubscribe_options_initializer { {'M', 'Q', 'S', 'O'}, 0, 0, 0, 0 }
+
+DLLExport MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char* topic, int qos,
+		MQTTSubscribe_options* opts, MQTTProperties* props);
+
 /**
   * This function attempts to subscribe a client to a list of topics, which may
   * contain wildcards (see @ref wildcard). This call also specifies the
@@ -830,6 +848,9 @@ DLLExport int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos
   * subscriptions.
   */
 DLLExport int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, int* qos);
+
+DLLExport MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char* const* topic, int* qos,
+		MQTTSubscribe_options* opts, MQTTProperties* props);
 
 /**
   * This function attempts to remove an existing subscription made by the

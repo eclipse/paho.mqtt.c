@@ -1412,13 +1412,15 @@ int MQTTClient_isConnected(MQTTClient handle)
 }
 
 
-int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, int* qos)
+MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char* const* topic, int* qos,
+		MQTTSubscribe_options* opts, MQTTProperties* props)
 {
 	MQTTClients* m = handle;
 	List* topics = NULL;
 	List* qoss = NULL;
 	int i = 0;
 	int rc = MQTTCLIENT_FAILURE;
+	MQTTResponse resp = {MQTTCLIENT_FAILURE, NULL};
 	int msgid = 0;
 
 	FUNC_ENTRY;
@@ -1463,7 +1465,7 @@ int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, i
 		ListAppend(qoss, &qos[i], sizeof(int));
 	}
 
-	rc = MQTTProtocol_subscribe(m->c, topics, qoss, msgid);
+	rc = MQTTProtocol_subscribe(m->c, topics, qoss, msgid, opts, props);
 	ListFreeNoContent(topics);
 	ListFreeNoContent(qoss);
 
@@ -1497,24 +1499,44 @@ int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, i
 		rc = MQTTCLIENT_SUCCESS;
 
 exit:
+	resp.reasonCode = rc;
 	Thread_unlock_mutex(mqttclient_mutex);
 	Thread_unlock_mutex(subscribe_mutex);
-	FUNC_EXIT_RC(rc);
+	FUNC_EXIT_RC(resp.reasonCode);
+	return resp;
+}
+
+
+
+int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, int* qos)
+{
+	MQTTResponse response = MQTTClient_subscribeMany5(handle, count, topic, qos, NULL, NULL);
+
+	return response.reasonCode;
+}
+
+
+
+MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char* topic, int qos,
+		MQTTSubscribe_options* opts, MQTTProperties* props)
+{
+	MQTTResponse rc;
+	char *const topics[] = {(char*)topic};
+
+	FUNC_ENTRY;
+	rc = MQTTClient_subscribeMany5(handle, 1, topics, &qos, opts, props);
+	if (qos == MQTT_BAD_SUBSCRIBE) /* addition for MQTT 3.1.1 - error code from subscribe */
+		rc.reasonCode = MQTT_BAD_SUBSCRIBE;
+	FUNC_EXIT_RC(rc.reasonCode);
 	return rc;
 }
 
 
 int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos)
 {
-	int rc = 0;
-	char *const topics[] = {(char*)topic};
+	MQTTResponse response = MQTTClient_subscribe5(handle, topic, qos, NULL, NULL);
 
-	FUNC_ENTRY;
-	rc = MQTTClient_subscribeMany(handle, 1, topics, &qos);
-	if (qos == MQTT_BAD_SUBSCRIBE) /* addition for MQTT 3.1.1 - error code from subscribe */
-		rc = MQTT_BAD_SUBSCRIBE;
-	FUNC_EXIT_RC(rc);
-	return rc;
+	return response.reasonCode;
 }
 
 

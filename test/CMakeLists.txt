@@ -107,7 +107,7 @@ TARGET_LINK_LIBRARIES(
 
 ADD_TEST(
 	NAME test15-1-single-thread-client
-	COMMAND "test15" "--test_no" "1" "--connection" ${MQTT_TEST_BROKER}
+	COMMAND "test15" "--test_no" "1" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
 )
 
 SET_TESTS_PROPERTIES(

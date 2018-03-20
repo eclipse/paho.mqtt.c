@@ -396,6 +396,7 @@ int test1(struct Options options)
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
 	MQTTProperties props = MQTTProperties_initializer;
 	MQTTProperties willProps = MQTTProperties_initializer;
+	MQTTProperty property;
 	MQTTResponse response;
 	int rc = 0;
 	char* test_topic = "C client test1";
@@ -432,10 +433,23 @@ int test1(struct Options options)
 	opts.will->topicName = "will topic";
 	opts.will = NULL;
 
+	property.identifier = SESSION_EXPIRY_INTERVAL;
+	property.value.integer4 = 30;
+	MQTTProperties_add(&props, &property);
+
+	property.identifier = USER_PROPERTY;
+	property.value.data.data = "test user property";
+	property.value.data.len = strlen(property.value.data.data);
+	property.value.value.data = "test user property value";
+	property.value.value.len = strlen(property.value.value.data);
+	MQTTProperties_add(&props, &property);
+
 	MyLog(LOGA_DEBUG, "Connecting");
 	response = MQTTClient_connect5(c, &opts, &props, &willProps);
 	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
-	if (rc != MQTTCLIENT_SUCCESS)
+	MQTTProperties_free(&props);
+	MQTTProperties_free(&willProps);
+	if (response.reasonCode != MQTTCLIENT_SUCCESS)
 		goto exit;
 
 	if (response.properties)
@@ -444,8 +458,18 @@ int test1(struct Options options)
 		MQTTProperties_free(response.properties);
 	}
 
-	//rc = MQTTClient_subscribe(c, test_topic, subsqos);
-	//assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+	property.identifier = SUBSCRIPTION_IDENTIFIER;
+	property.value.integer4 = 33;
+	MQTTProperties_add(&props, &property);
+	response = MQTTClient_subscribe5(c, test_topic, subsqos, NULL, &props);
+	assert("Good rc from subscribe", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	MQTTProperties_free(&props);
+
+	if (response.properties)
+	{
+		logProperties(response.properties);
+		MQTTProperties_free(response.properties);
+	}
 
 	//test1_sendAndReceive(c, 0, test_topic);
 	//test1_sendAndReceive(c, 1, test_topic);

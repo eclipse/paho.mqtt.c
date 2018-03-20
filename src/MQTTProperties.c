@@ -17,7 +17,10 @@
 #include "MQTTProperties.h"
 
 #include "MQTTPacket.h"
+#include "MQTTProtocolClient.h"
 #include "Heap.h"
+
+#include <memory.h>
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
@@ -57,6 +60,14 @@ struct nameToType
 };
 
 
+static char* datadup(MQTTLenString* str)
+{
+	char* temp = malloc(str->len);
+	memcpy(temp, str->data, str->len);
+	return temp;
+}
+
+
 int MQTTProperty_getType(int identifier)
 {
   int i, rc = -1;
@@ -76,7 +87,7 @@ int MQTTProperty_getType(int identifier)
 int MQTTProperties_len(MQTTProperties* props)
 {
   /* properties length is an mbi */
-  return props->length + MQTTPacket_VBIlen(props->length);
+  return (props == NULL) ? 1 : props->length + MQTTPacket_VBIlen(props->length);
 }
 
 
@@ -84,11 +95,23 @@ int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop)
 {
   int rc = 0, type;
 
-  if (props->count == props->max_count)
-    rc = -1;  /* max number of properties already in structure */
-  else if ((type = MQTTProperty_getType(prop->identifier)) < 0)
-    rc = -2;
-  else
+  if ((type = MQTTProperty_getType(prop->identifier)) < 0)
+  {
+    rc = MQTT_INVALID_PROPERTY_ID;
+    goto exit;
+  }
+  else if (props->array == NULL)
+  {
+    props->max_count = 10;
+    props->array = malloc(sizeof(MQTTProperty) * props->max_count);
+  }
+  else if (props->count == props->max_count)
+  {
+    props->max_count += 10;
+    props->array = realloc(props->array, sizeof(MQTTProperty) * props->max_count);
+  }
+
+  if (props->array)
   {
     int len = 0;
 
@@ -110,16 +133,20 @@ int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop)
         break;
       case BINARY_DATA:
       case UTF_8_ENCODED_STRING:
-        len = 2 + prop->value.data.len;
-        break;
       case UTF_8_STRING_PAIR:
         len = 2 + prop->value.data.len;
-        len += 2 + prop->value.value.len;
+        props->array[props->count-1].value.data.data = datadup(&prop->value.data);
+        if (type == UTF_8_STRING_PAIR)
+        {
+          len += 2 + prop->value.value.len;
+          props->array[props->count-1].value.value.data = datadup(&prop->value.value);
+        }
         break;
     }
     props->length += len + 1; /* add identifier byte */
   }
 
+exit:
   return rc;
 }
 
@@ -149,6 +176,7 @@ int MQTTProperty_write(char** pptr, MQTTProperty* prop)
         break;
       case VARIABLE_BYTE_INTEGER:
         rc = MQTTPacket_encode(*pptr, prop->value.integer4);
+        *pptr += rc;
         break;
       case BINARY_DATA:
       case UTF_8_ENCODED_STRING:
@@ -169,7 +197,7 @@ int MQTTProperty_write(char** pptr, MQTTProperty* prop)
 /**
  * write the supplied properties into a packet buffer
  * @param pptr pointer to the buffer - move the pointer as we add data
- * @param remlength the max length of the buffer
+ * @param properties pointer to the property list, can be NULL
  * @return whether the write succeeded or not, number of bytes written or < 0
  */
 int MQTTProperties_write(char** pptr, MQTTProperties* properties)
@@ -178,19 +206,26 @@ int MQTTProperties_write(char** pptr, MQTTProperties* properties)
   int i = 0, len = 0;
 
   /* write the entire property list length first */
-  *pptr += MQTTPacket_encode(*pptr, properties->length);
-  len = rc = 1;
-  for (i = 0; i < properties->count; ++i)
+  if (properties == NULL)
   {
-    rc = MQTTProperty_write(pptr, &properties->array[i]);
-    if (rc < 0)
-      break;
-    else
-      len += rc;
+	*pptr += MQTTPacket_encode(*pptr, 0);
+	rc = 1;
   }
-  if (rc >= 0)
-    rc = len;
-
+  else
+  {
+    *pptr += MQTTPacket_encode(*pptr, properties->length);
+    len = rc = 1;
+    for (i = 0; i < properties->count; ++i)
+    {
+      rc = MQTTProperty_write(pptr, &properties->array[i]);
+      if (rc < 0)
+        break;
+      else
+        len += rc;
+    }
+    if (rc >= 0)
+      rc = len;
+  }
   return rc;
 }
 
@@ -224,11 +259,14 @@ int MQTTProperty_read(MQTTProperty* prop, char** pptr, char* enddata)
         break;
       case BINARY_DATA:
       case UTF_8_ENCODED_STRING:
-        len = MQTTLenStringRead(&prop->value.data, pptr, enddata);
-        break;
       case UTF_8_STRING_PAIR:
         len = MQTTLenStringRead(&prop->value.data, pptr, enddata);
-        len += MQTTLenStringRead(&prop->value.value, pptr, enddata);
+        prop->value.data.data = datadup(&prop->value.data);
+        if (type == UTF_8_STRING_PAIR)
+        {
+          len += MQTTLenStringRead(&prop->value.value, pptr, enddata);
+          prop->value.value.data = datadup(&prop->value.value);
+        }
         break;
     }
   }
@@ -321,15 +359,20 @@ DLLExport void MQTTProperties_free(MQTTProperties* props)
   for (i = 0; i < props->count; ++i)
   {
     int id = props->array[i].identifier;
+    int type = MQTTProperty_getType(id);
 
-    switch (MQTTProperty_getType(id))
+    switch (type)
     {
     case BINARY_DATA:
     	case UTF_8_ENCODED_STRING:
-    	  break;
     	case UTF_8_STRING_PAIR:
+    	  free(props->array[i].value.data.data);
+    	  if (type == UTF_8_STRING_PAIR)
+    	    free(props->array[i].value.value.data);
 	  break;
     }
   }
-  free(props->array);
+  if (props->array)
+	  free(props->array);
+  memset(props, '\0', sizeof(MQTTProperties)); /* zero all fields */
 }

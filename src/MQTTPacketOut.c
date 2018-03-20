@@ -65,8 +65,7 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion,
 		len += client->passwordlen+2;
 	if (MQTTVersion >= 5)
 	{
-		if (connectProperties)
-			len += MQTTProperties_len(connectProperties);
+		len += MQTTProperties_len(connectProperties);
 		if (client->will && willProperties)
 			len += MQTTProperties_len(willProperties);
 	}
@@ -187,13 +186,14 @@ int MQTTPacket_send_pingreq(networkHandles* net, const char* clientID)
  * @param clientID the string client identifier, only used for tracing
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-int MQTTPacket_send_subscribe(List* topics, List* qoss, int msgid, int dup, networkHandles* net, const char* clientID)
+int MQTTPacket_send_subscribe(List* topics, List* qoss, MQTTSubscribe_options* opts, MQTTProperties* props,
+		int msgid, int dup, Clients* client)
 {
 	Header header;
 	char *data, *ptr;
 	int rc = -1;
 	ListElement *elem = NULL, *qosElem = NULL;
-	int datalen;
+	int datalen, i = 0;
 
 	FUNC_ENTRY;
 	header.bits.type = SUBSCRIBE;
@@ -204,18 +204,34 @@ int MQTTPacket_send_subscribe(List* topics, List* qoss, int msgid, int dup, netw
 	datalen = 2 + topics->count * 3; /* utf length + char qos == 3 */
 	while (ListNextElement(topics, &elem))
 		datalen += (int)strlen((char*)(elem->content));
-	ptr = data = malloc(datalen);
+	if (client->MQTTVersion >= 5)
+		datalen += MQTTProperties_len(props);
 
+	ptr = data = malloc(datalen);
 	writeInt(&ptr, msgid);
+
+	if (client->MQTTVersion >= 5)
+		MQTTProperties_write(&ptr, props);
+
 	elem = NULL;
 	while (ListNextElement(topics, &elem))
 	{
+		char subopts = 0;
+
 		ListNextElement(qoss, &qosElem);
 		writeUTF(&ptr, (char*)(elem->content));
+		subopts = *(int*)(qosElem->content);
+		if (client->MQTTVersion >= 5 && opts != NULL)
+		{
+			subopts |= (opts[i].noLocal << 2); /* 1 bit */
+			subopts |= (opts[i].retainAsPublished << 3); /* 1 bit */
+			subopts |= (opts[i].retainHandling << 4); /* 2 bits */
+		}
 		writeChar(&ptr, *(int*)(qosElem->content));
+		++i;
 	}
-	rc = MQTTPacket_send(net, header, data, datalen, 1);
-	Log(LOG_PROTOCOL, 22, NULL, net->socket, clientID, msgid, rc);
+	rc = MQTTPacket_send(&client->net, header, data, datalen, 1);
+	Log(LOG_PROTOCOL, 22, NULL, client->net.socket, client->clientID, msgid, rc);
 	if (rc != TCPSOCKET_INTERRUPTED)
 		free(data);
 	FUNC_EXIT_RC(rc);

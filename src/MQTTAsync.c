@@ -1266,7 +1266,7 @@ static int MQTTAsync_processCommand(void)
 			ListAppend(topics, command->command.details.sub.topics[i], strlen(command->command.details.sub.topics[i]));
 			ListAppend(qoss, &command->command.details.sub.qoss[i], sizeof(int));
 		}
-		rc = MQTTProtocol_subscribe(command->client->c, topics, qoss, command->command.token);
+		rc = MQTTProtocol_subscribe(command->client->c, topics, qoss, command->command.token, NULL, NULL);
 		ListFreeNoContent(topics);
 		ListFreeNoContent(qoss);
 	}

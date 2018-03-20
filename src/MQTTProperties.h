@@ -17,11 +17,7 @@
 #if !defined(MQTTPROPERTIES_H)
 #define MQTTPROPERTIES_H
 
-typedef struct
-{
-	int len;
-	char* data;
-} MQTTLenString;
+#define MQTT_INVALID_PROPERTY_ID -2
 
 enum PropertyNames {
   PAYLOAD_FORMAT_INDICATOR = 1,
@@ -75,6 +71,11 @@ enum PropertyTypes {
 
 DLLExport int MQTTProperty_getType(int identifier);
 
+typedef struct
+{
+	int len;
+	char* data;
+} MQTTLenString;
 
 typedef struct
 {
@@ -83,8 +84,10 @@ typedef struct
     char byte;
     short integer2;
     int integer4;
-    MQTTLenString data;
-    MQTTLenString value; /* for user properties */
+    struct {
+      MQTTLenString data;
+      MQTTLenString value; /* for user properties */
+    };
   } value;
 } MQTTProperty;
 

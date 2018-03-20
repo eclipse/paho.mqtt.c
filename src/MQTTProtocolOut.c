@@ -171,15 +171,18 @@ int MQTTProtocol_handlePingresps(void* pack, int sock)
  * @param client the client structure
  * @param topics list of topics
  * @param qoss corresponding list of QoSs
+ * @param opts MQTT 5.0 subscribe options
+ * @param props MQTT 5.0 subscribe properties
  * @return completion code
  */
-int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss, int msgID)
+int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss, int msgID,
+		MQTTSubscribe_options* opts, MQTTProperties* props)
 {
 	int rc = 0;
 
 	FUNC_ENTRY;
 	/* we should stack this up for retry processing too */
-	rc = MQTTPacket_send_subscribe(topics, qoss, msgID, 0, &client->net, client->clientID);
+	rc = MQTTPacket_send_subscribe(topics, qoss, opts, props, msgID, 0, client);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

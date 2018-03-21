@@ -11,5 +11,5 @@ make
 python ../test/mqttsas2.py &
 ctest -VV --timeout 600
 kill %1
-killall mosquitto
+#killall mosquitto
 

@@ -24,6 +24,6 @@ if [ "$TRAVIS_OS_NAME" == "osx" ]; then
 	brew upgrade python
 	git clone https://github.com/eclipse/paho.mqtt.testing.git
 	cd paho.mqtt.testing/interoperability
-	python startbroker.py -c localhost_testing.conf &
+	python3 startbroker.py -c localhost_testing.conf &
 	cd ../..
 fi

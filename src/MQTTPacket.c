@@ -42,13 +42,13 @@
 #endif
 
 /**
- * List of the predefined MQTT v3 packet names.
+ * List of the predefined MQTT v3/v5 packet names.
  */
 static const char *packet_names[] =
 {
 	"RESERVED", "CONNECT", "CONNACK", "PUBLISH", "PUBACK", "PUBREC", "PUBREL",
 	"PUBCOMP", "SUBSCRIBE", "SUBACK", "UNSUBSCRIBE", "UNSUBACK",
-	"PINGREQ", "PINGRESP", "DISCONNECT"
+	"PINGREQ", "PINGRESP", "DISCONNECT", "AUTH"
 };
 
 const char** MQTTClient_packet_names = packet_names;
@@ -61,7 +61,7 @@ const char** MQTTClient_packet_names = packet_names;
  */
 const char* MQTTPacket_name(int ptype)
 {
-	return (ptype >= 0 && ptype <= DISCONNECT) ? packet_names[ptype] : "UNKNOWN";
+	return (ptype >= 0 && ptype <= AUTH) ? packet_names[ptype] : "UNKNOWN";
 }
 
 /**
@@ -96,7 +96,7 @@ static int MQTTPacket_send_ack(int type, int msgid, int dup, networkHandles *net
  * @param error pointer to the error code which is completed if no packet is returned
  * @return the packet structure or NULL if there was an error
  */
-void* MQTTPacket_Factory(networkHandles* net, int* error)
+void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
 {
 	char* data = NULL;
 	static Header header;
@@ -143,7 +143,7 @@ void* MQTTPacket_Factory(networkHandles* net, int* error)
 			Log(TRACE_MIN, 2, NULL, ptype);
 		else
 		{
-			if ((pack = (*new_packets[ptype])(header.byte, data, remaining_length)) == NULL)
+			if ((pack = (*new_packets[ptype])(MQTTVersion, header.byte, data, remaining_length)) == NULL)
 				*error = SOCKET_ERROR; // was BAD_MQTT_PACKET;
 #if !defined(NO_PERSISTENCE)
 			else if (header.bits.type == PUBLISH && header.bits.qos == 2)
@@ -457,12 +457,13 @@ void writeData(char** pptr, const void* data, int datalen)
 
 /**
  * Function used in the new packets table to create packets which have only a header.
+ * @param MQTTVersion the version of MQTT
  * @param aHeader the MQTT header byte
  * @param data the rest of the packet
  * @param datalen the length of the rest of the packet
  * @return pointer to the packet structure
  */
-void* MQTTPacket_header_only(unsigned char aHeader, char* data, size_t datalen)
+void* MQTTPacket_header_only(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
 	static unsigned char header = 0;
 	header = aHeader;
@@ -492,18 +493,20 @@ int MQTTPacket_send_disconnect(networkHandles *net, const char* clientID)
 
 /**
  * Function used in the new packets table to create publish packets.
+ * @param MQTTVersion
  * @param aHeader the MQTT header byte
  * @param data the rest of the packet
  * @param datalen the length of the rest of the packet
  * @return pointer to the packet structure
  */
-void* MQTTPacket_publish(unsigned char aHeader, char* data, size_t datalen)
+void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
 	Publish* pack = malloc(sizeof(Publish));
 	char* curdata = data;
 	char* enddata = &data[datalen];
 
 	FUNC_ENTRY;
+	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
 	if ((pack->topic = readUTFlen(&curdata, enddata, &pack->topiclen)) == NULL) /* Topic name on which to publish */
 	{
@@ -515,6 +518,17 @@ void* MQTTPacket_publish(unsigned char aHeader, char* data, size_t datalen)
 		pack->msgId = readInt(&curdata);
 	else
 		pack->msgId = 0;
+	if (MQTTVersion >= MQTTVERSION_5)
+	{
+		MQTTProperties props = MQTTProperties_initializer;
+		pack->properties = props;
+		if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
+		{
+			free(pack);
+			pack = NULL;
+			goto exit;
+		}
+	}
 	pack->payload = curdata;
 	pack->payloadlen = (int)(datalen-(curdata-data));
 exit:
@@ -532,6 +546,8 @@ void MQTTPacket_freePublish(Publish* pack)
 	FUNC_ENTRY;
 	if (pack->topic != NULL)
 		free(pack->topic);
+	if (pack->MQTTVersion >= MQTTVERSION_5)
+		MQTTProperties_free(&pack->properties);
 	free(pack);
 	FUNC_EXIT;
 }
@@ -592,6 +608,8 @@ int MQTTPacket_send_puback(int msgid, networkHandles* net, const char* clientID)
 void MQTTPacket_freeSuback(Suback* pack)
 {
 	FUNC_ENTRY;
+	if (pack->MQTTVersion >= MQTTVERSION_5)
+		MQTTProperties_free(&pack->properties);
 	if (pack->qoss != NULL)
 		ListFree(pack->qoss);
 	free(pack);
@@ -664,14 +682,30 @@ int MQTTPacket_send_pubcomp(int msgid, networkHandles* net, const char* clientID
  * @param datalen the length of the rest of the packet
  * @return pointer to the packet structure
  */
-void* MQTTPacket_ack(unsigned char aHeader, char* data, size_t datalen)
+void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
 	Ack* pack = malloc(sizeof(Ack));
 	char* curdata = data;
+	char* enddata = &data[datalen];
 
 	FUNC_ENTRY;
+	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
 	pack->msgId = readInt(&curdata);
+	if (MQTTVersion >= MQTTVERSION_5)
+	{
+		MQTTProperties props = MQTTProperties_initializer;
+		pack->rc = readChar(&curdata); /* reason code */
+
+		pack->properties = props;
+		pack->properties.max_count = 10;
+		pack->properties.array = malloc(sizeof(MQTTProperty) * pack->properties.max_count);
+		if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
+		{
+			free(pack);
+			pack = NULL; /* signal protocol error */
+		}
+	}
 	FUNC_EXIT;
 	return pack;
 }
@@ -700,20 +734,25 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 	header.bits.dup = dup;
 	header.bits.qos = qos;
 	header.bits.retain = retained;
-	if (qos > 0)
+	if (qos > 0 || pack->MQTTVersion >= 5)
 	{
-		char *buf = malloc(2);
-		char *ptr = buf;
-		char* bufs[4] = {topiclen, pack->topic, buf, pack->payload};
-		size_t lens[4] = {2, strlen(pack->topic), 2, pack->payloadlen};
+		int buflen = ((qos > 0) ? 2 : 0) + ((pack->MQTTVersion >= 5) ? MQTTProperties_len(&pack->properties) : 0);
+		char *ptr = NULL;
+		char* bufs[4] = {topiclen, pack->topic, NULL, pack->payload};
+		size_t lens[4] = {2, strlen(pack->topic), buflen, pack->payloadlen};
 		int frees[4] = {1, 0, 1, 0};
 
-		writeInt(&ptr, pack->msgId);
+		bufs[2] = ptr = malloc(buflen);
+		if (qos > 0)
+			writeInt(&ptr, pack->msgId);
+		if (pack->MQTTVersion >= 5)
+			MQTTProperties_write(&ptr, &pack->properties);
+
 		ptr = topiclen;
 		writeInt(&ptr, (int)lens[1]);
 		rc = MQTTPacket_sends(net, header, 4, bufs, lens, frees);
 		if (rc != TCPSOCKET_INTERRUPTED)
-			free(buf);
+			free(bufs[2]);
 	}
 	else
 	{

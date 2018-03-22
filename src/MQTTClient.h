@@ -453,6 +453,21 @@ DLLExport int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTClie
 DLLExport int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context);
 
+typedef struct
+{
+	/** The eyecatcher for this structure.  must be MQCO. */
+	char struct_id[4];
+	/** The version number of this structure.  Must be 0 */
+	int struct_version;
+	/** Whether the MQTT version is 3 and 4, or 5.  To use 5, this must be set. */
+	int MQTTVersion;
+} MQTTClient_createOptions;
+
+#define MQTTClient_createOptions_initializer { {'M', 'Q', 'C', 'O'}, MQTTVERSION_DEFAULT }
+
+DLLExport int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, const char* clientId,
+		int persistence_type, void* persistence_context, MQTTClient_createOptions* options);
+
 /**
  * MQTTClient_willOptions defines the MQTT "Last Will and Testament" (LWT) settings for
  * the client. In the event that a client unexpectedly loses its connection to
@@ -901,6 +916,9 @@ DLLExport int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* con
   */
 DLLExport int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, void* payload, int qos, int retained,
 																 MQTTClient_deliveryToken* dt);
+
+DLLExport MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int payloadlen, void* payload,
+		int qos, int retained, MQTTProperties* properties, MQTTClient_deliveryToken* dt);
 /**
   * This function attempts to publish a message to a given topic (see also
   * MQTTClient_publish()). An ::MQTTClient_deliveryToken is issued when
@@ -922,6 +940,9 @@ DLLExport int MQTTClient_publish(MQTTClient handle, const char* topicName, int p
   */
 DLLExport int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClient_message* msg, MQTTClient_deliveryToken* dt);
 
+
+DLLExport MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char* topicName, MQTTClient_message* msg,
+		MQTTProperties* properties, MQTTClient_deliveryToken* dt);
 
 /**
   * This function is called by the client application to synchronize execution

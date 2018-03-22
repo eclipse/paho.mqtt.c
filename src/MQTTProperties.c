@@ -19,6 +19,7 @@
 #include "MQTTPacket.h"
 #include "MQTTProtocolClient.h"
 #include "Heap.h"
+#include "StackTrace.h"
 
 #include <memory.h>
 
@@ -279,6 +280,7 @@ int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata)
   int rc = 0;
   int remlength = 0;
 
+  FUNC_ENTRY;
   properties->count = 0;
   if (enddata - (*pptr) > 0) /* enough length to read the VBI? */
   {
@@ -288,7 +290,10 @@ int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata)
     {
     	  if (properties->count == properties->max_count)
     	  {
-    		  properties->max_count += 10;
+    		properties->max_count += 10;
+    		if (properties->max_count == 10)
+    		  properties->array = malloc(sizeof(MQTTProperty) * properties->max_count);
+    		else
     		  properties->array = realloc(properties->array, sizeof(MQTTProperty) * properties->max_count);
     	  }
       remlength -= MQTTProperty_read(&properties->array[properties->count], pptr, enddata);
@@ -298,6 +303,7 @@ int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata)
       rc = 1; /* data read successfully */
   }
 
+  FUNC_EXIT_RC(rc);
   return rc;
 }
 
@@ -373,6 +379,36 @@ DLLExport void MQTTProperties_free(MQTTProperties* props)
     }
   }
   if (props->array)
-	  free(props->array);
+    free(props->array);
   memset(props, '\0', sizeof(MQTTProperties)); /* zero all fields */
+}
+
+
+MQTTProperties MQTTProperties_copy(MQTTProperties* props)
+{
+  int i = 0;
+  MQTTProperties result = MQTTProperties_initializer;
+
+  for (i = 0; i > props->count; ++i)
+  {
+	int id = props->array[i].identifier;
+	int type = MQTTProperty_getType(id);
+
+	MQTTProperties_add(&result, &props->array[i]);
+	switch (type)
+	{
+	case BINARY_DATA:
+	case UTF_8_ENCODED_STRING:
+	case UTF_8_STRING_PAIR:
+      result.array[i].value.data.data = malloc(result.array[i].value.data.len);
+	  memcpy(result.array[i].value.data.data, props->array[i].value.data.data, props->array[i].value.data.len);
+	  if (type == UTF_8_STRING_PAIR)
+	  {
+		result.array[i].value.value.data = malloc(result.array[i].value.value.len);
+		memcpy(result.array[i].value.value.data, props->array[i].value.value.data, props->array[i].value.value.len);
+	  }
+	  break;
+	}
+  }
+  return result;
 }

@@ -526,6 +526,7 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 	m->c->inboundMsgs = ListInitialize();
 	m->c->messageQueue = ListInitialize();
 	m->c->clientID = MQTTStrdup(clientId);
+	m->c->MQTTVersion = MQTTVERSION_DEFAULT;
 
 	m->shouldBeConnected = 0;
 	if (options)
@@ -1293,6 +1294,7 @@ static int MQTTAsync_processCommand(void)
 		p->payloadlen = command->command.details.pub.payloadlen;
 		p->topic = command->command.details.pub.destinationName;
 		p->msgId = command->command.token;
+		p->MQTTVersion = MQTTVERSION_DEFAULT;
 
 		rc = MQTTProtocol_startPublish(command->client->c, p, command->command.details.pub.qos, command->command.details.pub.retained, &msg);
 
@@ -3020,7 +3022,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 			if (m->c->connect_state == 1 || m->c->connect_state == 2)
 				*rc = MQTTAsync_connecting(m);
 			else
-				pack = MQTTPacket_Factory(&m->c->net, rc);
+				pack = MQTTPacket_Factory(MQTTVERSION_DEFAULT, &m->c->net, rc);
 			if (m->c->connect_state == 3 && *rc == SOCKET_ERROR)
 			{
 				Log(TRACE_MINIMUM, -1, "CONNECT sent but MQTTPacket_Factory has returned SOCKET_ERROR");

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,6 +16,7 @@
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
  *    Ian Craggs - change will payload to binary
  *    Ian Craggs - password to binary
+ *    Ian Craggs - MQTT 5 support
  *******************************************************************************/
 
 #if !defined(CLIENTS_H)
@@ -86,6 +87,8 @@ typedef struct
 	int qos;
 	int retain;
 	int msgid;
+	int MQTTVersion;
+	MQTTProperties properties;
 	Publications *publish;
 	time_t lastTouch;		/**> used for retry and expiry */
 	char nextMessageType;	/**> PUBREC, PUBREL, PUBCOMP */

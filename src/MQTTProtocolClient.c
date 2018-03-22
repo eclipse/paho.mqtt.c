@@ -161,6 +161,7 @@ int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int
 		entirely; the socket buffer will use these locations to finish writing the packet */
 		p.payload = (*mm)->publish->payload;
 		p.topic = (*mm)->publish->topic;
+		p.properties = (*mm)->properties;
 	}
 	rc = MQTTProtocol_startPublishCommon(pubclient, &p, qos, retained);
 	FUNC_EXIT_RC(rc);
@@ -197,6 +198,9 @@ Messages* MQTTProtocol_createMessage(Publish* publish, Messages **mm, int qos, i
 	m->msgid = publish->msgId;
 	m->qos = qos;
 	m->retain = retained;
+	m->MQTTVersion = publish->MQTTVersion;
+	if (m->MQTTVersion >= 5)
+		m->properties = MQTTProperties_copy(&publish->properties);
 	time(&(m->lastTouch));
 	if (qos == 2)
 		m->nextMessageType = PUBREC;
@@ -723,6 +727,8 @@ void MQTTProtocol_emptyMessageList(List* msgList)
 	while (ListNextElement(msgList, &current))
 	{
 		Messages* m = (Messages*)(current->content);
+		if (m->MQTTVersion >= MQTTVERSION_5)
+			MQTTProperties_free(&m->properties);
 		MQTTProtocol_removePublication(m->publish);
 	}
 	ListEmpty(msgList);

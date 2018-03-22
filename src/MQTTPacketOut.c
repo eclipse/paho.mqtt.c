@@ -126,31 +126,57 @@ exit:
 
 /**
  * Function used in the new packets table to create connack packets.
+ * @param MQTTVersion MQTT 5 or less?
  * @param aHeader the MQTT header byte
  * @param data the rest of the packet
  * @param datalen the length of the rest of the packet
  * @return pointer to the packet structure
  */
-void* MQTTPacket_connack(unsigned char aHeader, char* data, size_t datalen)
+void* MQTTPacket_connack(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
 	Connack* pack = malloc(sizeof(Connack));
 	char* curdata = data;
+	char* enddata = &data[datalen];
 
 	FUNC_ENTRY;
+	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
 	pack->flags.all = readChar(&curdata); /* connect flags */
 	pack->rc = readChar(&curdata); /* reason code */
-	if (datalen > 2)
+	if (MQTTVersion < MQTTVERSION_5)
+	{
+		if (datalen != 2)
+		{
+			free(pack);
+			pack = NULL;
+		}
+	}
+	else if (datalen > 2)
 	{
 		MQTTProperties props = MQTTProperties_initializer;
 		pack->properties = props;
-		pack->properties.max_count = 10;
-		pack->properties.array = malloc(sizeof(MQTTProperty) * pack->properties.max_count);
-		if (MQTTProperties_read(&pack->properties, &curdata, curdata + datalen) != 1)
+		if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
+		{
+			free(pack);
 			pack = NULL; /* signal protocol error */
+		}
 	}
 	FUNC_EXIT;
 	return pack;
+}
+
+
+/**
+ * Free allocated storage for a connack packet.
+ * @param pack pointer to the connack packet structure
+ */
+void MQTTPacket_freeConnack(Connack* pack)
+{
+	FUNC_ENTRY;
+	if (pack->MQTTVersion >= MQTTVERSION_5)
+		MQTTProperties_free(&pack->properties);
+	free(pack);
+	FUNC_EXIT;
 }
 
 
@@ -241,26 +267,40 @@ int MQTTPacket_send_subscribe(List* topics, List* qoss, MQTTSubscribe_options* o
 
 /**
  * Function used in the new packets table to create suback packets.
+ * @param MQTTVersion the version of MQTT
  * @param aHeader the MQTT header byte
  * @param data the rest of the packet
  * @param datalen the length of the rest of the packet
  * @return pointer to the packet structure
  */
-void* MQTTPacket_suback(unsigned char aHeader, char* data, size_t datalen)
+void* MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
 	Suback* pack = malloc(sizeof(Suback));
 	char* curdata = data;
+	char* enddata = &data[datalen];
 
 	FUNC_ENTRY;
+	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
 	pack->msgId = readInt(&curdata);
+	if (MQTTVersion >= MQTTVERSION_5)
+	{
+		MQTTProperties props = MQTTProperties_initializer;
+		pack->properties = props;
+		if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
+		{
+			free(pack->properties.array);
+			free(pack);
+			pack = NULL; /* signal protocol error */
+		}
+	}
 	pack->qoss = ListInitialize();
 	while ((size_t)(curdata - data) < datalen)
 	{
-		int* newint;
-		newint = malloc(sizeof(int));
-		*newint = (int)readChar(&curdata);
-		ListAppend(pack->qoss, newint, sizeof(int));
+		unsigned int* newint;
+		newint = malloc(sizeof(unsigned int));
+		*newint = (unsigned int)readChar(&curdata);
+		ListAppend(pack->qoss, newint, sizeof(unsigned int));
 	}
 	FUNC_EXIT;
 	return pack;

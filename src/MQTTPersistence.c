@@ -196,7 +196,7 @@ int MQTTPersistence_restore(Clients *c)
 			}
 			else if ((rc = c->persistence->pget(c->phandle, msgkeys[i], &buffer, &buflen)) == 0)
 			{
-				MQTTPacket* pack = MQTTPersistence_restorePacket(buffer, buflen);
+				MQTTPacket* pack = MQTTPersistence_restorePacket(c->MQTTVersion, buffer, buflen);
 				if ( pack != NULL )
 				{
 					if ( strstr(msgkeys[i],PERSISTENCE_PUBLISH_RECEIVED) != NULL )
@@ -271,7 +271,7 @@ int MQTTPersistence_restore(Clients *c)
  * @param buffer the persisted data.
  * @param buflen the number of bytes of the data buffer.
  */
-void* MQTTPersistence_restorePacket(char* buffer, size_t buflen)
+void* MQTTPersistence_restorePacket(int MQTTVersion, char* buffer, size_t buflen)
 {
 	void* pack = NULL;
 	Header header;
@@ -295,7 +295,7 @@ void* MQTTPersistence_restorePacket(char* buffer, size_t buflen)
 	{
 		ptype = header.bits.type;
 		if (ptype >= CONNECT && ptype <= DISCONNECT && new_packets[ptype] != NULL)
-			pack = (*new_packets[ptype])(header.byte, ++buffer, remaining_length);
+			pack = (*new_packets[ptype])(MQTTVersion, header.byte, ++buffer, remaining_length);
 	}
 
 	FUNC_EXIT;

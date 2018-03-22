@@ -117,4 +117,6 @@ int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata);
 
 DLLExport void MQTTProperties_free(MQTTProperties* properties);
 
+MQTTProperties MQTTProperties_copy(MQTTProperties* props);
+
 #endif /* MQTTPROPERTIES_H */

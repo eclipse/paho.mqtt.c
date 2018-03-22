@@ -299,6 +299,9 @@ void test1_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 	int i = 0;
 	int iterations = 50;
 	int rc;
+	MQTTResponse resp;
+	MQTTProperties props = MQTTProperties_initializer;
+	MQTTProperty property;
 
 	MyLog(LOGA_DEBUG, "%d messages at QoS %d", iterations, qos);
 	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
@@ -306,13 +309,21 @@ void test1_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 	pubmsg.qos = qos;
 	pubmsg.retained = 0;
 
-	for (i = 0; i< iterations; ++i)
+	property.identifier = USER_PROPERTY;
+	property.value.data.data = "test user property";
+	property.value.data.len = strlen(property.value.data.data);
+	property.value.value.data = "test user property value";
+	property.value.value.len = strlen(property.value.value.data);
+	MQTTProperties_add(&props, &property);
+
+	for (i = 0; i < iterations; ++i)
 	{
 		if (i % 10 == 0)
-			rc = MQTTClient_publish(c, test_topic, pubmsg.payloadlen, pubmsg.payload, pubmsg.qos, pubmsg.retained, &dt);
+			resp = MQTTClient_publish5(c, test_topic, pubmsg.payloadlen, pubmsg.payload, pubmsg.qos, pubmsg.retained,
+					&props, &dt);
 		else
-			rc = MQTTClient_publishMessage(c, test_topic, &pubmsg, &dt);
-		assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+			resp = MQTTClient_publishMessage5(c, test_topic, &pubmsg, &props, &dt);
+		assert("Good rc from publish", resp.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", resp.reasonCode);
 
 		if (qos > 0)
 		{
@@ -348,6 +359,8 @@ void test1_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 		MQTTClient_freeMessage(&m);
 		MQTTClient_receive(c, &topicName, &topicLen, &m, 2000);
 	}
+
+	MQTTProperties_free(&props);
 }
 
 void logProperties(MQTTProperties *props)
@@ -420,6 +433,7 @@ int test1(struct Options options)
 	opts.username = "testuser";
 	opts.password = "testpassword";
 	opts.MQTTVersion = options.MQTTVersion;
+	printf("test MQTT version %d\n", options.MQTTVersion);
 	if (options.haconnections != NULL)
 	{
 		opts.serverURIs = options.haconnections;
@@ -471,7 +485,7 @@ int test1(struct Options options)
 		MQTTProperties_free(response.properties);
 	}
 
-	//test1_sendAndReceive(c, 0, test_topic);
+	test1_sendAndReceive(c, 0, test_topic);
 	//test1_sendAndReceive(c, 1, test_topic);
 	//test1_sendAndReceive(c, 2, test_topic);
 
@@ -483,11 +497,11 @@ int test1(struct Options options)
 	assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
 	/* Just to make sure we can connect again */
-	/*rc = MQTTClient_connect5(c, &opts, &props, &willProps);
-	assert("Connect successful",  rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+	response = MQTTClient_connect5(c, &opts, NULL, NULL);
+	assert("Connect successful",  response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
 	rc = MQTTClient_disconnect(c, 0);
 	assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
-	*/
+
 	MQTTClient_destroy(&c);
 
 exit:

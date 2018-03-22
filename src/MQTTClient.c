@@ -303,8 +303,8 @@ static void MQTTProtocol_checkPendingWrites(void);
 static void MQTTClient_writeComplete(int socket, int rc);
 
 
-int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* clientId,
-		int persistence_type, void* persistence_context)
+int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, const char* clientId,
+		int persistence_type, void* persistence_context, MQTTClient_createOptions* options)
 {
 	int rc = 0;
 	MQTTClients *m = NULL;
@@ -336,6 +336,12 @@ int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* cli
 			rc = MQTTCLIENT_BAD_PROTOCOL;
 			goto exit;
 		}
+	}
+
+	if (options && (strncmp(options->struct_id, "MQCO", 4) != 0 || options->struct_version != 0))
+	{
+		rc = MQTTCLIENT_BAD_STRUCTURE;
+		goto exit;
 	}
 
 	if (!initialized)
@@ -374,6 +380,7 @@ int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* cli
 	m->c = malloc(sizeof(Clients));
 	memset(m->c, '\0', sizeof(Clients));
 	m->c->context = m;
+	m->c->MQTTVersion = (options) ? options->MQTTVersion : MQTTVERSION_DEFAULT;
 	m->c->outboundMsgs = ListInitialize();
 	m->c->inboundMsgs = ListInitialize();
 	m->c->messageQueue = ListInitialize();
@@ -398,6 +405,14 @@ exit:
 	Thread_unlock_mutex(mqttclient_mutex);
 	FUNC_EXIT_RC(rc);
 	return rc;
+}
+
+
+int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* clientId,
+		int persistence_type, void* persistence_context)
+{
+	return MQTTClient_createWithOptions(handle, serverURI, clientId, persistence_type,
+		persistence_context, NULL);
 }
 
 
@@ -1017,7 +1032,7 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 				if (m->c->MQTTVersion == MQTTVERSION_5)
 					resp.properties = &connack->properties;
 			}
-			free(connack);
+			MQTTPacket_freeConnack(connack);
 			m->pack = NULL;
 		}
 	}
@@ -1628,8 +1643,8 @@ int MQTTClient_unsubscribe(MQTTClient handle, const char* topic)
 }
 
 
-int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, void* payload,
-							 int qos, int retained, MQTTClient_deliveryToken* deliveryToken)
+MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int payloadlen, void* payload,
+		int qos, int retained, MQTTProperties* properties, MQTTClient_deliveryToken* deliveryToken)
 {
 	int rc = MQTTCLIENT_SUCCESS;
 	MQTTClients* m = handle;
@@ -1637,6 +1652,7 @@ int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen,
 	Publish* p = NULL;
 	int blocked = 0;
 	int msgid = 0;
+	MQTTResponse resp = {MQTTCLIENT_SUCCESS, NULL};
 
 	FUNC_ENTRY;
 	Thread_lock_mutex(mqttclient_mutex);
@@ -1647,6 +1663,9 @@ int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen,
 		rc = MQTTCLIENT_DISCONNECTED;
 	else if (!UTF8_validateString(topicName))
 		rc = MQTTCLIENT_BAD_UTF8_STRING;
+	else if (m->c->MQTTVersion >= MQTTVERSION_5 && properties == NULL)
+		rc = MQTTCLIENT_NULL_PARAMETER;
+
 	if (rc != MQTTCLIENT_SUCCESS)
 		goto exit;
 
@@ -1682,6 +1701,9 @@ int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen,
 	p->payloadlen = payloadlen;
 	p->topic = (char*)topicName;
 	p->msgId = msgid;
+	p->MQTTVersion = m->c->MQTTVersion;
+	if (m->c->MQTTVersion >= MQTTVERSION_5)
+		p->properties = *properties;
 
 	rc = MQTTProtocol_startPublish(m->c, p, qos, retained, &msg);
 
@@ -1715,35 +1737,51 @@ int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen,
 
 exit:
 	Thread_unlock_mutex(mqttclient_mutex);
-	FUNC_EXIT_RC(rc);
-	return rc;
+	resp.reasonCode = rc;
+	FUNC_EXIT_RC(resp.reasonCode);
+	return resp;
 }
 
 
-
-int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClient_message* message,
-															 MQTTClient_deliveryToken* deliveryToken)
+int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, void* payload,
+							 int qos, int retained, MQTTClient_deliveryToken* deliveryToken)
 {
-	int rc = MQTTCLIENT_SUCCESS;
+	MQTTResponse rc = MQTTClient_publish5(handle, topicName, payloadlen, payload, qos, retained, NULL, deliveryToken);
+	return rc.reasonCode;
+}
+
+
+MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char* topicName, MQTTClient_message* message,
+								MQTTProperties* props, MQTTClient_deliveryToken* deliveryToken)
+{
+	MQTTResponse rc = {MQTTCLIENT_SUCCESS, NULL};
 
 	FUNC_ENTRY;
 	if (message == NULL)
 	{
-		rc = MQTTCLIENT_NULL_PARAMETER;
+		rc.reasonCode = MQTTCLIENT_NULL_PARAMETER;
 		goto exit;
 	}
 
 	if (strncmp(message->struct_id, "MQTM", 4) != 0 || message->struct_version != 0)
 	{
-		rc = MQTTCLIENT_BAD_STRUCTURE;
+		rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
 		goto exit;
 	}
 
-	rc = MQTTClient_publish(handle, topicName, message->payloadlen, message->payload,
-								message->qos, message->retained, deliveryToken);
+	rc = MQTTClient_publish5(handle, topicName, message->payloadlen, message->payload,
+								message->qos, message->retained, props, deliveryToken);
 exit:
-	FUNC_EXIT_RC(rc);
+	FUNC_EXIT_RC(rc.reasonCode);
 	return rc;
+}
+
+
+int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClient_message* message,
+															 MQTTClient_deliveryToken* deliveryToken)
+{
+	MQTTResponse rc = MQTTClient_publishMessage5(handle, topicName, message, NULL, deliveryToken);
+	return rc.reasonCode;
 }
 
 
@@ -1802,7 +1840,7 @@ static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
 				*rc = 0;  /* waiting for connect state to clear */
 			else
 			{
-				pack = MQTTPacket_Factory(&m->c->net, rc);
+				pack = MQTTPacket_Factory(m->c->MQTTVersion, &m->c->net, rc);
 				if (*rc == TCPSOCKET_INTERRUPTED)
 					*rc = 0;
 			}

@@ -1398,6 +1398,11 @@ static int MQTTAsync_processCommand(void)
 				Log(TRACE_MIN, -1, "Calling command failure for client %s", command->client->c->clientID);
 				(*(command->command.onFailure))(command->command.context, NULL);
 			}
+			if (command->command.type == CONNECT)
+			{
+				command->client->connect = command->command;
+				MQTTAsync_startConnectRetry(command->client);
+			}
 			MQTTAsync_freeCommand(command);  /* free up the command if necessary */
 		}
 	}
@@ -1442,7 +1447,7 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 	else
 	{
 		MQTTAsync_closeSession(m->c);
-	  if (m->connect.onFailure)
+		if (m->connect.onFailure)
 		{
 			MQTTAsync_failureData data;
 

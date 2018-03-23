@@ -247,10 +247,17 @@ static int Internal_heap_unlink(char* file, int line, void* p)
  */
 void myfree(char* file, int line, void* p)
 {
-	Thread_lock_mutex(heap_mutex);
-	if (Internal_heap_unlink(file, line, p))
-		free(((int*)p)-1);
-	Thread_unlock_mutex(heap_mutex);
+	if (p) /* it is legal und usual to call free(NULL) */
+	{
+		Thread_lock_mutex(heap_mutex);
+		if (Internal_heap_unlink(file, line, p))
+			free(((int*)p)-1);
+		Thread_unlock_mutex(heap_mutex);
+	}
+	else
+	{
+		Log(LOG_ERROR, -1, "Call of free(NULL) in %s,%d",file,line);
+	}
 }
 
 
@@ -479,3 +486,8 @@ int main(int argc, char *argv[])
 }
 
 #endif /* HEAP_UNIT_TESTS */
+
+/* Local Variables: */
+/* indent-tabs-mode: t */
+/* c-basic-offset: 8 */
+/* End: */

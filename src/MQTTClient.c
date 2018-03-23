@@ -1085,7 +1085,7 @@ static int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* o
 			}
 			else
 			{
-				m->c->will->payloadlen = strlen(options->will->message);
+				m->c->will->payloadlen = (int)strlen(options->will->message);
 				source = (void*)options->will->message;
 			}
 			m->c->will->payload = malloc(m->c->will->payloadlen);
@@ -1159,7 +1159,7 @@ static int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* o
 	if (options->password)
 	{
 		m->c->password = MQTTStrdup(options->password);
-		m->c->passwordlen = strlen(options->password);
+		m->c->passwordlen = (int)strlen(options->password);
 	}
 	else if (options->struct_version >= 5 && options->binarypwd.data)
 	{

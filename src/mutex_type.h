@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,7 +11,7 @@
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  *******************************************************************************/
-#ifndef _MUTEX_TYPE_H_
+#if !defined(_MUTEX_TYPE_H_)
 #define _MUTEX_TYPE_H_
 
 #if defined(WIN32) || defined(WIN64)

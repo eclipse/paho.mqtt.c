@@ -596,6 +596,8 @@ static void MQTTProtocol_retries(time_t now, Clients* client, int regardless)
 				publish.topic = m->publish->topic;
 				publish.payload = m->publish->payload;
 				publish.payloadlen = m->publish->payloadlen;
+				publish.properties = m->properties;
+				publish.MQTTVersion = m->MQTTVersion;
 				rc = MQTTPacket_send_publish(&publish, 1, m->qos, m->retain, &client->net, client->clientID);
 				if (rc == SOCKET_ERROR)
 				{

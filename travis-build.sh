@@ -10,6 +10,7 @@ cmake -DCMAKE_BUILD_TYPE=Debug -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=F
 make
 python ../test/mqttsas2.py &
 ctest -VV --timeout 600
+cpack --verbose
 kill %1
 killall mosquitto
 

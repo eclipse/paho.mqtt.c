@@ -1,5 +1,5 @@
 #*******************************************************************************
-#  Copyright (c) 2015, 2017 logi.cals GmbH and others
+#  Copyright (c) 2015, 2018 logi.cals GmbH and others
 #
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,7 @@
 # Note: on OS X you should install XCode and the associated command-line tools
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.4)
-PROJECT("paho" C)
+PROJECT("Eclipse Paho C" C)
 MESSAGE(STATUS "CMake version: " ${CMAKE_VERSION})
 MESSAGE(STATUS "CMake system name: " ${CMAKE_SYSTEM_NAME})
 
@@ -28,7 +28,7 @@ SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 ## build settings
 SET(PAHO_VERSION_MAJOR 1)
 SET(PAHO_VERSION_MINOR 2)
-SET(PAHO_VERSION_PATCH 0)
+SET(PAHO_VERSION_PATCH 1)
 SET(CLIENT_VERSION ${PAHO_VERSION_MAJOR}.${PAHO_VERSION_MINOR}.${PAHO_VERSION_PATCH})
 
 INCLUDE(GNUInstallDirs)
@@ -60,6 +60,11 @@ IF(PAHO_BUILD_DOCUMENTATION)
 ENDIF()
 
 ### packaging settings
+SET(CPACK_PACKAGE_VENDOR "Eclipse Paho")
+SET(CPACK_PACKAGE_NAME "Eclipse-Paho-MQTT-C")
+INSTALL(FILES CONTRIBUTING.md epl-v10 edl-v10 README.md notice.html DESTINATION .)
+FILE(GLOB samples "src/samples/*.c")
+INSTALL(FILES ${samples} DESTINATION samples)
 IF (WIN32)
     SET(CPACK_GENERATOR "ZIP")
 ELSEIF(PAHO_BUILD_DEB_PACKAGE)

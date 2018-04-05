@@ -19,7 +19,8 @@ env:
    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
    #   via the "travis encrypt" command using the project repo's public key
    - secure: "Ro53zVdGCjCQx9U4wvD9GBwB346tIQ7y1MWOAe1QrFWlmoQLC8KUeddQkc+27pdrOG9Fm9QQcI82EDlh0bfRBy1ITfWSVVZVfbNLv9sBWesND1F9YlnFpn/fag2OE+ULPSEJVJMxZoqiR9yiYWO3pTWue4YjCSuFAjpQNO6VnV3HiQJRG1jeaylx0QVLQWKAL/qkRbuqG9o4xpS1Kebaj86+q9UTHcL1a+Aj53u+Ajqnc9ZbUB/yBrfHyufTKpAD8Ef/FEIWXg2svtiWVEwEsPtdTn5P7AefJ2FNEyT4uMKIEBzWIPeWvUZLFF6U7QA07+uYDE0Ir4voPptBUlIYqQz1CUz9XCOPmM/N+GgqpyNyUjpMb4CM1b+iwBwcsHc0Z1JFcPz65ZMSt1D/WeUfQlaB/KxQBpz4lD2mxEmAuBIoGNrAG+FRULoY+xQSAf7V0W8am6QbHNnXif30mdkF3lgAhaAOwWO03JD7ctEJXqzRbMK8HrBkrgWfHsRRLFT50m8CrNLFz+3lCYuPHge2gHUMDfIHMxd4N9f2dlfV9GJkHQOQYwFfP5L2Y5Xq9KTnZX+bsglDC2WcOJu2F8h1LxTMV5Kku8zl1RZlEAt8Qa9EtCMczA3sL4NfGxazO22WpyOvHdwb26mhdJTgquI5oZsl71zcIf+WLGfgUAEq4/k="
-
+   - secure: "VQroIObZ3eCKl9+vDrzyZYxgNhELR7ToaYDW0989U7Mh77OBLcQyrveIhOidClE0uDggnThcBI6OACk6XrQvW+JrahjiQ4y9lBo+4Lu9MuaUKLUcGG+BNCC/Jgyskg8Gk3h+TEqFAtyzsdosQNbEvLAvPGwseiKiWQZUYVshLFCOZJxIp9SORQ73EWvbhTY0OL3GbUs9BZRo8w/TDcrr5ZgLEp3SKMOxCkv+pSpDpMNWiFin0IFB5cNMbS0bDRh6dyrHzJBJu7P2ZbCTm89rTtxL0mBmB1CcoOSXCHgbJ9Mjzx7OP7k4wsqwu4N8qVzUa52SwwNP0va8OL+Uw0+B8HRuOacPfv/t6vkbS5zBVq/nZUbcegcJm490nQstUIx4Psy+mdWCNwPf253fSuBpFR+B96ORRRz+tuJ8OQmInu7oKJe8yCW8h/yQL7xcv6e9SEMfqdXBHLkFQWomHrC1cOtIwZ69OY81cCwHj+36xx3s9iLBsz+niYLWD6gv+hAFc6zzzzrjuXayJ3gldsAJca2MzmT3E34mOOd3h52rFdnv4t73a/iy+RhWPy6ZOrEqsEY7E5Kxxr2msm0g5YVM1ZsavX1zSFHZ+J3dDelD5YpOR3u2rsPewAMjAxECRLLunRbCCOj9NRFhUR9KxWe2iTCgph4UOBw/OEgs7TXz6/I="
+   - secure: "IugtAa0v5VLL22sUsvXAiGvYRKXwWsGYjaFeyk9fRqT82BVLI0wWMxJYKwIo43m1P1Vp+c7lmcNafjUWMJtrE/+gmhl6NPnF0yo3cUiR6pfDKIDDI7AXtuyhGJlsZhvmEz+SQvPLYlqWgAhQqXZio5lgqAtlUmsoToo5iL8HHUtjodR1z1sWKKjDssYI+bZlVAnXHMbUDJzRQeB5CdTDbbcKhRB0iEjCXBIa5YXUXuEcf2tc/bsvW4dvRDEtflKx58EPeCY2u2PJgRi5DlkPjHttszNZVRkC4JrVloSsE3im2fDbg2qAzmXSW64pre+OyyZU9LMh3tQBAozWUOEtqVI3O96M+yvGfJyroU0MyGiFf2sVVYLGJIOJUW1na/Lz0N+70ZLKoTpkOnvqrfybqtyZe7qmQznfWpVZFdGn0XPsYS6y3v1S3lWQlJO0vvkTvNoyFCmvJDx/F3EGl0RxVLfEZ889mzG985h0ZeciVrcDN/QAjqlFVmArQmalxfNe7yV0nOp2HkP3W0/dUpohqFixomhNHOcxN8rhkNEny9cCvsyQ8OyRlE9iK3t+ozxl8252NkbNqXYzN82GIuKtdqw+HHfDUnPUZWI5V9xS/6R7lqpan8Gc9jZh0t7W1xfkS4/b8f31JZDklVQe03SfU6/8kPUPgLMV89rZdJKDkvM="
 
 script:
   - if [[ "$COVERITY_SCAN_BRANCH" != 1 ]]; then ./travis-build.sh; fi
@@ -44,4 +45,7 @@ addons:
       - mosquitto
       - doxygen
 
-
+after_success:
+    - curl --ftp-create-dirs
+       -T *.tar.gz
+       sftp://${SFTP_USER}:${SFTP_PASSWORD}@build.eclipse.org/

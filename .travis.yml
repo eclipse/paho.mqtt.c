@@ -52,4 +52,4 @@ addons:
       - doxygen
 
 after_success:
-    - scp build.paho/*.tar.gz icraggs@build.eclipse.org:.
+    - scp -o StrictHostKeyChecking=no build.paho/*.tar.gz icraggs@build.eclipse.org:.

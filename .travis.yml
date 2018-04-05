@@ -47,4 +47,6 @@ addons:
 
 after_success:
     - ls build.paho
-    - curl --ftp-create-dirs -T build.paho/Eclipse-Paho-C-1.2.1-Darwin.tar.gz sftp://${SFTP_USER}:${SFTP_PASSWORD}@build.eclipse.org/
+    - curl --ftp-create-dirs -T build.paho/Eclipse-Paho-MQTT-C-1.2.1-Darwin.tar.gz sftp://${SFTP_USER}:${SFTP_PASSWORD}@build.eclipse.org/
+    - curl --ftp-create-dirs -T build.paho/Eclipse-Paho-MQTT-C-1.2.1-Linux.tar.gz sftp://${SFTP_USER}:${SFTP_PASSWORD}@build.eclipse.org/
+    - curl --ftp-create-dirs -T build.paho/*.tar.gz sftp://${SFTP_USER}:${SFTP_PASSWORD}@build.eclipse.org/

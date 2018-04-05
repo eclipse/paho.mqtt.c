@@ -46,6 +46,5 @@ addons:
       - doxygen
 
 after_success:
-    - curl --ftp-create-dirs
-       -T *.tar.gz
-       sftp://${SFTP_USER}:${SFTP_PASSWORD}@build.eclipse.org/
+    - ls build.paho
+    - curl --ftp-create-dirs -T build.paho/Eclipse-Paho-C-1.2.1-Darwin.tar.gz sftp://${SFTP_USER}:${SFTP_PASSWORD}@build.eclipse.org/

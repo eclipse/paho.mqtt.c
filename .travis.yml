@@ -36,6 +36,7 @@ addons:
     build_command_prepend: "make clean"
     build_command: "make -j 4"
     branch_pattern: coverity-.*
+addons:
   ssh_known_hosts: build.eclipse.org
 addons:
   apt:

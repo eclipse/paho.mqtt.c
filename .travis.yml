@@ -1,4 +1,4 @@
-sudo: true
+sudo: required
 language: c
 
 compiler:
@@ -9,7 +9,12 @@ os:
   - linux
   - osx
 
-sudo: required
+matrix:
+  exclude:
+    - compiler: gcc
+      os: osx
+    - compiler: clang
+      os: linux
 
 before_install:
   - openssl aes-256-cbc -K $encrypted_dcd2b299f7c9_key -iv $encrypted_dcd2b299f7c9_iv -in deploy_rsa.enc -out /tmp/deploy_rsa -d
@@ -36,11 +41,6 @@ addons:
     build_command_prepend: "make clean"
     build_command: "make -j 4"
     branch_pattern: coverity-.*
-addons:
-  ssh_known_hosts:
-    - build.eclipse.org
-    - 198.41.30.203
-addons:
   apt:
     sources:
       - george-edison55-precise-backports # cmake 3.2.3 / doxygen 1.8.3
@@ -52,4 +52,5 @@ addons:
       - doxygen
 
 after_success:
+    - ls -l build.paho/*.tar.gz
     - scp -o StrictHostKeyChecking=no build.paho/*.tar.gz icraggs@build.eclipse.org:.

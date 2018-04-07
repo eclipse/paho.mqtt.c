@@ -53,4 +53,4 @@ addons:
 
 after_success:
     - ls -l build.paho/*.tar.gz
-    - scp -o StrictHostKeyChecking=no build.paho/*.tar.gz icraggs@build.eclipse.org:.
+    - scp -o StrictHostKeyChecking=no build.paho/*.tar.gz icraggs@build.eclipse.org:/shared/technology/paho/C/

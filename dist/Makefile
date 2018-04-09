@@ -1,4 +1,4 @@
-VERSION=1.2.0
+VERSION=1.2.1
 
 check:
 	rpmlint -i dist/paho-c.spec

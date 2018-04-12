@@ -9,7 +9,7 @@ install:
   - cmd: netsh advfirewall firewall add rule name="Python 2.7" dir=in action=allow program="C:\Python27\python.exe" enable=yes
   - cmd: netsh advfirewall firewall add rule name="Open Port 1883" dir=in action=allow protocol=TCP localport=1883
   - cmd: netsh advfirewall set allprofiles state off
-  - ps: Start-Process python -ArgumentList 'test\mqttsas2.py'
+  - ps: Start-Process python -ArgumentList 'test\mqttsas.py'
   - cmd: C:\Python36\python --version
   - cmd: git clone https://github.com/eclipse/paho.mqtt.testing.git
   - cmd: cd paho.mqtt.testing\interoperability

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,7 @@
  *    Juergen Kosel, Ian Craggs - fix for issue #135
  *    Ian Craggs - issue #217
  *    Ian Craggs - fix for issue #186
+ *    Ian Craggs - remove StackTrace print debugging calls
  *******************************************************************************/
 
 /**
@@ -504,7 +505,6 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 	if (!Socket_noPendingWrites(socket))
 	{
 		Log(LOG_SEVERE, -1, "Trying to write to socket %d for which there is already pending output", socket);
-		StackTrace_printStack(stdout);
 		rc = SOCKET_ERROR;
 		goto exit;
 	}
@@ -534,7 +534,6 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 #if defined(OPENSSL)
 			SocketBuffer_pendingWrite(socket, NULL, count+1, iovecs, frees1, total, bytes);
 #else
-			StackTrace_printStack(stdout);
 			SocketBuffer_pendingWrite(socket, count+1, iovecs, frees1, total, bytes);
 #endif
 			*sockmem = socket;

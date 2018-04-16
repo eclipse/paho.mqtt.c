@@ -17,10 +17,8 @@ matrix:
       os: linux
 
 before_install:
-  - openssl aes-256-cbc -K $encrypted_dcd2b299f7c9_key -iv $encrypted_dcd2b299f7c9_iv -in deploy_rsa.enc -out /tmp/deploy_rsa -d
-  - eval "$(ssh-agent -s)"
-  - chmod 600 /tmp/deploy_rsa
-  - ssh-add /tmp/deploy_rsa
+  - if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_REPO_SLUG" = "eclipse/paho.mqtt.c" ]; then export DEPLOY=true; fi
+  - if [ "$DEPLOY" = "true" ]; then ./travis-setup-deploy.sh; fi
   - ./travis-install.sh
 
 env:
@@ -53,4 +51,4 @@ addons:
 
 after_success:
     - ls -l build.paho/*.tar.gz
-    - scp -o StrictHostKeyChecking=no build.paho/*.tar.gz icraggs@build.eclipse.org:../../../../shared/technology/paho/C/
+    - if [ "$DEPLOY" = "true" ]; then scp -o StrictHostKeyChecking=no build.paho/*.tar.gz icraggs@build.eclipse.org:../../../../shared/technology/paho/C/; fi

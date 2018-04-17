@@ -316,7 +316,7 @@ void* MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char* data, size
  * @param clientID the string client identifier, only used for tracing
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-int MQTTPacket_send_unsubscribe(List* topics, int msgid, int dup, networkHandles* net, const char* clientID)
+int MQTTPacket_send_unsubscribe(List* topics, MQTTProperties* props, int msgid, int dup, Clients* client)
 {
 	Header header;
 	char *data, *ptr;
@@ -333,14 +333,20 @@ int MQTTPacket_send_unsubscribe(List* topics, int msgid, int dup, networkHandles
 	datalen = 2 + topics->count * 2; /* utf length == 2 */
 	while (ListNextElement(topics, &elem))
 		datalen += (int)strlen((char*)(elem->content));
+	if (client->MQTTVersion >= 5)
+		datalen += MQTTProperties_len(props);
 	ptr = data = malloc(datalen);
 
 	writeInt(&ptr, msgid);
+
+	if (client->MQTTVersion >= 5)
+		MQTTProperties_write(&ptr, props);
+
 	elem = NULL;
 	while (ListNextElement(topics, &elem))
 		writeUTF(&ptr, (char*)(elem->content));
-	rc = MQTTPacket_send(net, header, data, datalen, 1);
-	Log(LOG_PROTOCOL, 25, NULL, net->socket, clientID, msgid, rc);
+	rc = MQTTPacket_send(&client->net, header, data, datalen, 1);
+	Log(LOG_PROTOCOL, 25, NULL, client->net.socket, client->clientID, msgid, rc);
 	if (rc != TCPSOCKET_INTERRUPTED)
 		free(data);
 	FUNC_EXIT_RC(rc);

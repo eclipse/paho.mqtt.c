@@ -18,6 +18,7 @@
  *    Rong Xiang, Ian Craggs - C++ compatibility
  *    Ian Craggs - turn off DUP flag for PUBREL - MQTT 3.1.1
  *    Ian Craggs - ensure that acks are not sent if write is outstanding on socket
+ *    Ian Craggs - MQTT 5.0 support
  *******************************************************************************/
 
 /**
@@ -351,6 +352,8 @@ int MQTTProtocol_handlePubacks(void* pack, int sock)
 			ListRemove(client->outboundMsgs, m);
 		}
 	}
+	if (puback->MQTTVersion >= MQTTVERSION_5)
+		MQTTProperties_free(&puback->properties);
 	free(pack);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -400,6 +403,8 @@ int MQTTProtocol_handlePubrecs(void* pack, int sock)
 			time(&(m->lastTouch));
 		}
 	}
+	if (pubrec->MQTTVersion >= MQTTVERSION_5)
+		MQTTProperties_free(&pubrec->properties);
 	free(pack);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -464,6 +469,8 @@ int MQTTProtocol_handlePubrels(void* pack, int sock)
 			++(state.msgs_received);
 		}
 	}
+	if (pubrel->MQTTVersion >= MQTTVERSION_5)
+		MQTTProperties_free(&pubrel->properties);
 	free(pack);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -513,6 +520,8 @@ int MQTTProtocol_handlePubcomps(void* pack, int sock)
 			}
 		}
 	}
+	if (pubcomp->MQTTVersion >= MQTTVERSION_5)
+		MQTTProperties_free(&pubcomp->properties);
 	free(pack);
 	FUNC_EXIT_RC(rc);
 	return rc;

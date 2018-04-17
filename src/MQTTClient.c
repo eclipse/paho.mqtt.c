@@ -1563,12 +1563,13 @@ int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos)
 }
 
 
-int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic)
+MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count, char* const* topic, MQTTProperties* props)
 {
 	MQTTClients* m = handle;
 	List* topics = NULL;
 	int i = 0;
 	int rc = SOCKET_ERROR;
+	MQTTResponse resp = {MQTTCLIENT_FAILURE, NULL};
 	int msgid = 0;
 
 	FUNC_ENTRY;
@@ -1602,7 +1603,7 @@ int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic)
 	topics = ListInitialize();
 	for (i = 0; i < count; i++)
 		ListAppend(topics, topic[i], strlen(topic[i]));
-	rc = MQTTProtocol_unsubscribe(m->c, topics, msgid);
+	rc = MQTTProtocol_unsubscribe(m->c, topics, msgid, props);
 	ListFreeNoContent(topics);
 
 	if (rc == TCPSOCKET_COMPLETE)
@@ -1625,21 +1626,37 @@ int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic)
 		MQTTClient_disconnect_internal(handle, 0);
 
 exit:
+	resp.reasonCode = rc;
 	Thread_unlock_mutex(mqttclient_mutex);
 	Thread_unlock_mutex(unsubscribe_mutex);
-	FUNC_EXIT_RC(rc);
+	FUNC_EXIT_RC(resp.reasonCode);
+	return resp;
+}
+
+
+int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic)
+{
+	MQTTResponse response = MQTTClient_unsubscribeMany5(handle, count, topic, NULL);
+
+	return response.reasonCode;
+}
+
+
+MQTTResponse MQTTClient_unsubscribe5(MQTTClient handle, const char* topic, MQTTProperties* props)
+{
+	MQTTResponse rc;
+	char *const topics[] = {(char*)topic};
+
+	rc = MQTTClient_unsubscribeMany5(handle, 1, topics, props);
 	return rc;
 }
 
 
 int MQTTClient_unsubscribe(MQTTClient handle, const char* topic)
 {
-	int rc = 0;
-	char *const topics[] = {(char*)topic};
-	FUNC_ENTRY;
-	rc = MQTTClient_unsubscribeMany(handle, 1, topics);
-	FUNC_EXIT_RC(rc);
-	return rc;
+	MQTTResponse response = MQTTClient_unsubscribe5(handle, topic, NULL);
+
+	return response.reasonCode;
 }
 
 

@@ -486,13 +486,13 @@ int test1(struct Options options)
 	}
 
 	test1_sendAndReceive(c, 0, test_topic);
-	//test1_sendAndReceive(c, 1, test_topic);
-	//test1_sendAndReceive(c, 2, test_topic);
+	test1_sendAndReceive(c, 1, test_topic);
+	test1_sendAndReceive(c, 2, test_topic);
 
 	MyLog(LOGA_DEBUG, "Stopping\n");
 
-	//rc = MQTTClient_unsubscribe(c, test_topic);
-	//assert("Unsubscribe successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+	rc = MQTTClient_unsubscribe(c, test_topic);
+	assert("Unsubscribe successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 	rc = MQTTClient_disconnect(c, 0);
 	assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
@@ -1251,7 +1251,8 @@ int main(int argc, char** argv)
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
 
 	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
-	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 0);
+	//setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 0);
+	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "PROTOCOL", 0);
 
 	getopts(argc, argv);
 

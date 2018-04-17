@@ -1280,7 +1280,7 @@ static int MQTTAsync_processCommand(void)
 		for (i = 0; i < command->command.details.unsub.count; i++)
 			ListAppend(topics, command->command.details.unsub.topics[i], strlen(command->command.details.unsub.topics[i]));
 
-		rc = MQTTProtocol_unsubscribe(command->client->c, topics, command->command.token);
+		rc = MQTTProtocol_unsubscribe(command->client->c, topics, command->command.token, NULL);
 		ListFreeNoContent(topics);
 	}
 	else if (command->command.type == PUBLISH)

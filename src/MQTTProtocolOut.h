@@ -44,7 +44,7 @@ int MQTTProtocol_handlePingresps(void* pack, int sock);
 int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss, int msgID,
 		MQTTSubscribe_options* opts, MQTTProperties* props);
 int MQTTProtocol_handleSubacks(void* pack, int sock);
-int MQTTProtocol_unsubscribe(Clients* client, List* topics, int msgID);
+int MQTTProtocol_unsubscribe(Clients* client, List* topics, int msgID, MQTTProperties* props);
 int MQTTProtocol_handleUnsubacks(void* pack, int sock);
 
 #endif

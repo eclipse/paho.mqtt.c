@@ -880,6 +880,8 @@ DLLExport MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, c
   */
 DLLExport int MQTTClient_unsubscribe(MQTTClient handle, const char* topic);
 
+DLLExport MQTTResponse MQTTClient_unsubscribe5(MQTTClient handle, const char* topic, MQTTProperties* props);
+
 /**
   * This function attempts to remove existing subscriptions to a list of topics
   * made by the specified client.
@@ -892,6 +894,8 @@ DLLExport int MQTTClient_unsubscribe(MQTTClient handle, const char* topic);
   * An error code is returned if there was a problem removing the subscriptions.
   */
 DLLExport int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic);
+
+DLLExport MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count, char* const* topic, MQTTProperties* props);
 
 /**
   * This function attempts to publish a message to a given topic (see also

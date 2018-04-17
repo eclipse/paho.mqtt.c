@@ -181,7 +181,6 @@ int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss, int msgID,
 	int rc = 0;
 
 	FUNC_ENTRY;
-	/* we should stack this up for retry processing too */
 	rc = MQTTPacket_send_subscribe(topics, qoss, opts, props, msgID, 0, client);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -215,13 +214,12 @@ int MQTTProtocol_handleSubacks(void* pack, int sock)
  * @param topics list of topics
  * @return completion code
  */
-int MQTTProtocol_unsubscribe(Clients* client, List* topics, int msgID)
+int MQTTProtocol_unsubscribe(Clients* client, List* topics, int msgID, MQTTProperties* props)
 {
 	int rc = 0;
 
 	FUNC_ENTRY;
-	/* we should stack this up for retry processing too? */
-	rc = MQTTPacket_send_unsubscribe(topics, msgID, 0, &client->net, client->clientID);
+	rc = MQTTPacket_send_unsubscribe(topics, props, msgID, 0, client);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -242,6 +240,8 @@ int MQTTProtocol_handleUnsubacks(void* pack, int sock)
 	FUNC_ENTRY;
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	Log(LOG_PROTOCOL, 24, NULL, sock, client->clientID, unsuback->msgId);
+	if (unsuback->MQTTVersion >= MQTTVERSION_5)
+		MQTTProperties_free(&unsuback->properties);
 	free(unsuback);
 	FUNC_EXIT_RC(rc);
 	return rc;

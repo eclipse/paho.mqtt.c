@@ -144,7 +144,10 @@ void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
 		else
 		{
 			if ((pack = (*new_packets[ptype])(MQTTVersion, header.byte, data, remaining_length)) == NULL)
+			{
 				*error = SOCKET_ERROR; // was BAD_MQTT_PACKET;
+				Log(LOG_ERROR, -1, "Bad MQTT packet, type %d", ptype);
+			}
 #if !defined(NO_PERSISTENCE)
 			else if (header.bits.type == PUBLISH && header.bits.qos == 2)
 			{
@@ -695,15 +698,22 @@ void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t 
 	if (MQTTVersion >= MQTTVERSION_5)
 	{
 		MQTTProperties props = MQTTProperties_initializer;
-		pack->rc = readChar(&curdata); /* reason code */
 
+		pack->rc = SUCCESS;
 		pack->properties = props;
-		pack->properties.max_count = 10;
-		pack->properties.array = malloc(sizeof(MQTTProperty) * pack->properties.max_count);
-		if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
+
+		if (datalen > 2)
+			pack->rc = readChar(&curdata); /* reason code */
+
+		if (datalen > 3)
 		{
-			free(pack);
-			pack = NULL; /* signal protocol error */
+			pack->properties.max_count = 10;
+			pack->properties.array = malloc(sizeof(MQTTProperty) * pack->properties.max_count);
+			if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
+			{
+				free(pack);
+				pack = NULL; /* signal protocol error */
+			}
 		}
 	}
 	FUNC_EXIT;

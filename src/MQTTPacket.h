@@ -228,7 +228,7 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffers, size_t* buflens, int* frees);
 
 void* MQTTPacket_header_only(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen);
-int MQTTPacket_send_disconnect(networkHandles* net, const char* clientID);
+int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQTTProperties* props);
 
 void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen);
 void MQTTPacket_freePublish(Publish* pack);

@@ -479,7 +479,7 @@ void* MQTTPacket_header_only(int MQTTVersion, unsigned char aHeader, char* data,
  * @param socket the open socket to send the data to
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-int MQTTPacket_send_disconnect(networkHandles *net, const char* clientID)
+int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQTTProperties* props)
 {
 	Header header;
 	int rc = 0;
@@ -487,8 +487,25 @@ int MQTTPacket_send_disconnect(networkHandles *net, const char* clientID)
 	FUNC_ENTRY;
 	header.byte = 0;
 	header.bits.type = DISCONNECT;
-	rc = MQTTPacket_send(net, header, NULL, 0, 0);
-	Log(LOG_PROTOCOL, 28, NULL, net->socket, clientID, rc);
+
+	if (client->MQTTVersion >= 5)
+	{
+		if (props || reason != SUCCESS)
+		{
+			size_t buflen = 1 + ((props == NULL) ? 0 : MQTTProperties_len(props));
+			char *buf = malloc(buflen), *ptr = NULL;
+
+			ptr = buf;
+			writeChar(&ptr, reason);
+			if (props)
+				MQTTProperties_write(&ptr, props);
+			if ((rc = MQTTPacket_send(&client->net, header, buf, buflen, 1)) != TCPSOCKET_INTERRUPTED)
+				free(buf);
+		}
+	}
+	else
+		rc = MQTTPacket_send(&client->net, header, NULL, 0, 0);
+	Log(LOG_PROTOCOL, 28, NULL, client->net.socket, client->clientID, rc);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

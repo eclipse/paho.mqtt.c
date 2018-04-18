@@ -284,7 +284,7 @@ static int clientSockCompare(void* a, void* b);
 static thread_return_type WINAPI connectionLost_call(void* context);
 static thread_return_type WINAPI MQTTClient_run(void* n);
 static void MQTTClient_stop(void);
-static void MQTTClient_closeSession(Clients* client);
+static void MQTTClient_closeSession(Clients* client, enum MQTTReasonCodes reason, MQTTProperties* props);
 static int MQTTClient_cleanSession(Clients* client);
 static MQTTResponse MQTTClient_connectURIVersion(
 	MQTTClient handle, MQTTClient_connectOptions* options,
@@ -293,7 +293,7 @@ static MQTTResponse MQTTClient_connectURIVersion(
 	MQTTProperties* connectProperties, MQTTProperties* willProperties);
 static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options, const char* serverURI,
 	MQTTProperties* connectProperties, MQTTProperties* willProperties);
-static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal, int stop);
+static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal, int stop, enum MQTTReasonCodes, MQTTProperties*);
 static int MQTTClient_disconnect_internal(MQTTClient handle, int timeout);
 static void MQTTClient_retry(void);
 static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc);
@@ -777,7 +777,7 @@ int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTClient_connect
 }
 
 
-static void MQTTClient_closeSession(Clients* client)
+static void MQTTClient_closeSession(Clients* client, enum MQTTReasonCodes reason, MQTTProperties* props)
 {
 	FUNC_ENTRY;
 	client->good = 0;
@@ -785,7 +785,7 @@ static void MQTTClient_closeSession(Clients* client)
 	if (client->net.socket > 0)
 	{
 		if (client->connected)
-			MQTTPacket_send_disconnect(&client->net, client->clientID);
+			MQTTPacket_send_disconnect(client, reason, props);
 		Thread_lock_mutex(socket_mutex);
 #if defined(OPENSSL)
 		SSLSocket_close(&client->net);
@@ -1047,7 +1047,7 @@ exit:
 		}
 	}
 	else
-		MQTTClient_disconnect1(handle, 0, 0, (MQTTVersion == 3)); /* don't want to call connection lost */
+		MQTTClient_disconnect1(handle, 0, 0, (MQTTVersion == 3), SUCCESS, NULL); /* don't want to call connection lost */
 
 	resp.reasonCode = rc;
 	FUNC_EXIT_RC(resp.reasonCode);
@@ -1335,7 +1335,8 @@ exit:
 /**
  * mqttclient_mutex must be locked when you call this function, if multi threaded
  */
-static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int call_connection_lost, int stop)
+static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int call_connection_lost, int stop,
+		enum MQTTReasonCodes reason, MQTTProperties* props)
 {
 	MQTTClients* m = handle;
 	START_TIME_TYPE start;
@@ -1368,7 +1369,7 @@ static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int call_conne
 		}
 	}
 
-	MQTTClient_closeSession(m->c);
+	MQTTClient_closeSession(m->c, reason, props);
 
 	while (Thread_check_sem(m->connect_sem))
 		Thread_wait_sem(m->connect_sem, 100);
@@ -1396,7 +1397,7 @@ exit:
  */
 static int MQTTClient_disconnect_internal(MQTTClient handle, int timeout)
 {
-	return MQTTClient_disconnect1(handle, timeout, 1, 1);
+	return MQTTClient_disconnect1(handle, timeout, 1, 1, SUCCESS, NULL);
 }
 
 
@@ -1414,7 +1415,18 @@ int MQTTClient_disconnect(MQTTClient handle, int timeout)
 	int rc = 0;
 
 	Thread_lock_mutex(mqttclient_mutex);
-	rc = MQTTClient_disconnect1(handle, timeout, 0, 1);
+	rc = MQTTClient_disconnect1(handle, timeout, 0, 1, SUCCESS, NULL);
+	Thread_unlock_mutex(mqttclient_mutex);
+	return rc;
+}
+
+
+int MQTTClient_disconnect5(MQTTClient handle, int timeout, enum MQTTReasonCodes reason, MQTTProperties* props)
+{
+	int rc = 0;
+
+	Thread_lock_mutex(mqttclient_mutex);
+	rc = MQTTClient_disconnect1(handle, timeout, 0, 1, reason, props);
 	Thread_unlock_mutex(mqttclient_mutex);
 	return rc;
 }

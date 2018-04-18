@@ -2121,7 +2121,7 @@ static void MQTTAsync_closeOnly(Clients* client)
 	{
 		MQTTProtocol_checkPendingWrites();
 		if (client->connected && Socket_noPendingWrites(client->net.socket))
-			MQTTPacket_send_disconnect(&client->net, client->clientID);
+			MQTTPacket_send_disconnect(client, SUCCESS, NULL);
 		Thread_lock_mutex(socket_mutex);
 #if defined(OPENSSL)
 		SSLSocket_close(&client->net);

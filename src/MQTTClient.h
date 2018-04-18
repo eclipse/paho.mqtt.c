@@ -800,6 +800,8 @@ DLLExport MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connect
   */
 DLLExport int MQTTClient_disconnect(MQTTClient handle, int timeout);
 
+DLLExport int MQTTClient_disconnect5(MQTTClient handle, int timeout, enum MQTTReasonCodes reason, MQTTProperties* props);
+
 /**
   * This function allows the client application to test whether or not a
   * client is currently connected to the MQTT server.

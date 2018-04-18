@@ -491,17 +491,32 @@ int test1(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Stopping\n");
 
-	rc = MQTTClient_unsubscribe(c, test_topic);
-	assert("Unsubscribe successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
-	rc = MQTTClient_disconnect(c, 0);
+	MQTTProperties_free(&props);
+	property.identifier = USER_PROPERTY;
+	property.value.data.data = "User property name";
+	property.value.data.len = strlen(property.value.data.data);
+	property.value.value.data = "User property value";
+	property.value.value.len = strlen(property.value.value.data);
+	MQTTProperties_add(&props, &property);
+
+	response = MQTTClient_unsubscribe5(c, test_topic, &props);
+	assert("Unsubscribe successful", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+
+	MQTTProperties_free(&props);
+	property.identifier = SESSION_EXPIRY_INTERVAL;
+	property.value.integer4 = 0;
+	MQTTProperties_add(&props, &property);
+
+	rc = MQTTClient_disconnect5(c, 0, SUCCESS, &props);
 	assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
 	/* Just to make sure we can connect again */
 	response = MQTTClient_connect5(c, &opts, NULL, NULL);
 	assert("Connect successful",  response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
-	rc = MQTTClient_disconnect(c, 0);
+	rc = MQTTClient_disconnect5(c, 0, SUCCESS, &props);
 	assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
+	MQTTProperties_free(&props);
 	MQTTClient_destroy(&c);
 
 exit:
@@ -1251,8 +1266,8 @@ int main(int argc, char** argv)
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
 
 	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
-	//setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 0);
-	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "PROTOCOL", 0);
+	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 0);
+	//setenv("MQTT_C_CLIENT_TRACE_LEVEL", "PROTOCOL", 0);
 
 	getopts(argc, argv);
 

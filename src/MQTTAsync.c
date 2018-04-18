@@ -1002,6 +1002,17 @@ static void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* comma
 	FUNC_EXIT;
 }
 
+/**
+ * Call Socket_noPendingWrites(int socket) with protection by socket_mutex, see https://github.com/eclipse/paho.mqtt.c/issues/385
+ */
+static int MQTTAsync_Socket_noPendingWrites(int socket)
+{
+    int rc;
+    Thread_lock_mutex(socket_mutex);
+    rc = Socket_noPendingWrites(socket);
+    Thread_unlock_mutex(socket_mutex);
+    return rc;
+}
 
 /**
  * See if any pending writes have been completed, and cleanup if so.
@@ -1037,8 +1048,10 @@ static void MQTTAsync_freeServerURIs(MQTTAsyncs* m)
 
 	for (i = 0; i < m->serverURIcount; ++i)
 		free(m->serverURIs[i]);
+	m->serverURIcount = 0;
 	if (m->serverURIs)
 		free(m->serverURIs);
+	m->serverURIs = NULL;
 }
 
 
@@ -1052,7 +1065,9 @@ static void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command)
 			free(command->command.details.sub.topics[i]);
 
 		free(command->command.details.sub.topics);
+		command->command.details.sub.topics = NULL;
 		free(command->command.details.sub.qoss);
+		command->command.details.sub.qoss = NULL;
 	}
 	else if (command->command.type == UNSUBSCRIBE)
 	{
@@ -1062,13 +1077,16 @@ static void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command)
 			free(command->command.details.unsub.topics[i]);
 
 		free(command->command.details.unsub.topics);
+		command->command.details.unsub.topics = NULL;
 	}
 	else if (command->command.type == PUBLISH)
 	{
 		/* qos 1 and 2 topics are freed in the protocol code when the flows are completed */
 		if (command->command.details.pub.destinationName)
 			free(command->command.details.pub.destinationName);
+		command->command.details.pub.destinationName = NULL;
 		free(command->command.details.pub.payload);
+		command->command.details.pub.payload = NULL;
 	}
 }
 
@@ -1176,7 +1194,7 @@ static int MQTTAsync_processCommand(void)
 			continue;
 
 		if (cmd->command.type == CONNECT || cmd->command.type == DISCONNECT || (cmd->client->c->connected &&
-			cmd->client->c->connect_state == 0 && Socket_noPendingWrites(cmd->client->c->net.socket)))
+			cmd->client->c->connect_state == 0 && MQTTAsync_Socket_noPendingWrites(cmd->client->c->net.socket)))
 		{
 			if ((cmd->command.type == PUBLISH || cmd->command.type == SUBSCRIBE || cmd->command.type == UNSUBSCRIBE) &&
 				cmd->client->c->outboundMsgs->count >= MAX_MSG_ID - 1)
@@ -3006,10 +3024,8 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 	if ((*sock = SSLSocket_getPendingRead()) == -1)
 	{
 #endif
-		Thread_lock_mutex(socket_mutex);
 		/* 0 from getReadySocket indicates no work to do, -1 == error, but can happen normally */
-		*sock = Socket_getReadySocket(0, &tp);
-		Thread_unlock_mutex(socket_mutex);
+		*sock = Socket_getReadySocket(0, &tp,socket_mutex);
 		if (!tostop && *sock == 0 && (tp.tv_sec > 0L || tp.tv_usec > 0L))
 			MQTTAsync_sleep(100L);
 #if defined(OPENSSL)

@@ -1839,9 +1839,7 @@ static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
 	{
 		/* 0 from getReadySocket indicates no work to do, -1 == error, but can happen normally */
 #endif
-		Thread_lock_mutex(socket_mutex);
-		*sock = Socket_getReadySocket(0, &tp);
-		Thread_unlock_mutex(socket_mutex);
+		*sock = Socket_getReadySocket(0, &tp, socket_mutex);
 #if defined(OPENSSL)
 	}
 #endif

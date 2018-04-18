@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2016 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,7 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs - async client updates
  *    Ian Craggs - fix for bug 484496
+ *    Ian Craggs - fix for issue 285
  *******************************************************************************/
 
 /**
@@ -86,15 +87,25 @@ int pstopen(void **handle, const char* clientID, const char* serverURI, void* co
 	/* create clientDir directory */
 
 	/* pCrtDirName - holds the directory name we are currently trying to create.           */
-	/*               This gets built up level by level until the full path name is created.*/
+	/*               This gets built up level by level untipwdl the full path name is created.*/
 	/* pTokDirName - holds the directory name that gets used by strtok.         */
 	pCrtDirName = (char*)malloc( strlen(clientDir) + 1 );
 	pTokDirName = (char*)malloc( strlen(clientDir) + 1 );
 	strcpy( pTokDirName, clientDir );
 
-	pToken = strtok_r( pTokDirName, "\\/", &save_ptr );
+	/* If first character is directory separator, make sure it's in the created directory name #285 */
+	if (*pTokDirName == '/' || *pTokDirName == '\\')
+	{
+		*pCrtDirName = *pTokDirName;
+		pToken = strtok_r( pTokDirName + 1, "\\/", &save_ptr );
+		strcpy( pCrtDirName + 1, pToken );
+	}
+	else
+	{
+		pToken = strtok_r( pTokDirName, "\\/", &save_ptr );
+		strcpy( pCrtDirName, pToken );
+	}
 
-	strcpy( pCrtDirName, pToken );
 	rc = pstmkdir( pCrtDirName );
 	pToken = strtok_r( NULL, "\\/", &save_ptr );
 	while ( (pToken != NULL) && (rc == 0) )

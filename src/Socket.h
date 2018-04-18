@@ -65,6 +65,8 @@
 #define ULONG size_t
 #endif
 
+#include "mutex_type.h" /* Needed for mutex_type */
+
 /** socket operation completed successfully */
 #define TCPSOCKET_COMPLETE 0
 #if !defined(SOCKET_ERROR)
@@ -124,7 +126,7 @@ typedef struct
 
 void Socket_outInitialize(void);
 void Socket_outTerminate(void);
-int Socket_getReadySocket(int more_work, struct timeval *tp);
+int Socket_getReadySocket(int more_work, struct timeval *tp, mutex_type mutex);
 int Socket_getch(int socket, char* c);
 char *Socket_getdata(int socket, size_t bytes, size_t* actual_len);
 int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens, int* frees);

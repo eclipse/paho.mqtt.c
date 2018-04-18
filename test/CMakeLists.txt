@@ -465,3 +465,13 @@ SET_TESTS_PROPERTIES(
 	test9-6-offline-buffering-max-buffered-binary-will
 	PROPERTIES TIMEOUT 540
 )
+
+ADD_EXECUTABLE(
+	test_issue373
+	test_issue373.c
+)
+
+TARGET_LINK_LIBRARIES(
+	test_issue373
+	paho-mqtt3a
+)

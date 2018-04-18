@@ -1,4 +1,4 @@
-sudo: true
+sudo: required
 language: c
 
 compiler:
@@ -9,9 +9,18 @@ os:
   - linux
   - osx
 
-sudo: required
+matrix:
+  exclude:
+    - compiler: gcc
+      os: osx
+    - compiler: clang
+      os: linux
 
 before_install:
+  - openssl aes-256-cbc -K $encrypted_dcd2b299f7c9_key -iv $encrypted_dcd2b299f7c9_iv -in deploy_rsa.enc -out /tmp/deploy_rsa -d
+  - eval "$(ssh-agent -s)"
+  - chmod 600 /tmp/deploy_rsa
+  - ssh-add /tmp/deploy_rsa
   - ./travis-install.sh
 
 env:
@@ -19,7 +28,6 @@ env:
    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
    #   via the "travis encrypt" command using the project repo's public key
    - secure: "Ro53zVdGCjCQx9U4wvD9GBwB346tIQ7y1MWOAe1QrFWlmoQLC8KUeddQkc+27pdrOG9Fm9QQcI82EDlh0bfRBy1ITfWSVVZVfbNLv9sBWesND1F9YlnFpn/fag2OE+ULPSEJVJMxZoqiR9yiYWO3pTWue4YjCSuFAjpQNO6VnV3HiQJRG1jeaylx0QVLQWKAL/qkRbuqG9o4xpS1Kebaj86+q9UTHcL1a+Aj53u+Ajqnc9ZbUB/yBrfHyufTKpAD8Ef/FEIWXg2svtiWVEwEsPtdTn5P7AefJ2FNEyT4uMKIEBzWIPeWvUZLFF6U7QA07+uYDE0Ir4voPptBUlIYqQz1CUz9XCOPmM/N+GgqpyNyUjpMb4CM1b+iwBwcsHc0Z1JFcPz65ZMSt1D/WeUfQlaB/KxQBpz4lD2mxEmAuBIoGNrAG+FRULoY+xQSAf7V0W8am6QbHNnXif30mdkF3lgAhaAOwWO03JD7ctEJXqzRbMK8HrBkrgWfHsRRLFT50m8CrNLFz+3lCYuPHge2gHUMDfIHMxd4N9f2dlfV9GJkHQOQYwFfP5L2Y5Xq9KTnZX+bsglDC2WcOJu2F8h1LxTMV5Kku8zl1RZlEAt8Qa9EtCMczA3sL4NfGxazO22WpyOvHdwb26mhdJTgquI5oZsl71zcIf+WLGfgUAEq4/k="
-
 
 script:
   - if [[ "$COVERITY_SCAN_BRANCH" != 1 ]]; then ./travis-build.sh; fi
@@ -33,7 +41,6 @@ addons:
     build_command_prepend: "make clean"
     build_command: "make -j 4"
     branch_pattern: coverity-.*
-addons:
   apt:
     sources:
       - george-edison55-precise-backports # cmake 3.2.3 / doxygen 1.8.3
@@ -44,4 +51,6 @@ addons:
       - mosquitto
       - doxygen
 
-
+after_success:
+    - ls -l build.paho/*.tar.gz
+    - scp -o StrictHostKeyChecking=no build.paho/*.tar.gz icraggs@build.eclipse.org:../../../../shared/technology/paho/C/

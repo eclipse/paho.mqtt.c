@@ -218,7 +218,10 @@ static int ListUnlink(List* aList, void* content, int(*callback)(void*, void*), 
 
 	next = aList->current->next;
 	if (freeContent)
+        {
 		free(aList->current->content);
+                aList->current->content = NULL;
+        }
 	if (saved == aList->current)
 		saveddeleted = 1;
 	free(aList->current);
@@ -357,7 +360,10 @@ void ListEmpty(List* aList)
 	{
 		ListElement* first = aList->first;
 		if (first->content != NULL)
+                {
 			free(first->content);
+                        first->content = NULL;
+                }
 		aList->first = first->next;
 		free(first);
 	}

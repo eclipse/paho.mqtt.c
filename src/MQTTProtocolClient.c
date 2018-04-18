@@ -690,11 +690,13 @@ void MQTTProtocol_freeClient(Clients* client)
 	MQTTProtocol_freeMessageList(client->inboundMsgs);
 	ListFree(client->messageQueue);
 	free(client->clientID);
+        client->clientID = NULL;
 	if (client->will)
 	{
 		free(client->will->payload);
 		free(client->will->topic);
 		free(client->will);
+                client->will = NULL;
 	}
 	if (client->username)
 		free((void*)client->username);
@@ -719,6 +721,7 @@ void MQTTProtocol_freeClient(Clients* client)
 				free((void*)client->sslopts->CApath);
 		}
 		free(client->sslopts);
+                client->sslopts = NULL;
 	}
 #endif
 	/* don't free the client structure itself... this is done elsewhere */

@@ -942,3 +942,4 @@ int MQTTPacket_decodeBuf(char* buf, int* value)
 	bufptr = buf;
 	return MQTTPacket_VBIdecode(bufchar, value);
 }
+

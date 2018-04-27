@@ -505,6 +505,7 @@ exit:
 void MQTTClient_freeMessage(MQTTClient_message** message)
 {
 	FUNC_ENTRY;
+	MQTTProperties_free(&(*message)->properties);
 	free((*message)->payload);
 	free(*message);
 	*message = NULL;
@@ -827,10 +828,12 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 {
 	qEntry* qe = NULL;
 	MQTTClient_message* mm = NULL;
+	MQTTClient_message initialized = MQTTClient_message_initializer;
 
 	FUNC_ENTRY;
 	qe = malloc(sizeof(qEntry));
 	mm = malloc(sizeof(MQTTClient_message));
+	memcpy(mm, &initialized, sizeof(MQTTClient_message));
 
 	qe->msg = mm;
 
@@ -857,6 +860,9 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 	else
 		mm->dup = publish->header.bits.dup;
 	mm->msgid = publish->msgId;
+
+	if (publish->MQTTVersion >= 5)
+		mm->properties = MQTTProperties_copy(&publish->properties);
 
 	ListAppend(client->messageQueue, qe, sizeof(qe) + sizeof(mm) + mm->payloadlen + strlen(qe->topicName)+1);
 #if !defined(NO_PERSISTENCE)
@@ -1781,9 +1787,10 @@ int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen,
 
 
 MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char* topicName, MQTTClient_message* message,
-								MQTTProperties* props, MQTTClient_deliveryToken* deliveryToken)
+								MQTTClient_deliveryToken* deliveryToken)
 {
 	MQTTResponse rc = {MQTTCLIENT_SUCCESS, NULL};
+	MQTTProperties* props = NULL;
 
 	FUNC_ENTRY;
 	if (message == NULL)
@@ -1792,11 +1799,15 @@ MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char* topicName
 		goto exit;
 	}
 
-	if (strncmp(message->struct_id, "MQTM", 4) != 0 || message->struct_version != 0)
+	if (strncmp(message->struct_id, "MQTM", 4) != 0 ||
+			(message->struct_version != 0 && message->struct_version != 1))
 	{
 		rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
 		goto exit;
 	}
+
+	if (message->struct_version == 1)
+		props = &message->properties;
 
 	rc = MQTTClient_publish5(handle, topicName, message->payloadlen, message->payload,
 								message->qos, message->retained, props, deliveryToken);
@@ -1809,7 +1820,13 @@ exit:
 int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClient_message* message,
 															 MQTTClient_deliveryToken* deliveryToken)
 {
-	MQTTResponse rc = MQTTClient_publishMessage5(handle, topicName, message, NULL, deliveryToken);
+	MQTTResponse rc = {MQTTCLIENT_SUCCESS, NULL};
+
+	if (strncmp(message->struct_id, "MQTM", 4) != 0 ||
+			(message->struct_version != 0 && message->struct_version != 1))
+		return MQTTCLIENT_BAD_STRUCTURE;
+
+	rc = MQTTClient_publishMessage5(handle, topicName, message, deliveryToken);
 	return rc.reasonCode;
 }
 

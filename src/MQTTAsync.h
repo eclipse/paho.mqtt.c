@@ -20,6 +20,7 @@
  *    Ian Craggs - binary will message
  *    Ian Craggs - binary password
  *    Ian Craggs - remove const on eyecatchers #168
+ *    Ian Craggs - MQTT 5.0
  *******************************************************************************/
 
 /********************************************************************/
@@ -28,7 +29,7 @@
  * @cond MQTTAsync_main
  * @mainpage Asynchronous MQTT client library for C
  *
- * &copy; Copyright IBM Corp. 2009, 2017
+ * &copy; Copyright IBM Corp. 2009, 2018
  *
  * @brief An Asynchronous MQTT client library for C.
  *
@@ -105,6 +106,9 @@
 /// @endcond
 */
 
+#include "MQTTProperties.h"
+#include "MQTTReasonCodes.h"
+#include "MQTTSubscribeOpts.h"
 #if !defined(NO_PERSISTENCE)
 #include "MQTTClientPersistence.h"
 #endif
@@ -191,6 +195,10 @@
  */
 #define MQTTVERSION_3_1_1 4
 /**
+ * MQTT version to connect with: 5
+ */
+#define MQTTVERSION_5 5
+/**
  * Bad return code from subscribe, as defined in the 3.1.1 specification
  */
 #define MQTT_BAD_SUBSCRIBE 0x80
@@ -243,7 +251,8 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTM. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0 */
+	/** The version number of this structure.  Must be 0 or 1.
+	 *  0 indicates no message properties */
 	int struct_version;
 	/** The length of the MQTT message payload in bytes. */
 	int payloadlen;
@@ -293,9 +302,13 @@ typedef struct
       * MQTT client and server.
       */
 	int msgid;
+	/**
+	 * The MQTT V5 properties associated with the message.
+	 */
+	MQTTProperties properties;
 } MQTTAsync_message;
 
-#define MQTTAsync_message_initializer { {'M', 'Q', 'T', 'M'}, 0, 0, NULL, 0, 0, 0, 0 }
+#define MQTTAsync_message_initializer { {'M', 'Q', 'T', 'M'}, 1, 0, NULL, 0, 0, 0, 0, MQTTProperties_initializer }
 
 /**
  * This is a callback function. The client application
@@ -378,7 +391,6 @@ typedef void MQTTAsync_connectionLost(void* context, char* cause);
 typedef void MQTTAsync_connected(void* context, char* cause);
 
 
-
 /** The data returned on completion of an unsuccessful API call in the response callback onFailure. */
 typedef struct
 {
@@ -389,6 +401,26 @@ typedef struct
 	/** Optional text explaining the error. Can be NULL. */
 	const char *message;
 } MQTTAsync_failureData;
+
+
+/** The data returned on completion of an unsuccessful API call in the response callback onFailure. */
+typedef struct
+{
+	/** The eyecatcher for this structure.  Will be MQFD. */
+	char struct_id[4];
+	/** The version number of this structure.  Will be 0 */
+	int struct_version;
+	/** A token identifying the failed request. */
+	MQTTAsync_token token;
+	/** The MQTT reason code returned. */
+	enum MQTTReasonCodes reasonCode;
+	/** The MQTT properties on the ack, if any. */
+	MQTTProperties properties;
+	/** Optional further text explaining the error. Can be NULL. */
+	const char *message;
+} MQTTAsync_failureData5;
+
+#define MQTTAsync_failureData5_initializer {{'M', 'Q', 'F', 'D'}, 0, 0, SUCCESS, MQTTProperties_initializer, NULL}
 
 /** The data returned on completion of a successful API call in the response callback onSuccess. */
 typedef struct
@@ -418,6 +450,50 @@ typedef struct
 	} alt;
 } MQTTAsync_successData;
 
+
+/** The data returned on completion of a successful API call in the response callback onSuccess. */
+typedef struct
+{
+	/** The eyecatcher for this structure.  Will be MQSD. */
+	char struct_id[4];
+	/** The version number of this structure.  Will be 0 */
+	int struct_version;
+	/** A token identifying the successful request. Can be used to refer to the request later. */
+	MQTTAsync_token token;
+	/** MQTT V5 reason code returned */
+	enum MQTTReasonCodes reasonCode;
+	/** MQTT V5 properties returned, if any */
+	MQTTProperties props;
+	/** A union of the different values that can be returned for subscribe, unsubscribe and publish. */
+	union
+	{
+		/** For subscribe, the granted QoS of the subscription returned by the server. */
+		int qos;
+		/** For subscribeMany, the list of granted QoSs of the subscriptions returned by the server. */
+		int* qosList;
+		/** For publish, the message being sent to the server. */
+		struct
+		{
+			MQTTAsync_message message;
+			char* destinationName;
+		} pub;
+		/* For connect, the server connected to, MQTT version used, and sessionPresent flag */
+		struct
+		{
+			char* serverURI;
+			int MQTTVersion;
+			int sessionPresent;
+		} connect;
+		struct
+		{
+			enum MQTTReasonCodes reasonCode;
+			enum MQTTReasonCodes* reasonCodes;
+		} unsub;
+	} alt;
+} MQTTAsync_successData5;
+
+#define MQTTAsync_successData5_initializer {{'M', 'Q', 'S', 'D'}, 0, 0, SUCCESS, MQTTProperties_initializer}
+
 /**
  * This is a callback function. The client application
  * must provide an implementation of this function to enable asynchronous
@@ -429,6 +505,9 @@ typedef struct
  * @param response Any success data associated with the API completion.
  */
 typedef void MQTTAsync_onSuccess(void* context, MQTTAsync_successData* response);
+
+typedef void MQTTAsync_onSuccess5(void* context, MQTTAsync_successData5* response);
+
 
 /**
  * This is a callback function. The client application
@@ -442,11 +521,14 @@ typedef void MQTTAsync_onSuccess(void* context, MQTTAsync_successData* response)
  */
 typedef void MQTTAsync_onFailure(void* context,  MQTTAsync_failureData* response);
 
-typedef struct
+typedef void MQTTAsync_onFailure5(void* context,  MQTTAsync_failureData5* response);
+
+typedef struct MQTTAsync_responseOptions
 {
 	/** The eyecatcher for this structure.  Must be MQTR */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0 */
+	/** The version number of this structure.  Must be 0 or 1
+	 *   if 0, no MQTTV5 options */
 	int struct_version;
 	/**
     * A pointer to a callback function to be called if the API call successfully
@@ -460,22 +542,41 @@ typedef struct
     * completion will be received.
     */
 	MQTTAsync_onFailure* onFailure;
-  /**
+	/**
     * A pointer to any application-specific context. The
     * the <i>context</i> pointer is passed to success or failure callback functions to
     * provide access to the context information in the callback.
     */
 	void* context;
-  /**
+	/**
     * A token is returned from the call.  It can be used to track
     * the state of this request, both in the callbacks and in future calls
     * such as ::MQTTAsync_waitForCompletion.
     */
 	MQTTAsync_token token;
+	/**
+    * A pointer to a callback function to be called if the API call successfully
+    * completes.  Can be set to NULL, in which case no indication of successful
+    * completion will be received.
+    */
+	MQTTAsync_onSuccess5* onSuccess5;
+	/**
+    * A pointer to a callback function to be called if the API call successfully
+    * completes.  Can be set to NULL, in which case no indication of successful
+    * completion will be received.
+    */
+	MQTTAsync_onFailure5* onFailure5;
+	/**
+	 * MQTT V5 input properties
+	 */
+	MQTTProperties properties;
+	MQTTSubscribe_options subscribe_options;
 } MQTTAsync_responseOptions;
 
-#define MQTTAsync_responseOptions_initializer { {'M', 'Q', 'T', 'R'}, 0, NULL, NULL, 0, 0 }
+#define MQTTAsync_responseOptions_initializer { {'M', 'Q', 'T', 'R'}, 1, NULL, NULL, 0, 0, NULL, NULL, MQTTProperties_initializer, MQTTSubscribe_options_initializer }
 
+typedef struct MQTTAsync_responseOptions MQTTAsync_callOptions;
+#define MQTTAsync_callOptions_initializer MQTTAsync_responseOptions_initializer
 
 /**
  * This function sets the global callback functions for a specific client.
@@ -724,12 +825,13 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1, 2, 3 4 or 5.
+	/** The version number of this structure.  Must be 0, 1, 2, 3 4 5 or 6.
 	  * 0 signifies no SSL options and no serverURIs
 	  * 1 signifies no serverURIs
     * 2 signifies no MQTTVersion
     * 3 signifies no automatic reconnect options
     * 4 signifies no binary password option (just string)
+    * 5 signifies no MQTTV5 properties
 	  */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -851,17 +953,37 @@ typedef struct
 	  */
 	int maxRetryInterval;
 	/**
-   * Optional binary password.  Only checked and used if the password option is NULL
-   */
-  struct {
-  	int len;            /**< binary password length */
+	 * Optional binary password.  Only checked and used if the password option is NULL
+	 */
+	struct {
+		int len;            /**< binary password length */
 		const void* data;  /**< binary password data */
 	} binarypwd;
+	/**
+	 * MQTT V5 properties for connect
+	 */
+	MQTTProperties *connectProperties;
+	/**
+	 * MQTT V5 properties for the will message in the connect
+	 */
+	MQTTProperties *willProperties;
+	/**
+      * A pointer to a callback function to be called if the connect successfully
+      * completes.  Can be set to NULL, in which case no indication of successful
+      * completion will be received.
+      */
+	MQTTAsync_onSuccess5* onSuccess5;
+	/**
+      * A pointer to a callback function to be called if the connect fails.
+      * Can be set to NULL, in which case no indication of unsuccessful
+      * completion will be received.
+      */
+	MQTTAsync_onFailure5* onFailure5;
 } MQTTAsync_connectOptions;
 
 
-#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 5, 60, 1, 10, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 1, 60, {0, NULL}}
+#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 6, 60, 1, 10, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 1, 60, {0, NULL}, NULL, NULL, NULL, NULL}
 
 /**
   * This function attempts to connect a previously-created client (see
@@ -890,7 +1012,7 @@ typedef struct
 {
 	/** The eyecatcher for this structure. Must be MQTD. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0 or 1.  0 signifies no SSL options */
+	/** The version number of this structure.  Must be 0 or 1.  0 signifies no V5 properties */
 	int struct_version;
 	/**
       * The client delays disconnection for up to this time (in
@@ -915,9 +1037,29 @@ typedef struct
     * provide access to the context information in the callback.
     */
 	void* context;
+	/**
+	 * MQTT V5 input properties
+	 */
+	MQTTProperties properties;
+	/**
+	 * Reason code for MQTTV5 disconnect
+	 */
+	enum MQTTReasonCodes reasonCode;
+	/**
+    * A pointer to a callback function to be called if the disconnect successfully
+    * completes.  Can be set to NULL, in which case no indication of successful
+    * completion will be received.
+    */
+	MQTTAsync_onSuccess5* onSuccess5;
+	/**
+    * A pointer to a callback function to be called if the disconnect fails.
+    * Can be set to NULL, in which case no indication of unsuccessful
+    * completion will be received.
+    */
+	MQTTAsync_onFailure5* onFailure5;
 } MQTTAsync_disconnectOptions;
 
-#define MQTTAsync_disconnectOptions_initializer { {'M', 'Q', 'T', 'D'}, 0, 0, NULL, NULL, NULL }
+#define MQTTAsync_disconnectOptions_initializer { {'M', 'Q', 'T', 'D'}, 1, 0, NULL, NULL, NULL, MQTTProperties_initializer, MQTTASYNC_SUCCESS }
 
 
 /**
@@ -1034,8 +1176,11 @@ DLLExport int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* const
   * @return ::MQTTASYNC_SUCCESS if the message is accepted for publication.
   * An error code is returned if there was a problem accepting the message.
   */
-DLLExport int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen, void* payload, int qos, int retained,
-																 MQTTAsync_responseOptions* response);
+DLLExport int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen, void* payload, int qos,
+		int retained, MQTTAsync_responseOptions* response);
+
+DLLExport int MQTTAsync_send5(MQTTAsync handle, const char* destinationName, int payloadlen, void* payload, int qos,
+		int retained, MQTTProperties* props, MQTTAsync_responseOptions* response);
 
 
 /**

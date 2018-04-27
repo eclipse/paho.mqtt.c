@@ -56,14 +56,14 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion,
 	packet.header.byte = 0;
 	packet.header.bits.type = CONNECT;
 
-	len = ((MQTTVersion == 3) ? 12 : 10) + (int)strlen(client->clientID)+2;
+	len = ((MQTTVersion == MQTTVERSION_3_1) ? 12 : 10) + (int)strlen(client->clientID)+2;
 	if (client->will)
 		len += (int)strlen(client->will->topic)+2 + client->will->payloadlen+2;
 	if (client->username)
 		len += (int)strlen(client->username)+2;
 	if (client->password)
 		len += client->passwordlen+2;
-	if (MQTTVersion >= 5)
+	if (MQTTVersion >= MQTTVERSION_5)
 	{
 		len += MQTTProperties_len(connectProperties);
 		if (client->will && willProperties)
@@ -71,12 +71,12 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion,
 	}
 
 	ptr = buf = malloc(len);
-	if (MQTTVersion == 3)
+	if (MQTTVersion == MQTTVERSION_3_1)
 	{
 		writeUTF(&ptr, "MQIsdp");
-		writeChar(&ptr, (char)3);
+		writeChar(&ptr, (char)MQTTVERSION_3_1);
 	}
-	else if (MQTTVersion == 4 || MQTTVersion == 5)
+	else if (MQTTVersion == MQTTVERSION_3_1_1 || MQTTVersion == MQTTVERSION_5)
 	{
 		writeUTF(&ptr, "MQTT");
 		writeChar(&ptr, (char)MQTTVersion);
@@ -99,12 +99,12 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion,
 
 	writeChar(&ptr, packet.flags.all);
 	writeInt(&ptr, client->keepAliveInterval);
-	if (MQTTVersion == 5)
+	if (MQTTVersion >= MQTTVERSION_5)
 		MQTTProperties_write(&ptr, connectProperties);
 	writeUTF(&ptr, client->clientID);
 	if (client->will)
 	{
-		if (MQTTVersion == 5)
+		if (MQTTVersion >= MQTTVERSION_5)
 			MQTTProperties_write(&ptr, willProperties);
 		writeUTF(&ptr, client->will->topic);
 		writeData(&ptr, client->will->payload, client->will->payloadlen);
@@ -230,13 +230,13 @@ int MQTTPacket_send_subscribe(List* topics, List* qoss, MQTTSubscribe_options* o
 	datalen = 2 + topics->count * 3; /* utf length + char qos == 3 */
 	while (ListNextElement(topics, &elem))
 		datalen += (int)strlen((char*)(elem->content));
-	if (client->MQTTVersion >= 5)
+	if (client->MQTTVersion >= MQTTVERSION_5)
 		datalen += MQTTProperties_len(props);
 
 	ptr = data = malloc(datalen);
 	writeInt(&ptr, msgid);
 
-	if (client->MQTTVersion >= 5)
+	if (client->MQTTVersion >= MQTTVERSION_5)
 		MQTTProperties_write(&ptr, props);
 
 	elem = NULL;
@@ -247,13 +247,13 @@ int MQTTPacket_send_subscribe(List* topics, List* qoss, MQTTSubscribe_options* o
 		ListNextElement(qoss, &qosElem);
 		writeUTF(&ptr, (char*)(elem->content));
 		subopts = *(int*)(qosElem->content);
-		if (client->MQTTVersion >= 5 && opts != NULL)
+		if (client->MQTTVersion >= MQTTVERSION_5 && opts != NULL)
 		{
 			subopts |= (opts[i].noLocal << 2); /* 1 bit */
 			subopts |= (opts[i].retainAsPublished << 3); /* 1 bit */
 			subopts |= (opts[i].retainHandling << 4); /* 2 bits */
 		}
-		writeChar(&ptr, *(int*)(qosElem->content));
+		writeChar(&ptr, subopts);
 		++i;
 	}
 	rc = MQTTPacket_send(&client->net, header, data, datalen, 1);
@@ -333,13 +333,13 @@ int MQTTPacket_send_unsubscribe(List* topics, MQTTProperties* props, int msgid, 
 	datalen = 2 + topics->count * 2; /* utf length == 2 */
 	while (ListNextElement(topics, &elem))
 		datalen += (int)strlen((char*)(elem->content));
-	if (client->MQTTVersion >= 5)
+	if (client->MQTTVersion >= MQTTVERSION_5)
 		datalen += MQTTProperties_len(props);
 	ptr = data = malloc(datalen);
 
 	writeInt(&ptr, msgid);
 
-	if (client->MQTTVersion >= 5)
+	if (client->MQTTVersion >= MQTTVERSION_5)
 		MQTTProperties_write(&ptr, props);
 
 	elem = NULL;
@@ -351,4 +351,47 @@ int MQTTPacket_send_unsubscribe(List* topics, MQTTProperties* props, int msgid, 
 		free(data);
 	FUNC_EXIT_RC(rc);
 	return rc;
+}
+
+
+/**
+ * Function used in the new packets table to create unsuback packets.
+ * @param MQTTVersion the version of MQTT
+ * @param aHeader the MQTT header byte
+ * @param data the rest of the packet
+ * @param datalen the length of the rest of the packet
+ * @return pointer to the packet structure
+ */
+void* MQTTPacket_unsuback(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
+{
+	Unsuback* pack = malloc(sizeof(Unsuback));
+	char* curdata = data;
+	char* enddata = &data[datalen];
+
+	FUNC_ENTRY;
+	pack->MQTTVersion = MQTTVersion;
+	pack->header.byte = aHeader;
+	pack->msgId = readInt(&curdata);
+	pack->reasonCodes = NULL;
+	if (MQTTVersion >= MQTTVERSION_5)
+	{
+		MQTTProperties props = MQTTProperties_initializer;
+		pack->properties = props;
+		if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
+		{
+			free(pack->properties.array);
+			free(pack);
+			pack = NULL; /* signal protocol error */
+		}
+		pack->reasonCodes = ListInitialize();
+		while ((size_t)(curdata - data) < datalen)
+		{
+			enum MQTTReasonCodes* newrc;
+			newrc = malloc(sizeof(enum MQTTReasonCodes));
+			*newrc = (enum MQTTReasonCodes)readChar(&curdata);
+			ListAppend(pack->reasonCodes, newrc, sizeof(enum MQTTReasonCodes));
+		}
+	}
+	FUNC_EXIT;
+	return pack;
 }

@@ -301,11 +301,16 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 		m->msgid = publish->msgId;
 		m->qos = publish->header.bits.qos;
 		m->retain = publish->header.bits.retain;
+		m->MQTTVersion = publish->MQTTVersion;
+		if (m->MQTTVersion >= MQTTVERSION_5)
+			m->properties = MQTTProperties_copy(&publish->properties);
 		m->nextMessageType = PUBREL;
 		if ( ( listElem = ListFindItem(client->inboundMsgs, &(m->msgid), messageIDCompare) ) != NULL )
 		{   /* discard queued publication with same msgID that the current incoming message */
 			Messages* msg = (Messages*)(listElem->content);
 			MQTTProtocol_removePublication(msg->publish);
+			if (msg->MQTTVersion >= MQTTVERSION_5)
+				MQTTProperties_free(&msg->properties);
 			ListInsert(client->inboundMsgs, m, sizeof(Messages) + len, listElem);
 			ListRemove(client->inboundMsgs, msg);
 		} else
@@ -349,6 +354,8 @@ int MQTTProtocol_handlePubacks(void* pack, int sock)
 				rc = MQTTPersistence_remove(client, PERSISTENCE_PUBLISH_SENT, m->qos, puback->msgId);
 			#endif
 			MQTTProtocol_removePublication(m->publish);
+			if (m->MQTTVersion >= MQTTVERSION_5)
+				MQTTProperties_free(&m->properties);
 			ListRemove(client->outboundMsgs, m);
 		}
 	}
@@ -460,10 +467,15 @@ int MQTTProtocol_handlePubrels(void* pack, int sock)
 			publish.topiclen = m->publish->topiclen;
 			publish.payload = m->publish->payload;
 			publish.payloadlen = m->publish->payloadlen;
+			publish.MQTTVersion = m->MQTTVersion;
+			if (publish.MQTTVersion >= MQTTVERSION_5)
+				publish.properties = m->properties;
 			Protocol_processPublication(&publish, client);
 			#if !defined(NO_PERSISTENCE)
 				rc += MQTTPersistence_remove(client, PERSISTENCE_PUBLISH_RECEIVED, m->qos, pubrel->msgId);
 			#endif
+			if (m->MQTTVersion >= MQTTVERSION_5)
+				MQTTProperties_free(&m->properties);
 			ListRemove(&(state.publications), m->publish);
 			ListRemove(client->inboundMsgs, m);
 			++(state.msgs_received);
@@ -515,6 +527,8 @@ int MQTTProtocol_handlePubcomps(void* pack, int sock)
 					rc = MQTTPersistence_remove(client, PERSISTENCE_PUBLISH_SENT, m->qos, pubcomp->msgId);
 				#endif
 				MQTTProtocol_removePublication(m->publish);
+				if (m->MQTTVersion >= MQTTVERSION_5)
+					MQTTProperties_free(&m->properties);
 				ListRemove(client->outboundMsgs, m);
 				(++state.msgs_sent);
 			}
@@ -741,9 +755,9 @@ void MQTTProtocol_emptyMessageList(List* msgList)
 	while (ListNextElement(msgList, &current))
 	{
 		Messages* m = (Messages*)(current->content);
+		MQTTProtocol_removePublication(m->publish);
 		if (m->MQTTVersion >= MQTTVERSION_5)
 			MQTTProperties_free(&m->properties);
-		MQTTProtocol_removePublication(m->publish);
 	}
 	ListEmpty(msgList);
 	FUNC_EXIT;

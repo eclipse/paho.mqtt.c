@@ -274,6 +274,26 @@ SET_TESTS_PROPERTIES(
 	PROPERTIES TIMEOUT 540
 )
 
+ADD_EXECUTABLE(
+	test45
+	test45.c
+)
+
+TARGET_LINK_LIBRARIES(
+	test45
+	paho-mqtt3a
+)
+
+ADD_TEST(
+	NAME test45-1-basic-connect-subscribe-receive
+	COMMAND test45 "--test_no" "1" "--connection" ${MQTT_TEST_BROKER}
+)
+
+SET_TESTS_PROPERTIES(
+	test45-1-basic-connect-subscribe-receive
+	PROPERTIES TIMEOUT 540
+)
+
 IF (PAHO_WITH_SSL)
 	ADD_EXECUTABLE(
 		test5

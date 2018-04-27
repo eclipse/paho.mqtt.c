@@ -240,9 +240,7 @@ int MQTTProtocol_handleUnsubacks(void* pack, int sock)
 	FUNC_ENTRY;
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	Log(LOG_PROTOCOL, 24, NULL, sock, client->clientID, unsuback->msgId);
-	if (unsuback->MQTTVersion >= MQTTVERSION_5)
-		MQTTProperties_free(&unsuback->properties);
-	free(unsuback);
+	MQTTPacket_freeUnsuback(unsuback);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

@@ -61,7 +61,7 @@ struct nameToType
 };
 
 
-static char* datadup(MQTTLenString* str)
+static char* datadup(const MQTTLenString* str)
 {
 	char* temp = malloc(str->len);
 	memcpy(temp, str->data, str->len);
@@ -92,12 +92,14 @@ int MQTTProperties_len(MQTTProperties* props)
 }
 
 
-int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop)
+int MQTTProperties_add(MQTTProperties* props, const MQTTProperty* prop)
 {
   int rc = 0, type;
 
   if ((type = MQTTProperty_getType(prop->identifier)) < 0)
   {
+	printf("id %d\n", prop->identifier);
+	StackTrace_printStack(stdout);
     rc = MQTT_INVALID_PROPERTY_ID;
     goto exit;
   }
@@ -201,7 +203,7 @@ int MQTTProperty_write(char** pptr, MQTTProperty* prop)
  * @param properties pointer to the property list, can be NULL
  * @return whether the write succeeded or not, number of bytes written or < 0
  */
-int MQTTProperties_write(char** pptr, MQTTProperties* properties)
+int MQTTProperties_write(char** pptr, const MQTTProperties* properties)
 {
   int rc = -1;
   int i = 0, len = 0;
@@ -281,7 +283,7 @@ int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata)
   int remlength = 0;
 
   FUNC_ENTRY;
-  properties->count = 0;
+  /* we assume an initialized properties structure */
   if (enddata - (*pptr) > 0) /* enough length to read the VBI? */
   {
     *pptr += MQTTPacket_decodeBuf(*pptr, &remlength);
@@ -303,6 +305,12 @@ int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata)
       rc = 1; /* data read successfully */
   }
 
+  if (rc != 1 && properties->array != NULL)
+  {
+	  free(properties->array);
+	  properties->array = NULL;
+	  properties->max_count = properties->count = 0;
+  }
   FUNC_EXIT_RC(rc);
   return rc;
 }
@@ -362,6 +370,9 @@ DLLExport void MQTTProperties_free(MQTTProperties* props)
 {
   int i = 0;
 
+  FUNC_ENTRY;
+  if (props == NULL)
+    goto exit;
   for (i = 0; i < props->count; ++i)
   {
     int id = props->array[i].identifier;
@@ -381,34 +392,25 @@ DLLExport void MQTTProperties_free(MQTTProperties* props)
   if (props->array)
     free(props->array);
   memset(props, '\0', sizeof(MQTTProperties)); /* zero all fields */
+exit:
+  FUNC_EXIT;
 }
 
 
-MQTTProperties MQTTProperties_copy(MQTTProperties* props)
+MQTTProperties MQTTProperties_copy(const MQTTProperties* props)
 {
   int i = 0;
   MQTTProperties result = MQTTProperties_initializer;
 
-  for (i = 0; i > props->count; ++i)
+  FUNC_ENTRY;
+  for (i = 0; i < props->count; ++i)
   {
-	int id = props->array[i].identifier;
-	int type = MQTTProperty_getType(id);
+	int rc = 0;
 
-	MQTTProperties_add(&result, &props->array[i]);
-	switch (type)
-	{
-	case BINARY_DATA:
-	case UTF_8_ENCODED_STRING:
-	case UTF_8_STRING_PAIR:
-      result.array[i].value.data.data = malloc(result.array[i].value.data.len);
-	  memcpy(result.array[i].value.data.data, props->array[i].value.data.data, props->array[i].value.data.len);
-	  if (type == UTF_8_STRING_PAIR)
-	  {
-		result.array[i].value.value.data = malloc(result.array[i].value.value.len);
-		memcpy(result.array[i].value.value.data, props->array[i].value.value.data, props->array[i].value.value.len);
-	  }
-	  break;
-	}
+	if ((rc = MQTTProperties_add(&result, &props->array[i])) != 0)
+		Log(LOG_ERROR, -1, "Error from MQTTProperties add %d", rc);
   }
+
+  FUNC_EXIT;
   return result;
 }

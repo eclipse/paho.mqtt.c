@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,7 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs - MQTT 3.1.1 support
  *    Ian Craggs - test8 - failure callbacks
+ *    Ian Craggs - MQTT V5
  *******************************************************************************/
 
 
@@ -58,7 +59,7 @@ struct Options
 	0,
 	-1,
 	10000,
-	MQTTVERSION_DEFAULT,
+	MQTTVERSION_5,
 	1,
 };
 
@@ -248,6 +249,45 @@ void myassert(char* filename, int lineno, char* description, int value, char* fo
     	MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);
 }
 
+
+void logProperties(MQTTProperties *props)
+{
+	int i = 0;
+
+	for (i = 0; i < props->count; ++i)
+	{
+		int id = props->array[i].identifier;
+		const char* name = MQTTPropertyName(id);
+		char* intformat = "Property name %s value %d";
+
+		switch (MQTTProperty_getType(id))
+		{
+		case PROPERTY_TYPE_BYTE:
+		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.byte);
+		  break;
+		case TWO_BYTE_INTEGER:
+		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer2);
+		  break;
+		case FOUR_BYTE_INTEGER:
+		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer4);
+		  break;
+		case VARIABLE_BYTE_INTEGER:
+		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer4);
+		  break;
+		case BINARY_DATA:
+		case UTF_8_ENCODED_STRING:
+		  MyLog(LOGA_INFO, "Property name %s value len %.*s", name,
+				  props->array[i].value.data.len, props->array[i].value.data.data);
+		  break;
+		case UTF_8_STRING_PAIR:
+		  MyLog(LOGA_INFO, "Property name %s key %.*s value %.*s", name,
+			  props->array[i].value.data.len, props->array[i].value.data.data,
+		  	  props->array[i].value.value.len, props->array[i].value.value.data);
+		  break;
+		}
+	}
+}
+
 volatile int test_finished = 0;
 
 char* test_topic = "async test topic";
@@ -261,18 +301,28 @@ void test1_onDisconnect(void* context, MQTTAsync_successData* response)
 }
 
 
-void test1_onUnsubscribe(void* context, MQTTAsync_successData* response)
+void test1_onUnsubscribe(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
+	MQTTProperty property;
 	int rc;
 
 	MyLog(LOGA_DEBUG, "In onUnsubscribe onSuccess callback %p", c);
+	MyLog(LOGA_INFO, "Unsuback properties:");
+	logProperties(&response->props);
+
 	opts.onSuccess = test1_onDisconnect;
 	opts.context = c;
+	opts.reasonCode = UNSPECIFIED_ERROR;
+
+	property.identifier = SESSION_EXPIRY_INTERVAL;
+	property.value.integer4 = 0;
+	MQTTProperties_add(&opts.properties, &property);
 
 	rc = MQTTAsync_disconnect(c, &opts);
 	assert("Disconnect successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	MQTTProperties_free(&opts.properties);
 }
 
 
@@ -284,25 +334,57 @@ int test1_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 
 	MyLog(LOGA_DEBUG, "In messageArrived callback %p", c);
 
+	assert("Message structure version should be 1", message->struct_version == 1,
+			"message->struct_version was %d", message->struct_version);
+	if (message->struct_version == 1)
+	{
+		assert("Properties count should be 2", message->properties.count == 2,
+			"Properties count was %d\n", message->properties.count);
+		logProperties(&message->properties);
+	}
+
 	if (++message_count == 1)
 	{
 		MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-		MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+		MQTTAsync_callOptions opts = MQTTAsync_callOptions_initializer;
+		MQTTProperty property;
+		MQTTProperties props = MQTTProperties_initializer;
+
+		property.identifier = USER_PROPERTY;
+		property.value.data.data = "test user property";
+		property.value.data.len = strlen(property.value.data.data);
+		property.value.value.data = "test user property value";
+		property.value.value.len = strlen(property.value.value.data);
+		MQTTProperties_add(&props, &property);
+		opts.properties = props;
+
 		pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
 		pubmsg.payloadlen = 11;
 		pubmsg.qos = 2;
 		pubmsg.retained = 0;
 		rc = MQTTAsync_sendMessage(c, test_topic, &pubmsg, &opts);
-		assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+		assert("Publish should return 0", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+		MQTTProperties_free(&props);
 	}
 	else
 	{
+		MQTTProperty property;
+		MQTTProperties props = MQTTProperties_initializer;
 		MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 
-		opts.onSuccess = test1_onUnsubscribe;
+		property.identifier = USER_PROPERTY;
+		property.value.data.data = "test user property";
+		property.value.data.len = strlen(property.value.data.data);
+		property.value.value.data = "test user property value";
+		property.value.value.len = strlen(property.value.value.data);
+		MQTTProperties_add(&props, &property);
+		opts.properties = props;
+
+		opts.onSuccess5 = test1_onUnsubscribe;
 		opts.context = c;
 		rc = MQTTAsync_unsubscribe(c, test_topic, &opts);
 		assert("Unsubscribe successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+		MQTTProperties_free(&props);
 	}
 
 	MQTTAsync_freeMessage(&message);
@@ -311,38 +393,69 @@ int test1_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 	return 1;
 }
 
-void test1_onSubscribe(void* context, MQTTAsync_successData* response)
+void test1_onSubscribe(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	int rc;
+	MQTTProperty property;
+	MQTTProperties props = MQTTProperties_initializer;
+	MQTTAsync_callOptions opts = MQTTAsync_callOptions_initializer;
 
 	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback %p granted qos %d", c, response->alt.qos);
+
+	MyLog(LOGA_INFO, "Suback properties:");
+	logProperties(&response->props);
+
+	property.identifier = USER_PROPERTY;
+	property.value.data.data = "test user property";
+	property.value.data.len = strlen(property.value.data.data);
+	property.value.value.data = "test user property value";
+	property.value.value.len = strlen(property.value.value.data);
+	MQTTProperties_add(&props, &property);
+	opts.properties = props;
 
 	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
 	pubmsg.payloadlen = 11;
 	pubmsg.qos = 2;
 	pubmsg.retained = 0;
 
-	rc = MQTTAsync_send(c, test_topic, pubmsg.payloadlen, pubmsg.payload, pubmsg.qos, pubmsg.retained, NULL);
-	assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	rc = MQTTAsync_send(c, test_topic, pubmsg.payloadlen, pubmsg.payload, pubmsg.qos, pubmsg.retained, &opts);
+	MQTTProperties_free(&props);
 }
 
 
-void test1_onConnect(void* context, MQTTAsync_successData* response)
+void test1_onConnect(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	MQTTProperty property;
+	MQTTProperties props = MQTTProperties_initializer;
 	int rc;
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
-	opts.onSuccess = test1_onSubscribe;
+
+	assert("Reason code should be 0", response->reasonCode == SUCCESS,
+		   "Reason code was %d\n", response->reasonCode);
+
+	MyLog(LOGA_INFO, "Connack properties:");
+	logProperties(&response->props);
+
+	opts.onSuccess5 = test1_onSubscribe;
 	opts.context = c;
+
+	property.identifier = SUBSCRIPTION_IDENTIFIER;
+	property.value.integer4 = 33;
+	MQTTProperties_add(&props, &property);
+	opts.properties = props;
+
+	opts.subscribe_options.retainAsPublished = 1;
 
 	rc = MQTTAsync_subscribe(c, test_topic, 2, &opts);
 	assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 		test_finished = 1;
+	MQTTProperties_free(&props);
 }
 
 
@@ -357,11 +470,14 @@ int test1(struct Options options)
 	MQTTAsync c;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	MQTTProperties props = MQTTProperties_initializer;
+	MQTTProperties willProps = MQTTProperties_initializer;
+	MQTTProperty property;
 	int rc = 0;
-	char* test_topic = "C client test1";
+	char* test_topic = "V5 C client test1";
 
-	MyLog(LOGA_INFO, "Starting test 1 - asynchronous connect");
-	fprintf(xml, "<testcase classname=\"test4\" name=\"asynchronous connect\"");
+	MyLog(LOGA_INFO, "Starting V5 test 1 - asynchronous connect");
+	fprintf(xml, "<testcase classname=\"test45\" name=\"asynchronous connect\"");
 	global_start_time = start_clock();
 
 	rc = MQTTAsync_create(&c, options.connection, "async_test",
@@ -388,9 +504,23 @@ int test1(struct Options options)
 	opts.will->retained = 0;
 	opts.will->topicName = "will topic";
 	opts.will = NULL;
-	opts.onSuccess = test1_onConnect;
+	opts.onSuccess5 = test1_onConnect;
 	opts.onFailure = NULL;
 	opts.context = c;
+
+	property.identifier = SESSION_EXPIRY_INTERVAL;
+	property.value.integer4 = 30;
+	MQTTProperties_add(&props, &property);
+
+	property.identifier = USER_PROPERTY;
+	property.value.data.data = "test user property";
+	property.value.data.len = strlen(property.value.data.data);
+	property.value.value.data = "test user property value";
+	property.value.value.len = strlen(property.value.value.data);
+	MQTTProperties_add(&props, &property);
+
+	opts.connectProperties = &props;
+	opts.willProperties = &willProps;
 
 	MyLog(LOGA_DEBUG, "Connecting");
 	rc = MQTTAsync_connect(c, &opts);
@@ -406,6 +536,8 @@ int test1(struct Options options)
 			usleep(10000L);
 		#endif
 
+	MQTTProperties_free(&props);
+	MQTTProperties_free(&willProps);
 	MQTTAsync_destroy(&c);
 
 exit:
@@ -787,7 +919,7 @@ int test4_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 	{
 		MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 
-		opts.onSuccess = test1_onUnsubscribe;
+		opts.onSuccess5 = test1_onUnsubscribe;
 		opts.context = c;
 		rc = MQTTAsync_unsubscribe(c, test_topic, &opts);
 		assert("Unsubscribe successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -1725,6 +1857,7 @@ int main(int argc, char** argv)
 		else
 		{
 			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+			//MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_PROTOCOL);
 			rc = tests[options.test_no](options); /* run just the selected test */
 		}
 	}

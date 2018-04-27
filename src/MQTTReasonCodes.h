@@ -14,6 +14,9 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
+#if !defined(MQTTREASONCODES_H)
+#define MQTTREASONCODES_H
+
 enum MQTTReasonCodes {
   SUCCESS = 0,
   NORMAL_DISCONNECTION = 0,
@@ -61,3 +64,5 @@ enum MQTTReasonCodes {
   SUBSCRIPTION_IDENTIFIERS_NOT_SUPPORTED = 161,
   WILDCARD_SUBSCRIPTION_NOT_SUPPORTED = 162
 };
+
+#endif

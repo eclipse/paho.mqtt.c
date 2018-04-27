@@ -124,6 +124,7 @@
 
 #include "MQTTProperties.h"
 #include "MQTTReasonCodes.h"
+#include "MQTTSubscribeOpts.h"
 #if !defined(NO_PERSISTENCE)
 #include "MQTTClientPersistence.h"
 #endif
@@ -256,7 +257,8 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTM. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0 */
+	/** The version number of this structure.  Must be 0 or 1
+	 *  0 indicates no message properties */
 	int struct_version;
 	/** The length of the MQTT message payload in bytes. */
 	int payloadlen;
@@ -306,9 +308,13 @@ typedef struct
       * MQTT client and server.
       */
 	int msgid;
+	/**
+	 * The MQTT V5 properties associated with the message.
+	 */
+	MQTTProperties properties;
 } MQTTClient_message;
 
-#define MQTTClient_message_initializer { {'M', 'Q', 'T', 'M'}, 0, 0, NULL, 0, 0, 0, 0 }
+#define MQTTClient_message_initializer { {'M', 'Q', 'T', 'M'}, 1, 0, NULL, 0, 0, 0, 0, MQTTProperties_initializer }
 
 /**
  * This is a callback function. The client application
@@ -831,20 +837,6 @@ DLLExport int MQTTClient_isConnected(MQTTClient handle);
 DLLExport int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos);
 
 
-typedef struct MQTTSubscribe_options
-{
-	/** The eyecatcher for this structure. Must be MQSO. */
-	char struct_id[4];
-	/** The version number of this structure.  Must be 0.
-	 */
-	int struct_version;
-	unsigned char noLocal; /* 0 or 1 */
-	unsigned char retainAsPublished; /* 0 or 1 */
-	unsigned char retainHandling; /* 0, 1 or 2 */
-} MQTTSubscribe_options;
-
-#define MQTTSubscribe_options_initializer { {'M', 'Q', 'S', 'O'}, 0, 0, 0, 0 }
-
 DLLExport MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char* topic, int qos,
 		MQTTSubscribe_options* opts, MQTTProperties* props);
 
@@ -948,7 +940,7 @@ DLLExport int MQTTClient_publishMessage(MQTTClient handle, const char* topicName
 
 
 DLLExport MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char* topicName, MQTTClient_message* msg,
-		MQTTProperties* properties, MQTTClient_deliveryToken* dt);
+		MQTTClient_deliveryToken* dt);
 
 /**
   * This function is called by the client application to synchronize execution

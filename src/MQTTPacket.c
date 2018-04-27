@@ -80,7 +80,7 @@ pf new_packets[] =
 	NULL, /**< MQTTPacket_subscribe*/
 	MQTTPacket_suback, /**< SUBACK */
 	NULL, /**< MQTTPacket_unsubscribe*/
-	MQTTPacket_ack, /**< UNSUBACK */
+	MQTTPacket_unsuback, /**< UNSUBACK */
 	MQTTPacket_header_only, /**< PINGREQ */
 	MQTTPacket_header_only, /**< PINGRESP */
 	MQTTPacket_header_only  /**< DISCONNECT */
@@ -632,6 +632,24 @@ void MQTTPacket_freeSuback(Suback* pack)
 		MQTTProperties_free(&pack->properties);
 	if (pack->qoss != NULL)
 		ListFree(pack->qoss);
+	free(pack);
+	FUNC_EXIT;
+}
+
+
+/**
+ * Free allocated storage for a suback packet.
+ * @param pack pointer to the suback packet structure
+ */
+void MQTTPacket_freeUnsuback(Unsuback* pack)
+{
+	FUNC_ENTRY;
+	if (pack->MQTTVersion >= MQTTVERSION_5)
+	{
+		MQTTProperties_free(&pack->properties);
+		if (pack->reasonCodes != NULL)
+			ListFree(pack->reasonCodes);
+	}
 	free(pack);
 	FUNC_EXIT;
 }

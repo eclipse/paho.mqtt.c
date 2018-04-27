@@ -32,6 +32,7 @@ typedef unsigned int bool;
 typedef void* (*pf)(int, unsigned char, char*, size_t);
 
 #include "MQTTProperties.h"
+#include "MQTTReasonCodes.h"
 
 enum errors
 {
@@ -178,6 +179,19 @@ typedef struct
 
 
 /**
+ * Data for an MQTT V5 unsuback packet.
+ */
+typedef struct
+{
+	Header header;	/**< MQTT header byte */
+	int msgId;		/**< MQTT message id */
+	int MQTTVersion;  /**< the version of MQTT */
+	MQTTProperties properties; /**< MQTT 5.0 properties.  Not used for MQTT < 5.0 */
+	List* reasonCodes;	/**< list of reason codes */
+} Unsuback;
+
+
+/**
  * Data for a publish packet.
  */
 typedef struct
@@ -209,7 +223,6 @@ typedef Ack Puback;
 typedef Ack Pubrec;
 typedef Ack Pubrel;
 typedef Ack Pubcomp;
-typedef Ack Unsuback;
 
 int MQTTPacket_encode(char* buf, size_t length);
 int MQTTPacket_decode(networkHandles* net, size_t* value);
@@ -237,6 +250,7 @@ int MQTTPacket_send_puback(int msgid, networkHandles* net, const char* clientID)
 void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen);
 
 void MQTTPacket_freeSuback(Suback* pack);
+void MQTTPacket_freeUnsuback(Unsuback* pack);
 int MQTTPacket_send_pubrec(int msgid, networkHandles* net, const char* clientID);
 int MQTTPacket_send_pubrel(int msgid, int dup, networkHandles* net, const char* clientID);
 int MQTTPacket_send_pubcomp(int msgid, networkHandles* net, const char* clientID);

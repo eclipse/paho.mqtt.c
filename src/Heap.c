@@ -56,6 +56,8 @@ static mutex_type heap_mutex = &heap_mutex_store;
 static heap_info state = {0, 0}; /**< global heap state information */
 static int eyecatcher = 0x88888888;
 
+/*#define HEAP_STACK 1 */
+
 /**
  * Each item on the heap is recorded with this structure.
  */
@@ -65,6 +67,9 @@ typedef struct
 	int line;		/**< the line no in the source file where it was allocated */
 	void* ptr;		/**< pointer to the allocated storage */
 	size_t size;    /**< size of the allocated storage */
+#if defined(HEAP_STACK)
+	char* stack;
+#endif
 } storageElement;
 
 static Tree heap;	/**< Tree that holds the allocation records */
@@ -168,6 +173,17 @@ void* mymalloc(char* file, int line, size_t size)
 	}
 	space += filenamelen;
 	strcpy(s->file, file);
+#if defined(HEAP_STACK)
+#define STACK_LEN 300
+	if ((s->stack = malloc(STACK_LEN)) == NULL)
+	{
+		Log(LOG_ERROR, 13, errmsg);
+		free(s->file);
+		free(s);
+		return NULL;
+	}
+	StackTrace_get(Thread_getid(), s->stack, STACK_LEN);
+#endif
 	s->line = line;
 	/* Add space for eyecatcher at each end */
 	if ((s->ptr = malloc(size + 2*sizeof(int))) == NULL)
@@ -361,6 +377,9 @@ static void HeapScan(enum LOG_LEVELS log_level)
 		storageElement* s = (storageElement*)(current->content);
 		Log(log_level, -1, "Heap element size %d, line %d, file %s, ptr %p", s->size, s->line, s->file, s->ptr);
 		Log(log_level, -1, "  Content %*.s", (10 > current->size) ? s->size : 10, (char*)(((int*)s->ptr) + 1));
+#if defined(HEAP_STACK)
+		Log(log_level, -1, "  Stack:\n%s", s->stack);
+#endif
 	}
 	Log(log_level, -1, "Heap scan end");
 	Thread_unlock_mutex(heap_mutex);

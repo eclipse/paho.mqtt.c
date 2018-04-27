@@ -34,5 +34,6 @@ int MQTTPacket_send_subscribe(List* topics, List* qoss, MQTTSubscribe_options* o
 void* MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen);
 
 int MQTTPacket_send_unsubscribe(List* topics, MQTTProperties* props, int msgid, int dup, Clients* client);
+void* MQTTPacket_unsuback(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen);
 
 #endif

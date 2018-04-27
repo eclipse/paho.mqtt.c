@@ -109,14 +109,14 @@ int MQTTProperties_len(MQTTProperties* props);
  * @param prop
  * @return whether the write succeeded or not, number of bytes written or < 0
  */
-DLLExport int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop);
+DLLExport int MQTTProperties_add(MQTTProperties* props, const MQTTProperty* prop);
 
-int MQTTProperties_write(char** pptr, MQTTProperties* properties);
+int MQTTProperties_write(char** pptr, const MQTTProperties* properties);
 
 int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata);
 
 DLLExport void MQTTProperties_free(MQTTProperties* properties);
 
-MQTTProperties MQTTProperties_copy(MQTTProperties* props);
+MQTTProperties MQTTProperties_copy(const MQTTProperties* props);
 
 #endif /* MQTTPROPERTIES_H */

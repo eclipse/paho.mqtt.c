@@ -297,10 +297,9 @@ void test1_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 	char* topicName = NULL;
 	int topicLen;
 	int i = 0;
-	int iterations = 50;
+	int iterations = 1; //50;
 	int rc;
 	MQTTResponse resp;
-	MQTTProperties props = MQTTProperties_initializer;
 	MQTTProperty property;
 
 	MyLog(LOGA_DEBUG, "%d messages at QoS %d", iterations, qos);
@@ -314,15 +313,15 @@ void test1_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 	property.value.data.len = strlen(property.value.data.data);
 	property.value.value.data = "test user property value";
 	property.value.value.len = strlen(property.value.value.data);
-	MQTTProperties_add(&props, &property);
+	MQTTProperties_add(&pubmsg.properties, &property);
 
 	for (i = 0; i < iterations; ++i)
 	{
 		if (i % 10 == 0)
 			resp = MQTTClient_publish5(c, test_topic, pubmsg.payloadlen, pubmsg.payload, pubmsg.qos, pubmsg.retained,
-					&props, &dt);
+					&pubmsg.properties, &dt);
 		else
-			resp = MQTTClient_publishMessage5(c, test_topic, &pubmsg, &props, &dt);
+			resp = MQTTClient_publishMessage5(c, test_topic, &pubmsg, &dt);
 		assert("Good rc from publish", resp.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", resp.reasonCode);
 
 		if (qos > 0)
@@ -330,7 +329,6 @@ void test1_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 			rc = MQTTClient_waitForCompletion(c, dt, 5000L);
 			assert("Good rc from waitforCompletion", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 		}
-
 		rc = MQTTClient_receive(c, &topicName, &topicLen, &m, 5000);
 		assert("Good rc from receive", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 		if (topicName)
@@ -343,6 +341,7 @@ void test1_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 				MyLog(LOGA_INFO, "Error: wrong data - received lengths %d %d", pubmsg.payloadlen, m->payloadlen);
 				break;
 			}
+			assert("Property count should be > 0", m->properties.count > 0, "property count was %d", m->properties.count);
 			MQTTClient_free(topicName);
 			MQTTClient_freeMessage(&m);
 		}
@@ -360,7 +359,7 @@ void test1_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 		MQTTClient_receive(c, &topicName, &topicLen, &m, 2000);
 	}
 
-	MQTTProperties_free(&props);
+	MQTTProperties_free(&pubmsg.properties);
 }
 
 void logProperties(MQTTProperties *props)
@@ -389,11 +388,11 @@ void logProperties(MQTTProperties *props)
 		  break;
 		case BINARY_DATA:
 		case UTF_8_ENCODED_STRING:
-		  MyLog(LOGA_INFO, "Property name %s value %*.s", name,
+		  MyLog(LOGA_INFO, "Property name %s value %.*s", name,
 				  props->array[i].value.data.len, props->array[i].value.data.data);
 		  break;
 		case UTF_8_STRING_PAIR:
-		  MyLog(LOGA_INFO, "Property name %s key %*.s value %*.s", name,
+		  MyLog(LOGA_INFO, "Property name %s key %.*s value %.*s", name,
 			  props->array[i].value.data.len, props->array[i].value.data.data,
 		  	  props->array[i].value.value.len, props->array[i].value.value.data);
 		  break;
@@ -410,7 +409,8 @@ int test1(struct Options options)
 	MQTTProperties props = MQTTProperties_initializer;
 	MQTTProperties willProps = MQTTProperties_initializer;
 	MQTTProperty property;
-	MQTTResponse response;
+	MQTTSubscribe_options subopts = MQTTSubscribe_options_initializer;
+	MQTTResponse response = {SUCCESS, NULL};
 	int rc = 0;
 	char* test_topic = "C client test1";
 
@@ -472,10 +472,11 @@ int test1(struct Options options)
 		MQTTProperties_free(response.properties);
 	}
 
+	subopts.retainAsPublished = 1;
 	property.identifier = SUBSCRIPTION_IDENTIFIER;
 	property.value.integer4 = 33;
 	MQTTProperties_add(&props, &property);
-	response = MQTTClient_subscribe5(c, test_topic, subsqos, NULL, &props);
+	response = MQTTClient_subscribe5(c, test_topic, subsqos, &subopts, &props);
 	assert("Good rc from subscribe", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
 	MQTTProperties_free(&props);
 

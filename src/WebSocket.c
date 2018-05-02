@@ -180,7 +180,7 @@ static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
 	for (i = 0; i < count; ++i)
 		data_len += buflens[i];
 
-	buf0 -= WebSocket_calculateFrameHeaderSize(net, data_len);
+	buf0 -= WebSocket_calculateFrameHeaderSize(net, mask_data, data_len);
 	if ( net->websocket )
 	{
 		uint8_t mask[4];
@@ -197,11 +197,11 @@ static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
 		/* 1st byte */
 		buf0[buf_len] = (char)(1 << 7); /* final flag */
 		/* 3 bits reserved for negotiation of protocol */
-		buf0[buf_len] |= (opcode & 0x0F); /* op code */
+		buf0[buf_len] |= (char)(opcode & 0x0F); /* op code */
 		++buf_len;
 
 		/* 2nd byte */
-		buf0[buf_len] = (mask_data & 0x1) << 7; /* masking bit */
+		buf0[buf_len] = (char)((mask_data & 0x1) << 7); /* masking bit */
 
 		/* payload length */
 		if ( data_len < 126u )
@@ -247,7 +247,7 @@ static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
 			for (i = 0; i < count; ++i)
 			{
 				size_t j;
-				for ( j = 0; j < buflens[i]; ++j, ++idx )
+				for ( j = 0u; j < buflens[i]; ++j, ++idx )
 					buffers[i][j] ^= mask[idx % 4];
 			}
 		}
@@ -263,13 +263,15 @@ static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
  * buffer
  *
  * @param[in,out]  net                 network connection
+ * @param[in]      mask_data           whether to mask the data
  * @param[in]      data_len            amount of data in the payload
  *
  * @return the size in bytes of the websocket header required
  *
  * @see WebSocket_putdatas
  */
-size_t WebSocket_calculateFrameHeaderSize(networkHandles *net, size_t data_len)
+size_t WebSocket_calculateFrameHeaderSize(networkHandles *net, int mask_data,
+	size_t data_len)
 {
 	int ret = 0;
 	if ( net && net->websocket )
@@ -279,7 +281,8 @@ size_t WebSocket_calculateFrameHeaderSize(networkHandles *net, size_t data_len)
 			ret += 2; /* for extra 2-bytes for payload length */
 		else if ( data_len > 65536u )
 			ret += 8; /* for extra 8-bytes for payload length */
-		ret += sizeof(uint32_t); /* for mask - all outgoing data is masked */
+		if ( mask_data & 0x1 )
+			ret += sizeof(uint32_t); /* for mask */
 	}
 	return ret;
 }
@@ -382,7 +385,8 @@ void WebSocket_close(networkHandles *net, int status_code, const char *reason)
 		char *buf0;
 		size_t buf0len = sizeof(uint16_t);
 		size_t header_len;
-		uint16_t status_code_big_endian;
+		uint16_t status_code_be;
+		const int mask_data = 0;
 
 		if ( status_code < WebSocket_CLOSE_NORMAL ||
 			status_code > WebSocket_CLOSE_TLS_FAIL )
@@ -391,22 +395,23 @@ void WebSocket_close(networkHandles *net, int status_code, const char *reason)
 		if ( reason )
 			buf0len += strlen(reason);
 
-		header_len = WebSocket_calculateFrameHeaderSize(net, buf0len);
+		header_len = WebSocket_calculateFrameHeaderSize(net,
+			mask_data, buf0len);
 		buf0 = malloc(header_len + buf0len);
 		if ( !buf0 ) return;
 
 		/* encode status code */
-		status_code_big_endian = (uint16_t)htobe32((uint16_t)status_code);
-		memcpy( &buf0[header_len], &status_code_big_endian,
-			sizeof(uint16_t));
+		status_code_be = htobe16((uint16_t)status_code);
+		memcpy( &buf0[header_len], &status_code_be, sizeof(uint16_t));
 
 		/* encode reason, if provided */
 		if ( reason )
-			strcpy( &buf0[header_len + 2], reason );
+			strcpy( &buf0[header_len + sizeof(uint16_t)], reason );
 
-		WebSocket_buildFrame( net, WebSocket_OP_CLOSE, 1,
+		WebSocket_buildFrame( net, WebSocket_OP_CLOSE, mask_data,
 			&buf0[header_len], buf0len, 0, NULL, NULL );
 
+		buf0len += header_len;
 #if defined(OPENSSL)
 		if (net->ssl)
 			SSLSocket_putdatas(net->ssl, net->socket,
@@ -584,14 +589,15 @@ void WebSocket_pong(networkHandles *net, char *app_data,
 		char *buf0;
 		size_t header_len;
 		int freeData = 0;
+		const int mask_data = 0;
 
-		header_len = WebSocket_calculateFrameHeaderSize(net,
+		header_len = WebSocket_calculateFrameHeaderSize(net, mask_data,
 			app_data_len);
 		buf0 = malloc(header_len);
 		if ( !buf0 ) return;
 
 		WebSocket_buildFrame( net, WebSocket_OP_PONG, 1,
-			&buf0[header_len], header_len, 1, &app_data,
+			&buf0[header_len], header_len, mask_data, &app_data,
 				&app_data_len );
 
 		Log(TRACE_PROTOCOL, 1, "Sending WebSocket PONG" );
@@ -599,8 +605,8 @@ void WebSocket_pong(networkHandles *net, char *app_data,
 #if defined(OPENSSL)
 		if (net->ssl)
 			SSLSocket_putdatas(net->ssl, net->socket, buf0,
-				header_len, 1, &app_data, &app_data_len,
-				&freeData);
+				header_len + app_data_len, 1,
+				&app_data, &app_data_len, &freeData);
 		else
 #endif
 			Socket_putdatas(net->socket, buf0,
@@ -640,15 +646,24 @@ int WebSocket_putdatas(networkHandles* net, char* buf0, size_t buf0len,
 	/* prepend WebSocket frame */
 	if ( net->websocket )
 	{
+		size_t data_len = buf0len + 4u;
+		size_t header_len;
+		const int mask_data = 1;
+
+		for (rc = 0; rc < count; ++rc)
+			data_len += buflens[rc];
+
+		header_len = WebSocket_calculateFrameHeaderSize(
+			net, mask_data, data_len);
 		rc = WebSocket_buildFrame(
-			net, WebSocket_OP_BINARY, 1, buf0, buf0len,
+			net, WebSocket_OP_BINARY, mask_data, buf0, buf0len,
 			count, buffers, buflens );
 
 		/* header added so adjust buffer */
 		if ( rc > 0 )
 		{
-			buf0 -= rc;
-			buf0len += rc;
+			buf0 -= header_len;
+			buf0len += header_len;
 		}
 	}
 
@@ -849,9 +864,13 @@ void WebSocket_terminate( void )
 			f = ListDetachHead( in_frames );
 		}
 		ListFree( in_frames );
+		in_frames = NULL;
 	}
 	if ( last_frame )
+	{
 		free( last_frame );
+		last_frame = NULL;
+	}
 	Socket_outTerminate();
 #if defined(OPENSSL)
 	SSLSocket_terminate();

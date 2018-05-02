@@ -327,9 +327,10 @@ int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* cli
 	if (strstr(serverURI, "://") != NULL)
 	{
 		if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) != 0
+		 && strncmp(URI_WS, serverURI, strlen(URI_WS)) != 0
 #if defined(OPENSSL)
             && strncmp(URI_SSL, serverURI, strlen(URI_SSL)) != 0
-
+		 && strncmp(URI_WSS, serverURI, strlen(URI_WSS)) != 0
 #endif
 			)
 		{
@@ -1699,11 +1700,16 @@ int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen,
 		goto exit;
 	}
 
-	p = malloc(sizeof(Publish));
-
+	p = malloc(sizeof(Publish) + payloadlen);
 	p->payload = payload;
 	p->payloadlen = payloadlen;
-	p->topic = (char*)topicName;
+	if (payloadlen > 0)
+	{
+		p->payload = (char*)p + sizeof(Publish);
+		memcpy(p->payload, payload, payloadlen);
+		p->payloadlen = payloadlen;
+	}
+	p->topic = MQTTStrdup(topicName);
 	p->msgId = msgid;
 
 	rc = MQTTProtocol_startPublish(m->c, p, qos, retained, &msg);
@@ -1727,6 +1733,7 @@ int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen,
 	if (deliveryToken && qos > 0)
 		*deliveryToken = msg->msgid;
 
+	if (p->topic) free(p->topic);
 	free(p);
 
 	if (rc == SOCKET_ERROR)
@@ -1830,6 +1837,7 @@ static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
 					*rc = 0;
 			}
 		}
+
 		if (pack)
 		{
 			int freed = 1;
@@ -1937,12 +1945,15 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 					}
 				}
 #endif
-				else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS ||
-				         m->c->connect_state == WAIT_FOR_CONNACK)
+				else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS )
+				{
+					*rc = 1;
+					break;
+				}
+				else if (m->c->connect_state == WAIT_FOR_CONNACK)
 				{
 					int error;
 					socklen_t len = sizeof(error);
-
 					if (getsockopt(m->c->net.socket, SOL_SOCKET, SO_ERROR, (char*)&error, &len) == 0)
 					{
 						if (error)

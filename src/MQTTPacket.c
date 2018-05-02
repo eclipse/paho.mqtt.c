@@ -174,7 +174,7 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 	char *buf;
 
 	FUNC_ENTRY;
-	ws_header = WebSocket_calculateFrameHeaderSize(net, buflen + 10);
+	ws_header = WebSocket_calculateFrameHeaderSize(net, 1, buflen + 10);
 	buf = malloc(10 + ws_header);
 	if ( !buf ) return -1;
 
@@ -224,7 +224,7 @@ int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffe
 	for (i = 0; i < count; i++)
 		total += buflens[i];
 
-	ws_header = WebSocket_calculateFrameHeaderSize(net, total + 10);
+	ws_header = WebSocket_calculateFrameHeaderSize(net, 1, total + 10);
 	buf = malloc(10 + ws_header);
 	if ( !buf ) return -1;
 

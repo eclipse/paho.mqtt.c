@@ -57,7 +57,8 @@ void WebSocket_close(networkHandles *net, int status_code, const char *reason);
 int WebSocket_connect(networkHandles *net, const char *uri);
 
 /* calculates the extra data required in a packet to hold a WebSocket frame header */
-size_t WebSocket_calculateFrameHeaderSize(networkHandles *net, size_t data_len);
+size_t WebSocket_calculateFrameHeaderSize(networkHandles *net, int mask_data,
+	size_t data_len);
 
 /* obtain data from network socket */
 int WebSocket_getch(networkHandles *net, char* c);

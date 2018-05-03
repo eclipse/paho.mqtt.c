@@ -1007,6 +1007,11 @@ static void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* comma
 			Log(TRACE_MIN, -1, "Calling disconnect complete for client %s", m->c->clientID);
 			(*(command->onSuccess))(command->context, NULL);
 		}
+		else if (command->onSuccess5)
+		{
+			Log(TRACE_MIN, -1, "Calling disconnect complete for client %s", m->c->clientID);
+			(*(command->onSuccess5))(command->context, NULL);
+		}
 	}
 	FUNC_EXIT;
 }
@@ -1141,28 +1146,58 @@ static void MQTTAsync_writeComplete(int socket, int rc)
 			{
 				if (command->type == PUBLISH)
 				{
-					if (rc == 1 && command->onSuccess)
+					if (rc == 1)
 					{
-						MQTTAsync_successData data;
+						if (command->onSuccess)
+						{
+							MQTTAsync_successData data;
 
-						data.token = command->token;
-						data.alt.pub.destinationName = command->details.pub.destinationName;
-						data.alt.pub.message.payload = command->details.pub.payload;
-						data.alt.pub.message.payloadlen = command->details.pub.payloadlen;
-						data.alt.pub.message.qos = command->details.pub.qos;
-						data.alt.pub.message.retained = command->details.pub.retained;
-						Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
-						(*(command->onSuccess))(command->context, &data);
+							data.token = command->token;
+							data.alt.pub.destinationName = command->details.pub.destinationName;
+							data.alt.pub.message.payload = command->details.pub.payload;
+							data.alt.pub.message.payloadlen = command->details.pub.payloadlen;
+							data.alt.pub.message.qos = command->details.pub.qos;
+							data.alt.pub.message.retained = command->details.pub.retained;
+							Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
+							(*(command->onSuccess))(command->context, &data);
+						}
+						else if (command->onSuccess5)
+						{
+							MQTTAsync_successData5 data = MQTTAsync_successData5_initializer;
+
+							data.token = command->token;
+							data.alt.pub.destinationName = command->details.pub.destinationName;
+							data.alt.pub.message.payload = command->details.pub.payload;
+							data.alt.pub.message.payloadlen = command->details.pub.payloadlen;
+							data.alt.pub.message.qos = command->details.pub.qos;
+							data.alt.pub.message.retained = command->details.pub.retained;
+							data.props = command->properties;
+							Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
+							(*(command->onSuccess5))(command->context, &data);
+						}
 					}
-					else if (rc == -1 && command->onFailure)
+					else if (rc == -1)
 					{
-						MQTTAsync_failureData data;
+						if (command->onFailure)
+						{
+							MQTTAsync_failureData data;
 
-						data.token = command->token;
-						data.code = rc;
-						data.message = NULL;
-						Log(TRACE_MIN, -1, "Calling publish failure for client %s", m->c->clientID);
-						(*(command->onFailure))(command->context, &data);
+							data.token = command->token;
+							data.code = rc;
+							data.message = NULL;
+							Log(TRACE_MIN, -1, "Calling publish failure for client %s", m->c->clientID);
+							(*(command->onFailure))(command->context, &data);
+						}
+						else if (command->onFailure5)
+						{
+							MQTTAsync_failureData5 data;
+
+							data.token = command->token;
+							data.code = rc;
+							data.message = NULL;
+							Log(TRACE_MIN, -1, "Calling publish failure for client %s", m->c->clientID);
+							(*(command->onFailure5))(command->context, &data);
+						}
 					}
 				}
 				if (com)
@@ -1269,10 +1304,10 @@ static int MQTTAsync_processCommand(void)
 			Log(TRACE_PROTOCOL, -1, "Connecting to serverURI %s with MQTT version %d", serverURI, command->command.details.conn.MQTTVersion);
 #if defined(OPENSSL)
 			rc = MQTTProtocol_connect(serverURI, command->client->c, command->client->ssl, command->command.details.conn.MQTTVersion,
-					NULL, NULL);
+					command->client->connectProps, command->client->willProps);
 #else
 			rc = MQTTProtocol_connect(serverURI, command->client->c, command->command.details.conn.MQTTVersion,
-					NULL, NULL);
+					command->client->connectProps, command->client->willProps);
 #endif
 			if (command->client->c->connect_state == 0)
 				rc = SOCKET_ERROR;
@@ -1358,6 +1393,20 @@ static int MQTTAsync_processCommand(void)
 					Log(TRACE_MIN, -1, "Calling publish success for client %s", command->client->c->clientID);
 					(*(command->command.onSuccess))(command->command.context, &data);
 				}
+				else if (command->command.onSuccess5)
+				{
+					MQTTAsync_successData5 data = MQTTAsync_successData5_initializer;
+
+					data.token = command->command.token;
+					data.alt.pub.destinationName = command->command.details.pub.destinationName;
+					data.alt.pub.message.payload = command->command.details.pub.payload;
+					data.alt.pub.message.payloadlen = command->command.details.pub.payloadlen;
+					data.alt.pub.message.qos = command->command.details.pub.qos;
+					data.alt.pub.message.retained = command->command.details.pub.retained;
+					data.props = command->command.properties;
+					Log(TRACE_MIN, -1, "Calling publish success for client %s", command->client->c->clientID);
+					(*(command->command.onSuccess5))(command->command.context, &data);
+				}
 			}
 			else
 			{
@@ -1382,10 +1431,20 @@ static int MQTTAsync_processCommand(void)
 					MQTTAsync_failureData data;
 
 					data.token = 0;
-					data.code = -2;
+					data.code = MQTTASYNC_OPERATION_INCOMPLETE;
 					data.message = NULL;
 					Log(TRACE_MIN, -1, "Calling connect failure for client %s", command->client->c->clientID);
 					(*(command->client->connect.onFailure))(command->client->connect.context, &data);
+				}
+				else if (command->client->connect.onFailure5)
+				{
+					MQTTAsync_failureData5 data;
+
+					data.token = 0;
+					data.code = MQTTASYNC_OPERATION_INCOMPLETE;
+					data.message = NULL;
+					Log(TRACE_MIN, -1, "Calling connect failure for client %s", command->client->c->clientID);
+					(*(command->client->connect.onFailure5))(command->client->connect.context, &data);
 				}
 			}
 			MQTTAsync_checkDisconnect(command->client, &command->command);
@@ -1446,6 +1505,11 @@ static int MQTTAsync_processCommand(void)
 				Log(TRACE_MIN, -1, "Calling command failure for client %s", command->client->c->clientID);
 				(*(command->command.onFailure))(command->command.context, NULL);
 			}
+			else if (command->command.onFailure5)
+			{
+				Log(TRACE_MIN, -1, "Calling command failure for client %s", command->client->c->clientID);
+				(*(command->command.onFailure5))(command->command.context, NULL);
+			}
 			if (command->command.type == CONNECT)
 			{
 				command->client->connect = command->command;
@@ -1505,6 +1569,16 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 			Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
 			(*(m->connect.onFailure))(m->connect.context, &data);
 		}
+		else if (m->connect.onFailure5)
+		{
+			MQTTAsync_failureData5 data = MQTTAsync_failureData5_initializer;
+
+			data.token = 0;
+			data.code = rc;
+			data.message = message;
+			Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
+			(*(m->connect.onFailure5))(m->connect.context, &data);
+		}
 		MQTTAsync_startConnectRetry(m);
 	}
 }
@@ -1557,6 +1631,12 @@ static void MQTTAsync_checkTimeouts(void)
 					Log(TRACE_MIN, -1, "Calling %s failure for client %s",
 								MQTTPacket_name(com->command.type), m->c->clientID);
 					(*(com->command.onFailure))(com->command.context, NULL);
+				}
+				else if (com->command.onFailure5)
+				{
+					Log(TRACE_MIN, -1, "Calling %s failure for client %s",
+								MQTTPacket_name(com->command.type), m->c->clientID);
+					(*(com->command.onFailure5))(com->command.context, NULL);
 				}
 				timed_out_count++;
 			}
@@ -1671,6 +1751,18 @@ static void MQTTAsync_removeResponsesAndCommands(MQTTAsyncs* m)
 						MQTTPacket_name(command->command.type), m->c->clientID);
 				(*(command->command.onFailure))(command->command.context, &data);
 			}
+			else if (command->command.onFailure5)
+			{
+				MQTTAsync_failureData5 data = MQTTAsync_failureData5_initializer;
+
+				data.token = command->command.token;
+				data.code = MQTTASYNC_OPERATION_INCOMPLETE; /* interrupted return code */
+				data.message = NULL;
+
+				Log(TRACE_MIN, -1, "Calling %s failure for client %s",
+						MQTTPacket_name(command->command.type), m->c->clientID);
+				(*(command->command.onFailure5))(command->command.context, &data);
+			}
 
 			MQTTAsync_freeCommand1(command);
 			count++;
@@ -1702,6 +1794,18 @@ static void MQTTAsync_removeResponsesAndCommands(MQTTAsyncs* m)
 				Log(TRACE_MIN, -1, "Calling %s failure for client %s",
 							MQTTPacket_name(command->command.type), m->c->clientID);
 					(*(command->command.onFailure))(command->command.context, &data);
+			}
+			else if (command->command.onFailure5)
+			{
+				MQTTAsync_failureData5 data = MQTTAsync_failureData5_initializer;
+
+				data.token = command->command.token;
+				data.code = MQTTASYNC_OPERATION_INCOMPLETE; /* interrupted return code */
+				data.message = NULL;
+
+				Log(TRACE_MIN, -1, "Calling %s failure for client %s",
+							MQTTPacket_name(command->command.type), m->c->clientID);
+					(*(command->command.onFailure5))(command->command.context, &data);
 			}
 
 			MQTTAsync_freeCommand(command);
@@ -3282,6 +3386,20 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 								data.alt.pub.message.retained = command->command.details.pub.retained;
 								Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
 								(*(command->command.onSuccess))(command->command.context, &data);
+							}
+							else if (command->command.onSuccess5)
+							{
+								MQTTAsync_successData5 data = MQTTAsync_successData5_initializer;
+
+								data.token = command->command.token;
+								data.alt.pub.destinationName = command->command.details.pub.destinationName;
+								data.alt.pub.message.payload = command->command.details.pub.payload;
+								data.alt.pub.message.payloadlen = command->command.details.pub.payloadlen;
+								data.alt.pub.message.qos = command->command.details.pub.qos;
+								data.alt.pub.message.retained = command->command.details.pub.retained;
+								data.props = command->command.properties;
+								Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
+								(*(command->command.onSuccess5))(command->command.context, &data);
 							}
 							MQTTAsync_freeCommand(command);
 							break;

@@ -416,11 +416,13 @@ typedef struct
 	enum MQTTReasonCodes reasonCode;
 	/** The MQTT properties on the ack, if any. */
 	MQTTProperties properties;
+	/** A numeric code identifying the MQTT client library error. */
+	int code;
 	/** Optional further text explaining the error. Can be NULL. */
 	const char *message;
 } MQTTAsync_failureData5;
 
-#define MQTTAsync_failureData5_initializer {{'M', 'Q', 'F', 'D'}, 0, 0, SUCCESS, MQTTProperties_initializer, NULL}
+#define MQTTAsync_failureData5_initializer {{'M', 'Q', 'F', 'D'}, 0, 0, SUCCESS, MQTTProperties_initializer, 0, NULL}
 
 /** The data returned on completion of a successful API call in the response callback onSuccess. */
 typedef struct
@@ -959,6 +961,10 @@ typedef struct
 		int len;            /**< binary password length */
 		const void* data;  /**< binary password data */
 	} binarypwd;
+	/*
+	 * MQTT V5 clean start flag.  Only clears state at the beginning of the session.
+	 */
+	int cleanstart;
 	/**
 	 * MQTT V5 properties for connect
 	 */
@@ -983,7 +989,7 @@ typedef struct
 
 
 #define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 6, 60, 1, 10, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 1, 60, {0, NULL}, NULL, NULL, NULL, NULL}
+NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL}
 
 /**
   * This function attempts to connect a previously-created client (see
@@ -1178,9 +1184,6 @@ DLLExport int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* const
   */
 DLLExport int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen, void* payload, int qos,
 		int retained, MQTTAsync_responseOptions* response);
-
-DLLExport int MQTTAsync_send5(MQTTAsync handle, const char* destinationName, int payloadlen, void* payload, int qos,
-		int retained, MQTTProperties* props, MQTTAsync_responseOptions* response);
 
 
 /**

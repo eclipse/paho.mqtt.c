@@ -66,7 +66,7 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion,
 	if (MQTTVersion >= MQTTVERSION_5)
 	{
 		len += MQTTProperties_len(connectProperties);
-		if (client->will && willProperties)
+		if (client->will)
 			len += MQTTProperties_len(willProperties);
 	}
 

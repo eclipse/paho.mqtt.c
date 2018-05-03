@@ -289,8 +289,50 @@ ADD_TEST(
 	COMMAND test45 "--test_no" "1" "--connection" ${MQTT_TEST_BROKER}
 )
 
+ADD_TEST(
+	NAME test45-2-connect-timeout
+	COMMAND test45 "--test_no" "2" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test45-3-multiple-client-objs-simultaneous-working
+	COMMAND test45 "--test_no" "3" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test45-4-send-receive-big-messages
+	COMMAND test45 "--test_no" "4" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test45-5-connack-return-codes
+	COMMAND test45 "--test_no" "5" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test45-6-ha-connections
+	COMMAND test45 "--test_no" "6" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test45-7-pending-tokens
+	COMMAND test45 "--test_no" "7" "--connection" ${MQTT_TEST_BROKER}
+)
+
+ADD_TEST(
+	NAME test45-8-incomplete-commands-requests
+	COMMAND test45 "--test_no" "8" "--connection" ${MQTT_TEST_BROKER}
+)
+
 SET_TESTS_PROPERTIES(
 	test45-1-basic-connect-subscribe-receive
+	test45-2-connect-timeout
+	test45-3-multiple-client-objs-simultaneous-working
+	test45-4-send-receive-big-messages
+	test45-5-connack-return-codes
+	test45-6-ha-connections
+	test45-7-pending-tokens
+	test45-8-incomplete-commands-requests
 	PROPERTIES TIMEOUT 540
 )
 

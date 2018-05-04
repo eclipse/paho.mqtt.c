@@ -180,6 +180,10 @@
  * Return code: protocol prefix in serverURI should be tcp:// or ssl://
  */
 #define MQTTASYNC_BAD_PROTOCOL -14
+ /**
+  * Return code: don't use MQTTV5 options if MQTT 3 is chosen
+  */
+ #define MQTTASYNC_BAD_MQTTV5_OPTIONS -15
 
 
 /**
@@ -989,7 +993,11 @@ typedef struct
 
 
 #define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 6, 60, 1, 10, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL}
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL}
+
+#define MQTTAsync_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 6, 60, 0, 10, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL}
+
 
 /**
   * This function attempts to connect a previously-created client (see

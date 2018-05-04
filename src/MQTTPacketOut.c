@@ -85,7 +85,10 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion,
 		goto exit;
 
 	packet.flags.all = 0;
-	packet.flags.bits.cleanstart = client->cleansession;
+	if (MQTTVersion >= MQTTVERSION_5)
+		packet.flags.bits.cleanstart = client->cleanstart;
+	else
+		packet.flags.bits.cleanstart = client->cleansession;
 	packet.flags.bits.will = (client->will) ? 1 : 0;
 	if (packet.flags.bits.will)
 	{

@@ -1913,7 +1913,7 @@ static int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack)
 			m->c->connected = 1;
 			m->c->good = 1;
 			m->c->connect_state = 0;
-			if (m->c->cleansession)
+			if (m->c->cleansession || m->c->cleanstart)
 				rc = MQTTAsync_cleanSession(m->c);
 			if (m->c->outboundMsgs->count > 0)
 			{
@@ -2360,7 +2360,8 @@ static void MQTTAsync_closeSession(Clients* client, enum MQTTReasonCodes reasonC
 	FUNC_ENTRY;
 	MQTTAsync_closeOnly(client, reasonCode, props);
 
-	if (client->cleansession)
+	if (client->cleansession ||
+			(client->MQTTVersion >= MQTTVERSION_5 && client->sessionExpiry == 0))
 		MQTTAsync_cleanSession(client);
 
 	FUNC_EXIT;
@@ -2555,6 +2556,25 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		rc = MQTTASYNC_BAD_UTF8_STRING;
 		goto exit;
 	}
+	if (options->MQTTVersion >= MQTTVERSION_5 && options->struct_version < 6)
+	{
+		rc = MQTTASYNC_BAD_STRUCTURE;
+		goto exit;
+	}
+	if (options->MQTTVersion >= MQTTVERSION_5 && options->cleansession != 0)
+	{
+		rc = MQTTASYNC_BAD_MQTTV5_OPTIONS;
+		goto exit;
+	}
+	if (options->MQTTVersion < MQTTVERSION_5)
+	{
+		if (options->cleanstart != 0 || options->onFailure5 || options->onSuccess5 ||
+				options->connectProperties || options->willProperties)
+		{
+			rc = MQTTASYNC_BAD_MQTTV5_OPTIONS;
+			goto exit;
+		}
+	}
 
 	m->connect.onSuccess = options->onSuccess;
 	m->connect.onFailure = options->onFailure;
@@ -2728,28 +2748,36 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		free(m->connectProps);
 		m->connectProps = NULL;
 	}
-	if (options->struct_version >=6 && options->connectProperties)
-	{
-		MQTTProperties initialized = MQTTProperties_initializer;
-
-		m->connectProps = malloc(sizeof(MQTTProperties));
-		*m->connectProps = initialized;
-		*m->connectProps = MQTTProperties_copy(options->connectProperties);
-	}
-
 	if (m->willProps)
 	{
 		MQTTProperties_free(m->willProps);
 		free(m->willProps);
 		m->willProps = NULL;
 	}
-	if (options->struct_version >=6 && options->willProperties)
+	if (options->struct_version >=6)
 	{
-		MQTTProperties initialized = MQTTProperties_initializer;
+		if (options->connectProperties)
+		{
+			MQTTProperties initialized = MQTTProperties_initializer;
 
-		m->willProps = malloc(sizeof(MQTTProperties));
-		*m->willProps = initialized;
-		*m->willProps = MQTTProperties_copy(options->willProperties);
+			m->connectProps = malloc(sizeof(MQTTProperties));
+			*m->connectProps = initialized;
+			*m->connectProps = MQTTProperties_copy(options->connectProperties);
+
+			if (MQTTProperties_hasProperty(options->connectProperties, SESSION_EXPIRY_INTERVAL))
+				m->c->sessionExpiry = MQTTProperties_getNumericValue(options->connectProperties,
+						SESSION_EXPIRY_INTERVAL);
+
+		}
+		if (options->willProperties)
+		{
+			MQTTProperties initialized = MQTTProperties_initializer;
+
+			m->willProps = malloc(sizeof(MQTTProperties));
+			*m->willProps = initialized;
+			*m->willProps = MQTTProperties_copy(options->willProperties);
+		}
+		m->c->cleanstart = options->cleanstart;
 	}
 
 	/* Add connect request to operation queue */

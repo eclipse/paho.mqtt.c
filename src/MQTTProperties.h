@@ -119,4 +119,7 @@ DLLExport void MQTTProperties_free(MQTTProperties* properties);
 
 MQTTProperties MQTTProperties_copy(const MQTTProperties* props);
 
+DLLExport int MQTTProperties_hasProperty(MQTTProperties *props, int propid);
+DLLExport int MQTTProperties_getNumericValue(MQTTProperties *props, int propid);
+
 #endif /* MQTTPROPERTIES_H */

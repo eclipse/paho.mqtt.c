@@ -414,3 +414,53 @@ MQTTProperties MQTTProperties_copy(const MQTTProperties* props)
   FUNC_EXIT;
   return result;
 }
+
+
+int MQTTProperties_hasProperty(MQTTProperties *props, int propid)
+{
+	int i = 0;
+	int found = 0;
+
+	for (i = 0; i < props->count; ++i)
+	{
+		if (propid == props->array[i].identifier)
+		{
+			found = 1;
+			break;
+		}
+	}
+	return found;
+}
+
+
+int MQTTProperties_getNumericValue(MQTTProperties *props, int propid)
+{
+	int i = 0;
+	int rc = -9999999;
+
+	for (i = 0; i < props->count; ++i)
+	{
+		int id = props->array[i].identifier;
+
+		if (id == propid)
+		{
+			switch (MQTTProperty_getType(id))
+			{
+			case PROPERTY_TYPE_BYTE:
+				rc = props->array[i].value.byte;
+				break;
+			case TWO_BYTE_INTEGER:
+				rc = props->array[i].value.integer2;
+				break;
+			case FOUR_BYTE_INTEGER:
+			case VARIABLE_BYTE_INTEGER:
+				rc = props->array[i].value.integer4;
+				break;
+			default:
+				rc = -999999;
+				break;
+			}
+		}
+	}
+	return rc;
+}

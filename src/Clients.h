@@ -94,7 +94,8 @@ typedef struct
 	const char* username;					/**< MQTT v3.1 user name */
 	int passwordlen;              /**< MQTT password length */
 	const void* password;					/**< MQTT v3.1 binary password */
-	unsigned int cleansession : 1;	/**< MQTT clean session flag */
+	unsigned int cleansession : 1;	/**< MQTT V3 clean session flag */
+	unsigned int cleanstart : 1;		/**< MQTT V5 clean start flag */
 	unsigned int connected : 1;		/**< whether it is currently connected */
 	unsigned int good : 1; 			  /**< if we have an error on the socket we turn this off */
 	unsigned int ping_outstanding : 1;
@@ -113,6 +114,7 @@ typedef struct
 	MQTTClient_persistence* persistence; /* a persistence implementation */
 	void* context; /* calling context - used when calling disconnect_internal */
 	int MQTTVersion;
+	int sessionExpiry; /**< MQTT 5 session expiry */
 #if defined(OPENSSL)
 	MQTTClient_SSLOptions *sslopts;
 	SSL_SESSION* session;    /***< SSL session pointer for fast handhake */

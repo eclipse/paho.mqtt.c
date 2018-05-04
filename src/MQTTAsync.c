@@ -379,7 +379,7 @@ static void MQTTAsync_checkTimeouts(void);
 static thread_return_type WINAPI MQTTAsync_sendThread(void* n);
 static void MQTTAsync_emptyMessageQueue(Clients* client);
 static void MQTTAsync_removeResponsesAndCommands(MQTTAsyncs* m);
-static int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack);
+static int MQTTAsync_completeConnection(MQTTAsyncs* m, Connack* connack);
 static thread_return_type WINAPI MQTTAsync_receiveThread(void* n);
 static void MQTTAsync_stop(void);
 static void MQTTAsync_closeOnly(Clients* client, enum MQTTReasonCodes reasonCode, MQTTProperties* props);
@@ -1898,14 +1898,13 @@ void MQTTAsync_free(void* memory)
 }
 
 
-static int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack)
+static int MQTTAsync_completeConnection(MQTTAsyncs* m, Connack* connack)
 {
 	int rc = MQTTASYNC_FAILURE;
 
 	FUNC_ENTRY;
 	if (m->c->connect_state == 3) /* MQTT connect sent - wait for CONNACK */
 	{
-		Connack* connack = (Connack*)pack;
 		Log(LOG_PROTOCOL, 1, NULL, m->c->net.socket, m->c->clientID, connack->rc);
 		if ((rc = connack->rc) == MQTTASYNC_SUCCESS)
 		{
@@ -1915,6 +1914,11 @@ static int MQTTAsync_completeConnection(MQTTAsyncs* m, MQTTPacket* pack)
 			m->c->connect_state = 0;
 			if (m->c->cleansession || m->c->cleanstart)
 				rc = MQTTAsync_cleanSession(m->c);
+			else if (m->c->MQTTVersion >= MQTTVERSION_3_1_1 && connack->flags.bits.sessionPresent == 0)
+			{
+				Log(LOG_PROTOCOL, -1, "Cleaning session state on connect because sessionPresent is 0");
+				rc = MQTTAsync_cleanSession(m->c);
+			}
 			if (m->c->outboundMsgs->count > 0)
 			{
 				ListElement* outcurrent = NULL;
@@ -2028,7 +2032,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 				{
 					Connack* connack = (Connack*)pack;
 					int sessionPresent = connack->flags.bits.sessionPresent;
-					int rc = MQTTAsync_completeConnection(m, pack);
+					int rc = MQTTAsync_completeConnection(m, connack);
 
 					if (rc == MQTTASYNC_SUCCESS)
 					{

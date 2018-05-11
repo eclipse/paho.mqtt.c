@@ -1231,17 +1231,31 @@ static int MQTTAsync_processCommand(void)
 
 			if (command->client->serverURIcount > 0)
 			{
-				serverURI = command->client->serverURIs[command->command.details.conn.currentURI];
-
-				if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
-					serverURI += strlen(URI_TCP);
-#if defined(OPENSSL)
-				else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
+				if (command->client->c->MQTTVersion == MQTTVERSION_DEFAULT)
 				{
-					serverURI += strlen(URI_SSL);
-					command->client->ssl = 1;
+					if (command->command.details.conn.MQTTVersion == MQTTVERSION_3_1)
+					{
+						command->command.details.conn.currentURI++;
+						command->command.details.conn.MQTTVersion = MQTTVERSION_DEFAULT;
+					}
 				}
+				else
+					command->command.details.conn.currentURI++;
+
+				if (command->command.details.conn.currentURI < command->client->serverURIcount)
+				{
+					serverURI = command->client->serverURIs[command->command.details.conn.currentURI];
+
+					if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
+						serverURI += strlen(URI_TCP);
+#if defined(OPENSSL)
+					else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
+					{
+						serverURI += strlen(URI_SSL);
+						command->client->ssl = 1;
+					}
 #endif
+				}
 			}
 
 			if (command->client->c->MQTTVersion == MQTTVERSION_DEFAULT)
@@ -1886,16 +1900,20 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 					if (rc == MQTTASYNC_SUCCESS)
 					{
 						int onSuccess = 0;
-						if (m->serverURIcount > 0)
-							Log(TRACE_MIN, -1, "Connect succeeded to %s",
+						if ((m->serverURIcount > 0)
+						    && (m->connect.details.conn.currentURI < m->serverURIcount))
+						{
+							Log(TRACE_MIN, -1, "Connect succeeded to %s", 
 								m->serverURIs[m->connect.details.conn.currentURI]);
+						}
 						onSuccess = (m->connect.onSuccess != NULL); /* save setting of onSuccess callback */
 						if (m->connect.onSuccess)
 						{
 							MQTTAsync_successData data;
 							memset(&data, '\0', sizeof(data));
 							Log(TRACE_MIN, -1, "Calling connect success for client %s", m->c->clientID);
-							if (m->serverURIcount > 0)
+							if ((m->serverURIcount > 0)
+							    && (m->connect.details.conn.currentURI < m->serverURIcount))
 								data.alt.connect.serverURI = m->serverURIs[m->connect.details.conn.currentURI];
 							else
 								data.alt.connect.serverURI = m->serverURI;
@@ -3329,3 +3347,8 @@ MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void)
 	libinfo[i].value = NULL;
 	return libinfo;
 }
+
+/* Local Variables: */
+/* indent-tabs-mode: t */
+/* c-basic-offset: 8 */
+/* End: */

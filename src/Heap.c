@@ -360,7 +360,7 @@ static void HeapScan(enum LOG_LEVELS log_level)
 	{
 		storageElement* s = (storageElement*)(current->content);
 		Log(log_level, -1, "Heap element size %d, line %d, file %s, ptr %p", s->size, s->line, s->file, s->ptr);
-		Log(log_level, -1, "  Content %*.s", (10 > current->size) ? s->size : 10, (char*)(((int*)s->ptr) + 1));
+		Log(log_level, -1, "  Content %.*s", (10 > current->size) ? s->size : 10, (char*)(((int*)s->ptr) + 1));
 	}
 	Log(log_level, -1, "Heap scan end");
 	Thread_unlock_mutex(heap_mutex);

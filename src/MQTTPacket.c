@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,7 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - MQTT 3.1.1 support
+ *    Ian Craggs - fix for issue 453
  *******************************************************************************/
 
 /**
@@ -179,27 +180,32 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 	int rc;
 	size_t buf0len;
 	char *buf;
+	int count = 0;
 
 	FUNC_ENTRY;
 	buf = malloc(10);
 	buf[0] = header.byte;
 	buf0len = 1 + MQTTPacket_encode(&buf[1], buflen);
+
+	if (buffer != NULL)
+		count = 1;
+
 #if !defined(NO_PERSISTENCE)
 	if (header.bits.type == PUBREL)
 	{
 		char* ptraux = buffer;
 		int msgId = readInt(&ptraux);
-		rc = MQTTPersistence_put(net->socket, buf, buf0len, 1, &buffer, &buflen,
+		rc = MQTTPersistence_put(net->socket, buf, buf0len, count, &buffer, &buflen,
 			header.bits.type, msgId, 0);
 	}
 #endif
 
 #if defined(OPENSSL)
 	if (net->ssl)
-		rc = SSLSocket_putdatas(net->ssl, net->socket, buf, buf0len, 1, &buffer, &buflen, &freeData);
+		rc = SSLSocket_putdatas(net->ssl, net->socket, buf, buf0len, count, &buffer, &buflen, &freeData);
 	else
 #endif
-		rc = Socket_putdatas(net->socket, buf, buf0len, 1, &buffer, &buflen, &freeData);
+		rc = Socket_putdatas(net->socket, buf, buf0len, count, &buffer, &buflen, &freeData);
 		
 	if (rc == TCPSOCKET_COMPLETE)
 		time(&(net->lastSent));

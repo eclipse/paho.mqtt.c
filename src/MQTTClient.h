@@ -1053,6 +1053,13 @@ DLLExport void MQTTClient_free(void* ptr);
   */
 DLLExport void MQTTClient_destroy(MQTTClient* handle);
 
+/**
+ * Returns a pointer to the string representation of the error or NULL.
+ *
+ * Do not free after use. Returns NULL if the error code is unknown.
+ */
+DLLExport const char* MQTTClient_strerror(int code);
+
 #endif
 #ifdef __cplusplus
      }

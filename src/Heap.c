@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -376,7 +376,7 @@ static void HeapScan(enum LOG_LEVELS log_level)
 	{
 		storageElement* s = (storageElement*)(current->content);
 		Log(log_level, -1, "Heap element size %d, line %d, file %s, ptr %p", s->size, s->line, s->file, s->ptr);
-		Log(log_level, -1, "  Content %*.s", (10 > current->size) ? s->size : 10, (char*)(((int*)s->ptr) + 1));
+		Log(log_level, -1, "  Content %.*s", (10 > current->size) ? s->size : 10, (char*)(((int*)s->ptr) + 1));
 #if defined(HEAP_STACK)
 		Log(log_level, -1, "  Stack:\n%s", s->stack);
 #endif

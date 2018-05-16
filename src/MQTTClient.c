@@ -2237,6 +2237,37 @@ MQTTClient_nameValue* MQTTClient_getVersionInfo(void)
 }
 
 
+const char* MQTTClient_strerror(int code)
+{
+  switch (code) {
+    case MQTTCLIENT_SUCCESS:
+      return "Success";
+    case MQTTCLIENT_FAILURE:
+      return "Failure";
+    case MQTTCLIENT_DISCONNECTED:
+      return "Disconnected";
+    case MQTTCLIENT_MAX_MESSAGES_INFLIGHT:
+      return "Maximum in-flight messages amount reached";
+    case MQTTCLIENT_BAD_UTF8_STRING:
+      return "Invalid UTF8 string";
+    case MQTTCLIENT_NULL_PARAMETER:
+      return "Invalid (NULL) parameter";
+    case MQTTCLIENT_TOPICNAME_TRUNCATED:
+      return "Topic containing NULL characters has been truncated";
+    case MQTTCLIENT_BAD_STRUCTURE:
+      return "Bad structure";
+    case MQTTCLIENT_BAD_QOS:
+      return "Invalid QoS value";
+    case MQTTCLIENT_SSL_NOT_SUPPORTED:
+      return "SSL is not supported";
+    case MQTTCLIENT_BAD_PROTOCOL:
+      return "Invalid protocole scheme";
+  }
+
+  return NULL;
+}
+
+
 /**
  * See if any pending writes have been completed, and cleanup if so.
  * Cleaning up means removing any publication data that was stored because the write did

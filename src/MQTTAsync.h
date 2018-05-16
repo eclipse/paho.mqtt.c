@@ -1343,6 +1343,13 @@ typedef struct
   */
 DLLExport MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void);
 
+/**
+ * Returns a pointer to the string representation of the error or NULL.
+ *
+ * Do not free after use. Returns NULL if the error code is unknown.
+ */
+DLLExport const char* MQTTAsync_strerror(int code);
+
 
 /**
   * @cond MQTTAsync_main

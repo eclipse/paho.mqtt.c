@@ -3665,3 +3665,42 @@ MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void)
 	libinfo[i].value = NULL;
 	return libinfo;
 }
+
+
+const char* MQTTAsync_strerror(int code)
+{
+  switch (code) {
+    case MQTTASYNC_SUCCESS:
+      return "Success";
+    case MQTTASYNC_FAILURE:
+      return "Failure";
+    case MQTTASYNC_PERSISTENCE_ERROR:
+      return "Persistence error";
+    case MQTTASYNC_DISCONNECTED:
+      return "Disconnected";
+    case MQTTASYNC_MAX_MESSAGES_INFLIGHT:
+      return "Maximum in-flight messages amount reached";
+    case MQTTASYNC_BAD_UTF8_STRING:
+      return "Invalid UTF8 string";
+    case MQTTASYNC_NULL_PARAMETER:
+      return "Invalid (NULL) parameter";
+    case MQTTASYNC_TOPICNAME_TRUNCATED:
+      return "Topic containing NULL characters has been truncated";
+    case MQTTASYNC_BAD_STRUCTURE:
+      return "Bad structure";
+    case MQTTASYNC_BAD_QOS:
+      return "Invalid QoS value";
+    case MQTTASYNC_NO_MORE_MSGIDS:
+      return "Too many pending commands";
+    case MQTTASYNC_OPERATION_INCOMPLETE:
+      return "Operation discarded before completion";
+    case MQTTASYNC_MAX_BUFFERED_MESSAGES:
+      return "No more messages can be buffered";
+    case MQTTASYNC_SSL_NOT_SUPPORTED:
+      return "SSL is not supported";
+    case MQTTASYNC_BAD_PROTOCOL:
+      return "Invalid protocole scheme";
+  }
+
+  return NULL;
+}

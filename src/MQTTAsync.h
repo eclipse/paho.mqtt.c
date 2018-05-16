@@ -510,6 +510,66 @@ DLLExport int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_
 
 
 /**
+ * This function sets the global connection lost callback function for a specific client.
+ * Any necessary message acknowledgements and status communications are handled in the
+ * background without any intervention from the client application.
+ *
+ * <b>Note:</b> The MQTT client must be disconnected when this function is
+ * called.
+ * @param handle A valid client handle from a successful call to
+ * MQTTAsync_create().
+ * @param context A pointer to any application-specific context. The
+ * the <i>context</i> pointer is passed to the callback function to
+ * provide access to the context information in the callback.
+ * @param cl A pointer to an MQTTAsync_connectionLost() callback
+ * function.
+ * @return ::MQTTASYNC_SUCCESS if the callback was correctly set,
+ * ::MQTTASYNC_FAILURE if an error occurred.
+ */
+DLLExport int MQTTAsync_setConnectionLostCallback(MQTTAsync handle, void* context, MQTTAsync_connectionLost* cl);
+
+
+/**
+ * This function sets the global message arrived callback function for a specific client.
+ * Any necessary message acknowledgements and status communications are handled in the
+ * background without any intervention from the client application.
+ *
+ * <b>Note:</b> The MQTT client must be disconnected when this function is
+ * called.
+ * @param handle A valid client handle from a successful call to
+ * MQTTAsync_create().
+ * @param context A pointer to any application-specific context. The
+ * the <i>context</i> pointer is passed to the callback function to
+ * provide access to the context information in the callback.
+ * @param ma A pointer to an MQTTAsync_messageArrived() callback
+ * function.
+ * @return ::MQTTASYNC_SUCCESS if the callback was correctly set,
+ * ::MQTTASYNC_FAILURE if an error occurred.
+ */
+DLLExport int MQTTAsync_setMessageArrivedCallback(MQTTAsync handle, void* context, MQTTAsync_messageArrived* ma);
+
+
+/**
+ * This function sets the global delivery complete callback function for a specific client.
+ * Any necessary message acknowledgements and status communications are handled in the
+ * background without any intervention from the client application.
+ *
+ * <b>Note:</b> The MQTT client must be disconnected when this function is
+ * called.
+ * @param handle A valid client handle from a successful call to
+ * MQTTAsync_create().
+ * @param context A pointer to any application-specific context. The
+ * the <i>context</i> pointer is passed to the callback function to
+ * provide access to the context information in the callback.
+ * @param dc A pointer to an MQTTAsync_deliveryComplete() callback
+ * function.
+ * @return ::MQTTASYNC_SUCCESS if the callback was correctly set,
+ * ::MQTTASYNC_FAILURE if an error occurred.
+ */
+DLLExport int MQTTAsync_setDeliveryCompleteCallback(MQTTAsync handle, void* context, MQTTAsync_deliveryComplete* dc);
+
+
+/**
  * Sets the MQTTAsync_connected() callback function for a client.
  * @param handle A valid client handle from a successful call to
  * MQTTAsync_create().

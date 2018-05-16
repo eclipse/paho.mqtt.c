@@ -138,7 +138,7 @@ int UTF8_validate(int len, const char* data)
 	}
 	curdata = UTF8_char_validate(len, data);
 	while (curdata && (curdata < data + len))
-		curdata = UTF8_char_validate(len, curdata);
+		curdata = UTF8_char_validate(data + len - curdata, curdata);
 
 	rc = curdata != NULL;
 exit:

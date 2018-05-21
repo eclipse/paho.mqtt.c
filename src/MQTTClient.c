@@ -233,7 +233,7 @@ START_TIME_TYPE MQTTClient_start_clock(void)
 START_TIME_TYPE MQTTClient_start_clock(void)
 {
 	static struct timespec start;
-	clock_gettime(CLOCK_REALTIME, &start);
+	clock_gettime(CLOCK_MONOTONIC, &start);
 	return start;
 }
 #else
@@ -241,7 +241,11 @@ START_TIME_TYPE MQTTClient_start_clock(void)
 START_TIME_TYPE MQTTClient_start_clock(void)
 {
 	static struct timeval start;
-	gettimeofday(&start, NULL);
+	static struct timespec start_ts;
+
+	clock_gettime(CLOCK_MONOTONIC, &start_ts);
+	start.tv_sec = start_ts.tv_sec;
+	start.tv_usec = start_ts.tv_nsec / 1000;
 	return start;
 }
 #endif
@@ -258,7 +262,7 @@ long MQTTClient_elapsed(struct timespec start)
 {
 	struct timespec now, res;
 
-	clock_gettime(CLOCK_REALTIME, &now);
+	clock_gettime(CLOCK_MONOTONIC, &now);
 	ntimersub(now, start, res);
 	return (res.tv_sec)*1000L + (res.tv_nsec)/1000000L;
 }
@@ -266,8 +270,11 @@ long MQTTClient_elapsed(struct timespec start)
 long MQTTClient_elapsed(struct timeval start)
 {
 	struct timeval now, res;
+	static struct timespec now_ts;
 
-	gettimeofday(&now, NULL);
+	clock_gettime(CLOCK_MONOTONIC, &now_ts);
+	now.tv_sec = now_ts.tv_sec;
+	now.tv_usec = now_ts.tv_nsec / 1000;
 	timersub(&now, &start, &res);
 	return (res.tv_sec)*1000 + (res.tv_usec)/1000;
 }

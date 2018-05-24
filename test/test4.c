@@ -471,7 +471,7 @@ int test2(struct Options options)
 	opts.cleansession = 1;
 	opts.username = "testuser";
 	opts.binarypwd.data = "testpassword";
-	opts.binarypwd.len = strlen(opts.binarypwd.data);
+	opts.binarypwd.len = (int)strlen(opts.binarypwd.data);
 	opts.MQTTVersion = options.MQTTVersion;
 
 	opts.will = &wopts;

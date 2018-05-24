@@ -60,7 +60,7 @@
 
 char* FindString(char* filename, const char* eyecatcher_input);
 int printVersionInfo(MQTTAsync_nameValue* info);
-int loadandcall(char* libname);
+int loadandcall(const char* libname);
 void printEyecatchers(char* filename);
 
 
@@ -133,16 +133,14 @@ int printVersionInfo(MQTTAsync_nameValue* info)
 
 typedef MQTTAsync_nameValue* (*func_type)(void);
 
-int loadandcall(char* libname)
+int loadandcall(const char* libname)
 {
 	int rc = 0;
 	MQTTAsync_nameValue* (*func_address)(void) = NULL;
 #if defined(WIN32) || defined(WIN64)
-	wchar_t wlibname[30];
 	HMODULE APILibrary;
 
-	mbstowcs(wlibname, libname, strlen(libname) + 1);
-	if ((APILibrary = LoadLibrary(wlibname)) == NULL)
+	if ((APILibrary = LoadLibraryA(libname)) == NULL)
 		printf("Error loading library %s, error code %d\n", libname, GetLastError());
 	else
 	{

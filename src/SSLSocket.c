@@ -30,11 +30,11 @@
 
 #include "SocketBuffer.h"
 #include "MQTTClient.h"
+#include "MQTTProtocolOut.h"
 #include "SSLSocket.h"
 #include "Log.h"
 #include "StackTrace.h"
 #include "Socket.h"
-char* MQTTProtocol_addressPort(const char* uri, int* port);
 
 #include "Heap.h"
 
@@ -620,7 +620,8 @@ exit:
 }
 
 
-int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, char* hostname)
+int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts,
+	const char* hostname, size_t hostname_len)
 {
 	int rc = 1;
 
@@ -628,6 +629,7 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, 
 
 	if (net->ctx != NULL || (rc = SSLSocket_createContext(net, opts)) == 1)
 	{
+		char *hostname_plus_null;
 		int i;
 
 		SSL_CTX_set_info_callback(net->ctx, SSL_CTX_info_callback);
@@ -648,8 +650,11 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, 
 		if ((rc = SSL_set_fd(net->ssl, net->socket)) != 1)
 			SSLSocket_error("SSL_set_fd", net->ssl, net->socket, rc);
 
-		if ((rc = SSL_set_tlsext_host_name(net->ssl, hostname)) != 1)
+		hostname_plus_null = malloc(hostname_len + 1u );
+		MQTTStrncpy(hostname_plus_null, hostname, hostname_len + 1u);
+		if ((rc = SSL_set_tlsext_host_name(net->ssl, hostname_plus_null)) != 1)
 			SSLSocket_error("SSL_set_tlsext_host_name", NULL, net->socket, rc);
+		free(hostname_plus_null);
 	}
 
 	FUNC_EXIT_RC(rc);
@@ -659,7 +664,7 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, 
 /*
  * Return value: 1 - success, TCPSOCKET_INTERRUPTED - try again, anything else is failure
  */
-int SSLSocket_connect(SSL* ssl, int sock, char* hostname, int verify)
+int SSLSocket_connect(SSL* ssl, int sock, const char* hostname, int verify)
 {
 	int rc = 0;
 
@@ -680,12 +685,12 @@ int SSLSocket_connect(SSL* ssl, int sock, char* hostname, int verify)
 	{
 		char* peername = NULL;
 		int port;
-		char* addr = NULL;
+		size_t hostname_len;
 
 		X509* cert = SSL_get_peer_certificate(ssl);
-		addr = MQTTProtocol_addressPort(hostname, &port);
+		hostname_len = MQTTProtocol_addressPort(hostname, &port, NULL);
 
-		rc = X509_check_host(cert, addr, strlen(addr), 0, &peername);
+		rc = X509_check_host(cert, hostname, hostname_len, 0, &peername);
 		if (rc == 0)
 			rc = SOCKET_ERROR;
 		Log(TRACE_MIN, -1, "rc from X509_check_host is %d", rc);
@@ -693,8 +698,6 @@ int SSLSocket_connect(SSL* ssl, int sock, char* hostname, int verify)
 
 		if (cert)
 			X509_free(cert);
-		if (addr != hostname)
-			free(addr);
 	}
 #endif
 

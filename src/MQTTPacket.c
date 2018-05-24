@@ -31,6 +31,7 @@
 #endif
 #include "Messages.h"
 #include "StackTrace.h"
+#include "WebSocket.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -109,11 +110,7 @@ void* MQTTPacket_Factory(networkHandles* net, int* error)
 	*error = SOCKET_ERROR;  /* indicate whether an error occurred, or not */
 
 	/* read the packet data from the socket */
-#if defined(OPENSSL)
-	*error = (net->ssl) ? SSLSocket_getch(net->ssl, net->socket, &header.byte) : Socket_getch(net->socket, &header.byte); 
-#else
-	*error = Socket_getch(net->socket, &header.byte);
-#endif
+	*error = WebSocket_getch(net, &header.byte);
 	if (*error != TCPSOCKET_COMPLETE)   /* first byte is the header byte */
 		goto exit; /* packet not read, *error indicates whether SOCKET_ERROR occurred */
 
@@ -122,12 +119,7 @@ void* MQTTPacket_Factory(networkHandles* net, int* error)
 		goto exit; /* packet not read, *error indicates whether SOCKET_ERROR occurred */
 
 	/* now read the rest, the variable header and payload */
-#if defined(OPENSSL)
-	data = (net->ssl) ? SSLSocket_getdata(net->ssl, net->socket, remaining_length, &actual_len) : 
-						Socket_getdata(net->socket, remaining_length, &actual_len);
-#else
-	data = Socket_getdata(net->socket, remaining_length, &actual_len);
-#endif
+	data = WebSocket_getdata(net, remaining_length, &actual_len);
 	if (data == NULL)
 	{
 		*error = SOCKET_ERROR;
@@ -179,13 +171,17 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 {
 	int rc;
 	size_t buf0len;
+	size_t ws_header;
 	char *buf;
 	int count = 0;
 
 	FUNC_ENTRY;
-	buf = malloc(10);
-	buf[0] = header.byte;
-	buf0len = 1 + MQTTPacket_encode(&buf[1], buflen);
+	ws_header = WebSocket_calculateFrameHeaderSize(net, 1, buflen + 10);
+
+	buf = malloc(10 + ws_header);
+	if ( !buf ) return -1;
+	buf[ws_header] = header.byte;
+	buf0len = 1 + MQTTPacket_encode(&buf[ws_header + 1], buflen);
 
 	if (buffer != NULL)
 		count = 1;
@@ -195,18 +191,13 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 	{
 		char* ptraux = buffer;
 		int msgId = readInt(&ptraux);
-		rc = MQTTPersistence_put(net->socket, buf, buf0len, count, &buffer, &buflen,
+
+		rc = MQTTPersistence_put(net->socket, &buf[ws_header], buf0len, count, &buffer, &buflen,
 			header.bits.type, msgId, 0);
 	}
 #endif
+	rc = WebSocket_putdatas(net, &buf[ws_header], buf0len, count, &buffer, &buflen, &freeData);
 
-#if defined(OPENSSL)
-	if (net->ssl)
-		rc = SSLSocket_putdatas(net->ssl, net->socket, buf, buf0len, count, &buffer, &buflen, &freeData);
-	else
-#endif
-		rc = Socket_putdatas(net->socket, buf, buf0len, count, &buffer, &buflen, &freeData);
-		
 	if (rc == TCPSOCKET_COMPLETE)
 		time(&(net->lastSent));
 	
@@ -231,30 +222,31 @@ int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffe
 {
 	int i, rc;
 	size_t buf0len, total = 0;
+	size_t ws_header;
 	char *buf;
 
 	FUNC_ENTRY;
-	buf = malloc(10);
-	buf[0] = header.byte;
+
 	for (i = 0; i < count; i++)
 		total += buflens[i];
-	buf0len = 1 + MQTTPacket_encode(&buf[1], total);
+
+	ws_header = WebSocket_calculateFrameHeaderSize(net, 1, total + 10);
+	buf = malloc(10 + ws_header);
+	if ( !buf ) return -1;
+
+	buf[ws_header] = header.byte;
+	buf0len = 1 + MQTTPacket_encode(&buf[ws_header + 1], total);
 #if !defined(NO_PERSISTENCE)
 	if (header.bits.type == PUBLISH && header.bits.qos != 0)
 	{   /* persist PUBLISH QoS1 and Qo2 */
 		char *ptraux = buffers[2];
 		int msgId = readInt(&ptraux);
-		rc = MQTTPersistence_put(net->socket, buf, buf0len, count, buffers, buflens,
+		rc = MQTTPersistence_put(net->socket, &buf[ws_header], buf0len, count, buffers, buflens,
 			header.bits.type, msgId, 0);
 	}
 #endif
-#if defined(OPENSSL)
-	if (net->ssl)
-		rc = SSLSocket_putdatas(net->ssl, net->socket, buf, buf0len, count, buffers, buflens, frees);
-	else
-#endif
-		rc = Socket_putdatas(net->socket, buf, buf0len, count, buffers, buflens, frees);
-		
+	rc = WebSocket_putdatas(net, &buf[ws_header], buf0len, count, buffers, buflens, frees);
+
 	if (rc == TCPSOCKET_COMPLETE)
 		time(&(net->lastSent));
 	
@@ -313,11 +305,7 @@ int MQTTPacket_decode(networkHandles* net, size_t* value)
 			rc = SOCKET_ERROR;	/* bad data */
 			goto exit;
 		}
-#if defined(OPENSSL)
-		rc = (net->ssl) ? SSLSocket_getch(net->ssl, net->socket, &c) : Socket_getch(net->socket, &c);
-#else
-		rc = Socket_getch(net->socket, &c);
-#endif
+		rc = WebSocket_getch(net, &c);
 		if (rc != TCPSOCKET_COMPLETE)
 				goto exit;
 		*value += (c & 127) * multiplier;

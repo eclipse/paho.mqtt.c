@@ -691,10 +691,15 @@ int SSLSocket_connect(SSL* ssl, int sock, const char* hostname, int verify)
 		hostname_len = MQTTProtocol_addressPort(hostname, &port, NULL);
 
 		rc = X509_check_host(cert, hostname, hostname_len, 0, &peername);
-		if (rc == 0)
-			rc = SOCKET_ERROR;
 		Log(TRACE_MIN, -1, "rc from X509_check_host is %d", rc);
 		Log(TRACE_MIN, -1, "peername from X509_check_host is %s", peername);
+		
+		if (peername != NULL)
+			OPENSSL_free(peername);
+
+		// 0 == fail, -1 == SSL internal error
+		if (rc == 0 || rc == -1)
+			rc = SSL_FATAL;
 
 		if (cert)
 			X509_free(cert);

@@ -801,7 +801,7 @@ static void MQTTClient_closeSession(Clients* client, enum MQTTReasonCodes reason
 	client->connected = 0;
 	client->connect_state = 0;
 
-	if (client->cleansession)
+	if (client->MQTTVersion < MQTTVERSION_5 && client->cleansession)
 		MQTTClient_cleanSession(client);
 	FUNC_EXIT;
 }
@@ -1551,7 +1551,13 @@ exit:
 
 int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, int* qos)
 {
-	MQTTResponse response = MQTTClient_subscribeMany5(handle, count, topic, qos, NULL, NULL);
+	MQTTClients* m = handle;
+	MQTTResponse response = {MQTTCLIENT_SUCCESS, NULL};
+
+	if (m->c->MQTTVersion >= MQTTVERSION_5)
+		response.reasonCode = MQTTCLIENT_BAD_MQTT_VERSION;
+	else
+		response = MQTTClient_subscribeMany5(handle, count, topic, qos, NULL, NULL);
 
 	return response.reasonCode;
 }
@@ -1575,7 +1581,13 @@ MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char* topic, int qos
 
 int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos)
 {
-	MQTTResponse response = MQTTClient_subscribe5(handle, topic, qos, NULL, NULL);
+	MQTTClients* m = handle;
+	MQTTResponse response = {MQTTCLIENT_SUCCESS, NULL};
+
+	if (m->c->MQTTVersion >= MQTTVERSION_5)
+		response.reasonCode = MQTTCLIENT_BAD_MQTT_VERSION;
+	else
+		response = MQTTClient_subscribe5(handle, topic, qos, NULL, NULL);
 
 	return response.reasonCode;
 }
@@ -1698,8 +1710,6 @@ MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int p
 		rc = MQTTCLIENT_DISCONNECTED;
 	else if (!UTF8_validateString(topicName))
 		rc = MQTTCLIENT_BAD_UTF8_STRING;
-	else if (m->c->MQTTVersion >= MQTTVERSION_5 && properties == NULL)
-		rc = MQTTCLIENT_NULL_PARAMETER;
 
 	if (rc != MQTTCLIENT_SUCCESS)
 		goto exit;
@@ -1738,7 +1748,15 @@ MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int p
 	p->msgId = msgid;
 	p->MQTTVersion = m->c->MQTTVersion;
 	if (m->c->MQTTVersion >= MQTTVERSION_5)
-		p->properties = *properties;
+	{
+		if (properties)
+			p->properties = *properties;
+		else
+		{
+			MQTTProperties props = MQTTProperties_initializer;
+			p->properties = props;
+		}
+	}
 
 	rc = MQTTProtocol_startPublish(m->c, p, qos, retained, &msg);
 
@@ -1781,7 +1799,13 @@ exit:
 int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, void* payload,
 							 int qos, int retained, MQTTClient_deliveryToken* deliveryToken)
 {
-	MQTTResponse rc = MQTTClient_publish5(handle, topicName, payloadlen, payload, qos, retained, NULL, deliveryToken);
+	MQTTClients* m = handle;
+	MQTTResponse rc = {MQTTCLIENT_SUCCESS, NULL};
+
+	if (m->c->MQTTVersion >= MQTTVERSION_5)
+		rc.reasonCode = MQTTCLIENT_BAD_MQTT_VERSION;
+	else
+		rc = MQTTClient_publish5(handle, topicName, payloadlen, payload, qos, retained, NULL, deliveryToken);
 	return rc.reasonCode;
 }
 
@@ -1820,13 +1844,16 @@ exit:
 int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClient_message* message,
 															 MQTTClient_deliveryToken* deliveryToken)
 {
+	MQTTClients* m = handle;
 	MQTTResponse rc = {MQTTCLIENT_SUCCESS, NULL};
 
 	if (strncmp(message->struct_id, "MQTM", 4) != 0 ||
 			(message->struct_version != 0 && message->struct_version != 1))
-		return MQTTCLIENT_BAD_STRUCTURE;
-
-	rc = MQTTClient_publishMessage5(handle, topicName, message, deliveryToken);
+		rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
+	else if (m->c->MQTTVersion >= MQTTVERSION_5)
+		rc.reasonCode = MQTTCLIENT_BAD_MQTT_VERSION;
+	else
+		rc = MQTTClient_publishMessage5(handle, topicName, message, deliveryToken);
 	return rc.reasonCode;
 }
 

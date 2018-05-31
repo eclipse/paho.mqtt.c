@@ -13,6 +13,7 @@
 
   Contributors:
      Ian Craggs - initial implementation and/or documentation
+     Ian Craggs - add MQTTV5 support
 *******************************************************************
 """
 from __future__ import print_function
@@ -20,11 +21,15 @@ from __future__ import print_function
 import socket, sys, select, traceback, datetime, os
 try:
   import socketserver
-  import MQTTV311 as MQTTV3    # Trace MQTT traffic - Python 3 version
+  import MQTTV311    # Trace MQTT traffic - Python 3 version
+  import MQTTV5
 except:
+  traceback.print_exc()
   import SocketServer as socketserver
-  import MQTTV3112 as MQTTV3   # Trace MQTT traffic - Python 2 version
+  import MQTTV3112 as MQTTV311   # Trace MQTT traffic - Python 2 version
+  import MQTTV5
 
+MQTT = MQTTV311
 logging = True
 myWindow = None
 
@@ -38,6 +43,7 @@ suspended = []
 class MyHandler(socketserver.StreamRequestHandler):
 
   def handle(self):
+    global MQTT
     if not hasattr(self, "ids"):
       self.ids = {}
     if not hasattr(self, "versions"):
@@ -55,12 +61,30 @@ class MyHandler(socketserver.StreamRequestHandler):
           if s in suspended:
              print("suspended")
           if s == clients and s not in suspended:
-            inbuf = MQTTV3.getPacket(clients) # get one packet
+            inbuf = MQTT.getPacket(clients) # get one packet
             if inbuf == None:
               break
             try:
-              packet = MQTTV3.unpackPacket(inbuf)
-              if packet.fh.MessageType == MQTTV3.PUBLISH and \
+              # if connect, this could be MQTTV3 or MQTTV5
+              if inbuf[0] >> 4 == 1: # connect packet
+                protocol_string = b'MQTT'
+                pos = inbuf.find(protocol_string)
+                if pos != -1:
+                  version = inbuf[pos + len(protocol_string)]
+                  if version == 5:
+                    MQTT = MQTTV5
+                  else:
+                    MQTT = MQTTV311
+              packet = MQTT.unpackPacket(inbuf)
+              if hasattr(packet.fh, "MessageType"):
+                packet_type = packet.fh.MessageType
+                publish_type = MQTT.PUBLISH
+                connect_type = MQTT.CONNECT
+              else:
+                packet_type = packet.fh.PacketType
+                publish_type = MQTT.PacketTypes.PUBLISH
+                connect_type = MQTT.PacketTypes.CONNECT
+              if packet_type == publish_type and \
                   packet.topicName == "MQTTSAS topic" and \
                   packet.data == b"TERMINATE":
                 print("Terminating client", self.ids[id(clients)])
@@ -68,26 +92,26 @@ class MyHandler(socketserver.StreamRequestHandler):
                 clients.close()
                 terminated = True
                 break
-              elif packet.fh.MessageType == MQTTV3.PUBLISH and \
+              elif packet_type == publish_type and \
                   packet.topicName == "MQTTSAS topic" and \
                   packet.data == b"TERMINATE_SERVER":
                 print("Suspending client ", self.ids[id(clients)])
                 suspended.append(clients)
-              elif packet.fh.MessageType == MQTTV3.CONNECT:
+              elif packet_type == connect_type:
                 self.ids[id(clients)] = packet.ClientIdentifier
                 self.versions[id(clients)] = 3
-              print(timestamp() , "C to S", self.ids[id(clients)], repr(packet))
+              print(timestamp() , "C to S", self.ids[id(clients)], str(packet))
               #print([hex(b) for b in inbuf])
               #print(inbuf)
             except:
               traceback.print_exc()
             brokers.send(inbuf)       # pass it on
           elif s == brokers:
-            inbuf = MQTTV3.getPacket(brokers) # get one packet
+            inbuf = MQTT.getPacket(brokers) # get one packet
             if inbuf == None:
               break
             try:
-              print(timestamp(), "S to C", self.ids[id(clients)], repr(MQTTV3.unpackPacket(inbuf)))
+              print(timestamp(), "S to C", self.ids[id(clients)], str(MQTT.unpackPacket(inbuf)))
             except:
               traceback.print_exc()
             clients.send(inbuf)

@@ -712,6 +712,7 @@ typedef struct
 	 * MQTTVERSION_DEFAULT (0) = default: start with 3.1.1, and if that fails, fall back to 3.1
 	 * MQTTVERSION_3_1 (3) = only try version 3.1
 	 * MQTTVERSION_3_1_1 (4) = only try version 3.1.1
+	 * MQTTVERSION_5 (5) = only try version 5.0
 	 */
 	int MQTTVersion;
 	/**
@@ -726,8 +727,9 @@ typedef struct
 	/**
    * Optional binary password.  Only checked and used if the password option is NULL
    */
-  struct {
-  	int len;            /**< binary password length */
+	struct
+	{
+		int len;           /**< binary password length */
 		const void* data;  /**< binary password data */
 	} binarypwd;
 } MQTTClient_connectOptions;

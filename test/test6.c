@@ -61,7 +61,7 @@ struct
 	int persistence;
 } opts =
 {
-	"tcp://localhost:1885",
+	"tcp://localhost:1884",
 	NULL,
 	0,
 	"tcp://localhost:7777",
@@ -297,22 +297,24 @@ void control_connectionLost(void* context, char* cause)
  */
 int control_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* m)
 {
-	MyLog(LOGA_ALWAYS, "Control message arrived: %.*s %s",
+	MyLog(LOGA_ALWAYS, "Control message arrived: %.*s wait message: %s",
 				m->payloadlen, m->payload, (wait_message == NULL) ? "None" : wait_message);
 	if (strncmp(m->payload, "stop", 4) == 0)
 	{
 		MyLog(LOGA_ALWAYS, "Stop message arrived, stopping...");
-	  stopping = 1;
+		stopping = 1;
 	}
 	else if (wait_message != NULL && strncmp(wait_message, m->payload,
 																					 strlen(wait_message)) == 0)
 	{
+		MyLog(LOGA_ALWAYS, "Wait message %s found", wait_message);
 		control_found = 1;
 		wait_message = NULL;
 	}
 	else if (wait_message2 != NULL && strncmp(wait_message2, m->payload,
 																						strlen(wait_message2)) == 0)
 	{
+		MyLog(LOGA_ALWAYS, "Wait message2 %s found", wait_message);
 		control_found = 2;
 		wait_message2 = NULL;
 	}
@@ -351,7 +353,7 @@ int control_wait(char* message)
 	sprintf(buf, "waiting for: %s", message);
 	control_send(buf);
 
-  MyLog(LOGA_ALWAYS, "waiting for: %s", message);
+	MyLog(LOGA_ALWAYS, "Waiting for: %s", message);
 	while (control_found == 0 && stopping == 0)
 	{
 		if (++count == 300)
@@ -362,6 +364,7 @@ int control_wait(char* message)
 		}
 		MySleep(1000);
 	}
+	MyLog(LOGA_ALWAYS, "Control message found: %s, control_found %d", message, control_found);
 	return control_found;
 }
 
@@ -377,7 +380,7 @@ int control_which(char* message1, char* message2)
 	while (control_found == 0)
 	{
 		if (++count == 300)
-		  return 0; /* time out and tell the caller the message was not found */
+		  break; /* time out and tell the caller the message was not found */
 		MySleep(1000);
 	}
 	return control_found;
@@ -750,7 +753,7 @@ void client_onSubscribe(void* context, MQTTAsync_successData* response)
 void client_onFailure(void* context, MQTTAsync_failureData* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	MyLog(LOGA_DEBUG, "In failure callback");
+	MyLog(LOGA_INFO, "In failure callback");
 
 	client_subscribed = -1;
 }

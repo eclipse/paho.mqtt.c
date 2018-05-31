@@ -110,8 +110,44 @@ ADD_TEST(
 	COMMAND "test15" "--test_no" "1" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
 )
 
+ADD_TEST(
+	NAME test15-2-multithread-callbacks
+	COMMAND "test15" "--test_no" "2" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
+ADD_TEST(
+	NAME test15-3-connack-return-codes
+	COMMAND "test15" "--test_no" "3" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
+ADD_TEST(
+	NAME test15-4-client-persistence
+	COMMAND "test15" "--test_no" "4" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
+ADD_TEST(
+	NAME test15-5-disconnect-with-quiesce
+	COMMAND "test15" "--test_no" "5" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
+ADD_TEST(
+	NAME test15-6-connlost-will-message
+	COMMAND "test15" "--test_no" "6" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
+ADD_TEST(
+	NAME test15-7-connlost-binary-will-message
+	COMMAND "test15" "--test_no" "7" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
 SET_TESTS_PROPERTIES(
 	test15-1-single-thread-client
+	test15-2-multithread-callbacks
+	test15-3-connack-return-codes
+	test15-4-client-persistence
+	test15-5-disconnect-with-quiesce
+	test15-6-connlost-will-message
+	test15-7-connlost-binary-will-message
 	PROPERTIES TIMEOUT 540
 )
 

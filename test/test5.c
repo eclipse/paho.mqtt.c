@@ -2056,8 +2056,7 @@ int test7(struct Options options)
 {
 	char* testname = "test7";
 	int subsqos = 2;
-	AsyncTestClient tc =
-	AsyncTestClient_initializer;
+	AsyncTestClient tc = AsyncTestClient_initializer;
 	MQTTAsync c;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;

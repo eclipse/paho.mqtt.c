@@ -294,9 +294,11 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 	{
 		/* store publication in inbound list */
 		int len;
+		int already_received = 0;
 		ListElement* listElem = NULL;
 		Messages* m = malloc(sizeof(Messages));
 		Publications* p = MQTTProtocol_storePublication(publish, &len);
+
 		m->publish = p;
 		m->msgid = publish->msgId;
 		m->qos = publish->header.bits.qos;
@@ -313,10 +315,11 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 				MQTTProperties_free(&msg->properties);
 			ListInsert(client->inboundMsgs, m, sizeof(Messages) + len, listElem);
 			ListRemove(client->inboundMsgs, msg);
+			already_received = 1;
 		} else
 			ListAppend(client->inboundMsgs, m, sizeof(Messages) + len);
 		rc = MQTTPacket_send_pubrec(publish->msgId, &client->net, client->clientID);
-		if (m->MQTTVersion >= MQTTVERSION_5)
+		if (m->MQTTVersion >= MQTTVERSION_5 && already_received == 0)
 		{
 			publish->payload = m->publish->payload;
 			Protocol_processPublication(publish, client);

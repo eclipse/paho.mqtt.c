@@ -316,6 +316,11 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 		} else
 			ListAppend(client->inboundMsgs, m, sizeof(Messages) + len);
 		rc = MQTTPacket_send_pubrec(publish->msgId, &client->net, client->clientID);
+		if (m->MQTTVersion >= MQTTVERSION_5)
+		{
+			publish->payload = m->publish->payload;
+			Protocol_processPublication(publish, client);
+		}
 		publish->topic = NULL;
 	}
 	MQTTPacket_freePublish(publish);
@@ -470,7 +475,8 @@ int MQTTProtocol_handlePubrels(void* pack, int sock)
 			publish.MQTTVersion = m->MQTTVersion;
 			if (publish.MQTTVersion >= MQTTVERSION_5)
 				publish.properties = m->properties;
-			Protocol_processPublication(&publish, client);
+			else
+				Protocol_processPublication(&publish, client); /* only for 3.1.1 and lower */
 			#if !defined(NO_PERSISTENCE)
 				rc += MQTTPersistence_remove(client, PERSISTENCE_PUBLISH_RECEIVED, m->qos, pubrel->msgId);
 			#endif

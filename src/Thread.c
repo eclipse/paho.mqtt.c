@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,6 +16,7 @@
  *    Ian Craggs - bug #415042 - start Linux thread as disconnected
  *    Ian Craggs - fix for bug #420851
  *    Ian Craggs - change MacOS semaphore implementation
+ *    Ian Craggs - fix for clock #284
  *******************************************************************************/
 
 /**
@@ -247,6 +248,9 @@ int Thread_wait_sem(sem_type sem, int timeout)
 			usleep(interval); /* microseconds - .1 of a second */
 		}
 	#else
+		/* We have to use CLOCK_REALTIME rather than MONOTONIC for sem_timedwait interval.
+		 * Does this make it susceptible to system clock changes?
+		 */
 		if (clock_gettime(CLOCK_REALTIME, &ts) != -1)
 		{
 			ts.tv_sec += timeout;
@@ -333,11 +337,17 @@ int Thread_destroy_sem(sem_type sem)
 cond_type Thread_create_cond(void)
 {
 	cond_type condvar = NULL;
+	pthread_condattr_t attr;
 	int rc = 0;
 
 	FUNC_ENTRY;
+	pthread_condattr_init(&attr);
+#if !defined(OSX)
+	pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+#endif
+
 	condvar = malloc(sizeof(cond_type_struct));
-	rc = pthread_cond_init(&condvar->cond, NULL);
+	rc = pthread_cond_init(&condvar->cond, &attr);
 	rc = pthread_mutex_init(&condvar->mutex, NULL);
 
 	FUNC_EXIT_RC(rc);
@@ -368,13 +378,14 @@ int Thread_wait_cond(cond_type condvar, int timeout)
 	FUNC_ENTRY;
 	int rc = 0;
 	struct timespec cond_timeout;
-	struct timeval cur_time;
 
-	gettimeofday(&cur_time, NULL);
+#if defined(OSX)
+	clock_gettime(CLOCK_REALTIME, &cond_timeout);
+#else
+	clock_gettime(CLOCK_MONOTONIC, &cond_timeout);
+#endif
 
-	cond_timeout.tv_sec = cur_time.tv_sec + timeout;
-	cond_timeout.tv_nsec = cur_time.tv_usec * 1000;
-
+	cond_timeout.tv_sec += timeout;
 	pthread_mutex_lock(&condvar->mutex);
 	rc = pthread_cond_timedwait(&condvar->cond, &condvar->mutex, &cond_timeout);
 	pthread_mutex_unlock(&condvar->mutex);

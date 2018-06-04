@@ -36,6 +36,7 @@
 #include "MQTTProtocolOut.h"
 #include "StackTrace.h"
 #include "Heap.h"
+#include "WebSocket.h"
 
 extern ClientStates* bstate;
 
@@ -43,11 +44,12 @@ extern ClientStates* bstate;
 
 /**
  * Separates an address:port into two separate values
- * @param uri the input string - hostname:port
- * @param port the returned port integer
+ * @param[in] uri the input string - hostname:port
+ * @param[out] port the returned port integer
+ * @param[out] topic optional topic portion of the address starting with '/'
  * @return the address string
  */
-char* MQTTProtocol_addressPort(const char* uri, int* port)
+size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic)
 {
 	char* colon_pos = strrchr(uri, ':'); /* reverse find to allow for ':' in IPv6 addresses */
 	char* buf = (char*)uri;
@@ -62,27 +64,31 @@ char* MQTTProtocol_addressPort(const char* uri, int* port)
 
 	if (colon_pos) /* have to strip off the port */
 	{
-		size_t addr_len = colon_pos - uri;
-		buf = malloc(addr_len + 1);
+		len = colon_pos - uri;
 		*port = atoi(colon_pos + 1);
-		MQTTStrncpy(buf, uri, addr_len+1);
 	}
 	else
+	{
+		len = strlen(buf);
 		*port = DEFAULT_PORT;
+	}
 
-	len = strlen(buf);
+	/* try and find topic portion */
+	if ( topic )
+	{
+		const char* addr_start = uri;
+		if ( colon_pos )
+			addr_start = colon_pos;
+		*topic = strchr( addr_start, '/' );
+	}
+
 	if (buf[len - 1] == ']')
 	{
-		if (buf == (char*)uri)
-		{
-			buf = malloc(len);  /* we are stripping off the final ], so length is 1 shorter */
-			MQTTStrncpy(buf, uri, len);
-		}
-		else
-			buf[len - 1] = '\0';
+		/* we are stripping off the final ], so length is 1 shorter */
+		--len;
 	}
 	FUNC_EXIT;
-	return buf;
+	return len;
 }
 
 
@@ -95,51 +101,54 @@ char* MQTTProtocol_addressPort(const char* uri, int* port)
  * @return return code
  */
 #if defined(OPENSSL)
-int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int MQTTVersion,
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties)
 #else
-int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int MQTTVersion,
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties)
 #endif
 {
 	int rc, port;
-	char* addr;
+	size_t addr_len;
 
 	FUNC_ENTRY;
 	aClient->good = 1;
 
-	addr = MQTTProtocol_addressPort(ip_address, &port);
-	rc = Socket_new(addr, port, &(aClient->net.socket));
+	addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL);
+	rc = Socket_new(ip_address, addr_len, port, &(aClient->net.socket));
 	if (rc == EINPROGRESS || rc == EWOULDBLOCK)
-		aClient->connect_state = 1; /* TCP connect called - wait for connect completion */
+		aClient->connect_state = TCP_IN_PROGRESS; /* TCP connect called - wait for connect completion */
 	else if (rc == 0)
 	{	/* TCP connect completed. If SSL, send SSL connect */
 #if defined(OPENSSL)
 		if (ssl)
 		{
-			if (SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts, addr) == 1)
+			if (SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts, ip_address, addr_len) == 1)
 			{
 				rc = SSLSocket_connect(aClient->net.ssl, aClient->net.socket,
-						addr, aClient->sslopts->verify);
+						ip_address, aClient->sslopts->verify);
 				if (rc == TCPSOCKET_INTERRUPTED)
-					aClient->connect_state = 2; /* SSL connect called - wait for completion */
+					aClient->connect_state = SSL_IN_PROGRESS; /* SSL connect called - wait for completion */
 			}
 			else
 				rc = SOCKET_ERROR;
 		}
 #endif
-		
+		if ( websocket )
+		{
+			rc = WebSocket_connect( &aClient->net, ip_address );
+			if ( rc == TCPSOCKET_INTERRUPTED )
+				aClient->connect_state = WEBSOCKET_IN_PROGRESS; /* Websocket connect called - wait for completion */
+		}
 		if (rc == 0)
 		{
 			/* Now send the MQTT connect packet */
 			if ((rc = MQTTPacket_send_connect(aClient, MQTTVersion, connectProperties, willProperties)) == 0)
-				aClient->connect_state = 3; /* MQTT Connect sent - wait for CONNACK */ 
+				aClient->connect_state = WAIT_FOR_CONNACK; /* MQTT Connect sent - wait for CONNACK */
 			else
-				aClient->connect_state = 0;
+				aClient->connect_state = NOT_IN_PROGRESS;
 		}
 	}
-	if (addr != ip_address)
-		free(addr);
 
 	FUNC_EXIT_RC(rc);
 	return rc;

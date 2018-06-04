@@ -1726,7 +1726,7 @@ int test6(struct Options options)
 	/* let client c go: connect, and send disconnect command to proxy */
 	opts.will = &wopts;
 	opts.will->payload.data = "will message";
-	opts.will->payload.len = strlen(opts.will->payload.data) + 1;
+	opts.will->payload.len = (int)strlen(opts.will->payload.data) + 1;
 	opts.will->qos = 1;
 	opts.will->retained = 0;
 	opts.will->topicName = willTopic;
@@ -1870,7 +1870,6 @@ void test7cOnConnectSuccess(void* context, MQTTAsync_successData* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-	int rc;
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client c, context %p\n", context);
 
@@ -1904,7 +1903,6 @@ void test7dOnConnectSuccess(void* context, MQTTAsync_successData* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	int rc;
 	int qoss[2] = {2, 2};
 	char* topics[2] = {willTopic, test_topic};
 
@@ -1933,7 +1931,6 @@ int test7(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
 
 	test7_will_message_received = 0;
 	test7_messages_received = 0;

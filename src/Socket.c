@@ -650,9 +650,10 @@ void Socket_close(int socket)
  *  @param sock returns the new socket
  *  @return completion code
  */
-int Socket_new(char* addr, int port, int* sock)
+int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 {
 	int type = SOCK_STREAM;
+	char *addr_mem;
 	struct sockaddr_in address;
 #if defined(AF_INET6)
 	struct sockaddr_in6 address6;
@@ -671,9 +672,16 @@ int Socket_new(char* addr, int port, int* sock)
 	memset(&address6, '\0', sizeof(address6));
 
 	if (addr[0] == '[')
-	  ++addr;
+	{
+		++addr;
+		--addr_len;
+	}
 
-	if ((rc = getaddrinfo(addr, NULL, &hints, &result)) == 0)
+	addr_mem = malloc( addr_len + 1u );
+	memcpy( addr_mem, addr, addr_len );
+	addr_mem[addr_len] = '\0';
+
+	if ((rc = getaddrinfo(addr_mem, NULL, &hints, &result)) == 0)
 	{
 		struct addrinfo* res = result;
 
@@ -708,10 +716,10 @@ int Socket_new(char* addr, int port, int* sock)
 		freeaddrinfo(result);
 	}
 	else
-	  	Log(LOG_ERROR, -1, "getaddrinfo failed for addr %s with rc %d", addr, rc);
+	  	Log(LOG_ERROR, -1, "getaddrinfo failed for addr %s with rc %d", addr_mem, rc);
 
 	if (rc != 0)
-		Log(LOG_ERROR, -1, "%s is not a valid IP address", addr);
+		Log(LOG_ERROR, -1, "%s is not a valid IP address", addr_mem);
 	else
 	{
 		*sock =	(int)socket(family, type, 0);
@@ -771,6 +779,10 @@ int Socket_new(char* addr, int port, int* sock)
                         }
 		}
 	}
+
+	if (addr_mem)
+		free(addr_mem);
+
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

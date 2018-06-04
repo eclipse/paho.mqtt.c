@@ -31,13 +31,13 @@
 
 #define DEFAULT_PORT 1883
 
-char* MQTTProtocol_addressPort(const char* uri, int* port);
+size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic);
 void MQTTProtocol_reconnect(const char* ip_address, Clients* client);
 #if defined(OPENSSL)
-int MQTTProtocol_connect(const char* ip_address, Clients* acClients, int ssl, int MQTTVersion,
+int MQTTProtocol_connect(const char* ip_address, Clients* acClients, int ssl, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties);
 #else
-int MQTTProtocol_connect(const char* ip_address, Clients* acClients, int MQTTVersion,
+int MQTTProtocol_connect(const char* ip_address, Clients* acClients, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties);
 #endif
 int MQTTProtocol_handlePingresps(void* pack, int sock);

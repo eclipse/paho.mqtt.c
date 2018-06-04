@@ -83,7 +83,24 @@ typedef struct
 	SSL* ssl;
 	SSL_CTX* ctx;
 #endif
+	int websocket; /**< socket has been upgraded to use web sockets */
+	char *websocket_key;
 } networkHandles;
+
+
+/* connection states */
+/** no connection in progress, see connected value */
+#define NOT_IN_PROGRESS  0x0
+/** TCP connection in progress */
+#define TCP_IN_PROGRESS  0x1
+/** SSL connection in progress */
+#define SSL_IN_PROGRESS  0x2
+/** Websocket connection in progress */
+#define WEBSOCKET_IN_PROGRESS   0x3
+/** TCP completed, waiting for MQTT ACK */
+#define WAIT_FOR_CONNACK 0x4
+/** Disconnecting */
+#define DISCONNECTING    -2
 
 /**
  * Data related to one client

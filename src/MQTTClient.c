@@ -1319,7 +1319,14 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 	}
 
 	if (options->struct_version < 2 || options->serverURIcount == 0)
+	{
+		if ( !m )
+		{
+			rc = MQTTCLIENT_NULL_PARAMETER;
+			goto exit;
+		}
 		rc = MQTTClient_connectURI(handle, options, m->serverURI);
+	}
 	else
 	{
 		int i;
@@ -1354,7 +1361,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 	}
 
 exit:
-	if (m->c->will)
+	if (m && m->c && m->c->will)
 	{
 		if (m->c->will->payload)
 			free(m->c->will->payload);

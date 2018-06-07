@@ -344,7 +344,7 @@ struct aa
 void disconnected(void* context, MQTTProperties* props, enum MQTTReasonCodes rc)
 {
 	MQTTClient c = (MQTTClient)context;
-	printf("Callback: disconnected, reason code \"%s\"\n", MQTTReasonCodeString(rc));
+	MyLog(LOGA_INFO, "Callback: disconnected, reason code \"%s\"", MQTTReasonCodeString(rc));
 	logProperties(props);
 	test_topic_aliases_globals.disconnected = 1;
 }
@@ -548,6 +548,7 @@ int test_client_topic_aliases(struct Options options)
 	assert("1 message should have arrived", messages_arrived == 1, "was %d", messages_arrived);
 
 	/* now publish to the topic alias only */
+	test_topic_aliases_globals.disconnected = 0;
 	messages_arrived = 0;
 	property.identifier = TOPIC_ALIAS;
 	property.value.integer2 = 1;
@@ -565,6 +566,19 @@ int test_client_topic_aliases(struct Options options)
 #endif
 	}
 	assert("No message should have arrived", messages_arrived == 0, "was %d", messages_arrived);
+
+	/* Now we expect to receive a disconnect packet telling us why */
+	count = 0;
+	while (test_topic_aliases_globals.disconnected == 0 && ++count < 10)
+	{
+#if defined(WIN32)
+		Sleep(1000);
+#else
+		usleep(1000000L);
+#endif
+	}
+	assert("Disconnected should be called", test_topic_aliases_globals.disconnected == 1,
+			"was %d", test_topic_aliases_globals.disconnected);
 
 	MQTTProperties_free(&pubmsg.properties);
 	MQTTProperties_free(&props);
@@ -589,7 +603,7 @@ int main(int argc, char** argv)
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
 
 	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
-	//setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
+	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
 
 	getopts(argc, argv);
 

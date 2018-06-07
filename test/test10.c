@@ -173,7 +173,11 @@ void MyLog(int LOGA_level, char* format, ...)
 
 	strcpy(msg_buf, "");
 	ftime(&ts);
+#if defined(WIN32) || defined(_WINDOWS)
+	localtime_s(&timeinfo, &ts.time);
+#else
 	localtime_r(&ts.time, &timeinfo);
+#endif
 	strftime(msg_buf, 80, "%Y%m%d %H%M%S", &timeinfo);
 
 	sprintf(&msg_buf[strlen(msg_buf)], ".%.3hu ", ts.millitm);
@@ -585,7 +589,7 @@ int main(int argc, char** argv)
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
 
 	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
-	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
+	//setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
 
 	getopts(argc, argv);
 

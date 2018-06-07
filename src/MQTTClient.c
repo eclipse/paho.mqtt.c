@@ -653,6 +653,8 @@ static thread_return_type WINAPI call_disconnected(void* context)
 
 	(*(pr->m->disconnected))(pr->m->disconnected_context, pr->properties, pr->reasonCode);
 	MQTTProperties_free(pr->properties);
+	free(pr->properties);
+	free(pr);
 	return 0;
 }
 
@@ -803,15 +805,18 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 				{
 					if (pack->header.bits.type == DISCONNECT && m->disconnected)
 					{
-						struct props_rc_parms dp;
+						struct props_rc_parms* dp;
 						Ack* disc = (Ack*)pack;
 
-						dp.m = m;
-						dp.properties = &disc->properties;
-						dp.reasonCode = disc->rc;
-						free(pack);
+						dp = malloc(sizeof(struct props_rc_parms));
+						dp->m = m;
+						dp->reasonCode = disc->rc;
+						dp->properties = malloc(sizeof(MQTTProperties));
+						*(dp->properties) = disc->properties;
+						free(disc);
+						MQTTClient_disconnect1(m, 10, 0, 1, SUCCESS, NULL);
 						Log(TRACE_MIN, -1, "Calling disconnected for client %s", m->c->clientID);
-						Thread_start(call_disconnected, &dp);
+						Thread_start(call_disconnected, dp);
 					}
 					if (pack->header.bits.type == AUTH && m->auth_handle)
 					{

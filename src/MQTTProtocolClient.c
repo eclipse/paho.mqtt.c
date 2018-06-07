@@ -163,6 +163,7 @@ int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int
 		p.payload = (*mm)->publish->payload;
 		p.topic = (*mm)->publish->topic;
 		p.properties = (*mm)->properties;
+		p.MQTTVersion = (*mm)->MQTTVersion;
 	}
 	rc = MQTTProtocol_startPublishCommon(pubclient, &p, qos, retained);
 	FUNC_EXIT_RC(rc);

@@ -205,6 +205,12 @@ typedef struct
 	MQTTClient_deliveryComplete* dc;
 	void* context;
 
+	MQTTClient_disconnected* disconnected;
+	void* disconnected_context; /* the context to be associated with the disconnected callback*/
+
+	MQTTClient_authHandle* auth_handle;
+	void* auth_handle_context; /* the context to be associated with the authHandle callback*/
+
 	sem_type connect_sem;
 	int rc; /* getsockopt return code in connect */
 	sem_type connack_sem;
@@ -213,6 +219,13 @@ typedef struct
 	MQTTPacket* pack;
 
 } MQTTClients;
+
+struct props_rc_parms
+{
+	MQTTClients* m;
+	MQTTProperties* properties;
+	enum MQTTReasonCodes reasonCode;
+};
 
 void MQTTClient_sleep(long milliseconds)
 {
@@ -546,6 +559,18 @@ void MQTTClient_free(void* memory)
 }
 
 
+DLLExport void MQTTResponse_free(MQTTResponse response)
+{
+	FUNC_ENTRY;
+	if (response.properties)
+	{
+		MQTTProperties_free(response.properties);
+		free(response.properties);
+	}
+	FUNC_EXIT;
+}
+
+
 static int MQTTClient_deliverMessage(int rc, MQTTClients* m, char** topicName, int* topicLen, MQTTClient_message** message)
 {
 	qEntry* qe = (qEntry*)(m->c->messageQueue->first->content);
@@ -590,6 +615,81 @@ static thread_return_type WINAPI connectionLost_call(void* context)
 	MQTTClients* m = (MQTTClients*)context;
 
 	(*(m->cl))(m->context, NULL);
+	return 0;
+}
+
+
+int MQTTClient_setDisconnected(MQTTClient handle, void* context, MQTTClient_disconnected* disconnected)
+{
+	int rc = MQTTCLIENT_SUCCESS;
+	MQTTClients* m = handle;
+
+	FUNC_ENTRY;
+	Thread_lock_mutex(mqttclient_mutex);
+
+	if (m == NULL || m->c->connect_state != NOT_IN_PROGRESS)
+		rc = MQTTCLIENT_FAILURE;
+	else
+	{
+		m->disconnected_context = context;
+		m->disconnected = disconnected;
+	}
+
+	Thread_unlock_mutex(mqttclient_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+/**
+ * Wrapper function to call disconnected on a separate thread.  A separate thread is needed to allow the
+ * disconnected function to make API calls (e.g. connect)
+ * @param context a pointer to the relevant client
+ * @return thread_return_type standard thread return value - not used here
+ */
+static thread_return_type WINAPI call_disconnected(void* context)
+{
+	struct props_rc_parms* pr = (struct props_rc_parms*)context;
+
+	(*(pr->m->disconnected))(pr->m->disconnected_context, pr->properties, pr->reasonCode);
+	MQTTProperties_free(pr->properties);
+	return 0;
+}
+
+
+int MQTTClient_setAuthHandle(MQTTClient handle, void* context, MQTTClient_authHandle* auth_handle)
+{
+	int rc = MQTTCLIENT_SUCCESS;
+	MQTTClients* m = handle;
+
+	FUNC_ENTRY;
+	Thread_lock_mutex(mqttclient_mutex);
+
+	if (m == NULL || m->c->connect_state != NOT_IN_PROGRESS)
+		rc = MQTTCLIENT_FAILURE;
+	else
+	{
+		m->auth_handle_context = context;
+		m->auth_handle = auth_handle;
+	}
+
+	Thread_unlock_mutex(mqttclient_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+/**
+ * Wrapper function to call authHandle on a separate thread.  A separate thread is needed to allow the
+ * disconnected function to make API calls (e.g. MQTTClient_auth)
+ * @param context a pointer to the relevant client
+ * @return thread_return_type standard thread return value - not used here
+ */
+static thread_return_type WINAPI call_auth_handle(void* context)
+{
+	struct props_rc_parms* pr = (struct props_rc_parms*)context;
+
+	(*(pr->m->auth_handle))(pr->m->auth_handle_context, pr->properties, pr->reasonCode);
 	return 0;
 }
 
@@ -698,6 +798,33 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 					Log(TRACE_MIN, -1, "Posting unsuback semaphore for client %s", m->c->clientID);
 					m->pack = pack;
 					Thread_post_sem(m->unsuback_sem);
+				}
+				else if (m->c->MQTTVersion >= MQTTVERSION_5)
+				{
+					if (pack->header.bits.type == DISCONNECT && m->disconnected)
+					{
+						struct props_rc_parms dp;
+						Ack* disc = (Ack*)pack;
+
+						dp.m = m;
+						dp.properties = &disc->properties;
+						dp.reasonCode = disc->rc;
+						free(pack);
+						Log(TRACE_MIN, -1, "Calling disconnected for client %s", m->c->clientID);
+						Thread_start(call_disconnected, &dp);
+					}
+					if (pack->header.bits.type == AUTH && m->auth_handle)
+					{
+						struct props_rc_parms dp;
+						Ack* disc = (Ack*)pack;
+
+						dp.m = m;
+						dp.properties = &disc->properties;
+						dp.reasonCode = disc->rc;
+						free(pack);
+						Log(TRACE_MIN, -1, "Calling auth_handle for client %s", m->c->clientID);
+						Thread_start(call_auth_handle, &dp);
+					}
 				}
 			}
 			else if (m->c->connect_state == TCP_IN_PROGRESS && !Thread_check_sem(m->connect_sem))
@@ -1112,7 +1239,10 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 						rc = MQTTCLIENT_DISCONNECTED;
 				}
 				if (m->c->MQTTVersion == MQTTVERSION_5)
-					resp.properties = &connack->properties;
+				{
+					resp.properties = malloc(sizeof(MQTTProperties));
+					*resp.properties = MQTTProperties_copy(&connack->properties);
+				}
 			}
 			MQTTPacket_freeConnack(connack);
 			m->pack = NULL;
@@ -1930,7 +2060,7 @@ MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char* topicName
 		goto exit;
 	}
 
-	if (message->struct_version == 1)
+	if (message->struct_version >= 1)
 		props = &message->properties;
 
 	rc = MQTTClient_publish5(handle, topicName, message->payloadlen, message->payload,

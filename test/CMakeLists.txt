@@ -565,6 +565,26 @@ SET_TESTS_PROPERTIES(
 )
 
 ADD_EXECUTABLE(
+	test10
+	test10.c
+)
+
+TARGET_LINK_LIBRARIES(
+	test10
+	paho-mqtt3c
+)
+
+ADD_TEST(
+	NAME test10-1-client_topic_aliases
+	COMMAND "test10" "--test_no" "1" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
+SET_TESTS_PROPERTIES(
+	test10-1-client_topic_aliases
+	PROPERTIES TIMEOUT 540
+)
+
+ADD_EXECUTABLE(
 	test_issue373
 	test_issue373.c
 )

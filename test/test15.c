@@ -58,9 +58,9 @@ struct Options
 	int iterations;
 } options =
 {
-	"tcp://iot.eclipse.org:1883",
-	NULL,
 	"tcp://localhost:1883",
+	NULL,
+	"tcp://localhost:1884",
 	0,
 	0,
 	0,
@@ -291,7 +291,7 @@ void test1_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 	char* topicName = NULL;
 	int topicLen;
 	int i = 0;
-	int iterations = 1; //50;
+	int iterations = 50;
 	int rc;
 	MQTTResponse resp;
 	MQTTProperty property;
@@ -463,7 +463,7 @@ int test1(struct Options options)
 	if (response.properties)
 	{
 		logProperties(response.properties);
-		MQTTProperties_free(response.properties);
+		MQTTResponse_free(response);
 	}
 
 	subopts.retainAsPublished = 1;
@@ -508,6 +508,7 @@ int test1(struct Options options)
 	/* Just to make sure we can connect again */
 	response = MQTTClient_connect5(c, &opts, NULL, NULL);
 	assert("Connect successful",  response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	MQTTResponse_free(response);
 	rc = MQTTClient_disconnect5(c, 0, SUCCESS, &props);
 	assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
@@ -670,7 +671,9 @@ int test2(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Connecting");
 	response = MQTTClient_connect5(c, &opts, &props, &willProps);
-	assert("Good rc from connect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS,
+			"rc was %d", response.reasonCode);
+	MQTTResponse_free(response);
 	if (rc != MQTTCLIENT_SUCCESS)
 		goto exit;
 
@@ -719,6 +722,7 @@ int test3(struct Options options)
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
+	MQTTResponse response;
 
 	fprintf(xml, "<testcase classname=\"test1\" name=\"connack return codes\"");
 	global_start_time = start_clock();
@@ -756,8 +760,9 @@ int test3(struct Options options)
 	opts.will->qos = 1;
 	opts.will->retained = 0;
 	opts.will->topicName = "will topic";*/
-	rc = MQTTClient_connect(c, &opts);
+	response = MQTTClient_connect5(c, &opts, NULL, NULL);
 	//assert("Not authorized", rc == 5, "rc was %d\n", rc);
+	MQTTResponse_free(response);
 
 #if 0
 	/* successful connection (RC = 0) */
@@ -825,6 +830,7 @@ int test4_run(int qos)
 	response = MQTTClient_connect5(c, &opts, &props, NULL);
 	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS,
 				"rc was %d", response.reasonCode);
+	MQTTResponse_free(response);
 	if (response.reasonCode != MQTTCLIENT_SUCCESS)
 		return -1;
 
@@ -879,6 +885,7 @@ int test4_run(int qos)
 	opts.cleansession = 0;
 	response = MQTTClient_connect5(c, &opts, NULL, NULL);
 	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	MQTTResponse_free(response);
 	if (response.reasonCode != MQTTCLIENT_SUCCESS)
 		return -1;
 
@@ -986,6 +993,7 @@ int test5(struct Options options)
 	MyLog(LOGA_DEBUG, "Connecting");
 	response = MQTTClient_connect5(c, &opts, &props, NULL);
 	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	MQTTResponse_free(response);
 	if (response.reasonCode != MQTTCLIENT_SUCCESS)
 	{
 		MQTTClient_destroy(&c);
@@ -1101,6 +1109,7 @@ int test6(struct Options options)
 	/* Connect to the broker */
 	response = MQTTClient_connect5(test6_c1, &opts, NULL, NULL);
 	assert("good rc from connect",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+	MQTTResponse_free(response);
 	if (rc != MQTTCLIENT_SUCCESS)
 		goto exit;
 
@@ -1117,6 +1126,7 @@ int test6(struct Options options)
 	opts2.cleansession = 1;
 	MyLog(LOGA_INFO, "Connecting Client_2 ...");
 	response = MQTTClient_connect5(test6_c2, &opts2, NULL, NULL);
+	MQTTResponse_free(response);
 	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d\n", response.reasonCode);
 
 	response = MQTTClient_subscribe5(test6_c2, test6_will_topic, 2, NULL, NULL);
@@ -1211,6 +1221,7 @@ int test6a(struct Options options)
 	response = MQTTClient_connect5(test6_c1, &opts, NULL, NULL);
 	assert("good rc from connect",  response.reasonCode == MQTTCLIENT_SUCCESS,
 			"rc was %d\n", response.reasonCode);
+	MQTTResponse_free(response);
 	if (response.reasonCode != MQTTCLIENT_SUCCESS)
 		goto exit;
 
@@ -1227,6 +1238,7 @@ int test6a(struct Options options)
 	opts2.cleansession = 1;
 	MyLog(LOGA_INFO, "Connecting Client_2 ...");
 	response = MQTTClient_connect5(test6_c2, &opts2, NULL, NULL);
+	MQTTResponse_free(response);
 	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d\n", response.reasonCode);
 
 	response = MQTTClient_subscribe5(test6_c2, test6_will_topic, 2, NULL, NULL);

@@ -58,11 +58,21 @@ enum MQTTReasonCodes {
   QOS_NOT_SUPPORTED = 155,
   USE_ANOTHER_SERVER = 156,
   SERVER_MOVED = 157,
-  SHARED_SUBSCRIPTION_NOT_SUPPORTED = 158,
+  SHARED_SUBSCRIPTIONS_NOT_SUPPORTED = 158,
   CONNECTION_RATE_EXCEEDED = 159,
   MAXIMUM_CONNECT_TIME = 160,
   SUBSCRIPTION_IDENTIFIERS_NOT_SUPPORTED = 161,
-  WILDCARD_SUBSCRIPTION_NOT_SUPPORTED = 162
+  WILDCARD_SUBSCRIPTIONS_NOT_SUPPORTED = 162
 };
+
+#if defined(WIN32) || defined(WIN64)
+  #define DLLImport __declspec(dllimport)
+  #define DLLExport __declspec(dllexport)
+#else
+  #define DLLImport extern
+  #define DLLExport __attribute__ ((visibility ("default")))
+#endif
+
+DLLExport const char* MQTTReasonCodeString(enum MQTTReasonCodes);
 
 #endif

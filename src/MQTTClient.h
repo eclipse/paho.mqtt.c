@@ -415,6 +415,67 @@ DLLExport int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTClie
 
 
 /**
+ * This is a callback function, which will be called when the client
+ * library successfully connects.  This is superfluous when the connection
+ * is made in response to a MQTTAsync_connect call, because the onSuccess
+ * callback can be used.  It is intended for use when automatic reconnect
+ * is enabled, so that when a reconnection attempt succeeds in the background,
+ * the application is notified and can take any required actions.
+ * @param context A pointer to the <i>context</i> value originally passed to
+ * MQTTAsync_setCallbacks(), which contains any application-specific context.
+ * @param cause The reason for the disconnection.
+ * Currently, <i>cause</i> is always set to NULL.
+ */
+typedef void MQTTClient_disconnected(void* context, MQTTProperties* properties,
+		enum MQTTReasonCodes reasonCode);
+
+/**
+ * Sets the MQTTClient_disconnected() callback function for a client.
+ * @param handle A valid client handle from a successful call to
+ * MQTTAsync_create().
+ * @param context A pointer to any application-specific context. The
+ * the <i>context</i> pointer is passed to each of the callback functions to
+ * provide access to the context information in the callback.
+ * @param co A pointer to an MQTTAsync_connected() callback
+ * function.  NULL removes the callback setting.
+ * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
+ * ::MQTTASYNC_FAILURE if an error occurred.
+ */
+DLLExport int MQTTClient_setDisconnected(MQTTClient handle, void* context, MQTTClient_disconnected* co);
+
+
+/**
+ * This is a callback function, which will be called when the client
+ * library successfully connects.  This is superfluous when the connection
+ * is made in response to a MQTTAsync_connect call, because the onSuccess
+ * callback can be used.  It is intended for use when automatic reconnect
+ * is enabled, so that when a reconnection attempt succeeds in the background,
+ * the application is notified and can take any required actions.
+ * @param context A pointer to the <i>context</i> value originally passed to
+ * MQTTAsync_setCallbacks(), which contains any application-specific context.
+ * @param cause The reason for the disconnection.
+ * Currently, <i>cause</i> is always set to NULL.
+ */
+typedef void MQTTClient_authHandle(void* context, MQTTProperties* properties,
+		enum MQTTReasonCodes reasonCode);
+
+
+/**
+ * Sets the MQTTClient_authHandle() callback function for a client.
+ * @param handle A valid client handle from a successful call to
+ * MQTTAsync_create().
+ * @param context A pointer to any application-specific context. The
+ * the <i>context</i> pointer is passed to each of the callback functions to
+ * provide access to the context information in the callback.
+ * @param co A pointer to an MQTTAsync_connected() callback
+ * function.  NULL removes the callback setting.
+ * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
+ * ::MQTTASYNC_FAILURE if an error occurred.
+ */
+DLLExport int MQTTClient_setAuthHandle(MQTTClient handle, void* context, MQTTClient_authHandle* ah);
+
+
+/**
  * This function creates an MQTT client ready for connection to the
  * specified server and using the specified persistent storage (see
  * MQTTClient_persistence). See also MQTTClient_destroy().
@@ -784,6 +845,8 @@ typedef struct MQTTResponse
 	enum MQTTReasonCodes reasonCode;
 	MQTTProperties* properties; /* optional */
 } MQTTResponse;
+
+DLLExport void MQTTResponse_free(MQTTResponse response);
 
 DLLExport MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connectOptions* options,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties);

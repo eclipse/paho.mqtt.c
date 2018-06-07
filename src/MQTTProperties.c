@@ -25,7 +25,7 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
-struct nameToType
+static struct nameToType
 {
   enum PropertyNames name;
   enum PropertyTypes type;

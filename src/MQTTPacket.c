@@ -85,7 +85,8 @@ pf new_packets[] =
 	MQTTPacket_unsuback, /**< UNSUBACK */
 	MQTTPacket_header_only, /**< PINGREQ */
 	MQTTPacket_header_only, /**< PINGRESP */
-	MQTTPacket_header_only  /**< DISCONNECT */
+	MQTTPacket_ack,  /**< DISCONNECT */
+	MQTTPacket_ack   /**< AUTH */
 };
 
 
@@ -132,7 +133,9 @@ void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
 	else
 	{
 		ptype = header.bits.type;
-		if (ptype < CONNECT || ptype > DISCONNECT || new_packets[ptype] == NULL)
+		if (ptype < CONNECT || (MQTTVersion < MQTTVERSION_5 && ptype >= DISCONNECT) ||
+				(MQTTVersion >= MQTTVERSION_5 && ptype > AUTH) ||
+				new_packets[ptype] == NULL)
 			Log(TRACE_MIN, 2, NULL, ptype);
 		else
 		{
@@ -723,7 +726,8 @@ void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t 
 	FUNC_ENTRY;
 	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
-	pack->msgId = readInt(&curdata);
+	if (pack->header.bits.type != DISCONNECT)
+		pack->msgId = readInt(&curdata);
 	if (MQTTVersion >= MQTTVERSION_5)
 	{
 		MQTTProperties props = MQTTProperties_initializer;
@@ -736,8 +740,6 @@ void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t 
 
 		if (datalen > 3)
 		{
-			pack->properties.max_count = 10;
-			pack->properties.array = malloc(sizeof(MQTTProperty) * pack->properties.max_count);
 			if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
 			{
 				free(pack);

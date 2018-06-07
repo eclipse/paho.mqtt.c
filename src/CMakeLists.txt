@@ -48,6 +48,7 @@ SET(common_src
     Heap.c
     LinkedList.c
     MQTTProperties.c
+    MQTTReasonCodes.c
     Base64.c
     SHA1.c
     WebSocket.c

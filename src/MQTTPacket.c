@@ -571,6 +571,20 @@ void MQTTPacket_freePublish(Publish* pack)
 
 
 /**
+ * Free allocated storage for an ack packet.
+ * @param pack pointer to the publish packet structure
+ */
+void MQTTPacket_freeAck(Ack* pack)
+{
+	FUNC_ENTRY;
+	if (pack->MQTTVersion >= MQTTVERSION_5)
+		MQTTProperties_free(&pack->properties);
+	free(pack);
+	FUNC_EXIT;
+}
+
+
+/**
  * Send an MQTT acknowledgement packet down a socket.
  * @param type the MQTT packet type e.g. SUBACK
  * @param msgid the MQTT message id to use

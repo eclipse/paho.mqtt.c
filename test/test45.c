@@ -55,7 +55,7 @@ struct Options
 	int iterations;
 } options =
 {
-	"iot.eclipse.org:1883",
+	"localhost:1883",
 	0,
 	-1,
 	10000,
@@ -128,14 +128,18 @@ void MyLog(int LOGA_level, char* format, ...)
 	va_list args;
 	struct timeb ts;
 
-	struct tm *timeinfo;
+	struct tm timeinfo;
 
 	if (LOGA_level == LOGA_DEBUG && options.verbose == 0)
 	  return;
 
 	ftime(&ts);
-	timeinfo = localtime(&ts.time);
-	strftime(msg_buf, 80, "%Y%m%d %H%M%S", timeinfo);
+#if defined(WIN32) || defined(_WINDOWS)
+	localtime_s(&timeinfo, &ts.time);
+#else
+	localtime_r(&ts.time, &timeinfo);
+#endif
+	strftime(msg_buf, 80, "%Y%m%d %H%M%S", &timeinfo);
 
 	sprintf(&msg_buf[strlen(msg_buf)], ".%.3hu ", ts.millitm);
 
@@ -357,7 +361,7 @@ int test1_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 		property.value.value.data = "test user property value";
 		property.value.value.len = strlen(property.value.value.data);
 		MQTTProperties_add(&props, &property);
-		opts.properties = props;
+		pubmsg.properties = props;
 
 		pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
 		pubmsg.payloadlen = 11;

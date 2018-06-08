@@ -249,6 +249,7 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 int MQTTPacket_send_puback(int msgid, networkHandles* net, const char* clientID);
 void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen);
 
+void MQTTPacket_freeAck(Ack* pack);
 void MQTTPacket_freeSuback(Suback* pack);
 void MQTTPacket_freeUnsuback(Unsuback* pack);
 int MQTTPacket_send_pubrec(int msgid, networkHandles* net, const char* clientID);

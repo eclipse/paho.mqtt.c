@@ -394,6 +394,32 @@ typedef void MQTTAsync_connectionLost(void* context, char* cause);
  */
 typedef void MQTTAsync_connected(void* context, char* cause);
 
+/**
+ * This is a callback function, which will be called when the client
+ * library receives a disconnect packet.
+ * @param context A pointer to the <i>context</i> value originally passed to
+ * MQTTAsync_setCallbacks(), which contains any application-specific context.
+ * @param properties the properties in the disconnect packet.
+ * @param properties the reason code from the disconnect packet
+ * Currently, <i>cause</i> is always set to NULL.
+ */
+typedef void MQTTAsync_disconnected(void* context, MQTTProperties* properties,
+		enum MQTTReasonCodes reasonCode);
+
+/**
+ * Sets the MQTTAsync_disconnected() callback function for a client.
+ * @param handle A valid client handle from a successful call to
+ * MQTTAsync_create().
+ * @param context A pointer to any application-specific context. The
+ * the <i>context</i> pointer is passed to each of the callback functions to
+ * provide access to the context information in the callback.
+ * @param co A pointer to an MQTTAsync_connected() callback
+ * function.  NULL removes the callback setting.
+ * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
+ * ::MQTTASYNC_FAILURE if an error occurred.
+ */
+DLLExport int MQTTAsync_setDisconnected(MQTTAsync handle, void* context, MQTTAsync_disconnected* co);
+
 
 /** The data returned on completion of an unsuccessful API call in the response callback onFailure. */
 typedef struct

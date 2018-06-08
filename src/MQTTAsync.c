@@ -322,6 +322,9 @@ typedef struct MQTTAsync_struct
 	MQTTAsync_connected* connected;
 	void* connected_context; /* the context to be associated with the connected callback*/
 
+	MQTTAsync_disconnected* disconnected;
+	void* disconnected_context; /* the context to be associated with the disconnected callback*/
+
 	/* Each time connect is called, we store the options that were used.  These are reused in
 	   any call to reconnect, or an automatic reconnect attempt */
 	MQTTAsync_command connect;		/* Connect operation properties */
@@ -2255,6 +2258,17 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 					}
 					rc = MQTTProtocol_handleUnsubacks(pack, m->c->net.socket);
 				}
+				else if (pack->header.bits.type == DISCONNECT)
+				{
+					Ack* disc = (Ack*)pack;
+
+					if (m->disconnected)
+					{
+						Log(TRACE_MIN, -1, "Calling disconnected for client %s", m->c->clientID);
+						(*(m->disconnected))(m->disconnected_context, &disc->properties, disc->rc);
+					}
+					MQTTPacket_freeAck(disc);
+				}
 			}
 		}
 	}
@@ -2333,6 +2347,28 @@ int MQTTAsync_setCallbacks(MQTTAsync handle, void* context,
 		m->cl = cl;
 		m->ma = ma;
 		m->dc = dc;
+	}
+
+	MQTTAsync_unlock_mutex(mqttasync_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+int MQTTAsync_setDisconnected(MQTTAsync handle, void* context, MQTTAsync_disconnected* disconnected)
+{
+	int rc = MQTTASYNC_SUCCESS;
+	MQTTAsyncs* m = handle;
+
+	FUNC_ENTRY;
+	MQTTAsync_lock_mutex(mqttasync_mutex);
+
+	if (m == NULL || m->c->connect_state != NOT_IN_PROGRESS)
+		rc = MQTTASYNC_FAILURE;
+	else
+	{
+		m->disconnected_context = context;
+		m->disconnected = disconnected;
 	}
 
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
@@ -3212,6 +3248,7 @@ int MQTTAsync_sendMessage(MQTTAsync handle, const char* destinationName, const M
 													 MQTTAsync_responseOptions* response)
 {
 	int rc = MQTTASYNC_SUCCESS;
+	MQTTAsyncs* m = handle;
 
 	FUNC_ENTRY;
 	if (message == NULL)
@@ -3225,6 +3262,9 @@ int MQTTAsync_sendMessage(MQTTAsync handle, const char* destinationName, const M
 		rc = MQTTASYNC_BAD_STRUCTURE;
 		goto exit;
 	}
+
+	if (m->c->MQTTVersion >= MQTTVERSION_5)
+		response->properties = message->properties;
 
 	rc = MQTTAsync_send(handle, destinationName, message->payloadlen, message->payload,
 								message->qos, message->retained, response);

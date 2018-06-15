@@ -593,10 +593,151 @@ exit:
 }
 
 
+
+int test2_messageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* message)
+{
+	static int received = 0;
+	static int first_topic_alias = 0;
+	int topicAlias = 0;
+
+	received++;
+	MyLog(LOGA_DEBUG, "Callback: message received on topic %s is %.*s.",
+				 topicName, message->payloadlen, (char*)(message->payload));
+
+	assert("Message structure version should be 1", message->struct_version == 1,
+				"message->struct_version was %d", message->struct_version);
+	if (message->struct_version == 1)
+	{
+		const int props_count = 0;
+
+		if (MQTTProperties_hasProperty(&message->properties, TOPIC_ALIAS))
+			topicAlias = MQTTProperties_getNumericValue(&message->properties, TOPIC_ALIAS);
+
+		if (received == 1)
+			first_topic_alias = topicAlias;
+		else
+			assert("All topic aliases should be the same", topicAlias == first_topic_alias,
+					"Topic alias was %d\n", topicAlias);
+
+		assert("topicAlias should not be 0", topicAlias > 0, "Topic alias was %d\n", topicAlias);
+		logProperties(&message->properties);
+	}
+	messages_arrived++;
+
+	MQTTClient_free(topicName);
+	MQTTClient_freeMessage(&message);
+	return 1;
+}
+
+
+int test_server_topic_aliases(struct Options options)
+{
+	int subsqos = 2;
+	MQTTClient c;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
+	MQTTProperties connect_props = MQTTProperties_initializer;
+	MQTTProperty property;
+	MQTTClient_message pubmsg = MQTTClient_message_initializer;
+	MQTTResponse response = {SUCCESS, NULL};
+	MQTTClient_deliveryToken dt;
+	int rc = 0;
+	int count = 0;
+	char* test_topic = "test_server_topic_aliases";
+	int topicAliasMaximum = 0;
+	int qos = 0;
+	const int msg_count = 3;
+
+	fprintf(xml, "<testcase classname=\"test_server_topic_aliases\" name=\"client topic aliases\"");
+	global_start_time = start_clock();
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 2 - server topic aliases");
+
+	rc = MQTTClient_create(&c, options.connection, "server_topic_alias_test",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTCLIENT_SUCCESS)
+	{
+		MQTTClient_destroy(&c);
+		goto exit;
+	}
+
+	rc = MQTTClient_setCallbacks(c, NULL, NULL, test2_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+
+	opts.keepAliveInterval = 20;
+	opts.cleansession = 1;
+	opts.MQTTVersion = options.MQTTVersion;
+	if (options.haconnections != NULL)
+	{
+		opts.serverURIs = options.haconnections;
+		opts.serverURIcount = options.hacount;
+	}
+
+	/* Allow at least one server topic alias */
+	property.identifier = TOPIC_ALIAS_MAXIMUM;
+	property.value.integer2 = 1;
+	MQTTProperties_add(&connect_props, &property);
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	response = MQTTClient_connect5(c, &opts, &connect_props, NULL);
+	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	if (response.reasonCode != MQTTCLIENT_SUCCESS)
+		goto exit;
+
+	if (response.properties)
+	{
+		if (MQTTProperties_hasProperty(response.properties, TOPIC_ALIAS_MAXIMUM))
+			topicAliasMaximum = MQTTProperties_getNumericValue(response.properties, TOPIC_ALIAS_MAXIMUM);
+
+		logProperties(response.properties);
+		MQTTResponse_free(response);
+	}
+
+	/* subscribe to a topic */
+	response = MQTTClient_subscribe5(c, test_topic, 2, NULL, NULL);
+	assert("Good rc from subscribe", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+
+	messages_arrived = 0;
+	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
+	pubmsg.payloadlen = 11;
+	pubmsg.retained = 0;
+	for (qos = 0; qos < msg_count; ++qos)
+	{
+		pubmsg.qos = qos;
+		response = MQTTClient_publishMessage5(c, test_topic, &pubmsg, &dt);
+		assert("Good rc from publish", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	}
+
+	/* should get responses */
+	while (messages_arrived < msg_count && ++count < 10)
+	{
+#if defined(WIN32)
+		Sleep(1000);
+#else
+		usleep(1000000L);
+#endif
+	}
+	assert("3 messages should have arrived", messages_arrived == msg_count, "was %d", messages_arrived);
+
+	rc = MQTTClient_disconnect5(c, 1000, SUCCESS, NULL);
+
+	MQTTProperties_free(&pubmsg.properties);
+	MQTTProperties_free(&connect_props);
+	MQTTClient_destroy(&c);
+
+exit:
+	MyLog(LOGA_INFO, "TEST2: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
 int main(int argc, char** argv)
 {
 	int rc = 0;
- 	int (*tests[])() = {NULL, test_client_topic_aliases};
+ 	int (*tests[])() = {NULL, test_client_topic_aliases, test_server_topic_aliases};
 	int i;
 
 	xml = fopen("TEST-test1.xml", "w");

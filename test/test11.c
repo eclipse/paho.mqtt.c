@@ -289,14 +289,14 @@ void logProperties(MQTTProperties *props)
 }
 
 
-struct aa
+struct
 {
 	int disconnected;
 	char* test_topic;
 	int test_finished;
 } test_client_topic_aliases_globals =
 {
-	0, "test topic aliases globals", 0
+	0, "client topic aliases topic", 0
 };
 
 
@@ -455,6 +455,184 @@ exit:
 }
 
 
+struct
+{
+	char* test_topic;
+	int test_finished;
+	int messages_arrived;
+	int msg_count;
+} test_server_topic_aliases_globals =
+{
+	"server topic aliases topic", 0, 0, 3
+};
+
+
+int test_server_topic_aliases_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* message)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	static int received = 0;
+	static int first_topic_alias = 0;
+	int topicAlias = 0;
+	int rc;
+
+	received++;
+	assert("Message structure version should be 1", message->struct_version == 1,
+				"message->struct_version was %d", message->struct_version);
+	if (message->struct_version == 1)
+	{
+		const int props_count = 0;
+
+		if (MQTTProperties_hasProperty(&message->properties, TOPIC_ALIAS))
+			topicAlias = MQTTProperties_getNumericValue(&message->properties, TOPIC_ALIAS);
+
+		if (received == 1)
+		{
+			first_topic_alias = topicAlias;
+			assert("Topic should be name", strcmp(topicName, test_server_topic_aliases_globals.test_topic) == 0,
+					"Topic name was %s\n", topicName);
+		}
+		else
+		{
+			assert("All topic aliases should be the same", topicAlias == first_topic_alias,
+					"Topic alias was %d\n", topicAlias);
+			assert("Topic should be 0 length", strcmp(topicName, "") == 0,
+					"Topic name was %s\n", topicName);
+		}
+
+		assert("topicAlias should not be 0", topicAlias > 0, "Topic alias was %d\n", topicAlias);
+		logProperties(&message->properties);
+	}
+	test_server_topic_aliases_globals.messages_arrived++;
+
+	if (test_server_topic_aliases_globals.messages_arrived == test_server_topic_aliases_globals.msg_count)
+		test_server_topic_aliases_globals.test_finished = 1;
+
+	MQTTAsync_freeMessage(&message);
+	MQTTAsync_free(topicName);
+
+	return 1;
+}
+
+
+void test_server_topic_aliases_onSubscribe(void* context, MQTTAsync_successData5* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	MQTTProperty property;
+	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	int qos, rc;
+
+	MyLog(LOGA_INFO, "Suback properties:");
+	logProperties(&response->props);
+
+	test_server_topic_aliases_globals.messages_arrived = 0;
+	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
+	pubmsg.payloadlen = 11;
+	pubmsg.retained = 0;
+	for (qos = 0; qos < test_server_topic_aliases_globals.msg_count; ++qos)
+	{
+		pubmsg.qos = qos;
+		rc = MQTTAsync_sendMessage(c, test_server_topic_aliases_globals.test_topic, &pubmsg, &opts);
+		assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+		if (rc != MQTTASYNC_SUCCESS)
+		{
+			test_server_topic_aliases_globals.test_finished = 1;
+			break;
+		}
+	}
+}
+
+
+void test_server_topic_aliases_onConnect(void* context, MQTTAsync_successData5* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	MQTTProperty property;
+	int rc;
+
+	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
+
+	assert("Reason code should be 0", response->reasonCode == SUCCESS,
+		   "Reason code was %d\n", response->reasonCode);
+
+	MyLog(LOGA_INFO, "Connack properties:");
+	logProperties(&response->props);
+
+	opts.onSuccess5 = test_server_topic_aliases_onSubscribe;
+	opts.context = c;
+	rc = MQTTAsync_subscribe(c, test_server_topic_aliases_globals.test_topic, 2, &opts);
+	assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		test_client_topic_aliases_globals.test_finished = 1;
+}
+
+
+/*********************************************************************
+
+Test2: server topic aliases
+
+*********************************************************************/
+int test_server_topic_aliases(struct Options options)
+{
+	int subsqos = 2;
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
+	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	MQTTProperties connect_props = MQTTProperties_initializer;
+	MQTTProperty property;
+	int rc = 0;
+	char* test_topic = "V5 C client test server topic aliases";
+
+	MyLog(LOGA_INFO, "Starting V5 test 2 - server topic aliases");
+	fprintf(xml, "<testcase classname=\"test11\" name=\"server topic aliases\"");
+	global_start_time = start_clock();
+
+	rc = MQTTAsync_create(&c, options.connection, "server_topic_aliases",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
+
+	rc = MQTTAsync_setCallbacks(c, c, NULL, test_server_topic_aliases_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+
+	/* Allow at least one server topic alias */
+	property.identifier = TOPIC_ALIAS_MAXIMUM;
+	property.value.integer2 = 1;
+	MQTTProperties_add(&connect_props, &property);
+
+	opts.MQTTVersion = options.MQTTVersion;
+	opts.onSuccess5 = test_server_topic_aliases_onConnect;
+	opts.context = c;
+	opts.connectProperties = &connect_props;
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (test_server_topic_aliases_globals.test_finished == 0)
+		#if defined(WIN32)
+			Sleep(100);
+		#else
+			usleep(10000L);
+		#endif
+
+	MQTTProperties_free(&connect_props);
+	MQTTAsync_destroy(&c);
+
+exit:
+	MyLog(LOGA_INFO, "TEST1: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
 void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 {
 	printf("Trace : %d, %s\n", level, message);
@@ -464,7 +642,7 @@ void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 int main(int argc, char** argv)
 {
 	int rc = 0;
- 	int (*tests[])() = {NULL, test_client_topic_aliases}; /* indexed starting from 1 */
+ 	int (*tests[])() = {NULL, test_client_topic_aliases, test_server_topic_aliases}; /* indexed starting from 1 */
 	MQTTAsync_nameValue* info;
 	int i;
 

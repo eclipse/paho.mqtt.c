@@ -308,18 +308,72 @@ void test1_onDisconnect(void* context, MQTTAsync_successData* response)
 }
 
 
-int test1_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* message)
+int test_client_topic_aliases_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* message)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	static int message_count = 0;
+	static int received = 0;
 	int rc;
 
-	MyLog(LOGA_DEBUG, "In messageArrived callback %p", c);
+	received++;
+	assert("Message structure version should be 1", message->struct_version == 1,
+				"message->struct_version was %d", message->struct_version);
+	if (message->struct_version == 1)
+	{
+		const int props_count = 0;
+
+		assert("No topic alias", MQTTProperties_hasProperty(&message->properties, TOPIC_ALIAS) == 0,
+				"topic alias is %d\n", MQTTProperties_hasProperty(&message->properties, TOPIC_ALIAS));
+
+		assert("Topic should be name", strcmp(topicName, test_client_topic_aliases_globals.test_topic) == 0,
+					"Topic name was %s\n", topicName);
+
+		logProperties(&message->properties);
+	}
+
+	if (received == 2)
+		test_client_topic_aliases_globals.test_finished = 1;
 
 	MQTTAsync_freeMessage(&message);
 	MQTTAsync_free(topicName);
 
 	return 1;
+}
+
+
+void test_client_topic_aliases_onSubscribe(void* context, MQTTAsync_successData5* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	MQTTProperty property;
+	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	int qos, rc;
+
+	MyLog(LOGA_INFO, "Suback properties:");
+	logProperties(&response->props);
+
+	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
+	pubmsg.payloadlen = 11;
+	pubmsg.retained = 0;
+	pubmsg.qos = 1;
+
+	/* first set the topic alias */
+	property.identifier = TOPIC_ALIAS;
+	property.value.integer2 = 1;
+	MQTTProperties_add(&pubmsg.properties, &property);
+
+	rc = MQTTAsync_sendMessage(c, test_client_topic_aliases_globals.test_topic, &pubmsg, &opts);
+	assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		test_client_topic_aliases_globals.test_finished = 1;
+	else
+	{
+		/* now send the publish with topic alias only */
+		rc = MQTTAsync_sendMessage(c, "", &pubmsg, &opts);
+		assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+		if (rc != MQTTASYNC_SUCCESS)
+			test_client_topic_aliases_globals.test_finished = 1;
+	}
+	MQTTProperties_free(&pubmsg.properties);
 }
 
 
@@ -339,6 +393,7 @@ void test_client_topic_aliases_onConnect(void* context, MQTTAsync_successData5* 
 	MQTTProperty property;
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	int rc;
+	static int first = 1;
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
 
@@ -348,21 +403,35 @@ void test_client_topic_aliases_onConnect(void* context, MQTTAsync_successData5* 
 	MyLog(LOGA_INFO, "Connack properties:");
 	logProperties(&response->props);
 
-	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
-	pubmsg.payloadlen = 11;
-	pubmsg.qos = 1;
-	pubmsg.retained = 0;
+	if (first)
+	{
+		first = 0;
+		pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
+		pubmsg.payloadlen = 11;
+		pubmsg.qos = 1;
+		pubmsg.retained = 0;
 
-	/* a Topic Alias of 0 is not allowed, so we should be disconnected */
-	property.identifier = TOPIC_ALIAS;
-	property.value.integer2 = 0;
-	MQTTProperties_add(&pubmsg.properties, &property);
+		/* a Topic Alias of 0 is not allowed, so we should be disconnected */
+		property.identifier = TOPIC_ALIAS;
+		property.value.integer2 = 0;
+		MQTTProperties_add(&pubmsg.properties, &property);
 
-	rc = MQTTAsync_sendMessage(c, test_client_topic_aliases_globals.test_topic, &pubmsg, &opts);
-	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
-	if (rc != MQTTASYNC_SUCCESS)
-		test_client_topic_aliases_globals.test_finished = 1;
-	MQTTProperties_free(&pubmsg.properties);
+		rc = MQTTAsync_sendMessage(c, test_client_topic_aliases_globals.test_topic, &pubmsg, &opts);
+		assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+		if (rc != MQTTASYNC_SUCCESS)
+			test_client_topic_aliases_globals.test_finished = 1;
+		MQTTProperties_free(&pubmsg.properties);
+	}
+	else
+	{
+		opts.onSuccess5 = test_client_topic_aliases_onSubscribe;
+		opts.context = c;
+		rc = MQTTAsync_subscribe(c, test_client_topic_aliases_globals.test_topic, 2, &opts);
+		assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+		if (rc != MQTTASYNC_SUCCESS)
+			test_client_topic_aliases_globals.test_finished = 1;
+
+	}
 }
 
 
@@ -396,7 +465,7 @@ int test_client_topic_aliases(struct Options options)
 		goto exit;
 	}
 
-	rc = MQTTAsync_setCallbacks(c, c, NULL, test1_messageArrived, NULL);
+	rc = MQTTAsync_setCallbacks(c, c, NULL, test_client_topic_aliases_messageArrived, NULL);
 	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	rc = MQTTAsync_setDisconnected(c, c, test_client_topic_aliases_disconnected);
@@ -405,6 +474,7 @@ int test_client_topic_aliases(struct Options options)
 	opts.username = "testuser";
 	opts.password = "testpassword";
 	opts.MQTTVersion = options.MQTTVersion;
+	opts.cleanstart = 1;
 
 	opts.will = &wopts;
 	opts.will->message = "will message";
@@ -437,6 +507,19 @@ int test_client_topic_aliases(struct Options options)
 		goto exit;
 
 	while (test_client_topic_aliases_globals.disconnected == 0)
+		#if defined(WIN32)
+			Sleep(100);
+		#else
+			usleep(10000L);
+		#endif
+
+	/* Now try a valid topic alias */
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (test_client_topic_aliases_globals.test_finished == 0)
 		#if defined(WIN32)
 			Sleep(100);
 		#else
@@ -563,7 +646,7 @@ void test_server_topic_aliases_onConnect(void* context, MQTTAsync_successData5* 
 	rc = MQTTAsync_subscribe(c, test_server_topic_aliases_globals.test_topic, 2, &opts);
 	assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	if (rc != MQTTASYNC_SUCCESS)
-		test_client_topic_aliases_globals.test_finished = 1;
+		test_server_topic_aliases_globals.test_finished = 1;
 }
 
 

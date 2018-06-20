@@ -45,7 +45,7 @@ enum PropertyNames {
   USER_PROPERTY = 38,
   MAXIMUM_PACKET_SIZE = 39,
   WILDCARD_SUBSCRIPTION_AVAILABLE = 40,
-  SUBSCRIPTION_IDENTIFIER_AVAILABLE = 41,
+  SUBSCRIPTION_IDENTIFIERS_AVAILABLE = 41,
   SHARED_SUBSCRIPTION_AVAILABLE = 42
 };
 
@@ -120,6 +120,10 @@ DLLExport void MQTTProperties_free(MQTTProperties* properties);
 MQTTProperties MQTTProperties_copy(const MQTTProperties* props);
 
 DLLExport int MQTTProperties_hasProperty(MQTTProperties *props, int propid);
+DLLExport int MQTTProperties_propertyCount(MQTTProperties *props, int propid);
 DLLExport int MQTTProperties_getNumericValue(MQTTProperties *props, int propid);
+DLLExport int MQTTProperties_getNumericValueAt(MQTTProperties *props, int propid, int index);
+DLLExport MQTTProperty* MQTTProperties_getProperty(MQTTProperties *props, int propid);
+DLLExport MQTTProperty* MQTTProperties_getPropertyAt(MQTTProperties *props, int propid, int index);
 
 #endif /* MQTTPROPERTIES_H */

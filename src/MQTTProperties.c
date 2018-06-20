@@ -56,7 +56,7 @@ static struct nameToType
   {USER_PROPERTY, UTF_8_STRING_PAIR},
   {MAXIMUM_PACKET_SIZE, FOUR_BYTE_INTEGER},
   {WILDCARD_SUBSCRIPTION_AVAILABLE, PROPERTY_TYPE_BYTE},
-  {SUBSCRIPTION_IDENTIFIER_AVAILABLE, PROPERTY_TYPE_BYTE},
+  {SUBSCRIPTION_IDENTIFIERS_AVAILABLE, PROPERTY_TYPE_BYTE},
   {SHARED_SUBSCRIPTION_AVAILABLE, PROPERTY_TYPE_BYTE}
 };
 
@@ -345,7 +345,7 @@ struct {
   {USER_PROPERTY, "USER_PROPERTY"},
   {MAXIMUM_PACKET_SIZE, "MAXIMUM_PACKET_SIZE"},
   {WILDCARD_SUBSCRIPTION_AVAILABLE, "WILDCARD_SUBSCRIPTION_AVAILABLE"},
-  {SUBSCRIPTION_IDENTIFIER_AVAILABLE, "SUBSCRIPTION_IDENTIFIER_AVAILABLE"},
+  {SUBSCRIPTION_IDENTIFIERS_AVAILABLE, "SUBSCRIPTION_IDENTIFIERS_AVAILABLE"},
   {SHARED_SUBSCRIPTION_AVAILABLE, "SHARED_SUBSCRIPTION_AVAILABLE"}
 };
 
@@ -433,10 +433,25 @@ int MQTTProperties_hasProperty(MQTTProperties *props, int propid)
 }
 
 
-int MQTTProperties_getNumericValue(MQTTProperties *props, int propid)
+int MQTTProperties_propertyCount(MQTTProperties *props, int propid)
+{
+	int i = 0;
+	int count = 0;
+
+	for (i = 0; i < props->count; ++i)
+	{
+		if (propid == props->array[i].identifier)
+			count++;
+	}
+	return count;
+}
+
+
+int MQTTProperties_getNumericValueAt(MQTTProperties *props, int propid, int index)
 {
 	int i = 0;
 	int rc = -9999999;
+	int cur_index = 0;
 
 	for (i = 0; i < props->count; ++i)
 	{
@@ -444,6 +459,11 @@ int MQTTProperties_getNumericValue(MQTTProperties *props, int propid)
 
 		if (id == propid)
 		{
+			if (cur_index < index)
+			{
+				cur_index++;
+				continue;
+			}
 			switch (MQTTProperty_getType(id))
 			{
 			case PROPERTY_TYPE_BYTE:
@@ -460,7 +480,45 @@ int MQTTProperties_getNumericValue(MQTTProperties *props, int propid)
 				rc = -999999;
 				break;
 			}
+			break;
 		}
 	}
 	return rc;
+}
+
+
+int MQTTProperties_getNumericValue(MQTTProperties *props, int propid)
+{
+	return MQTTProperties_getNumericValueAt(props, propid, 0);
+}
+
+
+MQTTProperty* MQTTProperties_getPropertyAt(MQTTProperties *props, int propid, int index)
+{
+	int i = 0;
+	MQTTProperty* result = NULL;
+	int cur_index = 0;
+
+	for (i = 0; i < props->count; ++i)
+	{
+		int id = props->array[i].identifier;
+
+		if (id == propid)
+		{
+			if (cur_index == index)
+			{
+				result = &props->array[i];
+				break;
+			}
+			else
+				cur_index++;
+		}
+	}
+	return result;
+}
+
+
+MQTTProperty* MQTTProperties_getProperty(MQTTProperties *props, int propid)
+{
+	return MQTTProperties_getPropertyAt(props, propid, 0);
 }

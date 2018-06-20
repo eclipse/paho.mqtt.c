@@ -584,9 +584,15 @@ ADD_TEST(
 	COMMAND "test10" "--test_no" "2" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
 )
 
+ADD_TEST(
+	NAME test10-3-subscription_ids
+	COMMAND "test10" "--test_no" "3" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
 SET_TESTS_PROPERTIES(
 	test10-1-client_topic_aliases
 	test10-2-server_topic_aliases
+	test10-3-subscription_ids
 	PROPERTIES TIMEOUT 540
 )
 

@@ -709,7 +709,185 @@ int test_server_topic_aliases(struct Options options)
 	MQTTAsync_destroy(&c);
 
 exit:
-	MyLog(LOGA_INFO, "TEST1: test %s. %d tests run, %d failures.",
+	MyLog(LOGA_INFO, "TEST2: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
+
+/*********************************************************************
+
+Test3: subscription ids
+
+*********************************************************************/
+
+struct
+{
+	char* test_topic;
+	int test_finished;
+	int messages_arrived;
+} test_subscription_ids_globals =
+{
+	"server subscription ids topic", 0, 0
+};
+
+
+int test_subscription_ids_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* message)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	int rc;
+
+	test_subscription_ids_globals.messages_arrived++;
+
+	assert("Message structure version should be 1", message->struct_version == 1,
+				"message->struct_version was %d", message->struct_version);
+	MyLog(LOGA_DEBUG, "Callback: message received on topic %s is %.*s.",
+				 topicName, message->payloadlen, (char*)(message->payload));
+
+	if (message->struct_version == 1)
+	{
+		int subsidcount = 0, i = 0;
+
+		subsidcount = MQTTProperties_propertyCount(&message->properties, SUBSCRIPTION_IDENTIFIER);
+
+		for (i = 0; i < subsidcount; ++i)
+		{
+			int subsid = MQTTProperties_getNumericValueAt(&message->properties, SUBSCRIPTION_IDENTIFIER, i);
+			assert("Subsid is i+1", subsid == i+1, "subsid is not correct %d\n", subsid);
+		}
+		logProperties(&message->properties);
+	}
+
+	test_subscription_ids_globals.test_finished = 1;
+
+	MQTTAsync_freeMessage(&message);
+	MQTTAsync_free(topicName);
+
+	return 1;
+}
+
+
+void test_subscription_ids_onSubscribe(void* context, MQTTAsync_successData5* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	MQTTProperty property;
+	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	int qos, rc;
+	static int subs_count = 0;
+
+	MyLog(LOGA_INFO, "Suback properties:");
+	logProperties(&response->props);
+
+	if (++subs_count == 1)
+	{
+		/* subscribe to a wildcard */
+		property.identifier = SUBSCRIPTION_IDENTIFIER;
+		property.value.integer4 = 2;
+		MQTTProperties_add(&opts.properties, &property);
+
+		opts.onSuccess5 = test_subscription_ids_onSubscribe;
+		opts.context = c;
+
+		rc = MQTTAsync_subscribe(c, "+", 2, &opts);
+		assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+		if (rc != MQTTASYNC_SUCCESS)
+			test_subscription_ids_globals.test_finished = 1;
+
+		MQTTProperties_free(&opts.properties);
+	}
+	else
+	{
+		test_subscription_ids_globals.messages_arrived = 0;
+		pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
+		pubmsg.payloadlen = 11;
+		pubmsg.retained = 0;
+		pubmsg.qos = qos;
+		rc = MQTTAsync_sendMessage(c, test_subscription_ids_globals.test_topic, &pubmsg, &opts);
+		assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+		if (rc != MQTTASYNC_SUCCESS)
+			test_subscription_ids_globals.test_finished = 1;
+	}
+}
+
+
+void test_subscription_ids_onConnect(void* context, MQTTAsync_successData5* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	MQTTProperty property;
+	int rc;
+
+	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
+
+	assert("Reason code should be 0", response->reasonCode == SUCCESS,
+		   "Reason code was %d\n", response->reasonCode);
+
+	MyLog(LOGA_INFO, "Connack properties:");
+	logProperties(&response->props);
+
+	opts.onSuccess5 = test_subscription_ids_onSubscribe;
+	opts.context = c;
+	/* subscribe to the test topic */
+	property.identifier = SUBSCRIPTION_IDENTIFIER;
+	property.value.integer4 = 1;
+	MQTTProperties_add(&opts.properties, &property);
+
+	rc = MQTTAsync_subscribe(c, test_subscription_ids_globals.test_topic, 2, &opts);
+	assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		test_subscription_ids_globals.test_finished = 1;
+
+	MQTTProperties_free(&opts.properties);
+}
+
+
+int test_subscription_ids(struct Options options)
+{
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
+	int rc = 0;
+
+	MyLog(LOGA_INFO, "Starting V5 test 3 - subscription ids");
+	fprintf(xml, "<testcase classname=\"test11\" name=\"subscription ids\"");
+	global_start_time = start_clock();
+
+	rc = MQTTAsync_create(&c, options.connection, "subscription_ids",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
+
+	rc = MQTTAsync_setCallbacks(c, c, NULL, test_subscription_ids_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+
+	opts.MQTTVersion = options.MQTTVersion;
+	opts.onSuccess5 = test_subscription_ids_onConnect;
+	opts.context = c;
+	opts.cleanstart = 1;
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (test_subscription_ids_globals.test_finished == 0)
+		#if defined(WIN32)
+			Sleep(100);
+		#else
+			usleep(10000L);
+		#endif
+
+	MQTTAsync_destroy(&c);
+
+exit:
+	MyLog(LOGA_INFO, "TEST3: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 	write_test_result();
 	return failures;
@@ -725,7 +903,11 @@ void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 int main(int argc, char** argv)
 {
 	int rc = 0;
- 	int (*tests[])() = {NULL, test_client_topic_aliases, test_server_topic_aliases}; /* indexed starting from 1 */
+ 	int (*tests[])() = {NULL,
+ 		test_client_topic_aliases,
+		test_server_topic_aliases,
+		test_subscription_ids,
+ 	}; /* indexed starting from 1 */
 	MQTTAsync_nameValue* info;
 	int i;
 

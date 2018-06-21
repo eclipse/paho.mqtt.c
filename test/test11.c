@@ -346,7 +346,7 @@ void test_client_topic_aliases_onSubscribe(void* context, MQTTAsync_successData5
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	MQTTProperty property;
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-	int qos, rc;
+	int rc;
 
 	MyLog(LOGA_INFO, "Suback properties:");
 	logProperties(&response->props);
@@ -603,7 +603,7 @@ void test_server_topic_aliases_onSubscribe(void* context, MQTTAsync_successData5
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	MQTTProperty property;
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-	int qos, rc;
+	int qos = 0, rc;
 
 	MyLog(LOGA_INFO, "Suback properties:");
 	logProperties(&response->props);
@@ -775,7 +775,7 @@ void test_subscription_ids_onSubscribe(void* context, MQTTAsync_successData5* re
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	MQTTProperty property;
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-	int qos, rc;
+	int rc;
 	static int subs_count = 0;
 
 	MyLog(LOGA_INFO, "Suback properties:");
@@ -804,9 +804,9 @@ void test_subscription_ids_onSubscribe(void* context, MQTTAsync_successData5* re
 		pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
 		pubmsg.payloadlen = 11;
 		pubmsg.retained = 0;
-		pubmsg.qos = qos;
+		pubmsg.qos = 1;
 		rc = MQTTAsync_sendMessage(c, test_subscription_ids_globals.test_topic, &pubmsg, &opts);
-		assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+		assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 		if (rc != MQTTASYNC_SUCCESS)
 			test_subscription_ids_globals.test_finished = 1;
 	}

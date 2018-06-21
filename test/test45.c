@@ -315,7 +315,7 @@ void test1_onUnsubscribe(void* context, MQTTAsync_successData5* response)
 
 	MyLog(LOGA_DEBUG, "In onUnsubscribe onSuccess callback %p", c);
 	MyLog(LOGA_INFO, "Unsuback properties:");
-	logProperties(&response->props);
+	logProperties(&response->properties);
 
 	opts.onSuccess = test1_onDisconnect;
 	opts.context = c;
@@ -410,7 +410,7 @@ void test1_onSubscribe(void* context, MQTTAsync_successData5* response)
 	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback %p granted qos %d", c, response->alt.qos);
 
 	MyLog(LOGA_INFO, "Suback properties:");
-	logProperties(&response->props);
+	logProperties(&response->properties);
 
 	property.identifier = USER_PROPERTY;
 	property.value.data.data = "test user property";
@@ -444,7 +444,7 @@ void test1_onConnect(void* context, MQTTAsync_successData5* response)
 		   "Reason code was %d\n", response->reasonCode);
 
 	MyLog(LOGA_INFO, "Connack properties:");
-	logProperties(&response->props);
+	logProperties(&response->properties);
 
 	opts.onSuccess5 = test1_onSubscribe;
 	opts.context = c;
@@ -967,7 +967,7 @@ void test4_onConnect(void* context, MQTTAsync_successData5* response)
 	MQTTAsync_callOptions opts = MQTTAsync_callOptions_initializer;
 	int rc;
 
-	test4_packet_size = MQTTProperties_getNumericValue(&response->props, MAXIMUM_PACKET_SIZE);
+	test4_packet_size = MQTTProperties_getNumericValue(&response->properties, MAXIMUM_PACKET_SIZE);
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
 	opts.onSuccess5 = test4_onSubscribe;

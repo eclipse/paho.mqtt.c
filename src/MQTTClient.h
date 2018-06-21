@@ -672,12 +672,13 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1, 2, 3, 4 or 5.
+	/** The version number of this structure.  Must be 0, 1, 2, 3, 4, 5 or 6.
 	 * 0 signifies no SSL options and no serverURIs
 	 * 1 signifies no serverURIs
 	 * 2 signifies no MQTTVersion
 	 * 3 signifies no returned values
 	 * 4 signifies no binary password option
+	 * 5 signifies no maxInflightMessages
 	 */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -718,7 +719,7 @@ typedef struct
    * message must be completed (acknowledgements received) before another
    * can be sent. Attempts to publish additional messages receive an
    * ::MQTTCLIENT_MAX_MESSAGES_INFLIGHT return code. Setting this flag to
-	 * false allows up to 10 messages to be in-flight. This can increase
+   * false allows up to 10 messages to be in-flight. This can increase
    * overall throughput in some circumstances.
 	 */
 	int reliable;
@@ -793,9 +794,13 @@ typedef struct
 		int len;           /**< binary password length */
 		const void* data;  /**< binary password data */
 	} binarypwd;
+	/**
+	 * The maximum number of messages in flight
+	 */
+	int maxInflightMessages;
 } MQTTClient_connectOptions;
 
-#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 5, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, 0,         {NULL, 0, 0}, {0, NULL} }
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 6, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, 0, {NULL, 0, 0}, {0, NULL}, -1}
 
 /**
   * MQTTClient_libraryInfo is used to store details relating to the currently used
@@ -1117,6 +1122,45 @@ DLLExport void MQTTClient_free(void* ptr);
   * structure to be freed.
   */
 DLLExport void MQTTClient_destroy(MQTTClient* handle);
+
+
+enum MQTTCLIENT_TRACE_LEVELS
+{
+	MQTTCLIENT_TRACE_MAXIMUM = 1,
+	MQTTCLIENT_TRACE_MEDIUM,
+	MQTTCLIENT_TRACE_MINIMUM,
+	MQTTCLIENT_TRACE_PROTOCOL,
+	MQTTCLIENT_TRACE_ERROR,
+	MQTTCLIENT_TRACE_SEVERE,
+	MQTTCLIENT_TRACE_FATAL,
+};
+
+
+/**
+  * This function sets the level of trace information which will be
+  * returned in the trace callback.
+  * @param level the trace level required
+  */
+DLLExport void MQTTClient_setTraceLevel(enum MQTTCLIENT_TRACE_LEVELS level);
+
+
+/**
+  * This is a callback function prototype which must be implemented if you want
+  * to receive trace information.
+  * @param level the trace level of the message returned
+  * @param meesage the trace message.  This is a pointer to a static buffer which
+  * will be overwritten on each call.  You must copy the data if you want to keep
+  * it for later.
+  */
+typedef void MQTTClient_traceCallback(enum MQTTCLIENT_TRACE_LEVELS level, char* message);
+
+/**
+  * This function sets the trace callback if needed.  If set to NULL,
+  * no trace information will be returned.  The default trace level is
+  * MQTTASYNC_TRACE_MINIMUM.
+  * @param callback a pointer to the function which will handle the trace information
+  */
+DLLExport void MQTTClient_setTraceCallback(MQTTClient_traceCallback* callback);
 
 /**
  * Returns a pointer to the string representation of the error or NULL.

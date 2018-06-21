@@ -1194,7 +1194,7 @@ static void MQTTAsync_writeComplete(int socket, int rc)
 							data.alt.pub.message.payloadlen = command->details.pub.payloadlen;
 							data.alt.pub.message.qos = command->details.pub.qos;
 							data.alt.pub.message.retained = command->details.pub.retained;
-							data.props = command->properties;
+							data.properties = command->properties;
 							Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
 							(*(command->onSuccess5))(command->context, &data);
 						}
@@ -1268,6 +1268,14 @@ static int MQTTAsync_processCommand(void)
 				cmd->client->c->outboundMsgs->count >= MAX_MSG_ID - 1)
 			{
 				; /* no more message ids available */
+			}
+			else if (cmd->client->c->MQTTVersion >= MQTTVERSION_5 &&
+				((cmd->command.type == PUBLISH && cmd->command.details.pub.qos > 0) ||
+						cmd->command.type == SUBSCRIBE || cmd->command.type == UNSUBSCRIBE) &&
+				(cmd->client->c->outboundMsgs->count >= cmd->client->c->maxInflightMessages))
+			{
+				Log(TRACE_MIN, -1, "Blocking on server receive maximum for client %s",
+						cmd->client->c->clientID); /* flow control */
 			}
 			else
 			{
@@ -1437,7 +1445,7 @@ static int MQTTAsync_processCommand(void)
 					data.alt.pub.message.payloadlen = command->command.details.pub.payloadlen;
 					data.alt.pub.message.qos = command->command.details.pub.qos;
 					data.alt.pub.message.retained = command->command.details.pub.retained;
-					data.props = command->command.properties;
+					data.properties = command->command.properties;
 					Log(TRACE_MIN, -1, "Calling publish success for client %s", command->client->c->clientID);
 					(*(command->command.onSuccess5))(command->command.context, &data);
 				}
@@ -2100,7 +2108,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 								data.alt.connect.serverURI = m->serverURI;
 							data.alt.connect.MQTTVersion = m->connect.details.conn.MQTTVersion;
 							data.alt.connect.sessionPresent = sessionPresent;
-							data.props = connack->properties;
+							data.properties = connack->properties;
 							data.reasonCode = connack->rc;
 							(*(m->connect.onSuccess5))(m->connect.context, &data);
 							m->connect.onSuccess5 = NULL; /* don't accidentally call it again */
@@ -2110,6 +2118,15 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 							char* reason = (onSuccess) ? "connect onSuccess called" : "automatic reconnect";
 							Log(TRACE_MIN, -1, "Calling connected for client %s", m->c->clientID);
 							(*(m->connected))(m->connected_context, reason);
+						}
+						if (m->c->MQTTVersion >= MQTTVERSION_5)
+						{
+							if (MQTTProperties_hasProperty(&connack->properties, RECEIVE_MAXIMUM))
+							{
+								int recv_max = MQTTProperties_getNumericValue(&connack->properties, RECEIVE_MAXIMUM);
+								if (m->c->maxInflightMessages > recv_max)
+									m->c->maxInflightMessages = recv_max;
+							}
 						}
 						MQTTPacket_freeConnack(connack);
 					}
@@ -2166,7 +2183,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 											*element++ = *(int*)(cur_qos->content);
 									}
 									data.token = command->command.token;
-									data.props = sub->properties;
+									data.properties = sub->properties;
 									Log(TRACE_MIN, -1, "Calling subscribe success for client %s", m->c->clientID);
 									(*(command->command.onSuccess5))(command->command.context, &data);
 									if (array)
@@ -2245,7 +2262,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 											*element++ = *(enum MQTTReasonCodes*)(cur_rc->content);
 									}
 									data.token = command->command.token;
-									data.props = unsub->properties;
+									data.properties = unsub->properties;
 									Log(TRACE_MIN, -1, "Calling unsubscribe success for client %s", m->c->clientID);
 									(*(command->command.onSuccess5))(command->command.context, &data);
 									if (array)
@@ -3539,7 +3556,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 								data.alt.pub.message.payloadlen = command->command.details.pub.payloadlen;
 								data.alt.pub.message.qos = command->command.details.pub.qos;
 								data.alt.pub.message.retained = command->command.details.pub.retained;
-								data.props = command->command.properties;
+								data.properties = command->command.properties;
 								Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
 								(*(command->command.onSuccess5))(command->command.context, &data);
 							}

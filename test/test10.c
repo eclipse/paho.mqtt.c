@@ -333,7 +333,7 @@ void logProperties(MQTTProperties *props)
 	}
 }
 
-struct aa
+struct
 {
 	int disconnected;
 } test_topic_aliases_globals =
@@ -875,6 +875,133 @@ exit:
 }
 
 
+int test_flow_control_messageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* message)
+{
+	static int received = 0;
+	static int first_topic_alias = 0;
+	int topicAlias = 0;
+
+	received++;
+	MyLog(LOGA_DEBUG, "Callback: message received on topic %s is %.*s.",
+				 topicName, message->payloadlen, (char*)(message->payload));
+
+	assert("Message structure version should be 1", message->struct_version == 1,
+				"message->struct_version was %d", message->struct_version);
+	messages_arrived++;
+
+	MQTTClient_free(topicName);
+	MQTTClient_freeMessage(&message);
+	return 1;
+}
+
+static int blocking_found = 0;
+
+void test_flow_control_trace_callback(enum MQTTCLIENT_TRACE_LEVELS level, char* message)
+{
+	static char* msg = "Blocking publish on queue full";
+
+	if (strstr(message, msg) != NULL)
+		blocking_found = 1;
+}
+
+
+int test_flow_control(struct Options options)
+{
+	int subsqos = 2;
+	MQTTClient c;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+	MQTTProperties connect_props = MQTTProperties_initializer;
+	MQTTProperty property;
+	MQTTClient_message pubmsg = MQTTClient_message_initializer;
+	MQTTResponse response = {SUCCESS, NULL};
+	MQTTClient_deliveryToken dt;
+	int rc = 0, i = 0, count = 0;
+	char* test_topic = "test_flow_control";
+	int receive_maximum = 65535;
+
+	fprintf(xml, "<testcase classname=\"test_flow_control\" name=\"flow control\"");
+	global_start_time = start_clock();
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test - flow control");
+
+	//MQTTClient_setTraceCallback(test_flow_control_trace_callback);
+
+	rc = MQTTClient_create(&c, options.connection, "flow_control",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTCLIENT_SUCCESS)
+		goto exit;
+
+	rc = MQTTClient_setCallbacks(c, NULL, NULL, test_flow_control_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+
+	opts.keepAliveInterval = 20;
+	opts.cleansession = 1;
+	opts.MQTTVersion = options.MQTTVersion;
+	opts.reliable = 0;
+	opts.maxInflightMessages = 100;
+	if (options.haconnections != NULL)
+	{
+		opts.serverURIs = options.haconnections;
+		opts.serverURIcount = options.hacount;
+	}
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	response = MQTTClient_connect5(c, &opts, &connect_props, NULL);
+	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	if (response.reasonCode != MQTTCLIENT_SUCCESS)
+		goto exit;
+
+	if (response.properties)
+	{
+		if (MQTTProperties_hasProperty(response.properties, RECEIVE_MAXIMUM))
+			receive_maximum = MQTTProperties_getNumericValue(response.properties, RECEIVE_MAXIMUM);
+
+		logProperties(response.properties);
+		MQTTResponse_free(response);
+	}
+
+	response = MQTTClient_subscribe5(c, test_topic, 2, NULL, NULL);
+	assert("Good rc from subscribe", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+
+	messages_arrived = 0;
+	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
+	pubmsg.payloadlen = 11;
+	pubmsg.retained = 0;
+	pubmsg.qos = 2;
+	for (i = 0; i < receive_maximum + 2; ++i)
+	{
+		response = MQTTClient_publishMessage5(c, test_topic, &pubmsg, &dt);
+		assert("Good rc from publish", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	}
+
+	/* should get responses */
+	while (messages_arrived < receive_maximum + 2 && ++count < 10)
+	{
+#if defined(WIN32)
+		Sleep(1000);
+#else
+		usleep(1000000L);
+#endif
+	}
+	assert("messages should have arrived", messages_arrived == receive_maximum + 2, "was %d", messages_arrived);
+	assert("should have blocked", blocking_found == 1, "was %d\n", blocking_found);
+
+	rc = MQTTClient_disconnect5(c, 1000, SUCCESS, NULL);
+
+exit:
+	MQTTClient_setTraceCallback(NULL);
+	MQTTProperties_free(&pubmsg.properties);
+	MQTTProperties_free(&connect_props);
+	MQTTClient_destroy(&c);
+
+	MyLog(LOGA_INFO, "TEST3: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
 int main(int argc, char** argv)
 {
 	int rc = 0,
@@ -882,13 +1009,16 @@ int main(int argc, char** argv)
  	int (*tests[])() = {NULL,
  		test_client_topic_aliases,
 		test_server_topic_aliases,
- 		test_subscription_ids};
+ 		test_subscription_ids,
+ 		test_flow_control,
+ 	};
 
 	xml = fopen("TEST-test1.xml", "w");
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
 
-	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
-	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
+	//setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
+	//setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
+	MQTTClient_setTraceCallback(test_flow_control_trace_callback);
 
 	getopts(argc, argv);
 

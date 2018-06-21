@@ -1302,8 +1302,13 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 	m->c->keepAliveInterval = options->keepAliveInterval;
 	setRetryLoopInterval(options->keepAliveInterval);
 	m->c->cleansession = options->cleansession;
-	m->c->maxInflightMessages = (options->reliable) ? 1 : 10;
 	m->c->MQTTVersion = options->MQTTVersion;
+	m->c->maxInflightMessages = (options->reliable) ? 1 : 10;
+	if (options->struct_version >= 6)
+	{
+		if (options->maxInflightMessages > 0)
+			m->c->maxInflightMessages = options->maxInflightMessages;
+	}
 
 	if (m->c->will)
 	{
@@ -1458,7 +1463,7 @@ MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connectOptions* o
 		goto exit;
 	}
 
-	if (strncmp(options->struct_id, "MQTC", 4) != 0 || 	options->struct_version < 0 || options->struct_version > 5)
+	if (strncmp(options->struct_id, "MQTC", 4) != 0 || 	options->struct_version < 0 || options->struct_version > 6)
 	{
 		rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
 		goto exit;
@@ -1545,8 +1550,17 @@ MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connectOptions* o
 			}
 #endif
 			rc = MQTTClient_connectURI(handle, options, serverURI, connectProperties, willProperties);
-			if (rc.reasonCode == MQTTCLIENT_SUCCESS)
+			if (rc.reasonCode == SUCCESS)
 				break;
+		}
+	}
+	if (rc.reasonCode == SUCCESS)
+	{
+		if (rc.properties && MQTTProperties_hasProperty(rc.properties, RECEIVE_MAXIMUM))
+		{
+			int recv_max = MQTTProperties_getNumericValue(rc.properties, RECEIVE_MAXIMUM);
+			if (m->c->maxInflightMessages > recv_max)
+				m->c->maxInflightMessages = recv_max;
 		}
 	}
 
@@ -2469,6 +2483,19 @@ exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
+
+
+void MQTTClient_setTraceLevel(enum MQTTCLIENT_TRACE_LEVELS level)
+{
+	Log_setTraceLevel((enum LOG_LEVELS)level);
+}
+
+
+void MQTTClient_setTraceCallback(MQTTClient_traceCallback* callback)
+{
+	Log_setTraceCallback((Log_traceCallback*)callback);
+}
+
 
 MQTTClient_nameValue* MQTTClient_getVersionInfo(void)
 {

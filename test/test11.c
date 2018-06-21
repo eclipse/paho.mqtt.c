@@ -349,7 +349,7 @@ void test_client_topic_aliases_onSubscribe(void* context, MQTTAsync_successData5
 	int rc;
 
 	MyLog(LOGA_INFO, "Suback properties:");
-	logProperties(&response->props);
+	logProperties(&response->properties);
 
 	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
 	pubmsg.payloadlen = 11;
@@ -401,7 +401,7 @@ void test_client_topic_aliases_onConnect(void* context, MQTTAsync_successData5* 
 		   "Reason code was %d\n", response->reasonCode);
 
 	MyLog(LOGA_INFO, "Connack properties:");
-	logProperties(&response->props);
+	logProperties(&response->properties);
 
 	if (first)
 	{
@@ -606,7 +606,7 @@ void test_server_topic_aliases_onSubscribe(void* context, MQTTAsync_successData5
 	int qos = 0, rc;
 
 	MyLog(LOGA_INFO, "Suback properties:");
-	logProperties(&response->props);
+	logProperties(&response->properties);
 
 	test_server_topic_aliases_globals.messages_arrived = 0;
 	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
@@ -639,7 +639,7 @@ void test_server_topic_aliases_onConnect(void* context, MQTTAsync_successData5* 
 		   "Reason code was %d\n", response->reasonCode);
 
 	MyLog(LOGA_INFO, "Connack properties:");
-	logProperties(&response->props);
+	logProperties(&response->properties);
 
 	opts.onSuccess5 = test_server_topic_aliases_onSubscribe;
 	opts.context = c;
@@ -779,7 +779,7 @@ void test_subscription_ids_onSubscribe(void* context, MQTTAsync_successData5* re
 	static int subs_count = 0;
 
 	MyLog(LOGA_INFO, "Suback properties:");
-	logProperties(&response->props);
+	logProperties(&response->properties);
 
 	if (++subs_count == 1)
 	{
@@ -826,7 +826,7 @@ void test_subscription_ids_onConnect(void* context, MQTTAsync_successData5* resp
 		   "Reason code was %d\n", response->reasonCode);
 
 	MyLog(LOGA_INFO, "Connack properties:");
-	logProperties(&response->props);
+	logProperties(&response->properties);
 
 	opts.onSuccess5 = test_subscription_ids_onSubscribe;
 	opts.context = c;
@@ -893,6 +893,169 @@ exit:
 	return failures;
 }
 
+/*********************************************************************
+
+Test: flow control
+
+*********************************************************************/
+
+struct
+{
+	char* test_topic;
+	int test_finished;
+	int messages_arrived;
+	int receive_maximum;
+	int blocking_found;
+} test_flow_control_globals =
+{
+	"flow control topic", 0, 0, 65535, 0
+};
+
+
+int test_flow_control_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* message)
+{
+	MQTTAsync c = (MQTTAsync)context;
+
+	test_flow_control_globals.messages_arrived++;
+
+	assert("Message structure version should be 1", message->struct_version == 1,
+				"message->struct_version was %d", message->struct_version);
+	MyLog(LOGA_DEBUG, "Callback: message received on topic %s is %.*s.",
+				 topicName, message->payloadlen, (char*)(message->payload));
+
+	if (message->struct_version == 1)
+		logProperties(&message->properties);
+
+	if (test_flow_control_globals.messages_arrived == test_flow_control_globals.receive_maximum + 2)
+		test_flow_control_globals.test_finished = 1;
+
+	MQTTAsync_freeMessage(&message);
+	MQTTAsync_free(topicName);
+
+	return 1;
+}
+
+
+void test_flow_control_onSubscribe(void* context, MQTTAsync_successData5* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	int rc;
+	int i = 0;
+
+	MyLog(LOGA_INFO, "Suback properties:");
+	logProperties(&response->properties);
+
+	test_flow_control_globals.messages_arrived = 0;
+	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
+	pubmsg.payloadlen = 11;
+	pubmsg.retained = 0;
+	pubmsg.qos = 2;
+
+	for (i = 0; i < test_flow_control_globals.receive_maximum + 2; ++i)
+	{
+		rc = MQTTAsync_sendMessage(c, test_flow_control_globals.test_topic, &pubmsg, &opts);
+		assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+		if (rc != MQTTASYNC_SUCCESS)
+			test_flow_control_globals.test_finished = 1;
+	}
+}
+
+
+void test_flow_control_onConnect(void* context, MQTTAsync_successData5* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	int rc;
+
+	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
+
+	assert("Reason code should be 0", response->reasonCode == SUCCESS,
+		   "Reason code was %d\n", response->reasonCode);
+
+	MyLog(LOGA_INFO, "Connack properties:");
+	logProperties(&response->properties);
+
+	if (MQTTProperties_hasProperty(&response->properties, RECEIVE_MAXIMUM))
+		test_flow_control_globals.receive_maximum = MQTTProperties_getNumericValue(&response->properties, RECEIVE_MAXIMUM);
+
+	opts.onSuccess5 = test_flow_control_onSubscribe;
+	opts.context = c;
+
+	rc = MQTTAsync_subscribe(c, test_flow_control_globals.test_topic, 2, &opts);
+	assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		test_flow_control_globals.test_finished = 1;
+
+	MQTTProperties_free(&opts.properties);
+}
+
+
+void flow_control_trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
+{
+	static char* msg = "Blocking on server receive maximum";
+
+	if (strstr(message, msg) != NULL)
+		test_flow_control_globals.blocking_found = 1;
+}
+
+
+int test_flow_control(struct Options options)
+{
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
+	int rc = 0;
+
+	MyLog(LOGA_INFO, "Starting V5 test - flow control");
+	fprintf(xml, "<testcase classname=\"test11\" name=\"flow control\"");
+	global_start_time = start_clock();
+
+	rc = MQTTAsync_create(&c, options.connection, "flow_control",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
+
+	MQTTAsync_setTraceCallback(flow_control_trace_callback);
+	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_MINIMUM);
+
+	rc = MQTTAsync_setCallbacks(c, c, NULL, test_flow_control_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+
+	opts.MQTTVersion = options.MQTTVersion;
+	opts.onSuccess5 = test_flow_control_onConnect;
+	opts.context = c;
+	opts.cleanstart = 1;
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (test_flow_control_globals.test_finished == 0)
+		#if defined(WIN32)
+			Sleep(100);
+		#else
+			usleep(10000L);
+		#endif
+
+	assert("should have blocked", test_flow_control_globals.blocking_found == 1, "was %d\n",
+			test_flow_control_globals.blocking_found);
+
+	MQTTAsync_destroy(&c);
+
+exit:
+	MyLog(LOGA_INFO, "TEST4: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	write_test_result();
+	return failures;
+}
+
 
 void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 {
@@ -907,6 +1070,7 @@ int main(int argc, char** argv)
  		test_client_topic_aliases,
 		test_server_topic_aliases,
 		test_subscription_ids,
+		test_flow_control,
  	}; /* indexed starting from 1 */
 	MQTTAsync_nameValue* info;
 	int i;

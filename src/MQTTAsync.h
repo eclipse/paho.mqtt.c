@@ -495,7 +495,7 @@ typedef struct
 	/** MQTT V5 reason code returned */
 	enum MQTTReasonCodes reasonCode;
 	/** MQTT V5 properties returned, if any */
-	MQTTProperties props;
+	MQTTProperties properties;
 	/** A union of the different values that can be returned for subscribe, unsubscribe and publish. */
 	union
 	{
@@ -1018,10 +1018,10 @@ typedef struct
 } MQTTAsync_connectOptions;
 
 
-#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 6, 60, 1, 10, NULL, NULL, NULL, 30, 0,\
+#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 6, 60, 1, 65535, NULL, NULL, NULL, 30, 0,\
 NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL}
 
-#define MQTTAsync_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 6, 60, 0, 10, NULL, NULL, NULL, 30, 0,\
+#define MQTTAsync_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 6, 60, 0, 65535, NULL, NULL, NULL, 30, 0,\
 NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL}
 
 

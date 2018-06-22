@@ -398,7 +398,7 @@ int test1(struct Options options)
 {
 	int subsqos = 2;
 	MQTTClient c;
-	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
 	MQTTProperties props = MQTTProperties_initializer;
 	MQTTProperties willProps = MQTTProperties_initializer;
@@ -423,7 +423,7 @@ int test1(struct Options options)
 	}
 
 	opts.keepAliveInterval = 20;
-	opts.cleansession = 1;
+	opts.cleanstart = 1;
 	opts.username = "testuser";
 	opts.password = "testpassword";
 	opts.MQTTVersion = options.MQTTVersion;
@@ -639,7 +639,7 @@ int test2(struct Options options)
 	int subsqos = 2;
 	/* TODO - usused - remove ? MQTTClient_deliveryToken* dt = NULL; */
 	MQTTClient c;
-	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
 	MQTTProperties props = MQTTProperties_initializer;
 	MQTTProperties willProps = MQTTProperties_initializer;
 	MQTTResponse response = {SUCCESS, NULL};
@@ -655,7 +655,7 @@ int test2(struct Options options)
 	MQTTClient_create(&c, options.connection, "multi_threaded_sample", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 
 	opts.keepAliveInterval = 20;
-	opts.cleansession = 1;
+	opts.cleanstart = 1;
 	opts.MQTTVersion = options.MQTTVersion;
 	opts.username = "testuser";
 	opts.binarypwd.data = "testpassword";
@@ -720,7 +720,7 @@ int test3(struct Options options)
 	char* testname = "test3";
 	int rc;
 	MQTTClient c;
-	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
 	MQTTResponse response;
 
@@ -795,7 +795,7 @@ int test4_run(int qos)
 	char* topic = "Persistence test 1";
 	int subsqos = 2;
 	MQTTClient c;
-	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
 	MQTTClient_message* m = NULL;
 	char* topicName = NULL;
 	int topicLen;
@@ -823,7 +823,7 @@ int test4_run(int qos)
 	}
 
 	MyLog(LOGA_DEBUG, "Cleanup by connecting clean start, add session expiry > 0\n");
-	opts.cleansession = 1;
+	opts.cleanstart = 1;
 	property.identifier = SESSION_EXPIRY_INTERVAL;
 	property.value.integer4 = 30; /* in seconds */
 	MQTTProperties_add(&props, &property);
@@ -882,7 +882,7 @@ int test4_run(int qos)
 	}
 
 	MyLog(LOGA_DEBUG, "Reconnecting");
-	opts.cleansession = 0;
+	opts.cleanstart = 0;
 	response = MQTTClient_connect5(c, &opts, NULL, NULL);
 	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
 	MQTTResponse_free(response);
@@ -961,7 +961,7 @@ int test5(struct Options options)
 	char* topic = "Persistence test 2";
 	int subsqos = 2;
 	MQTTClient c;
-	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
 	MQTTClient_deliveryToken* tokens = NULL;
 	char buffer[100];
 	int count = 5;
@@ -978,7 +978,7 @@ int test5(struct Options options)
 	MQTTClient_create(&c, options.connection, "xrctest15_test_5", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 
 	opts.keepAliveInterval = 20;
-	opts.cleansession = 1;
+	opts.cleanstart = 1;
 	opts.reliable = 0;
 	opts.MQTTVersion = options.MQTTVersion;
 	if (options.haconnections != NULL)
@@ -1069,9 +1069,9 @@ int test6_messageArrived(void* context, char* topicName, int topicLen, MQTTClien
 int test6(struct Options options)
 {
 	char* testname = "test6";
-	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
 	MQTTClient_willOptions wopts =  MQTTClient_willOptions_initializer;
-	MQTTClient_connectOptions opts2 = MQTTClient_connectOptions_initializer;
+	MQTTClient_connectOptions opts2 = MQTTClient_connectOptions_initializer5;
 	MQTTResponse response = {SUCCESS, NULL};
 	int rc, count;
 	char* mqttsas_topic = "MQTTSAS topic";
@@ -1082,7 +1082,7 @@ int test6(struct Options options)
 	global_start_time = start_clock();
 
 	opts.keepAliveInterval = 2;
-	opts.cleansession = 1;
+	opts.cleanstart = 1;
 	opts.MQTTVersion = options.MQTTVersion;
 	opts.will = &wopts;
 	opts.will->message = test6_will_message;
@@ -1123,7 +1123,7 @@ int test6(struct Options options)
 
 	/* Connect to the broker */
 	opts2.keepAliveInterval = 20;
-	opts2.cleansession = 1;
+	opts2.cleanstart = 1;
 	MyLog(LOGA_INFO, "Connecting Client_2 ...");
 	response = MQTTClient_connect5(test6_c2, &opts2, NULL, NULL);
 	MQTTResponse_free(response);
@@ -1179,9 +1179,9 @@ exit:
 int test6a(struct Options options)
 {
 	char* testname = "test6a";
-	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
 	MQTTClient_willOptions wopts =  MQTTClient_willOptions_initializer;
-	MQTTClient_connectOptions opts2 = MQTTClient_connectOptions_initializer;
+	MQTTClient_connectOptions opts2 = MQTTClient_connectOptions_initializer5;
 	int rc, count;
 	MQTTResponse response = {SUCCESS, NULL};
 	char* mqttsas_topic = "MQTTSAS topic";
@@ -1192,7 +1192,7 @@ int test6a(struct Options options)
 	global_start_time = start_clock();
 
 	opts.keepAliveInterval = 2;
-	opts.cleansession = 1;
+	opts.cleanstart = 1;
 	opts.MQTTVersion = options.MQTTVersion;
 	opts.will = &wopts;
 	opts.will->payload.data = test6_will_message;
@@ -1235,7 +1235,7 @@ int test6a(struct Options options)
 
 	/* Connect to the broker */
 	opts2.keepAliveInterval = 20;
-	opts2.cleansession = 1;
+	opts2.cleanstart = 1;
 	MyLog(LOGA_INFO, "Connecting Client_2 ...");
 	response = MQTTClient_connect5(test6_c2, &opts2, NULL, NULL);
 	MQTTResponse_free(response);

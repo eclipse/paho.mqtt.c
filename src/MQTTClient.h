@@ -186,6 +186,11 @@
  * Return code: protocol prefix in serverURI should be tcp:// or ssl://
  */
 #define MQTTCLIENT_BAD_PROTOCOL -14
+ /**
+  * Return code: option not applicable to the requested version of MQTT
+  */
+ #define MQTTCLIENT_BAD_MQTT_OPTION -15
+
 
 /**
  * Default MQTT version to connect with.  Use 3.1.1 then fall back to 3.1
@@ -678,7 +683,7 @@ typedef struct
 	 * 2 signifies no MQTTVersion
 	 * 3 signifies no returned values
 	 * 4 signifies no binary password option
-	 * 5 signifies no maxInflightMessages
+	 * 5 signifies no maxInflightMessages and cleanstart
 	 */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -798,9 +803,15 @@ typedef struct
 	 * The maximum number of messages in flight
 	 */
 	int maxInflightMessages;
+	/*
+	 * MQTT V5 clean start flag.  Only clears state at the beginning of the session.
+	 */
+	int cleanstart;
 } MQTTClient_connectOptions;
 
-#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 6, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, 0, {NULL, 0, 0}, {0, NULL}, -1}
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 6, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0}
+
+#define MQTTClient_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 6, 60, 0, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1}
 
 /**
   * MQTTClient_libraryInfo is used to store details relating to the currently used

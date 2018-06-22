@@ -2652,7 +2652,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	}
 	if (options->MQTTVersion >= MQTTVERSION_5 && options->cleansession != 0)
 	{
-		rc = MQTTASYNC_BAD_MQTTV5_OPTIONS;
+		rc = MQTTASYNC_BAD_MQTT_OPTIONS;
 		goto exit;
 	}
 	if (options->MQTTVersion < MQTTVERSION_5)
@@ -2660,7 +2660,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		if (options->cleanstart != 0 || options->onFailure5 || options->onSuccess5 ||
 				options->connectProperties || options->willProperties)
 		{
-			rc = MQTTASYNC_BAD_MQTTV5_OPTIONS;
+			rc = MQTTASYNC_BAD_MQTT_OPTIONS;
 			goto exit;
 		}
 	}

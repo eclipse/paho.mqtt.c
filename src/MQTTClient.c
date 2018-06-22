@@ -849,7 +849,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 						m->serverURI, m->c->sslopts->verify);
 				if (rc == 1 || rc == SSL_FATAL)
 				{
-					if (rc == 1 && !m->c->cleansession && m->c->session == NULL)
+					if (rc == 1 && (m->c->cleansession == 0 && m->c->cleanstart == 0) && m->c->session == NULL)
 						m->c->session = SSL_get1_session(m->c->net.ssl);
 					m->rc = rc;
 					Log(TRACE_MIN, -1, "Posting connect semaphore for SSL client %s rc %d", m->c->clientID, m->rc);
@@ -1127,7 +1127,7 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 							rc = SOCKET_ERROR;
 							goto exit;
 						}
-						if (!m->c->cleansession && m->c->session == NULL)
+						if ((m->c->cleansession == 0 && m->c->cleanstart == 0) && m->c->session == NULL)
 							m->c->session = SSL_get1_session(m->c->net.ssl);
 					}
 				}
@@ -1170,7 +1170,7 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 			rc = SOCKET_ERROR;
 			goto exit;
 		}
-		if(!m->c->cleansession && m->c->session == NULL)
+		if((m->c->cleansession == 0 && m->c->cleanstart == 0) && m->c->session == NULL)
 			m->c->session = SSL_get1_session(m->c->net.ssl);
 
 		if ( m->websocket )
@@ -1228,7 +1228,7 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 				m->c->connect_state = NOT_IN_PROGRESS;
 				if (MQTTVersion == 4)
 					sessionPresent = connack->flags.bits.sessionPresent;
-				if (m->c->cleansession)
+				if (m->c->cleansession || m->c->cleanstart)
 					rc = MQTTClient_cleanSession(m->c);
 				if (m->c->outboundMsgs->count > 0)
 				{
@@ -1301,8 +1301,12 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 
 	m->c->keepAliveInterval = options->keepAliveInterval;
 	setRetryLoopInterval(options->keepAliveInterval);
-	m->c->cleansession = options->cleansession;
 	m->c->MQTTVersion = options->MQTTVersion;
+	m->c->cleanstart = m->c->cleansession = 0;
+	if (m->c->MQTTVersion >= MQTTVERSION_5)
+		m->c->cleanstart = options->cleanstart;
+	else
+		m->c->cleansession = options->cleansession;
 	m->c->maxInflightMessages = (options->reliable) ? 1 : 10;
 	if (options->struct_version >= 6)
 	{
@@ -1463,7 +1467,7 @@ MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connectOptions* o
 		goto exit;
 	}
 
-	if (strncmp(options->struct_id, "MQTC", 4) != 0 || 	options->struct_version < 0 || options->struct_version > 6)
+	if (strncmp(options->struct_id, "MQTC", 4) != 0 || options->struct_version < 6 || options->struct_version > 6)
 	{
 		rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
 		goto exit;
@@ -1509,6 +1513,20 @@ MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connectOptions* o
 			(options->MQTTVersion < MQTTVERSION_3_1 || options->MQTTVersion > MQTTVERSION_5))
 	{
 		rc.reasonCode = MQTTCLIENT_BAD_MQTT_VERSION;
+		goto exit;
+	}
+
+	if (options->MQTTVersion >= MQTTVERSION_5)
+	{
+		if (options->cleansession != 0)
+		{
+			rc.reasonCode = MQTTCLIENT_BAD_MQTT_OPTION;
+			goto exit;
+		}
+	}
+	else if (options->cleanstart != 0)
+	{
+		rc.reasonCode = MQTTCLIENT_BAD_MQTT_OPTION;
 		goto exit;
 	}
 
@@ -2269,7 +2287,7 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 						break;
 					else if (*rc == 1) /* rc == 1 means SSL connect has finished and succeeded */
 					{
-						if (!m->c->cleansession && m->c->session == NULL)
+						if ((m->c->cleansession == 0 && m->c->cleanstart == 0) && m->c->session == NULL)
 							m->c->session = SSL_get1_session(m->c->net.ssl);
 						break;
 					}

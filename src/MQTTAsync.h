@@ -181,9 +181,9 @@
  */
 #define MQTTASYNC_BAD_PROTOCOL -14
  /**
-  * Return code: don't use MQTTV5 options if MQTT 3 is chosen
+  * Return code: don't use options for another version of MQTT
   */
- #define MQTTASYNC_BAD_MQTTV5_OPTIONS -15
+ #define MQTTASYNC_BAD_MQTT_OPTIONS -15
 
 
 /**

@@ -378,7 +378,7 @@ int test_client_topic_aliases(struct Options options)
 {
 	int subsqos = 2;
 	MQTTClient c;
-	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
 	MQTTProperties props = MQTTProperties_initializer;
 	MQTTProperties connect_props = MQTTProperties_initializer;
@@ -413,7 +413,7 @@ int test_client_topic_aliases(struct Options options)
 	assert("Good rc from setDisconnected", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
 	opts.keepAliveInterval = 20;
-	opts.cleansession = 1;
+	opts.cleanstart = 1;
 	opts.MQTTVersion = options.MQTTVersion;
 	if (options.haconnections != NULL)
 	{
@@ -523,7 +523,7 @@ int test_client_topic_aliases(struct Options options)
 	rc = MQTTClient_disconnect5(c, 1000, SUCCESS, NULL);
 
 	/* Reconnect.  Topic aliases should be deleted, but not subscription */
-	opts.cleansession = 0;
+	opts.cleanstart = 0;
 	response = MQTTClient_connect5(c, &opts, NULL, NULL);
 	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
 	MQTTResponse_free(response);
@@ -634,7 +634,7 @@ int test_server_topic_aliases(struct Options options)
 {
 	int subsqos = 2;
 	MQTTClient c;
-	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
 	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
 	MQTTProperties connect_props = MQTTProperties_initializer;
 	MQTTProperty property;
@@ -666,7 +666,7 @@ int test_server_topic_aliases(struct Options options)
 	assert("Good rc from setCallbacks", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
 	opts.keepAliveInterval = 20;
-	opts.cleansession = 1;
+	opts.cleanstart = 1;
 	opts.MQTTVersion = options.MQTTVersion;
 	if (options.haconnections != NULL)
 	{
@@ -772,7 +772,7 @@ int test_subscription_ids(struct Options options)
 {
 	int subsqos = 2;
 	MQTTClient c;
-	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
 	MQTTProperties connect_props = MQTTProperties_initializer;
 	MQTTProperties subs_props = MQTTProperties_initializer;
 	MQTTProperty property;
@@ -803,7 +803,7 @@ int test_subscription_ids(struct Options options)
 	assert("Good rc from setCallbacks", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
 	opts.keepAliveInterval = 20;
-	opts.cleansession = 1;
+	opts.cleanstart = 1;
 	opts.MQTTVersion = options.MQTTVersion;
 	if (options.haconnections != NULL)
 	{
@@ -909,7 +909,7 @@ int test_flow_control(struct Options options)
 {
 	int subsqos = 2;
 	MQTTClient c;
-	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
 	MQTTProperties connect_props = MQTTProperties_initializer;
 	MQTTProperty property;
 	MQTTClient_message pubmsg = MQTTClient_message_initializer;
@@ -936,7 +936,7 @@ int test_flow_control(struct Options options)
 	assert("Good rc from setCallbacks", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
 	opts.keepAliveInterval = 20;
-	opts.cleansession = 1;
+	opts.cleanstart = 1;
 	opts.MQTTVersion = options.MQTTVersion;
 	opts.reliable = 0;
 	opts.maxInflightMessages = 100;

@@ -404,7 +404,7 @@ int test1(struct Options options)
 	MQTTProperties willProps = MQTTProperties_initializer;
 	MQTTProperty property;
 	MQTTSubscribe_options subopts = MQTTSubscribe_options_initializer;
-	MQTTResponse response = {SUCCESS, NULL};
+	MQTTResponse response = MQTTResponse_initializer;
 	int rc = 0;
 	char* test_topic = "C client test1";
 
@@ -471,7 +471,7 @@ int test1(struct Options options)
 	property.value.integer4 = 33;
 	MQTTProperties_add(&props, &property);
 	response = MQTTClient_subscribe5(c, test_topic, subsqos, &subopts, &props);
-	assert("Good rc from subscribe", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	assert("Good rc from subscribe", response.reasonCode == subsqos, "rc was %d", response.reasonCode);
 	MQTTProperties_free(&props);
 
 	if (response.properties)
@@ -496,6 +496,7 @@ int test1(struct Options options)
 
 	response = MQTTClient_unsubscribe5(c, test_topic, &props);
 	assert("Unsubscribe successful", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	MQTTResponse_free(response);
 
 	MQTTProperties_free(&props);
 	property.identifier = SESSION_EXPIRY_INTERVAL;
@@ -571,7 +572,7 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 	MQTTClient_deliveryToken dt;
 	int i = 0;
 	int iterations = 50;
-	MQTTResponse response = {SUCCESS, NULL};
+	MQTTResponse response = MQTTResponse_initializer;
 	int wait_seconds = 0;
 
 	test2_deliveryCompleted = 0;
@@ -642,7 +643,7 @@ int test2(struct Options options)
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
 	MQTTProperties props = MQTTProperties_initializer;
 	MQTTProperties willProps = MQTTProperties_initializer;
-	MQTTResponse response = {SUCCESS, NULL};
+	MQTTResponse response = MQTTResponse_initializer;
 	MQTTSubscribe_options subopts = MQTTSubscribe_options_initializer;
 	int rc = 0;
 	char* test_topic = "C client test2";
@@ -678,7 +679,7 @@ int test2(struct Options options)
 		goto exit;
 
 	response = MQTTClient_subscribe5(c, test_topic, subsqos, &subopts, &props);
-	assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+	assert("Good rc from subscribe", response.reasonCode == subsqos, "rc was %d", rc);
 
 	test2_sendAndReceive(c, 0, test_topic);
 	test2_sendAndReceive(c, 1, test_topic);
@@ -805,7 +806,7 @@ int test4_run(int qos)
 	int count = 3;
 	MQTTProperty property;
 	MQTTProperties props = MQTTProperties_initializer;
-	MQTTResponse response = {SUCCESS, NULL};
+	MQTTResponse response = MQTTResponse_initializer;
 	int i, rc;
 
 	failures = 0;
@@ -836,7 +837,7 @@ int test4_run(int qos)
 
 	/* subscribe so we can get messages back */
 	response = MQTTClient_subscribe5(c, topic, subsqos, NULL, NULL);
-	assert("Good rc from subscribe", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	assert("Good rc from subscribe", response.reasonCode == subsqos, "rc was %d", response.reasonCode);
 
 	/* send messages so that we can receive the same ones */
 	for (i = 0; i < count; ++i)
@@ -967,7 +968,7 @@ int test5(struct Options options)
 	int count = 5;
 	MQTTProperty property;
 	MQTTProperties props = MQTTProperties_initializer;
-	MQTTResponse response = {SUCCESS, NULL};
+	MQTTResponse response = MQTTResponse_initializer;
 	int i, rc;
 
 	fprintf(xml, "<testcase classname=\"test1\" name=\"disconnect with quiesce timeout should allow exchanges to complete\"");
@@ -1001,7 +1002,7 @@ int test5(struct Options options)
 	}
 
 	response = MQTTClient_subscribe5(c, topic, subsqos, NULL, NULL);
-	assert("Good rc from subscribe", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	assert("Good rc from subscribe", response.reasonCode == subsqos, "rc was %d", response.reasonCode);
 
 	for (i = 0; i < count; ++i)
 	{
@@ -1072,7 +1073,7 @@ int test6(struct Options options)
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
 	MQTTClient_willOptions wopts =  MQTTClient_willOptions_initializer;
 	MQTTClient_connectOptions opts2 = MQTTClient_connectOptions_initializer5;
-	MQTTResponse response = {SUCCESS, NULL};
+	MQTTResponse response = MQTTResponse_initializer;
 	int rc, count;
 	char* mqttsas_topic = "MQTTSAS topic";
 
@@ -1130,7 +1131,7 @@ int test6(struct Options options)
 	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d\n", response.reasonCode);
 
 	response = MQTTClient_subscribe5(test6_c2, test6_will_topic, 2, NULL, NULL);
-	assert("Good rc from subscribe", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d\n", response.reasonCode);
+	assert("Good rc from subscribe", response.reasonCode == GRANTED_QOS_2, "rc was %d\n", response.reasonCode);
 
 	/* now send the command which will break the connection and cause the will message to be sent */
 	response = MQTTClient_publish5(test6_c1, mqttsas_topic, (int)strlen("TERMINATE"), "TERMINATE", 0, 0, NULL, NULL);
@@ -1183,7 +1184,7 @@ int test6a(struct Options options)
 	MQTTClient_willOptions wopts =  MQTTClient_willOptions_initializer;
 	MQTTClient_connectOptions opts2 = MQTTClient_connectOptions_initializer5;
 	int rc, count;
-	MQTTResponse response = {SUCCESS, NULL};
+	MQTTResponse response = MQTTResponse_initializer;
 	char* mqttsas_topic = "MQTTSAS topic";
 
 	failures = 0;
@@ -1242,7 +1243,7 @@ int test6a(struct Options options)
 	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d\n", response.reasonCode);
 
 	response = MQTTClient_subscribe5(test6_c2, test6_will_topic, 2, NULL, NULL);
-	assert("Good rc from subscribe", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d\n", response.reasonCode);
+	assert("Good rc from subscribe", response.reasonCode == GRANTED_QOS_2, "rc was %d\n", response.reasonCode);
 
 	/* now send the command which will break the connection and cause the will message to be sent */
 	response = MQTTClient_publish5(test6_c1, mqttsas_topic, (int)strlen("TERMINATE"), "TERMINATE", 0, 0, NULL, NULL);

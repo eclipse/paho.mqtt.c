@@ -316,6 +316,8 @@ void test1_onUnsubscribe(void* context, MQTTAsync_successData5* response)
 	MyLog(LOGA_DEBUG, "In onUnsubscribe onSuccess callback %p", c);
 	MyLog(LOGA_INFO, "Unsuback properties:");
 	logProperties(&response->properties);
+	assert("A property should exist", response->properties.count > 0,
+			"Property count was %d\n", response->properties);
 
 	opts.onSuccess = test1_onDisconnect;
 	opts.context = c;
@@ -407,7 +409,9 @@ void test1_onSubscribe(void* context, MQTTAsync_successData5* response)
 	MQTTProperties props = MQTTProperties_initializer;
 	MQTTAsync_callOptions opts = MQTTAsync_callOptions_initializer;
 
-	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback %p granted qos %d", c, response->alt.qos);
+	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback %p granted qos %d", c, response->reasonCode);
+	assert("Subscribe response should be 2", response->reasonCode == GRANTED_QOS_2,
+			"response was %d", response->reasonCode);
 
 	MyLog(LOGA_INFO, "Suback properties:");
 	logProperties(&response->properties);
@@ -918,11 +922,23 @@ int test4_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 	else
 	{
 		MQTTAsync_callOptions opts = MQTTAsync_callOptions_initializer;
+		MQTTProperties props = MQTTProperties_initializer;
+		MQTTProperty property;
 
 		opts.onSuccess5 = test1_onUnsubscribe;
 		opts.context = c;
+
+		property.identifier = USER_PROPERTY;
+		property.value.data.data = "test user property";
+		property.value.data.len = strlen(property.value.data.data);
+		property.value.value.data = "test user property value";
+		property.value.value.len = strlen(property.value.value.data);
+		MQTTProperties_add(&props, &property);
+
+		opts.properties = props;
 		rc = MQTTAsync_unsubscribe(c, test_topic, &opts);
 		assert("Unsubscribe successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+		MQTTProperties_free(&props);
 	}
 
 	MQTTAsync_freeMessage(&message);
@@ -1325,7 +1341,7 @@ void test7_onSubscribe(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 
-	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback %p granted qos %d", c, response->alt.qos);
+	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback %p granted qos %d", c, response->reasonCode);
 
 	test7_subscribed = 1;
 }
@@ -1595,7 +1611,7 @@ void test8_onSubscribe(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 
-	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback %p granted qos %d", c, response->alt.qos);
+	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback %p granted qos %d", c, response->reasonCode);
 
 	test8_subscribed = 1;
 }
@@ -1810,7 +1826,7 @@ void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 
 int main(int argc, char** argv)
 {
-	int rc = 0;
+	int rc = -1;
  	int (*tests[])() = {NULL, test1, test2, test3, test4, test5, test6, test7, test8}; /* indexed starting from 1 */
 	MQTTAsync_nameValue* info;
 	int i;
@@ -1842,8 +1858,13 @@ int main(int argc, char** argv)
 		}
 		else
 		{
-			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
-			rc = tests[options.test_no](options); /* run just the selected test */
+			if (options.test_no >= ARRAY_SIZE(tests))
+				MyLog(LOGA_INFO, "No test number %d", options.test_no);
+			else
+			{
+				MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+				rc = tests[options.test_no](options); /* run just the selected test */
+			}
 		}
 	}
 

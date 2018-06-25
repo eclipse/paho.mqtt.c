@@ -858,9 +858,14 @@ DLLExport int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* o
 
 typedef struct MQTTResponse
 {
+	int version;
 	enum MQTTReasonCodes reasonCode;
-	MQTTProperties* properties; /* optional */
+	int reasonCodeCount;	               /* used for subscribeMany5 and unsubscribeMany5 */
+	enum MQTTReasonCodes* reasonCodes;  /* used for subscribeMany5 and unsubscribeMany5 */
+	MQTTProperties* properties;         /* optional */
 } MQTTResponse;
+
+#define MQTTResponse_initializer {1, SUCCESS, 0, NULL, NULL}
 
 DLLExport void MQTTResponse_free(MQTTResponse response);
 
@@ -939,8 +944,8 @@ DLLExport MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char* topi
   */
 DLLExport int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, int* qos);
 
-DLLExport MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char* const* topic, int* qos,
-		MQTTSubscribe_options* opts, MQTTProperties* props);
+DLLExport MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char* const* topic,
+		int* qos, MQTTSubscribe_options* opts, MQTTProperties* props);
 
 /**
   * This function attempts to remove an existing subscription made by the

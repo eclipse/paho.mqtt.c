@@ -499,10 +499,12 @@ typedef struct
 	/** A union of the different values that can be returned for subscribe, unsubscribe and publish. */
 	union
 	{
-		/** For subscribe, the granted QoS of the subscription returned by the server. */
-		int qos;
-		/** For subscribeMany, the list of granted QoSs of the subscriptions returned by the server. */
-		int* qosList;
+		/** For subscribeMany, the list of reasonCodes returned by the server. */
+		struct
+		{
+			int reasonCodeCount;
+			enum MQTTReasonCodes* reasonCodes;
+		} sub;
 		/** For publish, the message being sent to the server. */
 		struct
 		{
@@ -516,9 +518,10 @@ typedef struct
 			int MQTTVersion;
 			int sessionPresent;
 		} connect;
+		/** For unsubscribeMany, the list of reasonCodes returned by the server. */
 		struct
 		{
-			enum MQTTReasonCodes reasonCode;
+			int reasonCodeCount;
 			enum MQTTReasonCodes* reasonCodes;
 		} unsub;
 	} alt;
@@ -603,9 +606,11 @@ typedef struct MQTTAsync_responseOptions
 	 */
 	MQTTProperties properties;
 	MQTTSubscribe_options subscribe_options;
+	int subscribe_options_count;
+	MQTTSubscribe_options* subscribe_options_list;
 } MQTTAsync_responseOptions;
 
-#define MQTTAsync_responseOptions_initializer { {'M', 'Q', 'T', 'R'}, 1, NULL, NULL, 0, 0, NULL, NULL, MQTTProperties_initializer, MQTTSubscribe_options_initializer }
+#define MQTTAsync_responseOptions_initializer { {'M', 'Q', 'T', 'R'}, 1, NULL, NULL, 0, 0, NULL, NULL, MQTTProperties_initializer, MQTTSubscribe_options_initializer, 0, NULL}
 
 typedef struct MQTTAsync_responseOptions MQTTAsync_callOptions;
 #define MQTTAsync_callOptions_initializer MQTTAsync_responseOptions_initializer

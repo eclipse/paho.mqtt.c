@@ -564,6 +564,8 @@ DLLExport void MQTTResponse_free(MQTTResponse response)
 	FUNC_ENTRY;
 	if (response.properties)
 	{
+		if (response.reasonCodeCount > 0 && response.reasonCodes)
+			free(response.reasonCodes);
 		MQTTProperties_free(response.properties);
 		free(response.properties);
 	}
@@ -1044,9 +1046,10 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 	MQTTClients* m = handle;
 	int rc = SOCKET_ERROR;
 	int sessionPresent = 0;
-	MQTTResponse resp = {SOCKET_ERROR, NULL};
+	MQTTResponse resp = MQTTResponse_initializer;
 
 	FUNC_ENTRY;
+	resp.reasonCode = SOCKET_ERROR;
 	if (m->ma && !running)
 	{
 		Thread_start(MQTTClient_run, handle);
@@ -1292,10 +1295,11 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 	MQTTClients* m = handle;
 	START_TIME_TYPE start;
 	long millisecsTimeout = 30000L;
-	MQTTResponse rc = {SOCKET_ERROR, NULL};
+	MQTTResponse rc = MQTTResponse_initializer;
 	int MQTTVersion = 0;
 
 	FUNC_ENTRY;
+	rc.reasonCode = SOCKET_ERROR;
 	millisecsTimeout = options->connectTimeout * 1000;
 	start = MQTTClient_start_clock();
 
@@ -1455,12 +1459,13 @@ MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connectOptions* o
 		MQTTProperties* connectProperties, MQTTProperties* willProperties)
 {
 	MQTTClients* m = handle;
-	MQTTResponse rc = {SOCKET_ERROR, NULL};
+	MQTTResponse rc = MQTTResponse_initializer;
 
 	FUNC_ENTRY;
 	Thread_lock_mutex(connect_mutex);
 	Thread_lock_mutex(mqttclient_mutex);
 
+	rc.reasonCode = SOCKET_ERROR;
 	if (options == NULL)
 	{
 		rc.reasonCode = MQTTCLIENT_NULL_PARAMETER;
@@ -1714,21 +1719,22 @@ int MQTTClient_isConnected(MQTTClient handle)
 }
 
 
-MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char* const* topic, int* qos,
-		MQTTSubscribe_options* opts, MQTTProperties* props)
+MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char* const* topic,
+		int* qos, MQTTSubscribe_options* opts, MQTTProperties* props)
 {
 	MQTTClients* m = handle;
 	List* topics = NULL;
 	List* qoss = NULL;
 	int i = 0;
 	int rc = MQTTCLIENT_FAILURE;
-	MQTTResponse resp = {MQTTCLIENT_FAILURE, NULL};
+	MQTTResponse resp = MQTTResponse_initializer;
 	int msgid = 0;
 
 	FUNC_ENTRY;
 	Thread_lock_mutex(subscribe_mutex);
 	Thread_lock_mutex(mqttclient_mutex);
 
+	resp.reasonCode = MQTTCLIENT_FAILURE;
 	if (m == NULL || m->c == NULL)
 	{
 		rc = MQTTCLIENT_FAILURE;
@@ -1747,7 +1753,7 @@ MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char* const
 			goto exit;
 		}
 
-		if(qos[i] < 0 || qos[i] > 2)
+		if (qos[i] < 0 || qos[i] > 2)
 		{
 			rc = MQTTCLIENT_BAD_QOS;
 			goto exit;
@@ -1781,12 +1787,36 @@ MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char* const
 		if (pack != NULL)
 		{
 			Suback* sub = (Suback*)pack;
-			ListElement* current = NULL;
-			i = 0;
-			while (ListNextElement(sub->qoss, &current))
+
+			if (m->c->MQTTVersion == MQTTVERSION_5)
 			{
-				int* reqqos = (int*)(current->content);
-				qos[i++] = *reqqos;
+				if (sub->properties.count > 0)
+				{
+					resp.properties = malloc(sizeof(MQTTProperties));
+					*resp.properties = MQTTProperties_copy(&sub->properties);
+				}
+				resp.reasonCodeCount = sub->qoss->count;
+				resp.reasonCode = *(int*)sub->qoss->first->content;
+				if (sub->qoss->count > 1)
+				{
+					ListElement* current = NULL;
+					int count = 0;
+
+					resp.reasonCodes = malloc(sizeof(enum MQTTReasonCodes) * (sub->qoss->count));
+					while (ListNextElement(sub->qoss, &current))
+						(resp.reasonCodes)[count++] = *(enum MQTTReasonCodes*)(current->content);
+				}
+			}
+			else
+			{
+				ListElement* current = NULL;
+				i = 0;
+				while (ListNextElement(sub->qoss, &current))
+				{
+					int* reqqos = (int*)(current->content);
+					qos[i++] = *reqqos;
+				}
+				resp.reasonCode = rc;
 			}
 			rc = MQTTProtocol_handleSubacks(pack, m->c->net.socket);
 			m->pack = NULL;
@@ -1801,7 +1831,8 @@ MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char* const
 		rc = MQTTCLIENT_SUCCESS;
 
 exit:
-	resp.reasonCode = rc;
+	if (rc < 0)
+		resp.reasonCode = rc;
 	Thread_unlock_mutex(mqttclient_mutex);
 	Thread_unlock_mutex(subscribe_mutex);
 	FUNC_EXIT_RC(resp.reasonCode);
@@ -1813,7 +1844,7 @@ exit:
 int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, int* qos)
 {
 	MQTTClients* m = handle;
-	MQTTResponse response = {MQTTCLIENT_SUCCESS, NULL};
+	MQTTResponse response = MQTTResponse_initializer;
 
 	if (m->c->MQTTVersion >= MQTTVERSION_5)
 		response.reasonCode = MQTTCLIENT_BAD_MQTT_VERSION;
@@ -1843,7 +1874,7 @@ MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char* topic, int qos
 int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos)
 {
 	MQTTClients* m = handle;
-	MQTTResponse response = {MQTTCLIENT_SUCCESS, NULL};
+	MQTTResponse response = MQTTResponse_initializer;
 
 	if (m->c->MQTTVersion >= MQTTVERSION_5)
 		response.reasonCode = MQTTCLIENT_BAD_MQTT_VERSION;
@@ -1860,13 +1891,14 @@ MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count, char* con
 	List* topics = NULL;
 	int i = 0;
 	int rc = SOCKET_ERROR;
-	MQTTResponse resp = {MQTTCLIENT_FAILURE, NULL};
+	MQTTResponse resp = MQTTResponse_initializer;
 	int msgid = 0;
 
 	FUNC_ENTRY;
 	Thread_lock_mutex(unsubscribe_mutex);
 	Thread_lock_mutex(mqttclient_mutex);
 
+	resp.reasonCode = MQTTCLIENT_FAILURE;
 	if (m == NULL || m->c == NULL)
 	{
 		rc = MQTTCLIENT_FAILURE;
@@ -1906,6 +1938,29 @@ MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count, char* con
 		Thread_lock_mutex(mqttclient_mutex);
 		if (pack != NULL)
 		{
+			Unsuback* unsub = (Unsuback*)pack;
+
+			if (m->c->MQTTVersion == MQTTVERSION_5)
+			{
+				if (unsub->properties.count > 0)
+				{
+					resp.properties = malloc(sizeof(MQTTProperties));
+					*resp.properties = MQTTProperties_copy(&unsub->properties);
+				}
+				resp.reasonCodeCount = unsub->reasonCodes->count;
+				resp.reasonCode = *(int*)unsub->reasonCodes->first->content;
+				if (unsub->reasonCodes->count > 1)
+				{
+					ListElement* current = NULL;
+					int count = 0;
+
+					resp.reasonCodes = malloc(sizeof(enum MQTTReasonCodes) * (unsub->reasonCodes->count));
+					while (ListNextElement(unsub->reasonCodes, &current))
+						(resp.reasonCodes)[count++] = *(enum MQTTReasonCodes*)(current->content);
+				}
+			}
+			else
+				resp.reasonCode = rc;
 			rc = MQTTProtocol_handleUnsubacks(pack, m->c->net.socket);
 			m->pack = NULL;
 		}
@@ -1917,7 +1972,8 @@ MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count, char* con
 		MQTTClient_disconnect_internal(handle, 0);
 
 exit:
-	resp.reasonCode = rc;
+	if (rc < 0)
+		resp.reasonCode = rc;
 	Thread_unlock_mutex(mqttclient_mutex);
 	Thread_unlock_mutex(unsubscribe_mutex);
 	FUNC_EXIT_RC(resp.reasonCode);
@@ -1960,7 +2016,7 @@ MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int p
 	Publish* p = NULL;
 	int blocked = 0;
 	int msgid = 0;
-	MQTTResponse resp = {MQTTCLIENT_SUCCESS, NULL};
+	MQTTResponse resp = MQTTResponse_initializer;
 
 	FUNC_ENTRY;
 	Thread_lock_mutex(mqttclient_mutex);
@@ -2067,7 +2123,7 @@ int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen,
 							 int qos, int retained, MQTTClient_deliveryToken* deliveryToken)
 {
 	MQTTClients* m = handle;
-	MQTTResponse rc = {MQTTCLIENT_SUCCESS, NULL};
+	MQTTResponse rc = MQTTResponse_initializer;
 
 	if (m->c->MQTTVersion >= MQTTVERSION_5)
 		rc.reasonCode = MQTTCLIENT_BAD_MQTT_VERSION;
@@ -2080,7 +2136,7 @@ int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen,
 MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char* topicName, MQTTClient_message* message,
 								MQTTClient_deliveryToken* deliveryToken)
 {
-	MQTTResponse rc = {MQTTCLIENT_SUCCESS, NULL};
+	MQTTResponse rc = MQTTResponse_initializer;
 	MQTTProperties* props = NULL;
 
 	FUNC_ENTRY;
@@ -2112,7 +2168,7 @@ int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClie
 															 MQTTClient_deliveryToken* deliveryToken)
 {
 	MQTTClients* m = handle;
-	MQTTResponse rc = {MQTTCLIENT_SUCCESS, NULL};
+	MQTTResponse rc = MQTTResponse_initializer;
 
 	if (strncmp(message->struct_id, "MQTM", 4) != 0 ||
 			(message->struct_version != 0 && message->struct_version != 1))

@@ -385,7 +385,7 @@ int test_client_topic_aliases(struct Options options)
 	MQTTProperty property;
 	MQTTSubscribe_options subopts = MQTTSubscribe_options_initializer;
 	MQTTClient_message pubmsg = MQTTClient_message_initializer;
-	MQTTResponse response = {SUCCESS, NULL};
+	MQTTResponse response = MQTTResponse_initializer;
 	MQTTClient_deliveryToken dt;
 	int rc = 0;
 	int count = 0;
@@ -481,7 +481,7 @@ int test_client_topic_aliases(struct Options options)
 
 	/* subscribe to a topic */
 	response = MQTTClient_subscribe5(c, test_topic, 2, NULL, NULL);
-	assert("Good rc from subscribe", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	assert("Good rc from subscribe", response.reasonCode == GRANTED_QOS_2, "rc was %d", response.reasonCode);
 
 	/* then publish to the topic */
 	MQTTProperties_free(&pubmsg.properties);
@@ -639,7 +639,7 @@ int test_server_topic_aliases(struct Options options)
 	MQTTProperties connect_props = MQTTProperties_initializer;
 	MQTTProperty property;
 	MQTTClient_message pubmsg = MQTTClient_message_initializer;
-	MQTTResponse response = {SUCCESS, NULL};
+	MQTTResponse response = MQTTResponse_initializer;
 	MQTTClient_deliveryToken dt;
 	int rc = 0;
 	int count = 0;
@@ -696,7 +696,7 @@ int test_server_topic_aliases(struct Options options)
 
 	/* subscribe to a topic */
 	response = MQTTClient_subscribe5(c, test_topic, 2, NULL, NULL);
-	assert("Good rc from subscribe", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	assert("Good rc from subscribe", response.reasonCode == GRANTED_QOS_2, "rc was %d", response.reasonCode);
 
 	messages_arrived = 0;
 	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
@@ -777,7 +777,7 @@ int test_subscription_ids(struct Options options)
 	MQTTProperties subs_props = MQTTProperties_initializer;
 	MQTTProperty property;
 	MQTTClient_message pubmsg = MQTTClient_message_initializer;
-	MQTTResponse response = {SUCCESS, NULL};
+	MQTTResponse response = MQTTResponse_initializer;
 	MQTTClient_deliveryToken dt;
 	int rc = 0;
 	int count = 0;
@@ -832,13 +832,13 @@ int test_subscription_ids(struct Options options)
 	property.value.integer4 = 1;
 	MQTTProperties_add(&subs_props, &property);
 	response = MQTTClient_subscribe5(c, test_topic, 2, NULL, &subs_props);
-	assert("Good rc from subscribe", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	assert("Good rc from subscribe", response.reasonCode == GRANTED_QOS_2, "rc was %d", response.reasonCode);
 
 	/* now to an overlapping topic */
 	property.value.integer4 = 2;
 	subs_props.array[0].value.integer4 = 2;
 	response = MQTTClient_subscribe5(c, "+", 2, NULL, &subs_props);
-	assert("Good rc from subscribe", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	assert("Good rc from subscribe", response.reasonCode == GRANTED_QOS_2, "rc was %d", response.reasonCode);
 
 	messages_arrived = 0;
 	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
@@ -913,7 +913,7 @@ int test_flow_control(struct Options options)
 	MQTTProperties connect_props = MQTTProperties_initializer;
 	MQTTProperty property;
 	MQTTClient_message pubmsg = MQTTClient_message_initializer;
-	MQTTResponse response = {SUCCESS, NULL};
+	MQTTResponse response = MQTTResponse_initializer;
 	MQTTClient_deliveryToken dt;
 	int rc = 0, i = 0, count = 0;
 	char* test_topic = "test_flow_control";
@@ -962,7 +962,7 @@ int test_flow_control(struct Options options)
 	}
 
 	response = MQTTClient_subscribe5(c, test_topic, 2, NULL, NULL);
-	assert("Good rc from subscribe", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	assert("Good rc from subscribe", response.reasonCode == GRANTED_QOS_2, "rc was %d", response.reasonCode);
 
 	messages_arrived = 0;
 	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
@@ -1002,6 +1002,95 @@ exit:
 }
 
 
+int test_error_reporting(struct Options options)
+{
+	int subsqos = 2;
+	MQTTClient c;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
+	MQTTProperties props = MQTTProperties_initializer;
+	MQTTProperty property;
+	MQTTResponse response = MQTTResponse_initializer;
+	MQTTClient_deliveryToken dt;
+	int rc = 0, i = 0, count = 0;
+	char* test_topic = "test_error_reporting";
+	int receive_maximum = 65535;
+
+	fprintf(xml, "<testcase classname=\"test_error_reporting\" name=\"error reporting\"");
+	global_start_time = start_clock();
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test - error reporting");
+
+	//MQTTClient_setTraceCallback(test_flow_control_trace_callback);
+
+	rc = MQTTClient_create(&c, options.connection, "error_reporting",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTCLIENT_SUCCESS)
+		goto exit;
+
+	rc = MQTTClient_setCallbacks(c, NULL, NULL, test_flow_control_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+
+	opts.MQTTVersion = options.MQTTVersion;
+	if (options.haconnections != NULL)
+	{
+		opts.serverURIs = options.haconnections;
+		opts.serverURIcount = options.hacount;
+	}
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	response = MQTTClient_connect5(c, &opts, NULL, NULL);
+	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	if (response.reasonCode != MQTTCLIENT_SUCCESS)
+		goto exit;
+
+	if (response.properties)
+	{
+		if (MQTTProperties_hasProperty(response.properties, RECEIVE_MAXIMUM))
+			receive_maximum = MQTTProperties_getNumericValue(response.properties, RECEIVE_MAXIMUM);
+
+		logProperties(response.properties);
+		MQTTResponse_free(response);
+	}
+
+	property.identifier = USER_PROPERTY;
+	property.value.data.data = "unsub user property";
+	property.value.data.len = strlen(property.value.data.data);
+	property.value.value.data = "unsub user property value";
+	property.value.value.len = strlen(property.value.value.data);
+	MQTTProperties_add(&props, &property);
+	response = MQTTClient_subscribe5(c, test_topic, 2, NULL, &props);
+	assert("Good rc from subscribe", response.reasonCode == GRANTED_QOS_2, "rc was %d", response.reasonCode);
+	assert("Properties should exist", response.properties != NULL, "props was %p", response.properties);
+	if (response.properties)
+	{
+		logProperties(response.properties);
+		MQTTResponse_free(response);
+	}
+
+	response = MQTTClient_unsubscribe5(c, test_topic, &props);
+	assert("Good rc from unsubscribe", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	assert("Properties should exist", response.properties != NULL, "props was %p", response.properties);
+	if (response.properties)
+	{
+		logProperties(response.properties);
+		MQTTResponse_free(response);
+	}
+
+	rc = MQTTClient_disconnect5(c, 1000, SUCCESS, NULL);
+
+exit:
+	MQTTClient_setTraceCallback(NULL);
+	MQTTProperties_free(&props);
+	MQTTClient_destroy(&c);
+
+	MyLog(LOGA_INFO, "TEST3: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
 int main(int argc, char** argv)
 {
 	int rc = 0,
@@ -1011,6 +1100,7 @@ int main(int argc, char** argv)
 		test_server_topic_aliases,
  		test_subscription_ids,
  		test_flow_control,
+		test_error_reporting
  	};
 
 	xml = fopen("TEST-test1.xml", "w");

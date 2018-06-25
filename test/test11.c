@@ -901,7 +901,7 @@ Test: flow control
 
 struct
 {
-	char* test_topic;
+	char * test_topic;
 	int test_finished;
 	int messages_arrived;
 	int receive_maximum;
@@ -1056,6 +1056,177 @@ exit:
 	return failures;
 }
 
+struct
+{
+	char* test_topic;
+	int test_finished;
+	int messages_arrived;
+} test_error_reporting_globals =
+{
+	"error reporting topic", 0, 0
+};
+
+
+void test_error_reporting_onUnsubscribe(void* context, MQTTAsync_successData5* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	int rc;
+	int i = 0;
+
+	MyLog(LOGA_INFO, "Unsuback properties:");
+	logProperties(&response->properties);
+
+	assert("Reason code count should be 2", response->alt.unsub.reasonCodeCount == 2,
+		   "Reason code count was %d\n", response->alt.unsub.reasonCodeCount);
+
+	if (response->alt.unsub.reasonCodeCount == 1)
+		MyLog(LOGA_INFO, "reason code %d", response->reasonCode);
+	else if (response->alt.unsub.reasonCodeCount > 1)
+	{
+		for (i = 0; i < response->alt.unsub.reasonCodeCount; ++i)
+		{
+			MyLog(LOGA_INFO, "Unsubscribe reason code %d", response->alt.unsub.reasonCodes[i]);
+		}
+	}
+
+	test_error_reporting_globals.test_finished = 1;
+}
+
+
+void test_error_reporting_onSubscribe(void* context, MQTTAsync_successData5* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	MQTTProperty property;
+	char* topics[2] = {test_error_reporting_globals.test_topic, "+"};
+	int rc;
+	int i = 0;
+
+	MyLog(LOGA_INFO, "Suback properties:");
+	logProperties(&response->properties);
+
+	assert("Reason code count should be 2", response->alt.sub.reasonCodeCount == 2,
+		   "Reason code count was %d\n", response->alt.sub.reasonCodeCount);
+
+	if (response->alt.sub.reasonCodeCount == 1)
+		MyLog(LOGA_INFO, "reason code %d", response->reasonCode);
+	else if (response->alt.sub.reasonCodeCount > 1)
+	{
+		for (i = 0; i < response->alt.sub.reasonCodeCount; ++i)
+		{
+			MyLog(LOGA_INFO, "Subscribe reason code %d", response->alt.sub.reasonCodes[i]);
+		}
+	}
+
+	opts.onSuccess5 = test_error_reporting_onUnsubscribe;
+	opts.context = c;
+
+	property.identifier = USER_PROPERTY;
+	property.value.data.data = "test user property";
+	property.value.data.len = strlen(property.value.data.data);
+	property.value.value.data = "test user property value";
+	property.value.value.len = strlen(property.value.value.data);
+	MQTTProperties_add(&opts.properties, &property);
+
+	rc = MQTTAsync_unsubscribeMany(c, 2, topics, &opts);
+	assert("Good rc from unsubscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		test_flow_control_globals.test_finished = 1;
+
+	MQTTProperties_free(&opts.properties);
+}
+
+
+void test_error_reporting_onConnect(void* context, MQTTAsync_successData5* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	int rc;
+	char* topics[2] = {test_error_reporting_globals.test_topic, "+"};
+	int qoss[2] = {2, 2};
+	MQTTSubscribe_options subopts[2] = {MQTTSubscribe_options_initializer, MQTTSubscribe_options_initializer};
+	MQTTProperty property;
+
+	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
+
+	assert("Reason code should be 0", response->reasonCode == SUCCESS,
+		   "Reason code was %d\n", response->reasonCode);
+
+	MyLog(LOGA_INFO, "Connack properties:");
+	logProperties(&response->properties);
+
+	opts.onSuccess5 = test_error_reporting_onSubscribe;
+	opts.context = c;
+
+	property.identifier = USER_PROPERTY;
+	property.value.data.data = "test user property";
+	property.value.data.len = strlen(property.value.data.data);
+	property.value.value.data = "test user property value";
+	property.value.value.len = strlen(property.value.value.data);
+	MQTTProperties_add(&opts.properties, &property);
+
+	opts.subscribe_options_count = 2;
+	opts.subscribe_options_list = subopts;
+
+	rc = MQTTAsync_subscribeMany(c, 2, topics, qoss, &opts);
+	assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		test_flow_control_globals.test_finished = 1;
+
+	MQTTProperties_free(&opts.properties);
+}
+
+
+int test_error_reporting(struct Options options)
+{
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
+	int rc = 0;
+
+	MyLog(LOGA_INFO, "Starting V5 test - error reporting");
+	fprintf(xml, "<testcase classname=\"test11\" name=\"error reporting\"");
+	global_start_time = start_clock();
+
+	rc = MQTTAsync_create(&c, options.connection, "error reporting",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
+
+	rc = MQTTAsync_setCallbacks(c, c, NULL, test_flow_control_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+
+	opts.MQTTVersion = options.MQTTVersion;
+	opts.onSuccess5 = test_error_reporting_onConnect;
+	opts.context = c;
+	opts.cleanstart = 1;
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (test_error_reporting_globals.test_finished == 0)
+		#if defined(WIN32)
+			Sleep(100);
+		#else
+			usleep(10000L);
+		#endif
+
+	MQTTAsync_destroy(&c);
+
+exit:
+	MyLog(LOGA_INFO, "TEST5: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	write_test_result();
+	return failures;
+}
+
 
 void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 {
@@ -1065,12 +1236,13 @@ void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 
 int main(int argc, char** argv)
 {
-	int rc = 0;
+	int rc = -1;
  	int (*tests[])() = {NULL,
  		test_client_topic_aliases,
 		test_server_topic_aliases,
 		test_subscription_ids,
 		test_flow_control,
+		test_error_reporting,
  	}; /* indexed starting from 1 */
 	MQTTAsync_nameValue* info;
 	int i;
@@ -1102,8 +1274,13 @@ int main(int argc, char** argv)
 		}
 		else
 		{
-			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
-			rc = tests[options.test_no](options); /* run just the selected test */
+			if (options.test_no >= ARRAY_SIZE(tests))
+				MyLog(LOGA_INFO, "No test number %d", options.test_no);
+			else
+			{
+				MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+				rc = tests[options.test_no](options); /* run just the selected test */
+			}
 		}
 	}
 

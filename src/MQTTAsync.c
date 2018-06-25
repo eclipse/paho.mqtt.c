@@ -277,6 +277,7 @@ typedef struct
 			char** topics;
 			int* qoss;
 			MQTTSubscribe_options opts;
+			MQTTSubscribe_options* optlist;
 		} sub;
 		struct
 		{
@@ -1378,11 +1379,16 @@ static int MQTTAsync_processCommand(void)
 		if (command->client->c->MQTTVersion >= MQTTVERSION_5)
 		{
 			props = &command->command.properties;
-			subopts = &command->command.details.sub.opts;
+			if (command->command.details.sub.count > 1)
+				subopts = command->command.details.sub.optlist;
+			else
+				subopts = &command->command.details.sub.opts;
 		}
 		rc = MQTTProtocol_subscribe(command->client->c, topics, qoss, command->command.token, subopts, props);
 		ListFreeNoContent(topics);
 		ListFreeNoContent(qoss);
+		if (command->command.details.sub.count > 1)
+			free(command->command.details.sub.optlist);
 	}
 	else if (command->command.type == UNSUBSCRIBE)
 	{
@@ -2171,14 +2177,14 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 								else if (command->command.onSuccess5)
 								{
 									MQTTAsync_successData5 data;
-									int* array = NULL;
+									enum MQTTReasonCodes* array = NULL;
 
-									if (sub->qoss->count == 1)
-										data.alt.qos = *(int*)(sub->qoss->first->content);
-									else if (sub->qoss->count > 1)
+									data.reasonCode = *(int*)(sub->qoss->first->content);
+									data.alt.sub.reasonCodeCount = sub->qoss->count;
+									if (sub->qoss->count > 1)
 									{
 										ListElement* cur_qos = NULL;
-										int* element = array = data.alt.qosList = malloc(sub->qoss->count * sizeof(int));
+										enum MQTTReasonCodes* element = array = data.alt.sub.reasonCodes = malloc(sub->qoss->count * sizeof(enum MQTTReasonCodes));
 										while (ListNextElement(sub->qoss, &cur_qos))
 											*element++ = *(int*)(cur_qos->content);
 									}
@@ -2252,9 +2258,9 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 									MQTTAsync_successData5 data;
 									enum MQTTReasonCodes* array = NULL;
 
-									if (unsub->reasonCodes->count == 1)
-										data.alt.unsub.reasonCode = *(enum MQTTReasonCodes*)(unsub->reasonCodes->first->content);
-									else if (unsub->reasonCodes->count > 1)
+									data.reasonCode = *(enum MQTTReasonCodes*)(unsub->reasonCodes->first->content);
+									data.alt.unsub.reasonCodeCount = unsub->reasonCodes->count;
+									if (unsub->reasonCodes->count > 1)
 									{
 										ListElement* cur_rc = NULL;
 										enum MQTTReasonCodes* element = array = data.alt.unsub.reasonCodes = malloc(unsub->reasonCodes->count * sizeof(enum MQTTReasonCodes));
@@ -3066,6 +3072,11 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int
 		rc = MQTTASYNC_NO_MORE_MSGIDS;
 		goto exit;
 	}
+	if (m->c->MQTTVersion >= MQTTVERSION_5 && count > 1 && count != response->subscribe_options_count)
+	{
+		rc = MQTTASYNC_BAD_MQTT_OPTIONS;
+		goto exit;
+	}
 
 	/* Add subscribe request to operation queue */
 	sub = malloc(sizeof(MQTTAsync_queuedCommand));
@@ -3084,6 +3095,12 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int
 		{
 			sub->command.properties = MQTTProperties_copy(&response->properties);
 			sub->command.details.sub.opts = response->subscribe_options;
+			if (count > 1)
+			{
+				sub->command.details.sub.optlist = malloc(sizeof(MQTTSubscribe_options) * count);
+				for (i = 0; i < count; ++i)
+					sub->command.details.sub.optlist[i] = response->subscribe_options_list[i];
+			}
 		}
 	}
 	sub->command.type = SUBSCRIBE;

@@ -1137,7 +1137,6 @@ void test_error_reporting_onSubscribe(void* context, MQTTAsync_successData5* res
 	MQTTProperties_free(&opts.properties);
 }
 
-
 void test_error_reporting_onConnect(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
@@ -1228,6 +1227,211 @@ exit:
 }
 
 
+struct
+{
+	int test_finished;
+	char* test_topic;
+} test_qos_1_2_errors_globals =
+{
+	0, "test_qos_1_2_errors"
+};
+
+
+void test_qos_1_2_errors_onPublishSuccess(void* context, MQTTAsync_successData5* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MyLog(LOGA_INFO, "Callback: publish success, reason code \"%s\" msgid: %d packet type: ",
+			MQTTReasonCodeString(response->reasonCode), response->token);
+
+	logProperties(&response->properties);
+
+	test_qos_1_2_errors_globals.test_finished = 1;
+}
+
+
+void test_qos_1_2_errors_onPublishFailure3(void* context, MQTTAsync_failureData5* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	MQTTProperty property;
+	int rc;
+
+	MyLog(LOGA_INFO, "Callback: publish failure, reason code \"%s\" msgid: %d packet type: ",
+			MQTTReasonCodeString(response->reasonCode), response->token);
+
+	logProperties(&response->properties);
+
+	test_qos_1_2_errors_globals.test_finished = 1;
+}
+
+
+void test_qos_1_2_errors_onPublishFailure2(void* context, MQTTAsync_failureData5* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	MQTTProperty property;
+	int rc;
+
+	MyLog(LOGA_INFO, "Callback: publish failure, reason code \"%s\" msgid: %d packet type: ",
+			MQTTReasonCodeString(response->reasonCode), response->token);
+
+	logProperties(&response->properties);
+
+	opts.onSuccess5 = test_qos_1_2_errors_onPublishSuccess;
+	opts.onFailure5 = test_qos_1_2_errors_onPublishFailure3;
+	opts.context = c;
+
+	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
+	pubmsg.payloadlen = 11;
+	pubmsg.qos = 2;
+	pubmsg.retained = 0;
+
+	property.identifier = USER_PROPERTY;
+	property.value.data.data = "pub user property";
+	property.value.data.len = strlen(property.value.data.data);
+	property.value.value.data = "pub user property value";
+	property.value.value.len = strlen(property.value.value.data);
+	MQTTProperties_add(&pubmsg.properties, &property);
+
+	rc = MQTTAsync_sendMessage(c, "test_qos_1_2_errors_pubcomp", &pubmsg, &opts);
+	assert("Good rc from publish", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != SUCCESS)
+		test_qos_1_2_errors_globals.test_finished = 1;
+
+	MQTTProperties_free(&pubmsg.properties);
+}
+
+
+void test_qos_1_2_errors_onPublishFailure(void* context, MQTTAsync_failureData5* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	MQTTProperty property;
+	int rc;
+
+	MyLog(LOGA_INFO, "Callback: publish failure, reason code \"%s\" msgid: %d packet type: ",
+			MQTTReasonCodeString(response->reasonCode), response->token);
+
+	logProperties(&response->properties);
+
+	opts.onSuccess5 = test_qos_1_2_errors_onPublishSuccess;
+	opts.onFailure5 = test_qos_1_2_errors_onPublishFailure2;
+	opts.context = c;
+
+	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
+	pubmsg.payloadlen = 11;
+	pubmsg.qos = 2;
+	pubmsg.retained = 0;
+
+	property.identifier = USER_PROPERTY;
+	property.value.data.data = "pub user property";
+	property.value.data.len = strlen(property.value.data.data);
+	property.value.value.data = "pub user property value";
+	property.value.value.len = strlen(property.value.value.data);
+	MQTTProperties_add(&pubmsg.properties, &property);
+
+	rc = MQTTAsync_sendMessage(c, test_qos_1_2_errors_globals.test_topic, &pubmsg, &opts);
+	assert("Good rc from publish", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != SUCCESS)
+		test_qos_1_2_errors_globals.test_finished = 1;
+
+	MQTTProperties_free(&pubmsg.properties);
+}
+
+
+void test_qos_1_2_errors_onConnect(void* context, MQTTAsync_successData5* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	MQTTProperty property;
+	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	int rc;
+
+	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
+
+	assert("Reason code should be 0", response->reasonCode == SUCCESS,
+		   "Reason code was %d\n", response->reasonCode);
+
+	MyLog(LOGA_INFO, "Connack properties:");
+	logProperties(&response->properties);
+
+	opts.onSuccess5 = test_qos_1_2_errors_onPublishSuccess;
+	opts.onFailure5 = test_qos_1_2_errors_onPublishFailure;
+	opts.context = c;
+
+	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
+	pubmsg.payloadlen = 11;
+	pubmsg.qos = 1;
+	pubmsg.retained = 0;
+
+	property.identifier = USER_PROPERTY;
+	property.value.data.data = "pub user property";
+	property.value.data.len = strlen(property.value.data.data);
+	property.value.value.data = "pub user property value";
+	property.value.value.len = strlen(property.value.value.data);
+	MQTTProperties_add(&pubmsg.properties, &property);
+
+	rc = MQTTAsync_sendMessage(c, test_qos_1_2_errors_globals.test_topic, &pubmsg, &opts);
+	assert("Good rc from publish", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != SUCCESS)
+		test_qos_1_2_errors_globals.test_finished = 1;
+
+	MQTTProperties_free(&pubmsg.properties);
+}
+
+
+int test_qos_1_2_errors(struct Options options)
+{
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
+	int rc = 0;
+
+	MyLog(LOGA_INFO, "Starting V5 test - qos 1 and 2 errors");
+	fprintf(xml, "<testcase classname=\"test11\" name=\"qos 1 and 2 errors\"");
+	global_start_time = start_clock();
+
+	rc = MQTTAsync_create(&c, options.connection, "qos 1 and 2 errors",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
+
+	rc = MQTTAsync_setCallbacks(c, c, NULL, test_flow_control_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+
+	opts.MQTTVersion = options.MQTTVersion;
+	opts.onSuccess5 = test_qos_1_2_errors_onConnect;
+	opts.context = c;
+	opts.cleanstart = 1;
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (test_qos_1_2_errors_globals.test_finished == 0)
+		#if defined(WIN32)
+			Sleep(100);
+		#else
+			usleep(10000L);
+		#endif
+
+	MQTTAsync_destroy(&c);
+
+exit:
+	MyLog(LOGA_INFO, "TEST6: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
 void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 {
 	printf("Trace : %d, %s\n", level, message);
@@ -1243,6 +1447,7 @@ int main(int argc, char** argv)
 		test_subscription_ids,
 		test_flow_control,
 		test_error_reporting,
+		test_qos_1_2_errors,
  	}; /* indexed starting from 1 */
 	MQTTAsync_nameValue* info;
 	int i;
@@ -1267,7 +1472,7 @@ int main(int argc, char** argv)
 		{ /* run all the tests */
 			for (options.test_no = 1; options.test_no < ARRAY_SIZE(tests); ++options.test_no)
 			{
-				failures = 0;
+				failures = rc = 0;
 				MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
 				rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */
 			}

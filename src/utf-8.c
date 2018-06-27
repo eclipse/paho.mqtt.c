@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -80,7 +80,6 @@ static const char* UTF8_char_validate(int len, const char* data)
 	int i, j;
 	const char *rc = NULL;
 
-	FUNC_ENTRY;
 	/* first work out how many bytes this char is encoded in */
 	if ((data[0] & 128) == 0)
 		charlen = 1;
@@ -114,7 +113,6 @@ static const char* UTF8_char_validate(int len, const char* data)
 	if (good)
 		rc = data + charlen;
 	exit:
-	FUNC_EXIT;
 	return rc;
 }
 

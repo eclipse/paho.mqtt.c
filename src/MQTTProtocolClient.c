@@ -426,9 +426,25 @@ int MQTTProtocol_handlePubrecs(void* pack, int sock)
 		}
 		else
 		{
-			rc = MQTTPacket_send_pubrel(pubrec->msgId, 0, &client->net, client->clientID);
-			m->nextMessageType = PUBCOMP;
-			time(&(m->lastTouch));
+			if (pubrec->MQTTVersion >= MQTTVERSION_5 && pubrec->rc >= UNSPECIFIED_ERROR)
+			{
+				Log(TRACE_MIN, -1, "Pubrec error %d received for client %s msgid %d, not sending PUBREL",
+						pubrec->rc, client->clientID, pubrec->msgId);
+				#if !defined(NO_PERSISTENCE)
+					rc = MQTTPersistence_remove(client, PERSISTENCE_PUBLISH_SENT, m->qos, pubrec->msgId);
+				#endif
+				MQTTProtocol_removePublication(m->publish);
+				if (m->MQTTVersion >= MQTTVERSION_5)
+					MQTTProperties_free(&m->properties);
+				ListRemove(client->outboundMsgs, m);
+				(++state.msgs_sent);
+			}
+			else
+			{
+				rc = MQTTPacket_send_pubrel(pubrec->msgId, 0, &client->net, client->clientID);
+				m->nextMessageType = PUBCOMP;
+				time(&(m->lastTouch));
+			}
 		}
 	}
 	if (pubrec->MQTTVersion >= MQTTVERSION_5)

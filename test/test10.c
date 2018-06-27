@@ -1090,6 +1090,188 @@ exit:
 	return failures;
 }
 
+struct
+{
+	int published;
+	int packet_type;
+	enum MQTTReasonCodes rc;
+} test_qos_1_2_errors_globals =
+{
+	0, -1, SUCCESS
+};
+
+
+void published(void* context, int msgid, int packet_type, MQTTProperties* props, enum MQTTReasonCodes rc)
+{
+	MQTTClient c = (MQTTClient)context;
+	MyLog(LOGA_INFO, "Callback: published, reason code \"%s\" msgid: %d packet type: %d",
+			MQTTReasonCodeString(rc), msgid, packet_type);
+	test_qos_1_2_errors_globals.packet_type = packet_type;
+	test_qos_1_2_errors_globals.rc = rc;
+	if (props)
+	{
+		MyLog(LOGA_INFO, "Callback: published, properties:");
+		logProperties(props);
+	}
+	test_qos_1_2_errors_globals.published = 1;
+}
+
+void test_trace_callback(enum MQTTCLIENT_TRACE_LEVELS level, char* message)
+{
+	printf("%s\n", message);
+}
+
+enum msgTypes
+{
+	CONNECT = 1, CONNACK, PUBLISH, PUBACK, PUBREC, PUBREL,
+	PUBCOMP, SUBSCRIBE, SUBACK, UNSUBSCRIBE, UNSUBACK,
+	PINGREQ, PINGRESP, DISCONNECT, AUTH
+};
+
+
+int test_qos_1_2_errors(struct Options options)
+{
+	int subsqos = 2;
+	MQTTClient c;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
+	MQTTProperties props = MQTTProperties_initializer;
+	MQTTProperty property;
+	MQTTResponse response = MQTTResponse_initializer;
+	MQTTClient_deliveryToken dt;
+	MQTTClient_message pubmsg = MQTTClient_message_initializer;
+	int rc = 0, i = 0, count = 0;
+	char* test_topic = "test_qos_1_2_errors";
+	int receive_maximum = 65535;
+
+	fprintf(xml, "<testcase classname=\"test_qos_1_2_errors\" name=\"qos 1 2 errors\"");
+	global_start_time = start_clock();
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test - qos 1 and 2 errors");
+
+	//MQTTClient_setTraceCallback(test_trace_callback);
+
+	rc = MQTTClient_create(&c, options.connection, "error_reporting",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTCLIENT_SUCCESS)
+		goto exit;
+
+	rc = MQTTClient_setCallbacks(c, NULL, NULL, test_flow_control_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+
+	rc = MQTTClient_setPublished(c, c, published);
+	assert("Good rc from setPublished", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+
+	opts.MQTTVersion = options.MQTTVersion;
+	if (options.haconnections != NULL)
+	{
+		opts.serverURIs = options.haconnections;
+		opts.serverURIcount = options.hacount;
+	}
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	response = MQTTClient_connect5(c, &opts, NULL, NULL);
+	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	if (response.reasonCode != MQTTCLIENT_SUCCESS)
+		goto exit;
+
+	if (response.properties)
+	{
+		if (MQTTProperties_hasProperty(response.properties, RECEIVE_MAXIMUM))
+			receive_maximum = MQTTProperties_getNumericValue(response.properties, RECEIVE_MAXIMUM);
+
+		logProperties(response.properties);
+		MQTTResponse_free(response);
+	}
+
+	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
+	pubmsg.payloadlen = 11;
+	pubmsg.qos = 1;
+	pubmsg.retained = 0;
+
+	property.identifier = USER_PROPERTY;
+	property.value.data.data = "unsub user property";
+	property.value.data.len = strlen(property.value.data.data);
+	property.value.value.data = "unsub user property value";
+	property.value.value.len = strlen(property.value.value.data);
+	MQTTProperties_add(&pubmsg.properties, &property);
+
+	response = MQTTClient_publishMessage5(c, test_topic, &pubmsg, &dt);
+	assert("Good rc from publish", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+
+	count = 0;
+	while (test_qos_1_2_errors_globals.published == 0 && ++count < 10)
+	{
+#if defined(WIN32)
+		Sleep(1000);
+#else
+		usleep(1000000L);
+#endif
+	}
+	assert("Published called", test_qos_1_2_errors_globals.published == 1,
+			"published was %d", test_qos_1_2_errors_globals.published);
+	assert("Reason code was packet identifier not found",
+			test_qos_1_2_errors_globals.rc == NOT_AUTHORIZED,
+			"Reason code was %d", test_qos_1_2_errors_globals.rc);
+	assert("Packet type was PUBACK", test_qos_1_2_errors_globals.packet_type == PUBACK,
+			"packet type was %d", test_qos_1_2_errors_globals.packet_type);
+
+	test_qos_1_2_errors_globals.published = 0;
+	pubmsg.qos = 2;
+	response = MQTTClient_publishMessage5(c, test_topic, &pubmsg, &dt);
+	assert("Good rc from publish", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+
+	count = 0;
+	while (test_qos_1_2_errors_globals.published == 0 && ++count < 10)
+	{
+#if defined(WIN32)
+		Sleep(1000);
+#else
+		usleep(1000000L);
+#endif
+	}
+	assert("Published called", test_qos_1_2_errors_globals.published == 1,
+				"published was %d", test_qos_1_2_errors_globals.published);
+	assert("Reason code was packet identifier not found",
+			test_qos_1_2_errors_globals.rc == NOT_AUTHORIZED,
+			"Reason code was %d", test_qos_1_2_errors_globals.rc);
+	assert("Packet type was PUBREC", test_qos_1_2_errors_globals.packet_type == PUBREC,
+			"packet type was %d", test_qos_1_2_errors_globals.packet_type);
+
+	test_qos_1_2_errors_globals.published = 0;
+	response = MQTTClient_publishMessage5(c, "test_qos_1_2_errors_pubcomp", &pubmsg, &dt);
+	assert("Good rc from publish", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+
+	count = 0;
+	while (test_qos_1_2_errors_globals.published == 0 && ++count < 10)
+	{
+#if defined(WIN32)
+		Sleep(1000);
+#else
+		usleep(1000000L);
+#endif
+	}
+	assert("Published called", test_qos_1_2_errors_globals.published == 1,
+				"published was %d", test_qos_1_2_errors_globals.published);
+	assert("Reason code was packet identifier not found",
+			test_qos_1_2_errors_globals.rc == PACKET_IDENTIFIER_NOT_FOUND,
+			"Reason code was %d", test_qos_1_2_errors_globals.rc);
+	assert("Packet type was PUBCOMP", test_qos_1_2_errors_globals.packet_type == PUBCOMP,
+			"packet type was %d", test_qos_1_2_errors_globals.packet_type);
+
+	rc = MQTTClient_disconnect5(c, 1000, SUCCESS, NULL);
+
+exit:
+	MQTTClient_setTraceCallback(NULL);
+	MQTTProperties_free(&props);
+	MQTTClient_destroy(&c);
+
+	MyLog(LOGA_INFO, "TEST6: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	write_test_result();
+	return failures;
+}
+
 
 int main(int argc, char** argv)
 {
@@ -1100,14 +1282,13 @@ int main(int argc, char** argv)
 		test_server_topic_aliases,
  		test_subscription_ids,
  		test_flow_control,
-		test_error_reporting
+		test_error_reporting,
+		test_qos_1_2_errors
  	};
 
 	xml = fopen("TEST-test1.xml", "w");
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
 
-	//setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
-	//setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
 	MQTTClient_setTraceCallback(test_flow_control_trace_callback);
 
 	getopts(argc, argv);

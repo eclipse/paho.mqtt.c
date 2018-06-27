@@ -1170,7 +1170,7 @@ static void MQTTAsync_writeComplete(int socket, int rc)
 			{
 				if (command->type == PUBLISH)
 				{
-					if (rc == 1)
+					if (rc == 1 && command->details.pub.qos == 0)
 					{
 						if (command->onSuccess)
 						{
@@ -3523,17 +3523,32 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 			/* Note that these handle... functions free the packet structure that they are dealing with */
 			if (pack->header.bits.type == PUBLISH)
 				*rc = MQTTProtocol_handlePublishes(pack, *sock);
-			else if (pack->header.bits.type == PUBACK || pack->header.bits.type == PUBCOMP)
+			else if (pack->header.bits.type == PUBACK || pack->header.bits.type == PUBCOMP ||
+					pack->header.bits.type == PUBREC)
 			{
 				int msgid;
 
-				ack = (pack->header.bits.type == PUBCOMP) ? *(Pubcomp*)pack : *(Puback*)pack;
+				ack = *(Ack*)pack;
 				msgid = ack.msgId;
-				*rc = (pack->header.bits.type == PUBCOMP) ?
-						MQTTProtocol_handlePubcomps(pack, *sock) : MQTTProtocol_handlePubacks(pack, *sock);
+
+				if (pack->header.bits.type == PUBCOMP)
+				{
+					//ack = *(Pubcomp*)pack;
+					*rc = MQTTProtocol_handlePubcomps(pack, *sock);
+				}
+				else if (pack->header.bits.type == PUBREC)
+				{
+					//ack = *(Pubrec*)pack;
+					*rc = MQTTProtocol_handlePubrecs(pack, *sock);
+				}
+				else if (pack->header.bits.type == PUBACK)
+				{
+					//ack = *(Puback*)pack;
+					*rc = MQTTProtocol_handlePubacks(pack, *sock);
+				}
 				if (!m)
-					Log(LOG_ERROR, -1, "PUBCOMP or PUBACK received for no client, msgid %d", msgid);
-				if (m)
+					Log(LOG_ERROR, -1, "PUBCOMP, PUBACK or PUBREC received for no client, msgid %d", msgid);
+				if (m && (pack->header.bits.type != PUBREC || ack.rc >= UNSPECIFIED_ERROR))
 				{
 					ListElement* current = NULL;
 
@@ -3563,7 +3578,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 								Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
 								(*(command->command.onSuccess))(command->command.context, &data);
 							}
-							else if (command->command.onSuccess5)
+							else if (command->command.onSuccess5 && ack.rc < UNSPECIFIED_ERROR)
 							{
 								MQTTAsync_successData5 data = MQTTAsync_successData5_initializer;
 
@@ -3577,14 +3592,22 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 								Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
 								(*(command->command.onSuccess5))(command->command.context, &data);
 							}
+							else if (command->command.onFailure5 && ack.rc >= UNSPECIFIED_ERROR)
+							{
+								MQTTAsync_failureData5 data = MQTTAsync_failureData5_initializer;
+
+								data.token = command->command.token;
+								data.reasonCode = ack.rc;
+								data.properties = ack.properties;
+								Log(TRACE_MIN, -1, "Calling publish failure for client %s", m->c->clientID);
+								(*(command->command.onFailure5))(command->command.context, &data);
+							}
 							MQTTAsync_freeCommand(command);
 							break;
 						}
 					}
 				}
 			}
-			else if (pack->header.bits.type == PUBREC)
-				*rc = MQTTProtocol_handlePubrecs(pack, *sock);
 			else if (pack->header.bits.type == PUBREL)
 				*rc = MQTTProtocol_handlePubrels(pack, *sock);
 			else if (pack->header.bits.type == PINGRESP)

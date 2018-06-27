@@ -208,8 +208,13 @@ typedef struct
 	MQTTClient_disconnected* disconnected;
 	void* disconnected_context; /* the context to be associated with the disconnected callback*/
 
+	MQTTClient_published* published;
+	void* published_context; /* the context to be associated with the disconnected callback*/
+
+#if 0
 	MQTTClient_authHandle* auth_handle;
 	void* auth_handle_context; /* the context to be associated with the authHandle callback*/
+#endif
 
 	sem_type connect_sem;
 	int rc; /* getsockopt return code in connect */
@@ -643,6 +648,7 @@ int MQTTClient_setDisconnected(MQTTClient handle, void* context, MQTTClient_disc
 }
 
 
+
 /**
  * Wrapper function to call disconnected on a separate thread.  A separate thread is needed to allow the
  * disconnected function to make API calls (e.g. connect)
@@ -661,7 +667,30 @@ static thread_return_type WINAPI call_disconnected(void* context)
 }
 
 
-int MQTTClient_setAuthHandle(MQTTClient handle, void* context, MQTTClient_authHandle* auth_handle)
+int MQTTClient_setPublished(MQTTClient handle, void* context, MQTTClient_published* published)
+{
+	int rc = MQTTCLIENT_SUCCESS;
+	MQTTClients* m = handle;
+
+	FUNC_ENTRY;
+	Thread_lock_mutex(mqttclient_mutex);
+
+	if (m == NULL || m->c->connect_state != NOT_IN_PROGRESS)
+		rc = MQTTCLIENT_FAILURE;
+	else
+	{
+		m->published_context = context;
+		m->published = published;
+	}
+
+	Thread_unlock_mutex(mqttclient_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+#if 0
+int MQTTClient_setHandleAuth(MQTTClient handle, void* context, MQTTClient_handleAuth* auth_handle)
 {
 	int rc = MQTTCLIENT_SUCCESS;
 	MQTTClients* m = handle;
@@ -694,8 +723,12 @@ static thread_return_type WINAPI call_auth_handle(void* context)
 	struct props_rc_parms* pr = (struct props_rc_parms*)context;
 
 	(*(pr->m->auth_handle))(pr->m->auth_handle_context, pr->properties, pr->reasonCode);
+	MQTTProperties_free(pr->properties);
+	free(pr->properties);
+	free(pr);
 	return 0;
 }
+#endif
 
 
 /* This is the thread function that handles the calling of callback functions if set */
@@ -820,6 +853,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 						Log(TRACE_MIN, -1, "Calling disconnected for client %s", m->c->clientID);
 						Thread_start(call_disconnected, dp);
 					}
+#if 0
 					if (pack->header.bits.type == AUTH && m->auth_handle)
 					{
 						struct props_rc_parms dp;
@@ -832,6 +866,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 						Log(TRACE_MIN, -1, "Calling auth_handle for client %s", m->c->clientID);
 						Thread_start(call_auth_handle, &dp);
 					}
+#endif
 				}
 			}
 			else if (m->c->connect_state == TCP_IN_PROGRESS && !Thread_check_sem(m->connect_sem))
@@ -2091,6 +2126,7 @@ MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int p
 	{
 		while (m->c->connected == 1 && SocketBuffer_getWrite(m->c->net.socket))
 		{
+			printf("getwrite %p\n", SocketBuffer_getWrite(m->c->net.socket));
 			Thread_unlock_mutex(mqttclient_mutex);
 			MQTTClient_yield();
 			Thread_lock_mutex(mqttclient_mutex);
@@ -2255,8 +2291,13 @@ static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
 
 				ack = (pack->header.bits.type == PUBCOMP) ? *(Pubcomp*)pack : *(Puback*)pack;
 				msgid = ack.msgId;
+				if (m && m->c->MQTTVersion >= MQTTVERSION_5 && m->published)
+				{
+					Log(TRACE_MIN, -1, "Calling published for client %s, msgid %d", m->c->clientID, msgid);
+					(*(m->published))(m->published_context, msgid, pack->header.bits.type, &ack.properties, ack.rc);
+				}
 				*rc = (pack->header.bits.type == PUBCOMP) ?
-						MQTTProtocol_handlePubcomps(pack, *sock) : MQTTProtocol_handlePubacks(pack, *sock);
+					MQTTProtocol_handlePubcomps(pack, *sock) : MQTTProtocol_handlePubacks(pack, *sock);
 				if (m && m->dc)
 				{
 					Log(TRACE_MIN, -1, "Calling deliveryComplete for client %s, msgid %d", m->c->clientID, msgid);
@@ -2264,7 +2305,17 @@ static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
 				}
 			}
 			else if (pack->header.bits.type == PUBREC)
+			{
+				Pubrec* pubrec = (Pubrec*)pack;
+
+				if (m && m->c->MQTTVersion >= MQTTVERSION_5 && m->published && pubrec->rc >= UNSPECIFIED_ERROR)
+				{
+					Log(TRACE_MIN, -1, "Calling published for client %s, msgid %d", m->c->clientID, ack.msgId);
+					(*(m->published))(m->published_context, pubrec->msgId, pack->header.bits.type,
+							&pubrec->properties, pubrec->rc);
+				}
 				*rc = MQTTProtocol_handlePubrecs(pack, *sock);
+			}
 			else if (pack->header.bits.type == PUBREL)
 				*rc = MQTTProtocol_handlePubrels(pack, *sock);
 			else if (pack->header.bits.type == PINGRESP)

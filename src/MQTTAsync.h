@@ -420,6 +420,11 @@ typedef void MQTTAsync_disconnected(void* context, MQTTProperties* properties,
  */
 DLLExport int MQTTAsync_setDisconnected(MQTTAsync handle, void* context, MQTTAsync_disconnected* co);
 
+typedef void MQTTAsync_published(void* context, int msgid, int packet_type, MQTTProperties* properties,
+		enum MQTTReasonCodes reasonCode);
+
+DLLExport int MQTTAsync_setPublished(MQTTAsync handle, void* context, MQTTAsync_published* co);
+
 
 /** The data returned on completion of an unsuccessful API call in the response callback onFailure. */
 typedef struct

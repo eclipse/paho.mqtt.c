@@ -1219,6 +1219,7 @@ static void MQTTAsync_writeComplete(int socket, int rc)
 							data.token = command->token;
 							data.code = rc;
 							data.message = NULL;
+							data.packet_type = PUBLISH;
 							Log(TRACE_MIN, -1, "Calling publish failure for client %s", m->c->clientID);
 							(*(command->onFailure5))(command->context, &data);
 						}
@@ -3599,6 +3600,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 								data.token = command->command.token;
 								data.reasonCode = ack.rc;
 								data.properties = ack.properties;
+								data.packet_type = pack->header.bits.type;
 								Log(TRACE_MIN, -1, "Calling publish failure for client %s", m->c->clientID);
 								(*(command->command.onFailure5))(command->command.context, &data);
 							}

@@ -604,6 +604,21 @@ ADD_TEST(
 	COMMAND "test10" "--test_no" "6" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
 )
 
+ADD_TEST(
+	NAME test10-7-request_response
+	COMMAND "test10" "--test_no" "7" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
+ADD_TEST(
+	NAME test10-8-subscribe_options
+	COMMAND "test10" "--test_no" "8" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
+ADD_TEST(
+	NAME test10-9-shared_subscriptions
+	COMMAND "test10" "--test_no" "9" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
 SET_TESTS_PROPERTIES(
 	test10-1-client_topic_aliases
 	test10-2-server_topic_aliases
@@ -611,6 +626,9 @@ SET_TESTS_PROPERTIES(
 	test10-4-flow_control
 	test10-5-error_handling
 	test10-6-qos_1_2_errors
+	test10-7-request_response
+	test10-8-subscribe_options
+	test10-9-shared_subscriptions
 	PROPERTIES TIMEOUT 540
 )
 

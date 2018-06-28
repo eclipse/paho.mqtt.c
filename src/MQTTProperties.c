@@ -98,8 +98,7 @@ int MQTTProperties_add(MQTTProperties* props, const MQTTProperty* prop)
 
   if ((type = MQTTProperty_getType(prop->identifier)) < 0)
   {
-	printf("id %d\n", prop->identifier);
-	StackTrace_printStack(stdout);
+	/*StackTrace_printStack(stdout);*/
     rc = MQTT_INVALID_PROPERTY_ID;
     goto exit;
   }

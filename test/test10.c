@@ -1273,6 +1273,520 @@ exit:
 }
 
 
+struct
+{
+	char* response_topic;
+	char* request_topic;
+	int messages_arrived;
+	char* correlation_id;
+} test_request_response_globals =
+{
+	"my response topic",
+	"my request topic",
+	0,
+	"request no 1",
+};
+
+
+int test_request_response_messageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* message)
+{
+	MyLog(LOGA_DEBUG, "Callback: message received on topic %s is %.*s.",
+				 topicName, message->payloadlen, (char*)(message->payload));
+
+	assert("Message structure version should be 1", message->struct_version == 1,
+				"message->struct_version was %d", message->struct_version);
+	if (message->struct_version == 1)
+	{
+		const int props_count = 0;
+
+		MyLog(LOGA_INFO, "Message properties:");
+		logProperties(&message->properties);
+	}
+	test_request_response_globals.messages_arrived++;
+
+	if (test_request_response_globals.messages_arrived == 1)
+	{
+		MQTTProperty *prop;
+
+		assert("Topic should be request",
+				strcmp(test_request_response_globals.request_topic, topicName) == 0,
+				"topic was %s\n", topicName);
+
+		if (MQTTProperties_hasProperty(&message->properties, RESPONSE_TOPIC))
+			prop = MQTTProperties_getProperty(&message->properties, RESPONSE_TOPIC);
+
+		assert("Topic should be response",
+		strncmp(test_request_response_globals.response_topic, prop->value.data.data, prop->value.data.len) == 0,
+			"topic was %.4s\n", prop->value.data.data);
+
+		if (MQTTProperties_hasProperty(&message->properties, CORRELATION_DATA))
+			prop = MQTTProperties_getProperty(&message->properties, CORRELATION_DATA);
+
+		assert("Correlation data should be",
+		strncmp(test_request_response_globals.correlation_id, prop->value.data.data, prop->value.data.len) == 0,
+			"Correlation data was %.4s\n", prop->value.data.data);
+
+	}
+	else if (test_request_response_globals.messages_arrived == 2)
+	{
+		assert("Topic should be response",
+				strcmp(test_request_response_globals.response_topic, topicName) == 0,
+				"topic was %s\n", topicName);
+	}
+
+	MQTTClient_free(topicName);
+	MQTTClient_freeMessage(&message);
+	return 1;
+}
+
+
+int test_request_response(struct Options options)
+{
+	int subsqos = 2;
+	MQTTClient c;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
+	MQTTProperties connect_props = MQTTProperties_initializer;
+	MQTTProperties subs_props = MQTTProperties_initializer;
+	MQTTProperty property;
+	MQTTClient_message pubmsg = MQTTClient_message_initializer;
+	MQTTResponse response = MQTTResponse_initializer;
+	MQTTClient_deliveryToken dt;
+	int rc = 0;
+	int count = 0;
+	char* test_topic = "test_request_response";
+	const int msg_count = 1;
+	int subsids = 1;
+
+	fprintf(xml, "<testcase classname=\"test_request_response\" name=\"request/response\"");
+	global_start_time = start_clock();
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 7 - request response");
+
+	rc = MQTTClient_create(&c, options.connection, "request_response",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTCLIENT_SUCCESS)
+	{
+		MQTTClient_destroy(&c);
+		goto exit;
+	}
+
+	rc = MQTTClient_setCallbacks(c, NULL, NULL, test_request_response_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+
+	opts.keepAliveInterval = 20;
+	opts.cleanstart = 1;
+	opts.MQTTVersion = options.MQTTVersion;
+	if (options.haconnections != NULL)
+	{
+		opts.serverURIs = options.haconnections;
+		opts.serverURIcount = options.hacount;
+	}
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	response = MQTTClient_connect5(c, &opts, &connect_props, NULL);
+	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	if (response.reasonCode != MQTTCLIENT_SUCCESS)
+		goto exit;
+
+	if (response.properties)
+	{
+		if (MQTTProperties_hasProperty(response.properties, SUBSCRIPTION_IDENTIFIERS_AVAILABLE))
+			subsids = MQTTProperties_getNumericValue(response.properties, SUBSCRIPTION_IDENTIFIERS_AVAILABLE);
+
+		MyLog(LOGA_INFO, "Connack properties:");
+		logProperties(response.properties);
+		MQTTResponse_free(response);
+	}
+
+	response = MQTTClient_subscribe5(c, test_request_response_globals.response_topic, 2, NULL, NULL);
+	assert("Good rc from subscribe", response.reasonCode == GRANTED_QOS_2, "rc was %d", response.reasonCode);
+
+	response = MQTTClient_subscribe5(c, test_request_response_globals.request_topic, 2, NULL, NULL);
+	assert("Good rc from subscribe", response.reasonCode == GRANTED_QOS_2, "rc was %d", response.reasonCode);
+
+	messages_arrived = 0;
+	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
+	pubmsg.payloadlen = 11;
+	pubmsg.retained = 0;
+	pubmsg.qos = 2;
+
+	property.identifier = RESPONSE_TOPIC;
+	property.value.data.data = test_request_response_globals.response_topic;
+	property.value.data.len = strlen(property.value.data.data);
+	MQTTProperties_add(&pubmsg.properties, &property);
+
+	property.identifier = CORRELATION_DATA;
+	property.value.data.data = test_request_response_globals.correlation_id;
+	property.value.data.len = strlen(property.value.data.data);
+	MQTTProperties_add(&pubmsg.properties, &property);
+
+	response = MQTTClient_publishMessage5(c, test_request_response_globals.request_topic, &pubmsg, &dt);
+	assert("Good rc from publish", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+
+	/* should get the request */
+	while (test_request_response_globals.messages_arrived < 1 && ++count < 10)
+	{
+#if defined(WIN32)
+		Sleep(1000);
+#else
+		usleep(1000000L);
+#endif
+	}
+	assert("1 message should have arrived", test_request_response_globals.messages_arrived == 1, "was %d",
+			test_request_response_globals.messages_arrived);
+
+	MQTTProperties_free(&pubmsg.properties);
+	property.identifier = CORRELATION_DATA;
+	property.value.data.data = "request no 1";
+	property.value.data.len = strlen(property.value.data.data);
+	MQTTProperties_add(&pubmsg.properties, &property);
+
+	response = MQTTClient_publishMessage5(c, test_request_response_globals.response_topic, &pubmsg, &dt);
+	assert("Good rc from publish", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+
+	/* should get the response */
+	while (test_request_response_globals.messages_arrived < 1 && ++count < 10)
+	{
+#if defined(WIN32)
+		Sleep(1000);
+#else
+		usleep(1000000L);
+#endif
+	}
+	assert("1 message should have arrived", test_request_response_globals.messages_arrived == 1, "was %d",
+			test_request_response_globals.messages_arrived);
+
+	rc = MQTTClient_disconnect5(c, 1000, SUCCESS, NULL);
+
+	MQTTProperties_free(&pubmsg.properties);
+	MQTTProperties_free(&subs_props);
+	MQTTProperties_free(&connect_props);
+	MQTTClient_destroy(&c);
+
+exit:
+	MyLog(LOGA_INFO, "TEST7: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
+struct
+{
+	char* topic;
+	int messages_arrived;
+} test_subscribe_options_globals =
+{
+	"my response topic",
+	0,
+};
+
+
+int test_subscribe_options_messageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* message)
+{
+	int subsidcount = 0, i = 0, subsid = -1;
+
+	MyLog(LOGA_DEBUG, "Callback: message received on topic %s is %.*s.",
+				 topicName, message->payloadlen, (char*)(message->payload));
+
+	assert("Message structure version should be 1", message->struct_version == 1,
+				"message->struct_version was %d", message->struct_version);
+	if (message->struct_version == 1)
+	{
+		const int props_count = 0;
+
+		MyLog(LOGA_INFO, "Message properties:");
+		logProperties(&message->properties);
+	}
+	test_subscribe_options_globals.messages_arrived++;
+
+	if (test_subscribe_options_globals.messages_arrived == 1)
+	{
+		subsidcount = MQTTProperties_propertyCount(&message->properties, SUBSCRIPTION_IDENTIFIER);
+		assert("Subsidcount is i", subsidcount == 1, "subsidcount is not correct %d\n", subsidcount);
+
+		subsid = MQTTProperties_getNumericValueAt(&message->properties, SUBSCRIPTION_IDENTIFIER, 0);
+		assert("Subsid is 2", subsid == 2, "subsid is not correct %d\n", subsid);
+	}
+
+	MQTTClient_free(topicName);
+	MQTTClient_freeMessage(&message);
+	return 1;
+}
+
+
+int test_subscribe_options(struct Options options)
+{
+	int subsqos = 2;
+	MQTTClient c;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
+	MQTTProperties connect_props = MQTTProperties_initializer;
+	MQTTProperties subs_props = MQTTProperties_initializer;
+	MQTTProperty property;
+	MQTTClient_message pubmsg = MQTTClient_message_initializer;
+	MQTTResponse response = MQTTResponse_initializer;
+	MQTTClient_deliveryToken dt;
+	int rc = 0;
+	int count = 0;
+	const int msg_count = 1;
+	MQTTSubscribe_options subopts = MQTTSubscribe_options_initializer;
+
+	fprintf(xml, "<testcase classname=\"test_subscribe_options\" name=\"subscribe options\"");
+	global_start_time = start_clock();
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 8 - subscribe options");
+
+	rc = MQTTClient_create(&c, options.connection, "subscribe_options",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTCLIENT_SUCCESS)
+	{
+		MQTTClient_destroy(&c);
+		goto exit;
+	}
+
+	rc = MQTTClient_setCallbacks(c, NULL, NULL, test_subscribe_options_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+
+	opts.keepAliveInterval = 20;
+	opts.cleanstart = 1;
+	opts.MQTTVersion = options.MQTTVersion;
+	if (options.haconnections != NULL)
+	{
+		opts.serverURIs = options.haconnections;
+		opts.serverURIcount = options.hacount;
+	}
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	response = MQTTClient_connect5(c, &opts, &connect_props, NULL);
+	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	if (response.reasonCode != MQTTCLIENT_SUCCESS)
+		goto exit;
+
+	if (response.properties)
+	{
+		MyLog(LOGA_INFO, "Connack properties:");
+		logProperties(response.properties);
+		MQTTResponse_free(response);
+	}
+
+	property.identifier = SUBSCRIPTION_IDENTIFIER;
+	property.value.integer4 = 1;
+	MQTTProperties_add(&subs_props, &property);
+	subopts.noLocal = 1;
+	response = MQTTClient_subscribe5(c, test_subscribe_options_globals.topic, 2, &subopts, &subs_props);
+	assert("Good rc from subscribe", response.reasonCode == GRANTED_QOS_2, "rc was %d", response.reasonCode);
+
+	subs_props.array[0].value.integer4 = 2;
+	subopts.noLocal = 0;
+	subopts.retainHandling = 1;
+	response = MQTTClient_subscribe5(c, "#", 2, &subopts, &subs_props);
+	assert("Good rc from subscribe", response.reasonCode == GRANTED_QOS_2, "rc was %d", response.reasonCode);
+
+	messages_arrived = 0;
+	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
+	pubmsg.payloadlen = 11;
+	pubmsg.retained = 0;
+	pubmsg.qos = 2;
+
+	response = MQTTClient_publishMessage5(c, test_subscribe_options_globals.topic, &pubmsg, &dt);
+	assert("Good rc from publish", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+
+	/* should get the request */
+	while (test_subscribe_options_globals.messages_arrived < 1 && ++count < 10)
+	{
+#if defined(WIN32)
+		Sleep(1000);
+#else
+		usleep(1000000L);
+#endif
+	}
+	assert("1 message should have arrived", test_subscribe_options_globals.messages_arrived == 1, "was %d",
+			test_subscribe_options_globals.messages_arrived);
+
+	rc = MQTTClient_disconnect5(c, 1000, SUCCESS, NULL);
+
+	MQTTProperties_free(&pubmsg.properties);
+	MQTTProperties_free(&subs_props);
+	MQTTProperties_free(&connect_props);
+	MQTTClient_destroy(&c);
+
+exit:
+	MyLog(LOGA_INFO, "TEST8: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
+struct
+{
+	char* shared_topic;
+	char* topic;
+	int messages_arrived;
+} test_shared_subscriptions_globals =
+{
+	"$share/share_test/#",
+	"#",
+	0,
+};
+
+MQTTClient c, d;
+
+int test_shared_subscriptions_messageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* message)
+{
+	int subsidcount = 0, i = 0, subsid = -1;
+
+	MyLog(LOGA_DEBUG, "Callback: message received on topic %s is %.*s.",
+				 topicName, message->payloadlen, (char*)(message->payload));
+
+	assert("Message structure version should be 1", message->struct_version == 1,
+				"message->struct_version was %d", message->struct_version);
+	if (message->struct_version == 1)
+	{
+		const int props_count = 0;
+
+		if (message->properties.count > 0)
+		{
+			MyLog(LOGA_INFO, "Message properties:");
+			logProperties(&message->properties);
+		}
+	}
+	test_shared_subscriptions_globals.messages_arrived++;
+
+	MQTTClient_free(topicName);
+	MQTTClient_freeMessage(&message);
+	return 1;
+}
+
+
+int test_shared_subscriptions(struct Options options)
+{
+	int subsqos = 2;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
+	MQTTProperties connect_props = MQTTProperties_initializer;
+	MQTTProperties subs_props = MQTTProperties_initializer;
+	MQTTProperty property;
+	MQTTClient_message pubmsg = MQTTClient_message_initializer;
+	MQTTResponse response = MQTTResponse_initializer;
+	MQTTClient_deliveryToken dt;
+	int rc = 0;
+	int count = 0;
+	const int msg_count = 1;
+	MQTTSubscribe_options subopts = MQTTSubscribe_options_initializer;
+	int i;
+
+	fprintf(xml, "<testcase classname=\"test_shared_subscriptions\" name=\"shared subscriptions\"");
+	global_start_time = start_clock();
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 8 - shared subscriptions");
+
+	rc = MQTTClient_create(&c, options.connection, "shared_subscriptions",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTCLIENT_SUCCESS)
+	{
+		MQTTClient_destroy(&c);
+		goto exit;
+	}
+
+	rc = MQTTClient_create(&d, options.connection, "shared_subscriptions_1",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTCLIENT_SUCCESS)
+	{
+		MQTTClient_destroy(&d);
+		goto exit;
+	}
+
+	rc = MQTTClient_setCallbacks(c, c, NULL, test_shared_subscriptions_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+
+	rc = MQTTClient_setCallbacks(d, d, NULL, test_shared_subscriptions_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+
+	opts.keepAliveInterval = 20;
+	opts.cleanstart = 1;
+	opts.MQTTVersion = options.MQTTVersion;
+	if (options.haconnections != NULL)
+	{
+		opts.serverURIs = options.haconnections;
+		opts.serverURIcount = options.hacount;
+	}
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	response = MQTTClient_connect5(c, &opts, &connect_props, NULL);
+	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	if (response.reasonCode != MQTTCLIENT_SUCCESS)
+		goto exit;
+
+	if (response.properties)
+	{
+		MyLog(LOGA_INFO, "Connack properties:");
+		logProperties(response.properties);
+		MQTTResponse_free(response);
+	}
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	response = MQTTClient_connect5(d, &opts, &connect_props, NULL);
+	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+	if (response.reasonCode != MQTTCLIENT_SUCCESS)
+		goto exit;
+
+	if (response.properties)
+	{
+		MyLog(LOGA_INFO, "Connack properties:");
+		logProperties(response.properties);
+		MQTTResponse_free(response);
+	}
+
+	response = MQTTClient_subscribe5(c, test_shared_subscriptions_globals.shared_topic, 2, &subopts, &subs_props);
+	assert("Good rc from subscribe", response.reasonCode == GRANTED_QOS_2, "rc was %d", response.reasonCode);
+
+	response = MQTTClient_subscribe5(d, test_shared_subscriptions_globals.shared_topic, 2, &subopts, &subs_props);
+	assert("Good rc from subscribe", response.reasonCode == GRANTED_QOS_2, "rc was %d", response.reasonCode);
+
+	messages_arrived = 0;
+	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
+	pubmsg.payloadlen = 11;
+	pubmsg.retained = 0;
+	pubmsg.qos = 2;
+
+	test_shared_subscriptions_globals.messages_arrived = 0;
+	for (i = 0; i < 10; ++i)
+	{
+		response = MQTTClient_publishMessage5(c, test_subscribe_options_globals.topic, &pubmsg, &dt);
+		assert("Good rc from publish", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
+
+		/* should get the request */
+		while (test_shared_subscriptions_globals.messages_arrived < i+1 && ++count < 100)
+		{
+#if defined(WIN32)
+			Sleep(100);
+#else
+			usleep(100000L);
+#endif
+		}
+		assert("1 message should have arrived", test_shared_subscriptions_globals.messages_arrived == i+1, "was %d",
+			test_shared_subscriptions_globals.messages_arrived);
+	}
+
+	rc = MQTTClient_disconnect5(c, 1000, SUCCESS, NULL);
+
+	MQTTProperties_free(&pubmsg.properties);
+	MQTTProperties_free(&subs_props);
+	MQTTProperties_free(&connect_props);
+	MQTTClient_destroy(&c);
+
+exit:
+	MyLog(LOGA_INFO, "TEST9: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
 int main(int argc, char** argv)
 {
 	int rc = 0,
@@ -1283,7 +1797,10 @@ int main(int argc, char** argv)
  		test_subscription_ids,
  		test_flow_control,
 		test_error_reporting,
-		test_qos_1_2_errors
+		test_qos_1_2_errors,
+		test_request_response,
+		test_subscribe_options,
+		test_shared_subscriptions
  	};
 
 	xml = fopen("TEST-test1.xml", "w");

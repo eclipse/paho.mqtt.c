@@ -455,6 +455,8 @@ typedef struct
 	int code;
 	/** Optional further text explaining the error. Can be NULL. */
 	const char *message;
+	/** Packet type on which the failure occurred - used for publish QoS 1/2 exchanges*/
+	int packet_type;
 } MQTTAsync_failureData5;
 
 #define MQTTAsync_failureData5_initializer {{'M', 'Q', 'F', 'D'}, 0, 0, SUCCESS, MQTTProperties_initializer, 0, NULL}

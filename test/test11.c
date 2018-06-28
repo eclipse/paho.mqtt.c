@@ -1257,7 +1257,7 @@ void test_qos_1_2_errors_onPublishFailure3(void* context, MQTTAsync_failureData5
 	int rc;
 
 	MyLog(LOGA_INFO, "Callback: publish failure, reason code \"%s\" msgid: %d packet type: ",
-			MQTTReasonCodeString(response->reasonCode), response->token);
+			MQTTReasonCodeString(response->reasonCode), response->token, response->packet_type);
 
 	logProperties(&response->properties);
 
@@ -1274,7 +1274,7 @@ void test_qos_1_2_errors_onPublishFailure2(void* context, MQTTAsync_failureData5
 	int rc;
 
 	MyLog(LOGA_INFO, "Callback: publish failure, reason code \"%s\" msgid: %d packet type: ",
-			MQTTReasonCodeString(response->reasonCode), response->token);
+			MQTTReasonCodeString(response->reasonCode), response->token, response->packet_type);
 
 	logProperties(&response->properties);
 
@@ -1312,7 +1312,7 @@ void test_qos_1_2_errors_onPublishFailure(void* context, MQTTAsync_failureData5*
 	int rc;
 
 	MyLog(LOGA_INFO, "Callback: publish failure, reason code \"%s\" msgid: %d packet type: ",
-			MQTTReasonCodeString(response->reasonCode), response->token);
+			MQTTReasonCodeString(response->reasonCode), response->token, response->packet_type);
 
 	logProperties(&response->properties);
 

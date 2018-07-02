@@ -253,6 +253,9 @@ install: build
 	$(INSTALL_DATA) ${srcdir}/MQTTAsync.h $(DESTDIR)${includedir}
 	$(INSTALL_DATA) ${srcdir}/MQTTClient.h $(DESTDIR)${includedir}
 	$(INSTALL_DATA) ${srcdir}/MQTTClientPersistence.h $(DESTDIR)${includedir}
+	$(INSTALL_DATA) ${srcdir}/MQTTProperties.h $(DESTDIR)${includedir}
+	$(INSTALL_DATA) ${srcdir}/MQTTReasonCodes.h $(DESTDIR)${includedir}
+	$(INSTALL_DATA) ${srcdir}/MQTTSubscribeOpts.h $(DESTDIR)${includedir}
 
 uninstall:
 	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_C).so.${VERSION}

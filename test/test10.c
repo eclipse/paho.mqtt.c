@@ -1628,7 +1628,7 @@ struct
 } test_shared_subscriptions_globals =
 {
 	"$share/share_test/#",
-	"#",
+	"a",
 	0,
 };
 
@@ -1756,7 +1756,7 @@ int test_shared_subscriptions(struct Options options)
 	test_shared_subscriptions_globals.messages_arrived = 0;
 	for (i = 0; i < 10; ++i)
 	{
-		response = MQTTClient_publishMessage5(c, test_subscribe_options_globals.topic, &pubmsg, &dt);
+		response = MQTTClient_publishMessage5(c, test_shared_subscriptions_globals.topic, &pubmsg, &dt);
 		assert("Good rc from publish", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
 
 		/* should get the request */

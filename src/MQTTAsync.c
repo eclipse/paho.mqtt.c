@@ -3073,7 +3073,8 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int
 		rc = MQTTASYNC_NO_MORE_MSGIDS;
 		goto exit;
 	}
-	if (m->c->MQTTVersion >= MQTTVERSION_5 && count > 1 && count != response->subscribe_options_count)
+	if (m->c->MQTTVersion >= MQTTVERSION_5 && count > 1 && (count != response->subscribe_options_count
+			&& response->subscribe_options_count != 0))
 	{
 		rc = MQTTASYNC_BAD_MQTT_OPTIONS;
 		goto exit;
@@ -3099,8 +3100,17 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int
 			if (count > 1)
 			{
 				sub->command.details.sub.optlist = malloc(sizeof(MQTTSubscribe_options) * count);
-				for (i = 0; i < count; ++i)
-					sub->command.details.sub.optlist[i] = response->subscribe_options_list[i];
+				if (response->subscribe_options_count == 0)
+				{
+					MQTTSubscribe_options initialized = MQTTSubscribe_options_initializer;
+					for (i = 0; i < count; ++i)
+						sub->command.details.sub.optlist[i] = initialized;
+				}
+				else
+				{
+					for (i = 0; i < count; ++i)
+						sub->command.details.sub.optlist[i] = response->subscribe_options_list[i];
+				}
 			}
 		}
 	}

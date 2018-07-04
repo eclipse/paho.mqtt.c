@@ -9,17 +9,6 @@ ELSE ()
   SET(CERTDIR $ENV{TRAVIS_BUILD_DIR}/test/ssl)
 ENDIF ()
 
-IF (WIN32)
-    SET(LIBS_SYSTEM ws2_32)
-ELSEIF (UNIX)
-    IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
-        SET(LIBS_SYSTEM c dl pthread)
-    ELSEIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-        SET(LIBS_SYSTEM compat pthread)
-    ELSE()
-        SET(LIBS_SYSTEM c pthread)
-    ENDIF()
-ENDIF()
 
 IF (PAHO_WITH_SSL)
     SET(OPENSSL_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries and includes")
@@ -52,6 +41,8 @@ SET_TARGET_PROPERTIES(
   thread PROPERTIES
   COMPILE_DEFINITIONS "NOSTACKTRACE"
 )
+
+TARGET_LINK_LIBRARIES(thread ${LIBS_SYSTEM})
 
 ADD_EXECUTABLE(
 	test1

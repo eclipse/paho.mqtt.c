@@ -773,12 +773,12 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 				MQTTClient_disconnect_internal(m, 0);
 			else
 			{
-				if (m->c->connect_state == SSL_IN_PROGRESS && !Thread_check_sem(m->connect_sem))
+				if (m->c->connect_state == SSL_IN_PROGRESS)
 				{
 					Log(TRACE_MIN, -1, "Posting connect semaphore for client %s", m->c->clientID);
 					Thread_post_sem(m->connect_sem);
 				}
-				if (m->c->connect_state == WAIT_FOR_CONNACK && !Thread_check_sem(m->connack_sem))
+				if (m->c->connect_state == WAIT_FOR_CONNACK)
 				{
 					Log(TRACE_MIN, -1, "Posting connack semaphore for client %s", m->c->clientID);
 					Thread_post_sem(m->connack_sem);
@@ -818,7 +818,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 			}
 			if (pack)
 			{
-				if (pack->header.bits.type == CONNACK && !Thread_check_sem(m->connack_sem))
+				if (pack->header.bits.type == CONNACK)
 				{
 					Log(TRACE_MIN, -1, "Posting connack semaphore for client %s", m->c->clientID);
 					m->pack = pack;
@@ -869,7 +869,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 #endif
 				}
 			}
-			else if (m->c->connect_state == TCP_IN_PROGRESS && !Thread_check_sem(m->connect_sem))
+			else if (m->c->connect_state == TCP_IN_PROGRESS)
 			{
 				int error;
 				socklen_t len = sizeof(error);
@@ -880,7 +880,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 				Thread_post_sem(m->connect_sem);
 			}
 #if defined(OPENSSL)
-			else if (m->c->connect_state == SSL_IN_PROGRESS && !Thread_check_sem(m->connect_sem))
+			else if (m->c->connect_state == SSL_IN_PROGRESS)
 			{
 				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket,
 						m->serverURI, m->c->sslopts->verify);
@@ -894,7 +894,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 				}
 			}
 #endif
-			else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS && !Thread_check_sem(m->connect_sem))
+			else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS)
 			{
 				Log(TRACE_MIN, -1, "Posting websocket handshake for client %s rc %d", m->c->clientID, m->rc);
 				m->c->connect_state = WAIT_FOR_CONNACK;
@@ -1678,14 +1678,14 @@ static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int call_conne
 
 	MQTTClient_closeSession(m->c, reason, props);
 
-	while (Thread_check_sem(m->connect_sem))
-		Thread_wait_sem(m->connect_sem, 100);
-	while (Thread_check_sem(m->connack_sem))
-		Thread_wait_sem(m->connack_sem, 100);
-	while (Thread_check_sem(m->suback_sem))
-		Thread_wait_sem(m->suback_sem, 100);
-	while (Thread_check_sem(m->unsuback_sem))
-		Thread_wait_sem(m->unsuback_sem, 100);
+	/*while (Thread_wait_sem(m->connect_sem, 100))
+		;
+	while (Thread_wait_sem(m->connack_sem, 100))
+		;
+	while (Thread_wait_sem(m->suback_sem, 100))
+		;
+	while (Thread_wait_sem(m->unsuback_sem, 100))
+		;*/
 exit:
 	if (stop)
 		MQTTClient_stop();

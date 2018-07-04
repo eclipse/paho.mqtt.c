@@ -32,6 +32,16 @@ IF (PAHO_WITH_SSL)
 ENDIF ()
 
 ADD_EXECUTABLE(
+	thread
+	thread.c ../src/Thread.c
+)
+
+SET_TARGET_PROPERTIES(
+  thread PROPERTIES
+  COMPILE_DEFINITIONS "NOSTACKTRACE"
+)
+
+ADD_EXECUTABLE(
 	test1
 	test1.c
 )

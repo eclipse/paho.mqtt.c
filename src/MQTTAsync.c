@@ -942,8 +942,7 @@ static int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_si
 	if (rc != 0)
 		Log(LOG_ERROR, 0, "Error %d from signal cond", rc);
 #else
-	if (!Thread_check_sem(send_sem))
-		Thread_post_sem(send_sem);
+	rc = Thread_post_sem(send_sem);
 #endif
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -1986,8 +1985,7 @@ static int MQTTAsync_completeConnection(MQTTAsyncs* m, Connack* connack)
 #if !defined(WIN32) && !defined(WIN64)
 		Thread_signal_cond(send_cond);
 #else
-		if (!Thread_check_sem(send_sem))
-			Thread_post_sem(send_sem);
+		Thread_post_sem(send_sem);
 #endif
 	}
 	FUNC_EXIT_RC(rc);
@@ -2303,7 +2301,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 	if (sendThread_state != STOPPED)
 		Thread_signal_cond(send_cond);
 #else
-	if (sendThread_state != STOPPED && !Thread_check_sem(send_sem))
+	if (sendThread_state != STOPPED)
 		Thread_post_sem(send_sem);
 #endif
 	FUNC_EXIT;

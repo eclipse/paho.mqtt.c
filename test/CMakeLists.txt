@@ -32,6 +32,18 @@ IF (PAHO_WITH_SSL)
     )
 ENDIF ()
 
+IF (WIN32)
+    SET(LIBS_SYSTEM ws2_32)
+ELSEIF (UNIX)
+    IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
+        SET(LIBS_SYSTEM c dl pthread)
+    ELSEIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+        SET(LIBS_SYSTEM compat pthread)
+    ELSE()
+        SET(LIBS_SYSTEM c pthread)
+    ENDIF()
+ENDIF()
+
 ADD_EXECUTABLE(
 	thread
 	thread.c ../src/Thread.c
@@ -42,7 +54,10 @@ SET_TARGET_PROPERTIES(
   COMPILE_DEFINITIONS "NOSTACKTRACE"
 )
 
-TARGET_LINK_LIBRARIES(thread ${LIBS_SYSTEM})
+TARGET_LINK_LIBRARIES(
+	thread 
+	${LIBS_SYSTEM}
+)
 
 ADD_EXECUTABLE(
 	test1

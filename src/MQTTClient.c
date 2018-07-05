@@ -1434,7 +1434,7 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 		if (m->c->sslopts->struct_version >= 2)
 		{
 			m->c->sslopts->verify = options->ssl->verify;
-			if (m->c->sslopts->CApath)
+			if (options->ssl->CApath)
 				m->c->sslopts->CApath = MQTTStrdup(options->ssl->CApath);
 		}
 	}

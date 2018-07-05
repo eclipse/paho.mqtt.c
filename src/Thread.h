@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,8 @@
 	#define thread_fn LPTHREAD_START_ROUTINE
 	#define cond_type HANDLE
 	#define sem_type HANDLE
+	#undef ETIMEDOUT
+	#define ETIMEDOUT WSAETIMEDOUT
 #else
 	#include <pthread.h>
 

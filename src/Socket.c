@@ -104,7 +104,6 @@ int Socket_error(char* aString, int sock)
 	int errno;
 #endif
 
-	FUNC_ENTRY;
 #if defined(WIN32) || defined(WIN64)
 	errno = WSAGetLastError();
 #endif
@@ -113,7 +112,6 @@ int Socket_error(char* aString, int sock)
 		if (strcmp(aString, "shutdown") != 0 || (errno != ENOTCONN && errno != ECONNRESET))
 			Log(TRACE_MINIMUM, -1, "Socket error %s(%d) in %s for socket %d", strerror(errno), errno, aString, sock);
 	}
-	FUNC_EXIT_RC(errno);
 	return errno;
 }
 

@@ -197,13 +197,14 @@ sem_type Thread_create_sem(void)
 		        FALSE,              /* initial state is nonsignaled */
 		        NULL                /* object name */
 		        );
-
+#if 0
 		sem = CreateSemaphore(
 				NULL,				/* default security attributes */
 				0,       	        /* initial count - non signaled */
 				1, 					/* maximum count */
 				NULL 				/* unnamed semaphore */
 		);
+#endif
 	#elif defined(OSX)
 		sem = dispatch_semaphore_create(0L);
 		rc = (sem == NULL) ? -1 : 0;

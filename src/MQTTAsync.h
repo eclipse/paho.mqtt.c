@@ -1110,7 +1110,7 @@ typedef struct
 	MQTTAsync_onFailure5* onFailure5;
 } MQTTAsync_disconnectOptions;
 
-#define MQTTAsync_disconnectOptions_initializer { {'M', 'Q', 'T', 'D'}, 1, 0, NULL, NULL, NULL, MQTTProperties_initializer, MQTTASYNC_SUCCESS }
+#define MQTTAsync_disconnectOptions_initializer { {'M', 'Q', 'T', 'D'}, 1, 0, NULL, NULL, NULL, MQTTProperties_initializer, SUCCESS }
 
 
 /**

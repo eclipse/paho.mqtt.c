@@ -177,7 +177,7 @@ void MQTTClient_init(void)
 #define WINAPI
 #endif
 
-static volatile int initialized = 0;
+static volatile int library_initialized = 0;
 static List* handles = NULL;
 static int running = 0;
 static int tostop = 0;
@@ -373,7 +373,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 		goto exit;
 	}
 
-	if (!initialized)
+	if (!library_initialized)
 	{
 		#if defined(HEAP_H)
 			Heap_initialize();
@@ -386,7 +386,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 #if defined(OPENSSL)
 		SSLSocket_initialize();
 #endif
-		initialized = 1;
+		library_initialized = 1;
 	}
 
 	m = malloc(sizeof(MQTTClients));
@@ -466,7 +466,7 @@ static void MQTTClient_terminate(void)
 {
 	FUNC_ENTRY;
 	MQTTClient_stop();
-	if (initialized)
+	if (library_initialized)
 	{
 		ListFree(bstate->clients);
 		ListFree(handles);
@@ -476,7 +476,7 @@ static void MQTTClient_terminate(void)
 			Heap_terminate();
 		#endif
 		Log_terminate();
-		initialized = 0;
+		library_initialized = 0;
 	}
 	FUNC_EXIT;
 }
@@ -1678,14 +1678,6 @@ static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int call_conne
 
 	MQTTClient_closeSession(m->c, reason, props);
 
-	/*while (Thread_wait_sem(m->connect_sem, 100))
-		;
-	while (Thread_wait_sem(m->connack_sem, 100))
-		;
-	while (Thread_wait_sem(m->suback_sem, 100))
-		;
-	while (Thread_wait_sem(m->unsuback_sem, 100))
-		;*/
 exit:
 	if (stop)
 		MQTTClient_stop();
@@ -1835,11 +1827,11 @@ MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char* const
 				if (sub->qoss->count > 1)
 				{
 					ListElement* current = NULL;
-					int count = 0;
+					int rc_count = 0;
 
 					resp.reasonCodes = malloc(sizeof(enum MQTTReasonCodes) * (sub->qoss->count));
 					while (ListNextElement(sub->qoss, &current))
-						(resp.reasonCodes)[count++] = *(enum MQTTReasonCodes*)(current->content);
+						(resp.reasonCodes)[rc_count++] = *(enum MQTTReasonCodes*)(current->content);
 				}
 			}
 			else
@@ -1987,11 +1979,11 @@ MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count, char* con
 				if (unsub->reasonCodes->count > 1)
 				{
 					ListElement* current = NULL;
-					int count = 0;
+					int rc_count = 0;
 
 					resp.reasonCodes = malloc(sizeof(enum MQTTReasonCodes) * (unsub->reasonCodes->count));
 					while (ListNextElement(unsub->reasonCodes, &current))
-						(resp.reasonCodes)[count++] = *(enum MQTTReasonCodes*)(current->content);
+						(resp.reasonCodes)[rc_count++] = *(enum MQTTReasonCodes*)(current->content);
 				}
 			}
 			else

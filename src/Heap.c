@@ -196,7 +196,7 @@ void* mymalloc(char* file, int line, size_t size)
 	space += size + 2*sizeof(int);
 	*(int*)(s->ptr) = eyecatcher; /* start eyecatcher */
 	*(int*)(((char*)(s->ptr)) + (sizeof(int) + size)) = eyecatcher; /* end eyecatcher */
-	Log(TRACE_MAX, -1, "Allocating %d bytes in heap at file %s line %d ptr %p\n", size, file, line, s->ptr);
+	Log(TRACE_MAX, -1, "Allocating %d bytes in heap at file %s line %d ptr %p\n", (int)size, file, line, s->ptr);
 	TreeAdd(&heap, s, space);
 	state.current_size += size;
 	if (state.current_size > state.max_size)
@@ -241,7 +241,7 @@ static int Internal_heap_unlink(char* file, int line, void* p)
 	{
 		storageElement* s = (storageElement*)(e->content);
 		Log(TRACE_MAX, -1, "Freeing %d bytes in heap at file %s line %d, heap use now %d bytes\n",
-											 s->size, file, line, state.current_size);
+											 (int)s->size, file, line, state.current_size);
 		checkEyecatchers(file, line, p, s->size);
 		/* free(s->ptr); */
 		free(s->file);
@@ -371,12 +371,12 @@ static void HeapScan(enum LOG_LEVELS log_level)
 	Node* current = NULL;
 
 	Thread_lock_mutex(heap_mutex);
-	Log(log_level, -1, "Heap scan start, total %d bytes", state.current_size);
+	Log(log_level, -1, "Heap scan start, total %d bytes", (int)state.current_size);
 	while ((current = TreeNextElement(&heap, current)) != NULL)
 	{
 		storageElement* s = (storageElement*)(current->content);
-		Log(log_level, -1, "Heap element size %d, line %d, file %s, ptr %p", s->size, s->line, s->file, s->ptr);
-		Log(log_level, -1, "  Content %.*s", (10 > current->size) ? s->size : 10, (char*)(((int*)s->ptr) + 1));
+		Log(log_level, -1, "Heap element size %d, line %d, file %s, ptr %p", (int)s->size, s->line, s->file, s->ptr);
+		Log(log_level, -1, "  Content %.*s", (10 > current->size) ? (int)s->size : 10, (char*)(((int*)s->ptr) + 1));
 #if defined(HEAP_STACK)
 		Log(log_level, -1, "  Stack:\n%s", s->stack);
 #endif
@@ -402,7 +402,7 @@ int Heap_initialize(void)
  */
 void Heap_terminate(void)
 {
-	Log(TRACE_MIN, -1, "Maximum heap use was %d bytes", state.max_size);
+	Log(TRACE_MIN, -1, "Maximum heap use was %d bytes", (int)state.max_size);
 	if (state.current_size > 20) /* One log list is freed after this function is called */
 	{
 		Log(LOG_ERROR, -1, "Some memory not freed at shutdown, possible memory leak");

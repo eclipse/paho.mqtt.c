@@ -103,11 +103,12 @@
 /*
 /// @cond EXCLUDE
 */
+#if !defined(MQTTCLIENT_H)
+#define MQTTCLIENT_H
+
 #if defined(__cplusplus)
  extern "C" {
 #endif
-#if !defined(MQTTCLIENT_H)
-#define MQTTCLIENT_H
 
 #if defined(WIN32) || defined(WIN64)
   #define DLLImport __declspec(dllimport)
@@ -1158,9 +1159,10 @@ DLLExport void MQTTClient_setTraceCallback(MQTTClient_traceCallback* callback);
  */
 DLLExport const char* MQTTClient_strerror(int code);
 
-#endif
 #ifdef __cplusplus
      }
+#endif
+
 #endif
 
 /**

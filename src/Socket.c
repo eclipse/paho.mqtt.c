@@ -391,7 +391,7 @@ char *Socket_getdata(int socket, size_t bytes, size_t* actual_len)
 	else /* we didn't read the whole packet */
 	{
 		SocketBuffer_interrupted(socket, *actual_len);
-		Log(TRACE_MAX, -1, "%d bytes expected but %d bytes now received", bytes, *actual_len);
+		Log(TRACE_MAX, -1, "%d bytes expected but %d bytes now received", (int)bytes, (int)*actual_len);
 	}
 exit:
 	FUNC_EXIT;
@@ -527,7 +527,7 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 		else
 		{
 			int* sockmem = (int*)malloc(sizeof(int));
-			Log(TRACE_MIN, -1, "Partial write: %ld bytes of %d actually written on socket %d",
+			Log(TRACE_MIN, -1, "Partial write: %lu bytes of %d actually written on socket %d",
 					bytes, total, socket);
 #if defined(OPENSSL)
 			SocketBuffer_pendingWrite(socket, NULL, count+1, iovecs, frees1, total, bytes);

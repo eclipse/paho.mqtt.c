@@ -82,16 +82,15 @@
  * @endcond
  */
 
-
 /*
 /// @cond EXCLUDE
 */
+#if !defined(MQTTASYNC_H)
+#define MQTTASYNC_H
+
 #if defined(__cplusplus)
  extern "C" {
 #endif
-
-#if !defined(MQTTASYNC_H)
-#define MQTTASYNC_H
 
 #if defined(WIN32) || defined(WIN64)
   #define DLLImport __declspec(dllimport)
@@ -1944,9 +1943,8 @@ exit:
   * @endcond
   */
 
-
-#endif
-
 #ifdef __cplusplus
      }
+#endif
+
 #endif

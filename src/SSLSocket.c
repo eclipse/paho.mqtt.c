@@ -513,7 +513,6 @@ void SSLSocket_terminate(void)
 int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 {
 	int rc = 1;
-	const char* ciphers = NULL;
 
 	FUNC_ENTRY;
 	if (net->ctx == NULL)
@@ -596,15 +595,13 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 		goto free_ctx;
 	}
 
-	if (opts->enabledCipherSuites == NULL)
-		ciphers = "DEFAULT";
-	else
-		ciphers = opts->enabledCipherSuites;
-
-	if ((rc = SSL_CTX_set_cipher_list(net->ctx, ciphers)) != 1)
+	if (opts->enabledCipherSuites)
 	{
-		SSLSocket_error("SSL_CTX_set_cipher_list", NULL, net->socket, rc);
-		goto free_ctx;
+		if ((rc = SSL_CTX_set_cipher_list(net->ctx, opts->enabledCipherSuites)) != 1)
+		{
+			SSLSocket_error("SSL_CTX_set_cipher_list", NULL, net->socket, rc);
+			goto free_ctx;
+		}
 	}
 
 	SSL_CTX_set_mode(net->ctx, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);

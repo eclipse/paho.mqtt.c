@@ -638,7 +638,7 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 
 	if (opts->enabledCipherSuites)
 	{
-		if ((rc = SSL_CTX_set_cipher_list(net->ctx, opts->enabledCipherSuites)) != 1)
+		if ((rc = SSL_CTX_set_cipher_list(net->sslHdl.ctx, opts->enabledCipherSuites)) != 1)
 		{
 			SSLSocket_error("SSL_CTX_set_cipher_list", NULL, net->socket, rc);
 			goto free_ctx;

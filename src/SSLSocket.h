@@ -26,7 +26,6 @@
 	#define ssl_mutex_type pthread_mutex_t
 #endif
 
-#include <openssl/ssl.h>
 #include "SocketBuffer.h"
 #include "Clients.h"
 
@@ -39,12 +38,12 @@ int SSLSocket_initialize(void);
 void SSLSocket_terminate(void);
 int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, const char* hostname, size_t hostname_len);
 
-int SSLSocket_getch(SSL* ssl, int socket, char* c);
-char *SSLSocket_getdata(SSL* ssl, int socket, size_t bytes, size_t* actual_len);
+int SSLSocket_getch(sslHandler * sslHdl, int socket, char* c);
+char *SSLSocket_getdata(sslHandler * sslHdl, int socket, size_t bytes, size_t* actual_len);
 
 int SSLSocket_close(networkHandles* net);
-int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens, int* frees);
-int SSLSocket_connect(SSL* ssl, int sock, const char* hostname, int verify);
+int SSLSocket_putdatas(sslHandler * sslHdl, int socket, char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens, int* frees);
+int SSLSocket_connect(sslHandler * sslHdl, int sock, const char* hostname, int verify);
 
 int SSLSocket_getPendingRead(void);
 int SSLSocket_continueWrite(pending_writes* pw);

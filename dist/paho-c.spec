@@ -39,7 +39,7 @@ Development documentation files for the the Paho MQTT C Client.
 
 %build
 mkdir build.paho && cd build.paho
-%cmake -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=TRUE -DPAHO_BUILD_SAMPLES=TRUE ..
+%cmake -DPAHO_WITH_OPENSSL=TRUE -DPAHO_BUILD_DOCUMENTATION=TRUE -DPAHO_BUILD_SAMPLES=TRUE ..
 make %{?_smp_mflags}
 
 %install

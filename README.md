@@ -90,7 +90,8 @@ Before compiling, determine the value of some variables in order to configure fe
 Variable | Default Value | Description
 ------------ | ------------- | -------------
 PAHO_BUILD_STATIC | FALSE | Build a static version of the libraries
-PAHO_WITH_SSL | FALSE | Flag that defines whether to build ssl-enabled binaries too. 
+PAHO_WITH_OPENSSL | FALSE | Flag that defines whether to build ssl-enabled binaries too (OpenSSL).
+PAHO_WITH_MBEDTLS | FALSE | Flag that defines whether to build ssl-enabled binaries too (mbedTLS).
 OPENSSL_SEARCH_PATH | "" (system default) | Directory containing your OpenSSL installation (i.e. `/usr/local` when headers are in `/usr/local/include` and libraries are in `/usr/local/lib`)
 PAHO_BUILD_DOCUMENTATION | FALSE | Create and install the HTML based API documentation (requires Doxygen)
 PAHO_BUILD_SAMPLES | FALSE | Build sample programs
@@ -106,7 +107,7 @@ An example build session targeting the build platform could look like this:
 ```
 mkdir /tmp/build.paho
 cd /tmp/build.paho
-cmake -GNinja -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=TRUE -DPAHO_BUILD_SAMPLES=TRUE ~/git/org.eclipse.paho.mqtt.c
+cmake -GNinja -DPAHO_WITH_OPENSSL=TRUE -DPAHO_BUILD_DOCUMENTATION=TRUE -DPAHO_BUILD_SAMPLES=TRUE ~/git/org.eclipse.paho.mqtt.c
 ```
 
 Invoking cmake and specifying build options can also be performed using cmake-gui or ccmake (see https://cmake.org/runningcmake/). For example:
@@ -154,7 +155,7 @@ The provided toolchain files assume that required compilers/linkers are to be fo
 Example invocation for the Raspberry Pi:
 
 ```
-cmake -GNinja -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_SAMPLES=TRUE -DPAHO_BUILD_DOCUMENTATION=TRUE -DOPENSSL_LIB_SEARCH_PATH=/tmp/libssl-dev/usr/lib/arm-linux-gnueabihf -DOPENSSL_INC_SEARCH_PATH="/tmp/libssl-dev/usr/include/openssl;/tmp/libssl-dev/usr/include/arm-linux-gnueabihf" -DCMAKE_TOOLCHAIN_FILE=~/git/org.eclipse.paho.mqtt.c/cmake/toolchain.linux-arm11.cmake ~/git/org.eclipse.paho.mqtt.c
+cmake -GNinja -DPAHO_WITH_OPENSSL=TRUE -DPAHO_BUILD_SAMPLES=TRUE -DPAHO_BUILD_DOCUMENTATION=TRUE -DOPENSSL_LIB_SEARCH_PATH=/tmp/libssl-dev/usr/lib/arm-linux-gnueabihf -DOPENSSL_INC_SEARCH_PATH="/tmp/libssl-dev/usr/include/openssl;/tmp/libssl-dev/usr/include/arm-linux-gnueabihf" -DCMAKE_TOOLCHAIN_FILE=~/git/org.eclipse.paho.mqtt.c/cmake/toolchain.linux-arm11.cmake ~/git/org.eclipse.paho.mqtt.c
 ```
 
 Compilers for the Raspberry Pi can be obtained from e. g. Linaro (see: http://releases.linaro.org/15.06/components/toolchain/binaries/4.8/arm-linux-gnueabihf/). This example assumes that OpenSSL-libraries and includes have been installed in the ```/tmp/libssl-dev``` directory.

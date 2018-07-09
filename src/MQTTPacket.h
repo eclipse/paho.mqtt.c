@@ -22,7 +22,7 @@
 #define MQTTPACKET_H
 
 #include "Socket.h"
-#if defined(OPENSSL)
+#if defined(OPENSSL) || defined(MBEDTLS)
 #include "SSLSocket.h"
 #endif
 #include "LinkedList.h"

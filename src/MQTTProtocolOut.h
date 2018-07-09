@@ -33,7 +33,7 @@
 
 size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic);
 void MQTTProtocol_reconnect(const char* ip_address, Clients* client);
-#if defined(OPENSSL)
+#if defined(OPENSSL) || defined(MBEDTLS)
 int MQTTProtocol_connect(const char* ip_address, Clients* acClients, int ssl, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties);
 #else

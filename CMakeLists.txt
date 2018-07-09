@@ -43,7 +43,8 @@ ELSEIF(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 ENDIF()
 
 ## build options
-SET(PAHO_WITH_SSL FALSE CACHE BOOL "Flag that defines whether to build ssl-enabled binaries too. ")
+SET(PAHO_WITH_OPENSSL FALSE CACHE BOOL "Flag that defines whether to build ssl-enabled binaries too (OpenSSL).")
+SET(PAHO_WITH_MBEDTLS FALSE CACHE BOOL "Flag that defines whether to build ssl-enabled binaries too (mbedTLS).")
 SET(PAHO_BUILD_STATIC FALSE CACHE BOOL "Build static library")
 SET(PAHO_BUILD_DOCUMENTATION FALSE CACHE BOOL "Create and install the HTML based API documentation (requires Doxygen)")
 SET(PAHO_BUILD_SAMPLES FALSE CACHE BOOL "Build sample programs")

@@ -100,7 +100,7 @@ size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic)
  * @param int MQTTVersion the MQTT version to connect with (3 or 4)
  * @return return code
  */
-#if defined(OPENSSL)
+#if defined(OPENSSL) || defined(MBEDTLS)
 int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties)
 #else
@@ -120,12 +120,12 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 		aClient->connect_state = TCP_IN_PROGRESS; /* TCP connect called - wait for connect completion */
 	else if (rc == 0)
 	{	/* TCP connect completed. If SSL, send SSL connect */
-#if defined(OPENSSL)
+#if defined(OPENSSL) || defined(MBEDTLS)
 		if (ssl)
 		{
 			if (SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts, ip_address, addr_len) == 1)
 			{
-				rc = SSLSocket_connect(aClient->net.ssl, aClient->net.socket,
+				rc = SSLSocket_connect(&aClient->net.sslHdl, aClient->net.socket,
 						ip_address, aClient->sslopts->verify);
 				if (rc == TCPSOCKET_INTERRUPTED)
 					aClient->connect_state = SSL_IN_PROGRESS; /* SSL connect called - wait for completion */

@@ -528,7 +528,7 @@ int clearUnix(char *dirname)
 			lstat(dir_entry->d_name, &stat_info);
 			if(S_ISREG(stat_info.st_mode))
 			{
-				if ( remove(dir_entry->d_name) != 0 )
+				if (remove(dir_entry->d_name) != 0 && errno != ENOENT)
 					rc = MQTTCLIENT_PERSISTENCE_ERROR;
 			}
 		}

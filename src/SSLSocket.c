@@ -814,12 +814,19 @@ void SSLSocket_destroyContext(networkHandles* net)
 	FUNC_EXIT;
 }
 
+static List pending_reads = {NULL, NULL, NULL, 0, 0};
 
 int SSLSocket_close(networkHandles* net)
 {
 	int rc = 1;
+
 	FUNC_ENTRY;
-	if (net->ssl) {
+	/* clean up any pending reads for this socket */
+	if (pending_reads.count > 0 && ListFindItem(&pending_reads, &net->socket, intcompare))
+		ListRemoveItem(&pending_reads, &net->socket, intcompare);
+
+	if (net->ssl)
+	{
 		rc = SSL_shutdown(net->ssl);
 		SSL_free(net->ssl);
 		net->ssl = NULL;
@@ -897,7 +904,6 @@ int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int cou
 	return rc;
 }
 
-static List pending_reads = {NULL, NULL, NULL, 0, 0};
 
 void SSLSocket_addPendingRead(int sock)
 {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018 Wind River Systems, Inc. All Rights Reserved.
+ * Copyright (c) 2018 Wind River Systems, Inc. and others. All Rights Reserved.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Keith Holman - initial implementation and documentation
+ *    Ian Craggs - use memory tracking
  *******************************************************************************/
 
 #include <stdint.h>
@@ -81,6 +82,8 @@
 #if defined(OPENSSL)
 #include <openssl/rand.h>
 #endif /* if defined(OPENSSL) */
+
+#include "Heap.h"
 
 /** @brief raw uuid type */
 typedef unsigned char uuid_t[16];
@@ -308,7 +311,10 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 	const char *topic = NULL;
 
 	/* Generate UUID */
-	net->websocket_key = realloc(net->websocket_key, 25u);
+	if (net->websocket_key == NULL)
+		net->websocket_key = malloc(25u);
+	else
+		net->websocket_key = realloc(net->websocket_key, 25u);
 #if defined(WIN32) || defined(WIN64)
 	UUID uuid;
 	ZeroMemory( &uuid, sizeof(UUID) );
@@ -426,7 +432,10 @@ void WebSocket_close(networkHandles *net, int status_code, const char *reason)
 		free( buf0 );
 	}
 	if ( net->websocket_key )
+	{
 		free( net->websocket_key );
+		net->websocket_key = NULL;
+	}
 }
 
 /**
@@ -784,7 +793,10 @@ int WebSocket_receiveFrame(networkHandles *net,
 				if ( res )
 					cur_len = res->len;
 
-				res = realloc( res, sizeof(struct ws_frame) + cur_len + len );
+				if (res == NULL)
+					res = malloc( sizeof(struct ws_frame) + cur_len + len );
+				else
+					res = realloc( res, sizeof(struct ws_frame) + cur_len + len );
 				memcpy( (unsigned char *)res + sizeof(struct ws_frame) + cur_len, b, len );
 				res->pos = 0u;
 				res->len = cur_len + len;

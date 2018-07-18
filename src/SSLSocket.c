@@ -1133,6 +1133,9 @@ int SSLSocket_putdatas(sslHandler* sslHdl, int socket, char* buf0, size_t buf0le
 	int i;
 	char *ptr;
 	iobuf iovec;
+#if defined(MBEDTLS)
+        size_t writen_bytes = 0;
+#endif
 
 	FUNC_ENTRY;
 	iovec.iov_len = (ULONG)buf0len;
@@ -1153,6 +1156,17 @@ int SSLSocket_putdatas(sslHandler* sslHdl, int socket, char* buf0, size_t buf0le
 	if ((rc = SSL_write(sslHdl->ssl, iovec.iov_base, iovec.iov_len)) == iovec.iov_len)
 #elif defined(MBEDTLS)
         if ((rc = mbedtls_ssl_write(sslHdl->ssl, iovec.iov_base, iovec.iov_len)) == iovec.iov_len)
+        while ((rc = mbedtls_ssl_write(sslHdl->ssl, iovec.iov_base + writen_bytes, iovec.iov_len - writen_bytes)) >= 0)
+        {
+                writen_bytes += rc;
+                if (rc == iovec.iov_len - writen_bytes)
+                {
+                        rc = writen_bytes;
+                        break;
+                }
+        }
+
+        if (rc == iovec.iov_len)
 #endif
 		rc = TCPSOCKET_COMPLETE;
 	else

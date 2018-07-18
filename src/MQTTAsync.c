@@ -2730,7 +2730,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		rc = MQTTASYNC_BAD_MQTT_OPTIONS;
 		goto exit;
 	}
-	if (options->MQTTVersion < MQTTVERSION_5)
+	if (options->MQTTVersion < MQTTVERSION_5 && options->struct_version >= 6)
 	{
 		if (options->cleanstart != 0 || options->onFailure5 || options->onSuccess5 ||
 				options->connectProperties || options->willProperties)
@@ -2742,8 +2742,11 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 
 	m->connect.onSuccess = options->onSuccess;
 	m->connect.onFailure = options->onFailure;
-	m->connect.onSuccess5 = options->onSuccess5;
-	m->connect.onFailure5 = options->onFailure5;
+	if (options->struct_version >= 6)
+	{
+		m->connect.onSuccess5 = options->onSuccess5;
+		m->connect.onFailure5 = options->onFailure5;
+	}
 	m->connect.context = options->context;
 	m->connectTimeout = options->connectTimeout;
 
@@ -2834,7 +2837,6 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 			if (m->c->sslopts->CApath)
 				free((void*)m->c->sslopts->CApath);
 		}
-		free(m->c->sslopts);
 		free((void*)m->c->sslopts);
 		m->c->sslopts = NULL;
 	}
@@ -3321,6 +3323,19 @@ int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen
 		rc = MQTTASYNC_NO_MORE_MSGIDS;
 	else if (m->createOptions && (MQTTAsync_countBufferedMessages(m) >= m->createOptions->maxBufferedMessages))
 		rc = MQTTASYNC_MAX_BUFFERED_MESSAGES;
+	else if (response)
+	{
+		if (m->c->MQTTVersion >= MQTTVERSION_5)
+		{
+			if (response->struct_version == 0 || response->onFailure || response->onSuccess)
+				rc = MQTTASYNC_BAD_MQTT_OPTIONS;
+		}
+		else if (m->c->MQTTVersion < MQTTVERSION_5)
+		{
+			if (response->struct_version >= 1 && (response->onFailure5 || response->onSuccess5))
+				rc = MQTTASYNC_BAD_MQTT_OPTIONS;
+		}
+	}
 
 	if (rc != MQTTASYNC_SUCCESS)
 		goto exit;

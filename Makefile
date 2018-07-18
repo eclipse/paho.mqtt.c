@@ -87,8 +87,11 @@ HEADERS_A = $(HEADERS)
 SAMPLE_FILES_C = paho_cs_pub paho_cs_sub MQTTClient_publish MQTTClient_publish_async MQTTClient_subscribe
 SYNC_SAMPLES = ${addprefix ${blddir}/samples/,${SAMPLE_FILES_C}}
 
-SAMPLE_FILES_A = paho_c_pub paho_c_sub MQTTAsync_subscribe MQTTAsync_publish
+SAMPLE_FILES_A = MQTTAsync_subscribe MQTTAsync_publish
 ASYNC_SAMPLES = ${addprefix ${blddir}/samples/,${SAMPLE_FILES_A}}
+
+UTIL_FILES_AS = paho_c_pub paho_c_sub
+ASYNC_UTILS = ${addprefix ${blddir}/samples/,${UTIL_FILES_AS}}
 
 TEST_FILES_C = test1 test15 test2 sync_client_test test_mqtt4sync test10
 SYNC_TESTS = ${addprefix ${blddir}/test/,${TEST_FILES_C}}
@@ -127,7 +130,7 @@ MQTTLIB_A_TARGET = ${blddir}/lib${MQTTLIB_A}.so.${VERSION}
 MQTTLIB_AS_TARGET = ${blddir}/lib${MQTTLIB_AS}.so.${VERSION}
 MQTTVERSION_TARGET = ${blddir}/MQTTVersion
 
-CCFLAGS_SO = -g -fPIC $(CFLAGS) -Os -Wall -fvisibility=hidden -I$(blddir_work)
+CCFLAGS_SO = -g -fPIC $(CFLAGS) -Os -Wall -fvisibility=hidden -I$(blddir_work) -fpermissive
 FLAGS_EXE = $(LDFLAGS) -I ${srcdir} -lpthread -L ${blddir}
 FLAGS_EXES = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread -lssl -lcrypto ${END_GROUP} -L ${blddir}
 
@@ -178,7 +181,7 @@ endif
 
 all: build
 
-build: | mkdir ${MQTTLIB_C_TARGET} ${MQTTLIB_CS_TARGET} ${MQTTLIB_A_TARGET} ${MQTTLIB_AS_TARGET} ${MQTTVERSION_TARGET} ${SYNC_SAMPLES} ${ASYNC_SAMPLES} ${SYNC_TESTS} ${SYNC_SSL_TESTS} ${ASYNC_TESTS} ${ASYNC_SSL_TESTS}
+build: | mkdir ${MQTTLIB_C_TARGET} ${MQTTLIB_CS_TARGET} ${MQTTLIB_A_TARGET} ${MQTTLIB_AS_TARGET} ${MQTTVERSION_TARGET} ${SYNC_SAMPLES} ${ASYNC_SAMPLES} ${ASYNC_UTILS} ${SYNC_TESTS} ${SYNC_SSL_TESTS} ${ASYNC_TESTS} ${ASYNC_SSL_TESTS}
 
 clean:
 	rm -rf ${blddir}/*
@@ -202,10 +205,13 @@ ${ASYNC_SSL_TESTS}: ${blddir}/test/%: ${srcdir}/../test/%.c $(MQTTLIB_CS_TARGET)
 	${CC} -g -o $@ $< -l${MQTTLIB_AS} ${FLAGS_EXES}
 
 ${SYNC_SAMPLES}: ${blddir}/samples/%: ${srcdir}/samples/%.c $(MQTTLIB_C_TARGET)
-	${CC} -o $@ $< -l${MQTTLIB_C} ${FLAGS_EXE}
+	${CC} -o $@ $< -l${MQTTLIB_CS} ${FLAGS_EXES}
 
 ${ASYNC_SAMPLES}: ${blddir}/samples/%: ${srcdir}/samples/%.c $(MQTTLIB_A_TARGET)
-	${CC} -o $@ $< -l${MQTTLIB_A} ${FLAGS_EXE}
+	${CC} -o $@ $< -l${MQTTLIB_AS} ${FLAGS_EXES}
+	
+${ASYNC_UTILS}: ${blddir}/samples/%: ${srcdir}/samples/%.c $(MQTTLIB_AS_TARGET)
+	${CC} -o $@ $< -l${MQTTLIB_AS} ${FLAGS_EXES} ${srcdir}/samples/pubsub_opts.c
 
 $(blddir_work)/VersionInfo.h: $(srcdir)/VersionInfo.h.in
 	$(SED_COMMAND) $< > $@

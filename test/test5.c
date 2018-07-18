@@ -66,6 +66,7 @@ struct Options
 	int verbose;
 	int test_no;
 	int size;
+	int websockets;
 } options =
 {
 	"ssl://m2m.eclipse.org:18883",
@@ -79,7 +80,8 @@ struct Options
 	NULL,
 	0,
 	0,
-	5000000
+	5000000,
+	0,
 };
 
 typedef struct
@@ -143,20 +145,27 @@ void getopts(int argc, char** argv)
 		{
 			if (++count < argc)
 			{
-				sprintf(options.connection, "ssl://%s:18883", argv[count]);
+				char* prefix = (options.websockets) ? "wss" : "ssl";
+
+				sprintf(options.connection, "%s://%s:18883", prefix, argv[count]);
 				printf("Setting connection to %s\n", options.connection);
-				sprintf(options.mutual_auth_connection, "ssl://%s:18884", argv[count]);
+				sprintf(options.mutual_auth_connection, "%s://%s:18884", prefix, argv[count]);
 				printf("Setting mutual_auth_connection to %s\n", options.mutual_auth_connection);
-				sprintf(options.nocert_mutual_auth_connection, "ssl://%s:18887", argv[count]);
+				sprintf(options.nocert_mutual_auth_connection, "%s://%s:18887", prefix, argv[count]);
 				printf("Setting nocert_mutual_auth_connection to %s\n",
 					options.nocert_mutual_auth_connection);
-				sprintf(options.server_auth_connection, "ssl://%s:18885", argv[count]);
+				sprintf(options.server_auth_connection, "%s://%s:18885", prefix, argv[count]);
 				printf("Setting server_auth_connection to %s\n", options.server_auth_connection);
-				sprintf(options.anon_connection, "ssl://%s:18886", argv[count]);
+				sprintf(options.anon_connection, "%s://%s:18886", prefix, argv[count]);
 				printf("Setting anon_connection to %s\n", options.anon_connection);
 			}
 			else
 				usage();
+		}
+		else if (strcmp(argv[count], "--ws") == 0)
+		{
+			options.websockets = 1;
+			printf("\nSetting websockets on\n");
 		}
 		count++;
 	}

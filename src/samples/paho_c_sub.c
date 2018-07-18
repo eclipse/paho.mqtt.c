@@ -16,31 +16,9 @@
  *    Guilherme Maciel Ferreira - add keep alive option
  *******************************************************************************/
 
-/*
-
- stdout subscriber for the asynchronous client
-
- compulsory parameters:
-
-  --topic topic to subscribe to
-
- defaulted parameters:
-
-	--host localhost
-	--port 1883
-	--qos 2
-	--delimiter \n
-	--clientid stdout-subscriber-async
-	--showtopics off
-	--keepalive 10
-
-	--userid none
-	--password none
-
-*/
-
 #include "MQTTAsync.h"
 #include "MQTTClientPersistence.h"
+#include "pubsub_opts.h"
 
 #include <stdio.h>
 #include <signal.h>
@@ -66,6 +44,15 @@ int subscribed = 0;
 int disconnected = 0;
 
 
+void mysleep(int ms)
+{
+	#if defined(WIN32)
+		Sleep(ms);
+	#else
+		usleep(ms * 1000);
+	#endif
+}
+
 void cfinish(int sig)
 {
 	signal(SIGINT, NULL);
@@ -73,23 +60,14 @@ void cfinish(int sig)
 }
 
 
-struct
+struct pubsub_opts opts =
 {
-	char* clientid;
-	int nodelimiter;
-	char delimiter;
-	int qos;
-	char* username;
-	char* password;
-	char* host;
-	char* port;
-	int showtopics;
-	int keepalive;
-} opts =
-{
-	"stdout-subscriber-async", 1, '\n', 2, NULL, NULL, "localhost", "1883", 0, 10
+	MQTTVERSION_DEFAULT, 0,
+	NULL, "paho-c-sub", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", NULL, 0, 10,
+	NULL, NULL, 0, 0, /* will options */
+	0, NULL, NULL, NULL, NULL, NULL, NULL, /* TLS options */
+	0, {NULL, NULL}, /* publish properties */
 };
-
 
 void usage(void)
 {
@@ -102,117 +80,61 @@ void usage(void)
 	printf("  --clientid <clientid> (default is %s)\n", opts.clientid);
 	printf("  --username none\n");
 	printf("  --password none\n");
-	printf("  --showtopics <on or off> (default is on if the topic has a wildcard, else off)\n");
+	printf("  --verbose <on or off> (default is on if the topic has a wildcard, else off)\n");
 	printf("  --keepalive <seconds> (default is 10 seconds)\n");
 	exit(EXIT_FAILURE);
 }
 
 
-void getopts(int argc, char** argv)
+void logProperties(MQTTProperties *props)
 {
-	int count = 2;
+	int i = 0;
 
-	while (count < argc)
+	for (i = 0; i < props->count; ++i)
 	{
-		if (strcmp(argv[count], "--qos") == 0)
-		{
-			if (++count < argc)
-			{
-				if (strcmp(argv[count], "0") == 0)
-					opts.qos = 0;
-				else if (strcmp(argv[count], "1") == 0)
-					opts.qos = 1;
-				else if (strcmp(argv[count], "2") == 0)
-					opts.qos = 2;
-				else
-					usage();
-			}
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--host") == 0)
-		{
-			if (++count < argc)
-				opts.host = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--port") == 0)
-		{
-			if (++count < argc)
-				opts.port = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--clientid") == 0)
-		{
-			if (++count < argc)
-				opts.clientid = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--username") == 0)
-		{
-			if (++count < argc)
-				opts.username = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--password") == 0)
-		{
-			if (++count < argc)
-				opts.password = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--delimiter") == 0)
-		{
-			if (++count < argc)
-			{
-				if (strcmp("newline", argv[count]) == 0)
-					opts.delimiter = '\n';
-				else
-					opts.delimiter = argv[count][0];
-				opts.nodelimiter = 0;
-			}
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--showtopics") == 0)
-		{
-			if (++count < argc)
-			{
-				if (strcmp(argv[count], "on") == 0)
-					opts.showtopics = 1;
-				else if (strcmp(argv[count], "off") == 0)
-					opts.showtopics = 0;
-				else
-					usage();
-			}
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--keepalive") == 0)
-		{
-			if (++count < argc)
-				opts.keepalive = atoi(argv[count]);
-			else
-				usage();
-		}
-		count++;
-	}
+		int id = props->array[i].identifier;
+		const char* name = MQTTPropertyName(id);
+		char* intformat = "Property name %s value %d\n";
 
+		switch (MQTTProperty_getType(id))
+		{
+		case PROPERTY_TYPE_BYTE:
+		  printf(intformat, name, props->array[i].value.byte);
+		  break;
+		case TWO_BYTE_INTEGER:
+		  printf(intformat, name, props->array[i].value.integer2);
+		  break;
+		case FOUR_BYTE_INTEGER:
+		  printf(intformat, name, props->array[i].value.integer4);
+		  break;
+		case VARIABLE_BYTE_INTEGER:
+		  printf(intformat, name, props->array[i].value.integer4);
+		  break;
+		case BINARY_DATA:
+		case UTF_8_ENCODED_STRING:
+		  printf("Property name %s value len %.*s", name,
+				  props->array[i].value.data.len, props->array[i].value.data.data);
+		  break;
+		case UTF_8_STRING_PAIR:
+		  printf("Property name %s key %.*s value %.*s", name,
+			  props->array[i].value.data.len, props->array[i].value.data.data,
+		  	  props->array[i].value.value.len, props->array[i].value.value.data);
+		  break;
+		}
+	}
 }
 
 
 int messageArrived(void *context, char *topicName, int topicLen, MQTTAsync_message *message)
 {
-	if (opts.showtopics)
+	if (opts.verbose)
 		printf("%s\t", topicName);
-	if (opts.nodelimiter)
+	if (opts.delimiter == NULL)
 		printf("%.*s", message->payloadlen, (char*)message->payload);
 	else
-		printf("%.*s%c", message->payloadlen, (char*)message->payload, opts.delimiter);
+		printf("%.*s%c", message->payloadlen, (char*)message->payload, opts.delimiter[0]);
+	if (message->struct_version == 1 && opts.verbose)
+		logProperties(&message->properties);
 	fflush(stdout);
 	MQTTAsync_freeMessage(&message);
 	MQTTAsync_free(topicName);
@@ -226,15 +148,34 @@ void onDisconnect(void* context, MQTTAsync_successData* response)
 }
 
 
+void onSubscribe5(void* context, MQTTAsync_successData5* response)
+{
+	subscribed = 1;
+}
+
 void onSubscribe(void* context, MQTTAsync_successData* response)
 {
 	subscribed = 1;
 }
 
 
+void onSubscribeFailure5(void* context, MQTTAsync_failureData5* response)
+{
+	printf("Subscribe failed, rc %d reason code %d\n", response->code, response->reasonCode);
+	finished = 1;
+}
+
+
 void onSubscribeFailure(void* context, MQTTAsync_failureData* response)
 {
 	printf("Subscribe failed, rc %d\n", response->code);
+	finished = 1;
+}
+
+
+void onConnectFailure5(void* context, MQTTAsync_failureData5* response)
+{
+	printf("Connect failed, rc %d reason code %d\n", response->code, response->reasonCode);
 	finished = 1;
 }
 
@@ -246,13 +187,33 @@ void onConnectFailure(void* context, MQTTAsync_failureData* response)
 }
 
 
+void onConnect5(void* context, MQTTAsync_successData5* response)
+{
+	MQTTAsync client = (MQTTAsync)context;
+	MQTTAsync_callOptions copts = MQTTAsync_callOptions_initializer;
+	int rc;
+
+	if (opts.verbose)
+		printf("Subscribing to topic %s with client %s at QoS %d\n", topic, opts.clientid, opts.qos);
+
+	copts.onSuccess5 = onSubscribe5;
+	copts.onFailure5 = onSubscribeFailure5;
+	copts.context = client;
+	if ((rc = MQTTAsync_subscribe(client, topic, opts.qos, &copts)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to start subscribe, return code %d\n", rc);
+		finished = 1;
+	}
+}
+
+
 void onConnect(void* context, MQTTAsync_successData* response)
 {
 	MQTTAsync client = (MQTTAsync)context;
 	MQTTAsync_responseOptions ropts = MQTTAsync_responseOptions_initializer;
 	int rc;
 
-	if (opts.showtopics)
+	if (opts.verbose)
 		printf("Subscribing to topic %s with client %s at QoS %d\n", topic, opts.clientid, opts.qos);
 
 	ropts.onSuccess = onSubscribe;
@@ -265,21 +226,12 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	}
 }
 
-
 MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
 
 
-void connectionLost(void *context, char *cause)
+void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 {
-	MQTTAsync client = (MQTTAsync)context;
-	int rc;
-
-	printf("connectionLost called\n");
-	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
-	{
-		printf("Failed to start reconnect, return code %d\n", rc);
-		finished = 1;
-	}
+	printf("Trace : %d, %s\n", level, message);
 }
 
 
@@ -287,8 +239,10 @@ int main(int argc, char** argv)
 {
 	MQTTAsync client;
 	MQTTAsync_disconnectOptions disc_opts = MQTTAsync_disconnectOptions_initializer;
+	MQTTAsync_willOptions will_opts = MQTTAsync_willOptions_initializer;
+	MQTTAsync_SSLOptions ssl_opts = MQTTAsync_SSLOptions_initializer;
 	int rc = 0;
-	char url[100];
+	char* url = NULL;
 
 	if (argc < 2)
 		usage();
@@ -296,16 +250,32 @@ int main(int argc, char** argv)
 	topic = argv[1];
 
 	if (strchr(topic, '#') || strchr(topic, '+'))
-		opts.showtopics = 1;
-	if (opts.showtopics)
+		opts.verbose = 1;
+	if (opts.verbose)
 		printf("topic is %s\n", topic);
 
-	getopts(argc, argv);
-	sprintf(url, "%s:%s", opts.host, opts.port);
+	if (getopts(argc, argv, &opts) != 0)
+		usage();
+
+	if (opts.connection)
+		url = opts.connection;
+	else
+	{
+		url = malloc(100);
+		sprintf(url, "%s:%s", opts.host, opts.port);
+	}
+	if (opts.verbose)
+		printf("URL is %s\n", url);
+
+	if (opts.tracelevel > 0)
+	{
+		MQTTAsync_setTraceCallback(trace_callback);
+		MQTTAsync_setTraceLevel(opts.tracelevel);
+	}
 
 	rc = MQTTAsync_create(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL);
 
-	MQTTAsync_setCallbacks(client, client, connectionLost, messageArrived, NULL);
+	MQTTAsync_setCallbacks(client, client, NULL, messageArrived, NULL);
 
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
@@ -314,9 +284,45 @@ int main(int argc, char** argv)
 	conn_opts.cleansession = 1;
 	conn_opts.username = opts.username;
 	conn_opts.password = opts.password;
-	conn_opts.onSuccess = onConnect;
-	conn_opts.onFailure = onConnectFailure;
+	conn_opts.MQTTVersion = opts.MQTTVersion;
+	if (opts.MQTTVersion == MQTTVERSION_5)
+	{
+		MQTTAsync_connectOptions conn_opts5 = MQTTAsync_connectOptions_initializer5;
+		conn_opts = conn_opts5;
+		conn_opts.onSuccess5 = onConnect5;
+		conn_opts.onFailure5 = onConnectFailure5;
+	}
+	else
+	{
+		conn_opts.onSuccess = onConnect;
+		conn_opts.onFailure = onConnectFailure;
+	}
 	conn_opts.context = client;
+	conn_opts.automaticReconnect = 1;
+
+	if (opts.will_topic) 	/* will options */
+	{
+		will_opts.message = opts.will_payload;
+		will_opts.topicName = opts.will_topic;
+		will_opts.qos = opts.will_qos;
+		will_opts.retained = opts.will_retain;
+		conn_opts.will = &will_opts;
+	}
+
+	if (opts.connection && (strncmp(opts.connection, "ssl://", 6) == 0 ||
+			strncmp(opts.connection, "wss://", 6) == 0))
+	{
+		if (opts.insecure)
+			ssl_opts.enableServerCertAuth = 0;
+		ssl_opts.CApath = opts.capath;
+		ssl_opts.keyStore = opts.cert;
+		ssl_opts.trustStore = opts.cafile;
+		ssl_opts.privateKey = opts.key;
+		ssl_opts.privateKeyPassword = opts.keypass;
+		ssl_opts.enabledCipherSuites = opts.ciphers;
+		conn_opts.ssl = &ssl_opts;
+	}
+
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
@@ -324,21 +330,13 @@ int main(int argc, char** argv)
 	}
 
 	while (!subscribed)
-		#if defined(WIN32)
-			Sleep(100);
-		#else
-			usleep(10000L);
-		#endif
+		mysleep(100);
 
 	if (finished)
 		goto exit;
 
 	while (!finished)
-		#if defined(WIN32)
-			Sleep(100);
-		#else
-			usleep(10000L);
-		#endif
+		mysleep(100);
 
 	disc_opts.onSuccess = onDisconnect;
 	if ((rc = MQTTAsync_disconnect(client, &disc_opts)) != MQTTASYNC_SUCCESS)
@@ -347,12 +345,8 @@ int main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 
-	while	(!disconnected)
-		#if defined(WIN32)
-			Sleep(100);
-		#else
-			usleep(10000L);
-		#endif
+	while (!disconnected)
+		mysleep(100);
 
 exit:
 	MQTTAsync_destroy(&client);

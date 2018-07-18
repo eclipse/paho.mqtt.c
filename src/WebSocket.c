@@ -478,7 +478,7 @@ int WebSocket_getch(networkHandles *net, char* c)
 			size_t actual_len = 0u;
 			rc =  WebSocket_receiveFrame( net, 1u, &actual_len );
 			if ( rc != TCPSOCKET_COMPLETE )
-				return rc;
+				goto exit;
 
 			/* we got a frame, let take off the top of queue */
 			if ( in_frames->first )
@@ -501,6 +501,7 @@ int WebSocket_getch(networkHandles *net, char* c)
 	else
 		rc = Socket_getch(net->socket, c);
 
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -543,7 +544,7 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 					free( last_frame );
 				last_frame = ListDetachHead(in_frames);
 			}
-			return rv;
+			goto exit;
 		}
 
 		/* no current frame, let's see if there's one in the list */
@@ -577,6 +578,7 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 	else
 		rv = WebSocket_getRawSocketData(net, bytes, actual_len);
 
+exit:
 	rc = rv != NULL;
 	FUNC_EXIT_RC(rc);
 	return rv;

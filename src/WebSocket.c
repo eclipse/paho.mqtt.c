@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018 Wind River Systems, Inc. All Rights Reserved.
+ * Copyright (c) 2018 Wind River Systems, Inc. and others. All Rights Reserved.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Keith Holman - initial implementation and documentation
+ *    Ian Craggs - use memory tracking
  *******************************************************************************/
 
 #include <stdint.h>
@@ -25,6 +26,7 @@
 #include "SHA1.h"
 #include "LinkedList.h"
 #include "MQTTProtocolOut.h"
+#include "StackTrace.h"
 
 #if defined(__linux__)
 #  include <endian.h>
@@ -81,6 +83,8 @@
 #if defined(OPENSSL)
 #include <openssl/rand.h>
 #endif /* if defined(OPENSSL) */
+
+#include "Heap.h"
 
 /** @brief raw uuid type */
 typedef unsigned char uuid_t[16];
@@ -186,6 +190,7 @@ static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
 	int buf_len = 0u;
 	size_t data_len = buf0len;
 
+	FUNC_ENTRY;
 	for (i = 0; i < count; ++i)
 		data_len += buflens[i];
 
@@ -266,6 +271,8 @@ static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
 			}
 		}
 	}
+
+	FUNC_EXIT_RC(buf_len);
 	return buf_len;
 }
 
@@ -321,8 +328,12 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 	int port = 80;
 	const char *topic = NULL;
 
+	FUNC_ENTRY;
 	/* Generate UUID */
-	net->websocket_key = realloc(net->websocket_key, 25u);
+	if (net->websocket_key == NULL)
+		net->websocket_key = malloc(25u);
+	else
+		net->websocket_key = realloc(net->websocket_key, 25u);
 #if defined(WIN32) || defined(WIN64)
 	UUID uuid;
 	ZeroMemory( &uuid, sizeof(UUID) );
@@ -382,6 +393,8 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 		net->websocket_key = NULL;
 		rc = SOCKET_ERROR;
 	}
+
+	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -394,6 +407,8 @@ int WebSocket_connect( networkHandles *net, const char *uri )
  */
 void WebSocket_close(networkHandles *net, int status_code, const char *reason)
 {
+	FUNC_ENTRY;
+
 	if ( net->websocket )
 	{
 		char *buf0;
@@ -440,7 +455,12 @@ void WebSocket_close(networkHandles *net, int status_code, const char *reason)
 		free( buf0 );
 	}
 	if ( net->websocket_key )
+	{
 		free( net->websocket_key );
+		net->websocket_key = NULL;
+	}
+
+	FUNC_EXIT;
 }
 
 /**
@@ -458,6 +478,8 @@ void WebSocket_close(networkHandles *net, int status_code, const char *reason)
 int WebSocket_getch(networkHandles *net, char* c)
 {
 	int rc = SOCKET_ERROR;
+
+	FUNC_ENTRY;
 	if ( net->websocket )
 	{
 		struct ws_frame *frame = NULL;
@@ -492,6 +514,8 @@ int WebSocket_getch(networkHandles *net, char* c)
 #endif
 	else
 		rc = Socket_getch(net->socket, c);
+
+	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -509,6 +533,9 @@ int WebSocket_getch(networkHandles *net, char* c)
 char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 {
 	char *rv = NULL;
+	int rc = 0;
+
+	FUNC_ENTRY;
 	if ( net->websocket )
 	{
 		struct ws_frame *frame = NULL;
@@ -563,6 +590,9 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 	}
 	else
 		rv = WebSocket_getRawSocketData(net, bytes, actual_len);
+
+	rc = rv != NULL;
+	FUNC_EXIT_RC(rc);
 	return rv;
 }
 
@@ -598,6 +628,7 @@ char *WebSocket_getRawSocketData(
 void WebSocket_pong(networkHandles *net, char *app_data,
 	size_t app_data_len)
 {
+	FUNC_ENTRY;
 	if ( net->websocket )
 	{
 		char *buf0;
@@ -627,9 +658,10 @@ void WebSocket_pong(networkHandles *net, char *app_data,
                          header_len + app_data_len, 1,
                          &app_data, &app_data_len, &freeData );
 
-                /* clean up memory */
-                free( buf0 );
-        }
+		/* clean up memory */
+		free( buf0 );
+	}
+	FUNC_EXIT;
 }
 
 /**
@@ -655,38 +687,41 @@ void WebSocket_pong(networkHandles *net, char *app_data,
 int WebSocket_putdatas(networkHandles* net, char* buf0, size_t buf0len,
       int count, char** buffers, size_t* buflens, int* freeData)
 {
-   int rc;
+	int rc;
 
-   /* prepend WebSocket frame */
-   if ( net->websocket )
-   {
-      size_t data_len = buf0len + 4u;
-      size_t header_len;
-      const int mask_data = 1;
+	FUNC_ENTRY;
+	/* prepend WebSocket frame */
+	if ( net->websocket )
+	{
+		size_t data_len = buf0len + 4u;
+		size_t header_len;
+		const int mask_data = 1;
 
-      for (rc = 0; rc < count; ++rc)
-         data_len += buflens[rc];
+		for (rc = 0; rc < count; ++rc)
+			data_len += buflens[rc];
 
-      header_len = WebSocket_calculateFrameHeaderSize(
-            net, mask_data, data_len);
-      rc = WebSocket_buildFrame(
-            net, WebSocket_OP_BINARY, mask_data, buf0, buf0len,
-            count, buffers, buflens );
+		header_len = WebSocket_calculateFrameHeaderSize(
+			net, mask_data, data_len);
+		rc = WebSocket_buildFrame(
+			net, WebSocket_OP_BINARY, mask_data, buf0, buf0len,
+			count, buffers, buflens );
 
-      /* header added so adjust buffer */
-      if ( rc > 0 )
-      {
-         buf0 -= header_len;
-         buf0len += header_len;
-      }
-   }
+		/* header added so adjust buffer */
+		if ( rc > 0 )
+		{
+			buf0 -= header_len;
+			buf0len += header_len;
+		}
+	}
 
 #if defined(OPENSSL) || defined(MBEDTLS)
-   if (net->sslHdl.ssl)
+        if (net->sslHdl.ssl)
 		rc = SSLSocket_putdatas(&net->sslHdl, net->socket, buf0, buf0len, count, buffers, buflens, freeData);
 	else
 #endif
 		rc = Socket_putdatas(net->socket, buf0, buf0len, count, buffers, buflens, freeData);
+
+	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -705,7 +740,9 @@ int WebSocket_receiveFrame(networkHandles *net,
 	size_t bytes, size_t *actual_len )
 {
 	struct ws_frame *res = NULL;
+	int rc = TCPSOCKET_COMPLETE;
 
+	FUNC_ENTRY;
 	if ( !in_frames )
 		in_frames = ListInitialize();
 
@@ -732,7 +769,10 @@ int WebSocket_receiveFrame(networkHandles *net,
 
 				b = WebSocket_getRawSocketData(net, 2u, &len);
 				if ( !b || len == 0u )
-					return TCPSOCKET_INTERRUPTED;
+				{
+					rc = TCPSOCKET_INTERRUPTED;
+					goto exit;
+				}
 
 				/* 1st byte */
 				final = (b[0] & 0xFF) >> 7;
@@ -746,7 +786,10 @@ int WebSocket_receiveFrame(networkHandles *net,
 				     opcode > WebSocket_OP_PONG ||
 				     ( opcode > WebSocket_OP_BINARY &&
 				       opcode < WebSocket_OP_CLOSE ) )
-					return SOCKET_ERROR;
+				{
+					rc = SOCKET_ERROR;
+					goto exit;
+				}
 
 				/* 2nd byte */
 				has_mask = (b[1] & 0xFF) >> 7;
@@ -758,7 +801,10 @@ int WebSocket_receiveFrame(networkHandles *net,
 					b = WebSocket_getRawSocketData( net,
 						2u, &len);
 					if ( !b || len == 0u )
-						return TCPSOCKET_INTERRUPTED;
+					{
+						rc = TCPSOCKET_INTERRUPTED;
+						goto exit;
+					}
 					/* convert from big endian 16 to host */
 					payload_len = be16toh(*(uint16_t*)b);
 				}
@@ -767,7 +813,10 @@ int WebSocket_receiveFrame(networkHandles *net,
 					b = WebSocket_getRawSocketData( net,
 						8u, &len);
 					if ( !b || len == 0u )
-						return TCPSOCKET_INTERRUPTED;
+					{
+						rc = TCPSOCKET_INTERRUPTED;
+						goto exit;
+					}
 					/* convert from big-endian 64 to host */
 					payload_len = (size_t)be64toh(*(uint64_t*)b);
 				}
@@ -777,7 +826,10 @@ int WebSocket_receiveFrame(networkHandles *net,
 					uint8_t mask[4];
 					b = WebSocket_getRawSocketData(net, 4u, &len);
 					if ( !b || len == 0u )
-						return TCPSOCKET_INTERRUPTED;
+					{
+						rc = TCPSOCKET_INTERRUPTED;
+						goto exit;
+					}
 					memcpy( &mask[0], b, sizeof(uint32_t));
 				}
 
@@ -785,7 +837,10 @@ int WebSocket_receiveFrame(networkHandles *net,
 					payload_len, &len);
 
 				if ( !b || len == 0u )
-					return TCPSOCKET_INTERRUPTED;
+				{
+					rc = TCPSOCKET_INTERRUPTED;
+					goto exit;
+				}
 
 				/* unmask data */
 				if ( has_mask )
@@ -798,7 +853,10 @@ int WebSocket_receiveFrame(networkHandles *net,
 				if ( res )
 					cur_len = res->len;
 
-				res = realloc( res, sizeof(struct ws_frame) + cur_len + len );
+				if (res == NULL)
+					res = malloc( sizeof(struct ws_frame) + cur_len + len );
+				else
+					res = realloc( res, sizeof(struct ws_frame) + cur_len + len );
 				memcpy( (unsigned char *)res + sizeof(struct ws_frame) + cur_len, b, len );
 				res->pos = 0u;
 				res->len = cur_len + len;
@@ -823,7 +881,8 @@ int WebSocket_receiveFrame(networkHandles *net,
 				/* server end closed websocket connection */
 				free( res );
 				WebSocket_close( net, WebSocket_CLOSE_GOING_AWAY, NULL );
-				return SOCKET_ERROR; /* closes socket */
+				rc = SOCKET_ERROR; /* closes socket */
+				goto exit;
 			}
 		} while ( opcode == WebSocket_OP_PING || opcode == WebSocket_OP_PONG );
 	}
@@ -831,7 +890,10 @@ int WebSocket_receiveFrame(networkHandles *net,
 	/* add new frame to end of list */
 	ListAppend( in_frames, res, sizeof(struct ws_frame) + res->len);
 	*actual_len = res->len - res->pos;
-	return TCPSOCKET_COMPLETE;
+
+exit:
+	FUNC_EXIT_RC(rc);
+	return rc;
 }
 
 /**
@@ -868,6 +930,7 @@ const char *WebSocket_strcasefind(const char *buf, const char *str, size_t len)
  */
 void WebSocket_terminate( void )
 {
+	FUNC_ENTRY;
 	/* clean up and un-processed websocket frames */
 	if ( in_frames )
 	{
@@ -889,6 +952,7 @@ void WebSocket_terminate( void )
 #if defined(OPENSSL) || defined(MBEDTLS)
 	SSLSocket_terminate();
 #endif
+	FUNC_EXIT;
 }
 
 /**
@@ -906,6 +970,8 @@ int WebSocket_upgrade( networkHandles *net )
 	static const char *const ws_guid =
 		"258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 	int rc = SOCKET_ERROR;
+
+	FUNC_ENTRY;
 	if ( net->websocket_key )
 	{
 		SHA_CTX ctx;
@@ -923,7 +989,18 @@ int WebSocket_upgrade( networkHandles *net )
 
 		rc = TCPSOCKET_INTERRUPTED;
 		read_buf = WebSocket_getRawSocketData( net, 12u, &rcv );
-		if ( rcv > 0 && strncmp( read_buf, "HTTP/1.1 101", 11u ) == 0 )
+
+		if ( rcv > 0 && strncmp( read_buf, "HTTP/1.1", 8u ) == 0 )
+		{
+			if (strncmp( &read_buf[9], "101", 3u ) != 0)
+			{
+				Log(TRACE_PROTOCOL, 1, "WebSocket HTTP rc %.3s", &read_buf[9]);
+				rc = SOCKET_ERROR;
+				goto exit;
+			}
+		}
+
+		if ( rcv > 0 && strncmp( read_buf, "HTTP/1.1 101", 12u ) == 0 )
 		{
 			const char *p;
 			read_buf = WebSocket_getRawSocketData( net, 500u, &rcv );
@@ -992,6 +1069,9 @@ int WebSocket_upgrade( networkHandles *net )
 			WebSocket_getRawSocketData( net, 0u, &rcv );
 		}
 	}
+
+exit:
+	FUNC_EXIT_RC(rc);
 	return rc;
 }
 

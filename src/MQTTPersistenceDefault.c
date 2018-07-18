@@ -3,11 +3,11 @@
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
- * and Eclipse Distribution License v1.0 which accompany this distribution. 
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
- * The Eclipse Public License is available at 
+ * The Eclipse Public License is available at
  *    http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
@@ -271,7 +271,7 @@ int pstremove(void* handle, char* key)
 	FUNC_ENTRY;
 	if (clientDir == NULL)
 	{
-		return rc = MQTTCLIENT_PERSISTENCE_ERROR;
+		rc = MQTTCLIENT_PERSISTENCE_ERROR;
 		goto exit;
 	}
 
@@ -528,7 +528,7 @@ int clearUnix(char *dirname)
 			lstat(dir_entry->d_name, &stat_info);
 			if(S_ISREG(stat_info.st_mode))
 			{
-				if ( remove(dir_entry->d_name) != 0 )
+				if (remove(dir_entry->d_name) != 0 && errno != ENOENT)
 					rc = MQTTCLIENT_PERSISTENCE_ERROR;
 			}
 		}
@@ -690,7 +690,7 @@ int keysUnix(char *dirname, char ***keys, int *nkeys)
 			while((dir_entry = readdir(dp)) != NULL)
 			{
 				char* temp = malloc(strlen(dirname)+strlen(dir_entry->d_name)+2);
-	
+
 				sprintf(temp, "%s/%s", dirname, dir_entry->d_name);
 				if (lstat(temp, &stat_info) == 0 && S_ISREG(stat_info.st_mode))
 				{

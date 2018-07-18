@@ -1099,12 +1099,19 @@ void SSLSocket_destroyContext(networkHandles* net)
 	FUNC_EXIT;
 }
 
+static List pending_reads = {NULL, NULL, NULL, 0, 0};
 
 int SSLSocket_close(networkHandles* net)
 {
 	int rc = 1;
+
 	FUNC_ENTRY;
-	if (net->sslHdl.ssl) {
+	/* clean up any pending reads for this socket */
+	if (pending_reads.count > 0 && ListFindItem(&pending_reads, &net->socket, intcompare))
+		ListRemoveItem(&pending_reads, &net->socket, intcompare);
+
+	if (net->sslHdl.ssl)
+	{
 #if defined(OPENSSL)
 		rc = SSL_shutdown(net->sslHdl.ssl);
 		SSL_free(net->sslHdl.ssl);
@@ -1214,7 +1221,6 @@ int SSLSocket_putdatas(sslHandler* sslHdl, int socket, char* buf0, size_t buf0le
 	return rc;
 }
 
-static List pending_reads = {NULL, NULL, NULL, 0, 0};
 
 void SSLSocket_addPendingRead(int sock)
 {

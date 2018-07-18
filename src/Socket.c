@@ -998,9 +998,8 @@ char* Socket_getpeer(int sock)
 {
 	struct sockaddr_in6 sa;
 	socklen_t sal = sizeof(sa);
-	int rc;
 
-	if ((rc = getpeername(sock, (struct sockaddr*)&sa, &sal)) == SOCKET_ERROR)
+	if (getpeername(sock, (struct sockaddr*)&sa, &sal) == SOCKET_ERROR)
 	{
 		Socket_error("getpeername", sock);
 		return "unknown";

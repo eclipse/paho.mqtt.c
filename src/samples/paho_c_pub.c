@@ -289,7 +289,6 @@ int main(int argc, char** argv)
 
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
-	signal(SIGQUIT, cfinish);
 
 	rc = MQTTAsync_setCallbacks(client, client, NULL, messageArrived, NULL);
 

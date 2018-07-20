@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2013 IBM Corp.
+ * Copyright (c) 2012, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,28 +15,14 @@
  *******************************************************************************/
 
  /*
- stdin publisher
 
- compulsory parameters:
-
-  --topic topic to publish on
-
- defaulted parameters:
-
-	--host localhost
-	--port 1883
-	--qos 0
-	--delimiters \n
-	--clientid stdin_publisher
-	--maxdatalen 100
-
-	--userid none
-	--password none
+Synchronous API version of paho_c_pub.c
 
 */
 
 #include "MQTTClient.h"
 #include "MQTTClientPersistence.h"
+#include "pubsub_opts.h"
 
 #include <stdio.h>
 #include <signal.h>
@@ -49,37 +35,7 @@
 #include <sys/time.h>
 #endif
 
-
 volatile int toStop = 0;
-
-
-void usage(void)
-{
-	printf("MQTT stdin publisher\n");
-	printf("Usage: stdinpub topicname <options>, where options are:\n");
-	printf("  --host <hostname> (default is localhost)\n");
-	printf("  --port <port> (default is 1883)\n");
-	printf("  --qos <qos> (default is 0)\n");
-	printf("  --retained (default is off)\n");
-	printf("  --delimiter <delim> (default is \\n)");
-	printf("  --clientid <clientid> (default is hostname+timestamp)");
-	printf("  --maxdatalen 100\n");
-	printf("  --username none\n");
-	printf("  --password none\n");
-	exit(EXIT_FAILURE);
-}
-
-
-void myconnect(MQTTClient* client, MQTTClient_connectOptions* opts)
-{
-	printf("Connecting\n");
-	if (MQTTClient_connect(*client, opts) != 0)
-	{
-		printf("Failed to connect\n");
-		exit(EXIT_FAILURE);
-	}
-	printf("Connected\n");
-}
 
 
 void cfinish(int sig)
@@ -89,24 +45,99 @@ void cfinish(int sig)
 }
 
 
-struct
+struct pubsub_opts opts =
 {
-	char* clientid;
-	char* delimiter;
-	int maxdatalen;
-	int qos;
-	int retained;
-	char* username;
-	char* password;
-	char* host;
-	char* port;
-  int verbose;
-} opts =
-{
-	"publisher", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", 0
+	MQTTVERSION_DEFAULT, 0,
+	NULL, "paho-cs-pub", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", NULL, 0, 10,
+	NULL, NULL, 0, 0, /* will options */
+	0, NULL, NULL, NULL, NULL, NULL, NULL, /* TLS options */
+	0, {NULL, NULL}, /* publish properties */
 };
 
-void getopts(int argc, char** argv);
+
+void usage(void)
+{
+	printf("MQTT stdout subscriber\n");
+	printf("Usage: stdoutsub topicname <options>, where options are:\n");
+	printf("  --host <hostname> (default is %s)\n", opts.host);
+	printf("  --port <port> (default is %s)\n", opts.port);
+	printf("  --qos <qos> (default is %d)\n", opts.qos);
+	printf("  --delimiter <delim> (default is no delimiter)\n");
+	printf("  --clientid <clientid> (default is %s)\n", opts.clientid);
+	printf("  --username none\n");
+	printf("  --password none\n");
+	printf("  --verbose <on or off> (default is on if the topic has a wildcard, else off)\n");
+	printf("  --keepalive <seconds> (default is 10 seconds)\n");
+	exit(EXIT_FAILURE);
+}
+
+
+int myconnect(MQTTClient* client)
+{
+	MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;
+	MQTTClient_willOptions will_opts = MQTTClient_willOptions_initializer;
+	int rc = 0;
+
+	if (opts.verbose)
+		printf("Connecting\n");
+
+	if (opts.MQTTVersion == MQTTVERSION_5)
+	{
+		MQTTClient_connectOptions conn_opts5 = MQTTClient_connectOptions_initializer5;
+		conn_opts = conn_opts5;
+	}
+
+	conn_opts.keepAliveInterval = opts.keepalive;
+	conn_opts.username = opts.username;
+	conn_opts.password = opts.password;
+	conn_opts.MQTTVersion = opts.MQTTVersion;
+
+	if (opts.will_topic) 	/* will options */
+	{
+		will_opts.message = opts.will_payload;
+		will_opts.topicName = opts.will_topic;
+		will_opts.qos = opts.will_qos;
+		will_opts.retained = opts.will_retain;
+		conn_opts.will = &will_opts;
+	}
+
+	if (opts.connection && (strncmp(opts.connection, "ssl://", 6) == 0 ||
+			strncmp(opts.connection, "wss://", 6) == 0))
+	{
+		if (opts.insecure)
+			ssl_opts.enableServerCertAuth = 0;
+		ssl_opts.CApath = opts.capath;
+		ssl_opts.keyStore = opts.cert;
+		ssl_opts.trustStore = opts.cafile;
+		ssl_opts.privateKey = opts.key;
+		ssl_opts.privateKeyPassword = opts.keypass;
+		ssl_opts.enabledCipherSuites = opts.ciphers;
+		conn_opts.ssl = &ssl_opts;
+	}
+
+	if (opts.MQTTVersion == MQTTVERSION_5)
+	{
+		MQTTProperties props = MQTTProperties_initializer;
+		MQTTProperties willProps = MQTTProperties_initializer;
+		MQTTResponse response = MQTTResponse_initializer;
+
+		conn_opts.cleanstart = 1;
+		response = MQTTClient_connect5(client, &conn_opts, &props, &willProps);
+		rc = response.reasonCode;
+	}
+	else
+	{
+		conn_opts.cleansession = 1;
+		rc = MQTTClient_connect(client, &conn_opts);
+	}
+
+	if (opts.verbose && rc == MQTTCLIENT_SUCCESS)
+		printf("Connected\n");
+
+	return rc;
+}
+
 
 int messageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* m)
 {
@@ -114,27 +145,42 @@ int messageArrived(void* context, char* topicName, int topicLen, MQTTClient_mess
 	return 1;
 }
 
+
+void trace_callback(enum MQTTCLIENT_TRACE_LEVELS level, char* message)
+{
+	printf("Trace : %d, %s\n", level, message);
+}
+
+
 int main(int argc, char** argv)
 {
 	MQTTClient client;
-	MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
-	MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;
-	char* topic = NULL;
+	MQTTProperties pub_props = MQTTProperties_initializer;
 	char* buffer = NULL;
 	int rc = 0;
-	char url[100];
+	char* url;
 
 	if (argc < 2)
 		usage();
 
-	getopts(argc, argv);
+	if (getopts(argc, argv, &opts) != 0)
+		usage();
 
-	sprintf(url, "%s:%s", opts.host, opts.port);
+	if (opts.connection)
+		url = opts.connection;
+	else
+	{
+		url = malloc(100);
+		sprintf(url, "%s:%s", opts.host, opts.port);
+	}
 	if (opts.verbose)
 		printf("URL is %s\n", url);
 
-	topic = argv[1];
-	printf("Using topic %s\n", topic);
+	if (opts.tracelevel > 0)
+	{
+		MQTTClient_setTraceCallback(trace_callback);
+		MQTTClient_setTraceLevel(opts.tracelevel);
+	}
 
 	rc = MQTTClient_create(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL);
 
@@ -143,17 +189,30 @@ int main(int argc, char** argv)
 
 	rc = MQTTClient_setCallbacks(client, NULL, NULL, messageArrived, NULL);
 
-	conn_opts.keepAliveInterval = 10;
-	conn_opts.reliable = 0;
-	conn_opts.cleansession = 1;
-	conn_opts.username = opts.username;
-	conn_opts.password = opts.password;
-	ssl_opts.enableServerCertAuth = 0;
-	conn_opts.ssl = &ssl_opts;
-
-	myconnect(&client, &conn_opts);
+	myconnect(client);
 
 	buffer = malloc(opts.maxdatalen);
+
+	if (opts.MQTTVersion >= MQTTVERSION_5)
+	{
+		MQTTProperty property;
+
+		if (opts.message_expiry > 0)
+		{
+			property.identifier = MESSAGE_EXPIRY_INTERVAL;
+			property.value.integer4 = opts.message_expiry;
+			MQTTProperties_add(&pub_props, &property);
+		}
+		if (opts.user_property.name)
+		{
+			property.identifier = USER_PROPERTY;
+			property.value.data.data = opts.user_property.name;
+			property.value.data.len = strlen(opts.user_property.name);
+			property.value.value.data = opts.user_property.value;
+			property.value.value.len = strlen(opts.user_property.value);
+			MQTTProperties_add(&pub_props, &property);
+		}
+	}
 
 	while (!toStop)
 	{
@@ -166,19 +225,34 @@ int main(int argc, char** argv)
 			buffer[data_len++] = getchar();
 			if (data_len > delim_len)
 			{
-			/* printf("comparing %s %s\n", opts.delimiter, &buffer[data_len - delim_len]); */
-			if (strncmp(opts.delimiter, &buffer[data_len - delim_len], delim_len) == 0)
-				break;
+				if (strncmp(opts.delimiter, &buffer[data_len - delim_len], delim_len) == 0)
+					break;
 			}
 		} while (data_len < opts.maxdatalen);
 
 		if (opts.verbose)
-				printf("Publishing data of length %d\n", data_len);
-		rc = MQTTClient_publish(client, topic, data_len, buffer, opts.qos, opts.retained, NULL);
+			printf("Publishing data of length %d\n", data_len);
+		if (opts.MQTTVersion == MQTTVERSION_5)
+		{
+			MQTTResponse response = MQTTResponse_initializer;
+
+			response = MQTTClient_publish5(client, opts.topic, data_len, buffer, opts.qos, opts.retained, &pub_props, NULL);
+			rc = response.reasonCode;
+		}
+		else
+			rc = MQTTClient_publish(client, opts.topic, data_len, buffer, opts.qos, opts.retained, NULL);
 		if (rc != 0)
 		{
-			myconnect(&client, &conn_opts);
-			rc = MQTTClient_publish(client, topic, data_len, buffer, opts.qos, opts.retained, NULL);
+			myconnect(client);
+			if (opts.MQTTVersion == MQTTVERSION_5)
+			{
+				MQTTResponse response = MQTTResponse_initializer;
+
+				response = MQTTClient_publish5(client, opts.topic, data_len, buffer, opts.qos, opts.retained, &pub_props, NULL);
+				rc = response.reasonCode;
+			}
+			else
+				rc = MQTTClient_publish(client, opts.topic, data_len, buffer, opts.qos, opts.retained, NULL);
 		}
 		if (opts.qos > 0)
 			MQTTClient_yield();
@@ -188,89 +262,12 @@ int main(int argc, char** argv)
 
 	free(buffer);
 
-	MQTTClient_disconnect(client, 0);
+	if (opts.MQTTVersion == MQTTVERSION_5)
+		rc = MQTTClient_disconnect5(client, 0, SUCCESS, NULL);
+	else
+		rc = MQTTClient_disconnect(client, 0);
 
  	MQTTClient_destroy(&client);
 
 	return EXIT_SUCCESS;
-}
-
-void getopts(int argc, char** argv)
-{
-	int count = 2;
-
-	while (count < argc)
-	{
-		if (strcmp(argv[count], "--retained") == 0)
-			opts.retained = 1;
-		if (strcmp(argv[count], "--verbose") == 0)
-			opts.verbose = 1;
-		else if (strcmp(argv[count], "--qos") == 0)
-		{
-			if (++count < argc)
-			{
-				if (strcmp(argv[count], "0") == 0)
-					opts.qos = 0;
-				else if (strcmp(argv[count], "1") == 0)
-					opts.qos = 1;
-				else if (strcmp(argv[count], "2") == 0)
-					opts.qos = 2;
-				else
-					usage();
-			}
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--host") == 0)
-		{
-			if (++count < argc)
-				opts.host = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--port") == 0)
-		{
-			if (++count < argc)
-				opts.port = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--clientid") == 0)
-		{
-			if (++count < argc)
-				opts.clientid = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--username") == 0)
-		{
-			if (++count < argc)
-				opts.username = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--password") == 0)
-		{
-			if (++count < argc)
-				opts.password = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--maxdatalen") == 0)
-		{
-			if (++count < argc)
-				opts.maxdatalen = atoi(argv[count]);
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--delimiter") == 0)
-		{
-			if (++count < argc)
-				opts.delimiter = argv[count];
-			else
-				usage();
-		}
-		count++;
-	}
-
 }

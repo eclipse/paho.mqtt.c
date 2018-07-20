@@ -247,15 +247,11 @@ int main(int argc, char** argv)
 	if (argc < 2)
 		usage();
 
-	topic = argv[1];
+	if (getopts(argc, argv, &opts) != 0)
+		usage();
 
 	if (strchr(topic, '#') || strchr(topic, '+'))
 		opts.verbose = 1;
-	if (opts.verbose)
-		printf("topic is %s\n", topic);
-
-	if (getopts(argc, argv, &opts) != 0)
-		usage();
 
 	if (opts.connection)
 		url = opts.connection;

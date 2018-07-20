@@ -106,7 +106,7 @@ void onDisconnect(void* context, MQTTAsync_successData* response)
 
 
 static int connected = 0;
-void myconnect(MQTTAsync* client);
+void myconnect(MQTTAsync client);
 
 void onConnectFailure5(void* context, MQTTAsync_failureData5* response)
 {
@@ -175,7 +175,7 @@ void onPublish(void* context, MQTTAsync_successData* response)
 }
 
 
-void myconnect(MQTTAsync* client)
+void myconnect(MQTTAsync client)
 {
 	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
 	MQTTAsync_SSLOptions ssl_opts = MQTTAsync_SSLOptions_initializer;
@@ -185,7 +185,6 @@ void myconnect(MQTTAsync* client)
 	if (opts.verbose)
 		printf("Connecting\n");
 	conn_opts.keepAliveInterval = opts.keepalive;
-	conn_opts.cleansession = 1;
 	conn_opts.username = opts.username;
 	conn_opts.password = opts.password;
 	conn_opts.MQTTVersion = opts.MQTTVersion;
@@ -195,11 +194,13 @@ void myconnect(MQTTAsync* client)
 		conn_opts = conn_opts5;
 		conn_opts.onSuccess5 = onConnect5;
 		conn_opts.onFailure5 = onConnectFailure5;
+		conn_opts.cleanstart = 1;
 	}
 	else
 	{
 		conn_opts.onSuccess = onConnect;
 		conn_opts.onFailure = onConnectFailure;
+		conn_opts.cleansession = 1;
 	}
 	conn_opts.context = client;
 	conn_opts.automaticReconnect = 1;
@@ -228,7 +229,7 @@ void myconnect(MQTTAsync* client)
 	}
 
 	connected = 0;
-	if ((rc = MQTTAsync_connect(*client, &conn_opts)) != MQTTASYNC_SUCCESS)
+	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
 		exit(EXIT_FAILURE);
@@ -268,16 +269,6 @@ int main(int argc, char** argv)
 	if (opts.verbose)
 		printf("URL is %s\n", url);
 
-	if (argv[1][0] != '-')
-	{
-		opts.topic = argv[1];
-		if (opts.verbose)
-			printf("Topic is %s\n", opts.topic);
-	}
-
-	if (opts.topic == NULL)
-		usage();
-
 	if (opts.tracelevel > 0)
 	{
 		MQTTAsync_setTraceCallback(trace_callback);
@@ -290,9 +281,10 @@ int main(int argc, char** argv)
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
 
+
 	rc = MQTTAsync_setCallbacks(client, client, NULL, messageArrived, NULL);
 
-	myconnect(&client);
+	myconnect(client);
 
 	buffer = malloc(opts.maxdatalen);
 

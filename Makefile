@@ -84,8 +84,11 @@ HEADERS = $(srcdir)/*.h
 HEADERS_C = $(filter-out $(srcdir)/MQTTAsync.h, $(HEADERS))
 HEADERS_A = $(HEADERS)
 
-SAMPLE_FILES_C = paho_cs_pub paho_cs_sub MQTTClient_publish MQTTClient_publish_async MQTTClient_subscribe
+SAMPLE_FILES_C = MQTTClient_publish MQTTClient_publish_async MQTTClient_subscribe
 SYNC_SAMPLES = ${addprefix ${blddir}/samples/,${SAMPLE_FILES_C}}
+
+UTIL_FILES_CS = paho_cs_pub paho_cs_sub 
+SYNC_UTILS = ${addprefix ${blddir}/samples/,${UTIL_FILES_CS}}
 
 SAMPLE_FILES_A = MQTTAsync_subscribe MQTTAsync_publish
 ASYNC_SAMPLES = ${addprefix ${blddir}/samples/,${SAMPLE_FILES_A}}
@@ -181,7 +184,7 @@ endif
 
 all: build
 
-build: | mkdir ${MQTTLIB_C_TARGET} ${MQTTLIB_CS_TARGET} ${MQTTLIB_A_TARGET} ${MQTTLIB_AS_TARGET} ${MQTTVERSION_TARGET} ${SYNC_SAMPLES} ${ASYNC_SAMPLES} ${ASYNC_UTILS} ${SYNC_TESTS} ${SYNC_SSL_TESTS} ${ASYNC_TESTS} ${ASYNC_SSL_TESTS}
+build: | mkdir ${MQTTLIB_C_TARGET} ${MQTTLIB_CS_TARGET} ${MQTTLIB_A_TARGET} ${MQTTLIB_AS_TARGET} ${MQTTVERSION_TARGET} ${SYNC_SAMPLES} ${SYNC_UTILS} ${ASYNC_SAMPLES} ${ASYNC_UTILS} ${SYNC_TESTS} ${SYNC_SSL_TESTS} ${ASYNC_TESTS} ${ASYNC_SSL_TESTS}
 
 clean:
 	rm -rf ${blddir}/*
@@ -205,7 +208,10 @@ ${ASYNC_SSL_TESTS}: ${blddir}/test/%: ${srcdir}/../test/%.c $(MQTTLIB_CS_TARGET)
 	${CC} -g -o $@ $< -l${MQTTLIB_AS} ${FLAGS_EXES}
 
 ${SYNC_SAMPLES}: ${blddir}/samples/%: ${srcdir}/samples/%.c $(MQTTLIB_C_TARGET)
-	${CC} -o $@ $< -l${MQTTLIB_CS} ${FLAGS_EXES}
+	${CC} -o $@ $< -l${MQTTLIB_CS} ${FLAGS_EXES} 
+	
+${SYNC_UTILS}: ${blddir}/samples/%: ${srcdir}/samples/%.c $(MQTTLIB_CS_TARGET)
+	${CC} -o $@ $< -l${MQTTLIB_CS} ${FLAGS_EXES} ${srcdir}/samples/pubsub_opts.c
 
 ${ASYNC_SAMPLES}: ${blddir}/samples/%: ${srcdir}/samples/%.c $(MQTTLIB_A_TARGET)
 	${CC} -o $@ $< -l${MQTTLIB_AS} ${FLAGS_EXES}

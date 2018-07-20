@@ -31,8 +31,8 @@ ENDIF()
 # sample files c
 ADD_EXECUTABLE(paho_c_pub paho_c_pub.c pubsub_opts.c)
 ADD_EXECUTABLE(paho_c_sub paho_c_sub.c pubsub_opts.c)
-ADD_EXECUTABLE(paho_cs_pub paho_cs_pub.c)
-ADD_EXECUTABLE(paho_cs_sub paho_cs_sub.c)
+ADD_EXECUTABLE(paho_cs_pub paho_cs_pub.c pubsub_opts.c)
+ADD_EXECUTABLE(paho_cs_sub paho_cs_sub.c pubsub_opts.c)
 
 TARGET_LINK_LIBRARIES(paho_c_pub paho-mqtt3as)
 TARGET_LINK_LIBRARIES(paho_c_sub paho-mqtt3as)

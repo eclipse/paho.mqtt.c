@@ -24,7 +24,13 @@
 
 int getopts(int argc, char** argv, struct pubsub_opts* opts)
 {
-	int count = 2;
+	int count = 1;
+
+	if (argv[1][0] != '-')
+	{
+		opts->topic = argv[1];
+		count = 2;
+	}
 
 	while (count < argc)
 	{
@@ -254,5 +260,9 @@ int getopts(int argc, char** argv, struct pubsub_opts* opts)
 
 		count++;
 	}
+
+	if (opts->topic == NULL)
+		return 1;
+
 	return 0;
 }

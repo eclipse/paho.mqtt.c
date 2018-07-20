@@ -20,26 +20,10 @@
 
  stdout subscriber
 
- compulsory parameters:
-
-  --topic topic to subscribe to
-
- defaulted parameters:
-
-	--host localhost
-	--port 1883
-	--qos 2
-	--delimiter \n
-	--clientid stdout-subscriber
-	--showtopics off
-	--keepalive 10
-
-	--userid none
-	--password none
-
 */
 #include "MQTTClient.h"
 #include "MQTTClientPersistence.h"
+#include "pubsub_opts.h"
 
 #include <stdio.h>
 #include <signal.h>
@@ -57,21 +41,13 @@
 volatile int toStop = 0;
 
 
-struct opts_struct
+struct pubsub_opts opts =
 {
-	char* clientid;
-	int nodelimiter;
-	char* delimiter;
-	int qos;
-	char* username;
-	char* password;
-	char* host;
-	char* port;
-	int showtopics;
-	int keepalive;
-} opts =
-{
-	"stdout-subscriber", 0, "\n", 2, NULL, NULL, "localhost", "1883", 0, 10
+	MQTTVERSION_DEFAULT, 0,
+	NULL, "paho-cs-sub", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", NULL, 0, 10,
+	NULL, NULL, 0, 0, /* will options */
+	0, NULL, NULL, NULL, NULL, NULL, NULL, /* TLS options */
+	0, {NULL, NULL}, /* publish properties */
 };
 
 
@@ -109,7 +85,6 @@ void cfinish(int sig)
 	toStop = 1;
 }
 
-void getopts(int argc, char** argv);
 
 int main(int argc, char** argv)
 {
@@ -125,11 +100,13 @@ int main(int argc, char** argv)
 	topic = argv[1];
 
 	if (strchr(topic, '#') || strchr(topic, '+'))
-		opts.showtopics = 1;
-	if (opts.showtopics)
+		opts.verbose = 1;
+	if (opts.verbose)
 		printf("topic is %s\n", topic);
 
-	getopts(argc, argv);
+	if (getopts(argc, argv, &opts) != 0)
+		usage();
+
 	sprintf(url, "%s:%s", opts.host, opts.port);
 
 	rc = MQTTClient_create(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL);
@@ -156,9 +133,9 @@ int main(int argc, char** argv)
 		rc = MQTTClient_receive(client, &topicName, &topicLen, &message, 1000);
 		if (message)
 		{
-			if (opts.showtopics)
+			if (opts.verbose)
 				printf("%s\t", topicName);
-			if (opts.nodelimiter)
+			if (opts.delimiter == NULL)
 				printf("%.*s", message->payloadlen, (char*)message->payload);
 			else
 				printf("%.*s%s", message->payloadlen, (char*)message->payload, opts.delimiter);
@@ -177,94 +154,4 @@ int main(int argc, char** argv)
 	MQTTClient_destroy(&client);
 
 	return EXIT_SUCCESS;
-}
-
-void getopts(int argc, char** argv)
-{
-	int count = 2;
-
-	while (count < argc)
-	{
-		if (strcmp(argv[count], "--qos") == 0)
-		{
-			if (++count < argc)
-			{
-				if (strcmp(argv[count], "0") == 0)
-					opts.qos = 0;
-				else if (strcmp(argv[count], "1") == 0)
-					opts.qos = 1;
-				else if (strcmp(argv[count], "2") == 0)
-					opts.qos = 2;
-				else
-					usage();
-			}
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--host") == 0)
-		{
-			if (++count < argc)
-				opts.host = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--port") == 0)
-		{
-			if (++count < argc)
-				opts.port = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--clientid") == 0)
-		{
-			if (++count < argc)
-				opts.clientid = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--username") == 0)
-		{
-			if (++count < argc)
-				opts.username = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--password") == 0)
-		{
-			if (++count < argc)
-				opts.password = argv[count];
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--delimiter") == 0)
-		{
-			if (++count < argc)
-				opts.delimiter = argv[count];
-			else
-				opts.nodelimiter = 1;
-		}
-		else if (strcmp(argv[count], "--showtopics") == 0)
-		{
-			if (++count < argc)
-			{
-				if (strcmp(argv[count], "on") == 0)
-					opts.showtopics = 1;
-				else if (strcmp(argv[count], "off") == 0)
-					opts.showtopics = 0;
-				else
-					usage();
-			}
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--keepalive") == 0)
-		{
-			if (++count < argc)
-				opts.keepalive = atoi(argv[count]);
-			else
-				usage();
-		}
-		count++;
-	}
-
 }

@@ -210,13 +210,13 @@ ${ASYNC_SSL_TESTS}: ${blddir}/test/%: ${srcdir}/../test/%.c $(MQTTLIB_CS_TARGET)
 ${SYNC_SAMPLES}: ${blddir}/samples/%: ${srcdir}/samples/%.c $(MQTTLIB_C_TARGET)
 	${CC} -o $@ $< -l${MQTTLIB_CS} ${FLAGS_EXES} 
 	
-${SYNC_UTILS}: ${blddir}/samples/%: ${srcdir}/samples/%.c $(MQTTLIB_CS_TARGET)
+${SYNC_UTILS}: ${blddir}/samples/%: ${srcdir}/samples/%.c ${srcdir}/samples/pubsub_opts.c $(MQTTLIB_CS_TARGET)
 	${CC} -o $@ $< -l${MQTTLIB_CS} ${FLAGS_EXES} ${srcdir}/samples/pubsub_opts.c
 
 ${ASYNC_SAMPLES}: ${blddir}/samples/%: ${srcdir}/samples/%.c $(MQTTLIB_A_TARGET)
 	${CC} -o $@ $< -l${MQTTLIB_AS} ${FLAGS_EXES}
 	
-${ASYNC_UTILS}: ${blddir}/samples/%: ${srcdir}/samples/%.c $(MQTTLIB_AS_TARGET)
+${ASYNC_UTILS}: ${blddir}/samples/%: ${srcdir}/samples/%.c ${srcdir}/samples/pubsub_opts.c $(MQTTLIB_AS_TARGET)
 	${CC} -o $@ $< -l${MQTTLIB_AS} ${FLAGS_EXES} ${srcdir}/samples/pubsub_opts.c
 
 $(blddir_work)/VersionInfo.h: $(srcdir)/VersionInfo.h.in

@@ -22,6 +22,31 @@
 #include <stdlib.h>
 
 
+void usage(struct pubsub_opts* opts, const char* version)
+{
+	printf("Eclipse Paho MQTT C %s\n", opts->publisher ? "publisher" : "subscriber");
+	printf("Eclipse Paho C library version %s\n", version);
+
+	printf("Usage: paho_c_pub <topicname> <options>, where options are:\n"
+	"  -t (--topic) MQTT topic to publish to\n"
+	"  -h (--host) host to connect to (default is %s)\n"
+	"  -p (--port) network port to connect to (default is %s)\n"
+	"  -c (--connection) connection string, overrides host/port e.g wss://hostname:port/ws\n"
+	"  -q (--qos) MQTT QoS to publish on (0, 1 or 2) (default is %d)\n"
+	"  -r (--retained) use MQTT retain option? (default is %s)\n"
+	"  -i (--clientid) <clientid> (default is %s)\n"
+	"  -u (--username) MQTT username (default is none)\n"
+	"  -P (--password) MQTT password (default is none)\n"
+	"  -k (--keepalive) MQTT keepalive timeout value (default is %d seconds)\n"
+	"  --delimiter <delim> (default is \\n)\n"
+	"  --maxdatalen <bytes> (default is %d)\n",
+	opts->host, opts->port, opts->qos, opts->retained ? "on" : "off",
+			opts->clientid, opts->maxdatalen, opts->keepalive);
+	exit(EXIT_FAILURE);
+}
+
+
+
 int getopts(int argc, char** argv, struct pubsub_opts* opts)
 {
 	int count = 1;
@@ -34,9 +59,7 @@ int getopts(int argc, char** argv, struct pubsub_opts* opts)
 
 	while (count < argc)
 	{
-		if (strcmp(argv[count], "--retained") == 0 || strcmp(argv[count], "-r") == 0)
-			opts->retained = 1;
-		else if (strcmp(argv[count], "--verbose") == 0 || strcmp(argv[count], "-v") == 0)
+		if (strcmp(argv[count], "--verbose") == 0 || strcmp(argv[count], "-v") == 0)
 			opts->verbose = 1;
 		else if (strcmp(argv[count], "--qos") == 0 || strcmp(argv[count], "-q") == 0)
 		{
@@ -100,13 +123,6 @@ int getopts(int argc, char** argv, struct pubsub_opts* opts)
 		{
 			if (++count < argc)
 				opts->maxdatalen = atoi(argv[count]);
-			else
-				return 1;
-		}
-		else if (strcmp(argv[count], "--message-expiry") == 0)
-		{
-			if (++count < argc)
-				opts->message_expiry = atoi(argv[count]);
 			else
 				return 1;
 		}
@@ -242,19 +258,71 @@ int getopts(int argc, char** argv, struct pubsub_opts* opts)
 			else
 				return 1;
 		}
-		else if (strcmp(argv[count], "--user-property") == 0)
+		else if (opts->publisher == 0)
 		{
-			if (count + 2 < argc)
+			if (strcmp(argv[count], "--no-print-retained") == 0 || strcmp(argv[count], "-R") == 0)
+				opts->retained = 1;
+			else
 			{
-				opts->user_property.name = argv[++count];
-				opts->user_property.value = argv[++count];
+				fprintf(stderr, "Unknown option %s\n", argv[count]);
+				return 1;
+			}
+		}
+		else if (opts->publisher == 1)
+		{
+			if (strcmp(argv[count], "--retained") == 0 || strcmp(argv[count], "-r") == 0)
+				opts->retained = 1;
+			else if (strcmp(argv[count], "--user-property") == 0)
+			{
+				if (count + 2 < argc)
+				{
+					opts->user_property.name = argv[++count];
+					opts->user_property.value = argv[++count];
+				}
+				else
+					return 1;
+			}
+			else if (strcmp(argv[count], "--message-expiry") == 0)
+			{
+				if (++count < argc)
+					opts->message_expiry = atoi(argv[count]);
+				else
+					return 1;
+			}
+			else if (strcmp(argv[count], "-m") == 0 || strcmp(argv[count], "--message") == 0)
+			{
+				if (++count < argc)
+				{
+					opts->stdin_lines = 0;
+					opts->message = argv[count];
+				}
+				else
+					return 1;
+			}
+			else if (strcmp(argv[count], "-f") == 0 || strcmp(argv[count], "--filename") == 0)
+			{
+				if (++count < argc)
+				{
+					opts->stdin_lines = 0;
+					opts->message = argv[count];
+				}
+				else
+					return 1;
+			}
+			else if (strcmp(argv[count], "-n") == 0 || strcmp(argv[count], "--null-message") == 0)
+			{
+				opts->stdin_lines = 0;
+				opts->null_message = 1;
 			}
 			else
+			{
+				fprintf(stderr, "Unknown option %s\n", argv[count]);
 				return 1;
+			}
 		}
 		else
 		{
-			printf("Unknown arg %s\n", argv[count]);
+			fprintf(stderr, "Unknown option %s\n", argv[count]);
 			return 1;
 		}
 

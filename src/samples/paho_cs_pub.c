@@ -47,29 +47,13 @@ void cfinish(int sig)
 
 struct pubsub_opts opts =
 {
-	MQTTVERSION_DEFAULT, 0,
-	NULL, "paho-cs-pub", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", NULL, 0, 10,
+	1, 0, 0, "\n", 100,  	/* debug/app options */
+	NULL, NULL, 1, 0, 0, /* message options */
+	MQTTVERSION_DEFAULT, NULL, "paho-cs-pub", 0, 0, NULL, NULL, "localhost", "1883", NULL, 10, /* MQTT options */
 	NULL, NULL, 0, 0, /* will options */
 	0, NULL, NULL, NULL, NULL, NULL, NULL, /* TLS options */
-	0, {NULL, NULL}, /* publish properties */
+	0, {NULL, NULL}, /* MQTT V5 options */
 };
-
-
-void usage(void)
-{
-	printf("MQTT stdout subscriber\n");
-	printf("Usage: stdoutsub topicname <options>, where options are:\n");
-	printf("  --host <hostname> (default is %s)\n", opts.host);
-	printf("  --port <port> (default is %s)\n", opts.port);
-	printf("  --qos <qos> (default is %d)\n", opts.qos);
-	printf("  --delimiter <delim> (default is no delimiter)\n");
-	printf("  --clientid <clientid> (default is %s)\n", opts.clientid);
-	printf("  --username none\n");
-	printf("  --password none\n");
-	printf("  --verbose <on or off> (default is on if the topic has a wildcard, else off)\n");
-	printf("  --keepalive <seconds> (default is 10 seconds)\n");
-	exit(EXIT_FAILURE);
-}
 
 
 int myconnect(MQTTClient* client)
@@ -159,12 +143,24 @@ int main(int argc, char** argv)
 	char* buffer = NULL;
 	int rc = 0;
 	char* url;
+	MQTTClient_nameValue* infos = MQTTClient_getVersionInfo();
+	const char* version = NULL;
+
+	while (infos->name)
+	{
+		if (strcmp(infos->name, "Version") == 0)
+		{
+			version = infos->value;
+			break;
+		}
+		++infos;
+	}
 
 	if (argc < 2)
-		usage();
+		usage(&opts, version);
 
 	if (getopts(argc, argv, &opts) != 0)
-		usage();
+		usage(&opts, version);
 
 	if (opts.connection)
 		url = opts.connection;

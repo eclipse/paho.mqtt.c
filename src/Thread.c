@@ -381,10 +381,12 @@ int Thread_signal_cond(cond_type condvar)
 {
 	int rc = 0;
 
+	FUNC_ENTRY;
 	pthread_mutex_lock(&condvar->mutex);
 	rc = pthread_cond_signal(&condvar->cond);
 	pthread_mutex_unlock(&condvar->mutex);
 
+	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -394,10 +396,10 @@ int Thread_signal_cond(cond_type condvar)
  */
 int Thread_wait_cond(cond_type condvar, int timeout)
 {
-	FUNC_ENTRY;
 	int rc = 0;
 	struct timespec cond_timeout;
 
+	FUNC_ENTRY;
 #if defined(OSX)
 	clock_gettime(CLOCK_REALTIME, &cond_timeout);
 #else

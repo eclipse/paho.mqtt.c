@@ -40,33 +40,17 @@ volatile int toStop = 0;
 
 struct pubsub_opts opts =
 {
-	MQTTVERSION_DEFAULT, 0,
-	NULL, "paho-c-pub", "\n", 100, 0, 0, NULL, NULL, "localhost", "1883", NULL, 0, 10,
+	1, 0, 0, "\n", 100,  	/* debug/app options */
+	NULL, NULL, 1, 0, 0, /* message options */
+	MQTTVERSION_DEFAULT, NULL, "paho-c-pub", 0, 0, NULL, NULL, "localhost", "1883", NULL, 10, /* MQTT options */
 	NULL, NULL, 0, 0, /* will options */
 	0, NULL, NULL, NULL, NULL, NULL, NULL, /* TLS options */
-	0, {NULL, NULL}, /* publish properties */
+	0, {NULL, NULL}, /* MQTT V5 options */
 };
 
-void usage(void)
-{
-	printf("Eclipse Paho MQTT C publisher\n"
-	"Usage: paho_c_pub <topicname> <options>, where options are:\n"
-	"  -t (--topic) MQTT topic to publish to\n"
-	"  -h (--host) host to connect to (default is %s)\n"
-	"  -p (--port) network port to connect to (default is %s)\n"
-	"  -c (--connection) connection string, overrides host/port e.g wss://hostname:port/ws\n"
-	"  -q (--qos) MQTT QoS to publish on (0, 1 or 2) (default is %d)\n"
-	"  -r (--retained) use MQTT retain option? (default is %s)\n"
-	"  -i (--clientid) <clientid> (default is %s)\n"
-	"  -u (--username) MQTT username (default is none)\n"
-	"  -P (--password) MQTT password (default is none)\n"
-	"  -k (--keepalive) MQTT keepalive timeout value (default is %d seconds)\n"
-	"  --delimiter <delim> (default is \\n)\n"
-	"  --maxdatalen <bytes> (default is %d)\n",
-	opts.host, opts.port, opts.qos, opts.retained ? "on" : "off",
-			opts.clientid, opts.maxdatalen, opts.keepalive);
-	exit(EXIT_FAILURE);
-}
+MQTTAsync_responseOptions pub_opts = MQTTAsync_responseOptions_initializer;
+MQTTProperty property;
+MQTTProperties props = MQTTProperties_initializer;
 
 
 void mysleep(int ms)
@@ -107,6 +91,7 @@ void onDisconnect(void* context, MQTTAsync_successData* response)
 
 static int connected = 0;
 void myconnect(MQTTAsync client);
+int mypublish(MQTTAsync client, int datalen, char* data);
 
 void onConnectFailure5(void* context, MQTTAsync_failureData5* response)
 {
@@ -129,15 +114,33 @@ void onConnectFailure(void* context, MQTTAsync_failureData* response)
 
 void onConnect5(void* context, MQTTAsync_successData5* response)
 {
+	MQTTAsync client = (MQTTAsync)context;
+	int rc = 0;
+
 	if (opts.verbose)
 		printf("Connected\n");
+
+	if (opts.null_message == 1)
+		rc = mypublish(client, 0, "");
+	else if (opts.message)
+		rc = mypublish(client, strlen(opts.message), opts.message);
+
 	connected = 1;
 }
 
 void onConnect(void* context, MQTTAsync_successData* response)
 {
+	MQTTAsync client = (MQTTAsync)context;
+	int rc = 0;
+
 	if (opts.verbose)
 		printf("Connected\n");
+
+	if (opts.null_message == 1)
+		rc = mypublish(client, 0, "");
+	else if (opts.message)
+		rc = mypublish(client, strlen(opts.message), opts.message);
+
 	connected = 1;
 }
 
@@ -163,6 +166,10 @@ void onPublish5(void* context, MQTTAsync_successData5* response)
 {
 	if (opts.verbose)
 		printf("Publish succeeded, reason code %d\n", response->reasonCode);
+
+	if (opts.null_message || opts.message || opts.filename)
+		toStop = 1;
+
 	published = 1;
 }
 
@@ -171,6 +178,10 @@ void onPublish(void* context, MQTTAsync_successData* response)
 {
 	if (opts.verbose)
 		printf("Publish succeeded\n");
+
+	if (opts.null_message || opts.message || opts.filename)
+		toStop = 1;
+
 	published = 1;
 }
 
@@ -237,27 +248,53 @@ void myconnect(MQTTAsync client)
 }
 
 
+int mypublish(MQTTAsync client, int datalen, char* data)
+{
+	int rc;
+
+	if (opts.verbose)
+		printf("Publishing data of length %d\n", datalen);
+
+	rc = MQTTAsync_send(client, opts.topic, datalen, data, opts.qos, opts.retained, &pub_opts);
+	if (opts.verbose && rc != MQTTASYNC_SUCCESS)
+		fprintf(stderr, "Error from MQTTAsync_send %d\n", rc);
+
+	return rc;
+}
+
+
 void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 {
-	printf("Trace : %d, %s\n", level, message);
+	fprintf(stderr, "Trace : %d, %s\n", level, message);
 }
 
 
 int main(int argc, char** argv)
 {
 	MQTTAsync_disconnectOptions disc_opts = MQTTAsync_disconnectOptions_initializer;
-	MQTTAsync_responseOptions pub_opts = MQTTAsync_responseOptions_initializer;
 	MQTTAsync_createOptions create_opts = MQTTAsync_createOptions_initializer;
 	MQTTAsync client;
 	char* buffer = NULL;
 	char* url = NULL;
 	int rc = 0;
+	MQTTAsync_nameValue* infos = MQTTAsync_getVersionInfo();
+	const char* version = NULL;
+
+	while (infos->name)
+	{
+		if (strcmp(infos->name, "Version") == 0)
+		{
+			version = infos->value;
+			break;
+		}
+		++infos;
+	}
 
 	if (argc < 2)
-		usage();
+		usage(&opts, version);
 
 	if (getopts(argc, argv, &opts) != 0)
-		usage();
+		usage(&opts, version);
 
 	if (opts.connection)
 		url = opts.connection;
@@ -281,69 +318,70 @@ int main(int argc, char** argv)
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
 
-
 	rc = MQTTAsync_setCallbacks(client, client, NULL, messageArrived, NULL);
 
-	myconnect(client);
+	if (opts.MQTTVersion >= MQTTVERSION_5)
+	{
+		pub_opts.onSuccess5 = onPublish5;
+		pub_opts.onFailure5 = onPublishFailure5;
 
-	buffer = malloc(opts.maxdatalen);
+		if (opts.message_expiry > 0)
+		{
+			property.identifier = MESSAGE_EXPIRY_INTERVAL;
+			property.value.integer4 = opts.message_expiry;
+			MQTTProperties_add(&props, &property);
+		}
+		if (opts.user_property.name)
+		{
+			property.identifier = USER_PROPERTY;
+			property.value.data.data = opts.user_property.name;
+			property.value.data.len = strlen(opts.user_property.name);
+			property.value.value.data = opts.user_property.value;
+			property.value.value.len = strlen(opts.user_property.value);
+			MQTTProperties_add(&props, &property);
+		}
+		pub_opts.properties = props;
+	}
+	else
+	{
+		pub_opts.onSuccess = onPublish;
+		pub_opts.onFailure = onPublishFailure;
+	}
+
+	myconnect(client);
 
 	while (!toStop)
 	{
 		int data_len = 0;
 		int delim_len = 0;
+		static int count = 0;
 
-		delim_len = (int)strlen(opts.delimiter);
-		do
+		if (opts.stdin_lines)
 		{
-			buffer[data_len++] = getchar();
-			if (data_len > delim_len)
-			{
-				if (strncmp(opts.delimiter, &buffer[data_len - delim_len], delim_len) == 0)
-					break;
-			}
-		} while (data_len < opts.maxdatalen);
+			buffer = malloc(opts.maxdatalen);
 
-		if (opts.verbose)
-			printf("Publishing data of length %d\n", data_len);
-		if (opts.MQTTVersion >= MQTTVERSION_5)
-		{
-			MQTTProperty property;
-			MQTTProperties props = MQTTProperties_initializer;
-
-			pub_opts.onSuccess5 = onPublish5;
-			pub_opts.onFailure5 = onPublishFailure5;
-
-			if (opts.message_expiry > 0)
+			delim_len = (int)strlen(opts.delimiter);
+			do
 			{
-				property.identifier = MESSAGE_EXPIRY_INTERVAL;
-				property.value.integer4 = opts.message_expiry;
-				MQTTProperties_add(&props, &property);
-			}
-			if (opts.user_property.name)
-			{
-				property.identifier = USER_PROPERTY;
-				property.value.data.data = opts.user_property.name;
-				property.value.data.len = strlen(opts.user_property.name);
-				property.value.value.data = opts.user_property.value;
-				property.value.value.len = strlen(opts.user_property.value);
-				MQTTProperties_add(&props, &property);
-			}
-			pub_opts.properties = props;
+				buffer[data_len++] = getchar();
+				if (data_len > delim_len)
+				{
+					if (strncmp(opts.delimiter, &buffer[data_len - delim_len], delim_len) == 0)
+						break;
+				}
+			} while (data_len < opts.maxdatalen);
+
+			rc = mypublish(client, data_len, buffer);
 		}
 		else
-		{
-			pub_opts.onSuccess = onPublish;
-			pub_opts.onFailure = onPublishFailure;
-		}
-		rc = MQTTAsync_send(client, opts.topic, data_len, buffer, opts.qos, opts.retained, &pub_opts);
-		if (opts.verbose && rc != MQTTASYNC_SUCCESS)
-			printf("Error from MQTTAsync_send %d\n", rc);
+			mysleep(100);
 	}
 
-	printf("Stopping\n");
+	if (opts.verbose)
+		printf("Stopping\n");
 
-	free(buffer);
+	if (opts.message == 0 && opts.null_message == 0 && opts.filename == 0)
+		free(buffer);
 
 	if (opts.MQTTVersion >= MQTTVERSION_5)
 		disc_opts.onSuccess5 = onDisconnect5;
@@ -351,7 +389,7 @@ int main(int argc, char** argv)
 		disc_opts.onSuccess = onDisconnect;
 	if ((rc = MQTTAsync_disconnect(client, &disc_opts)) != MQTTASYNC_SUCCESS)
 	{
-		printf("Failed to start disconnect, return code %d\n", rc);
+		fprintf(stderr, "Failed to start disconnect, return code %d\n", rc);
 		exit(EXIT_FAILURE);
 	}
 

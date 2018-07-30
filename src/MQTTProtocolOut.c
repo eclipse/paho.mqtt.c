@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@
  *    Ian Craggs - SNI support
  *    Ian Craggs - fix for issue #164
  *    Ian Craggs - fix for issue #179
+ *    Ian Craggs - MQTT 5.0 support
  *******************************************************************************/
 
 /**
@@ -35,6 +36,7 @@
 #include "MQTTProtocolOut.h"
 #include "StackTrace.h"
 #include "Heap.h"
+#include "WebSocket.h"
 
 extern ClientStates* bstate;
 
@@ -42,11 +44,12 @@ extern ClientStates* bstate;
 
 /**
  * Separates an address:port into two separate values
- * @param uri the input string - hostname:port
- * @param port the returned port integer
+ * @param[in] uri the input string - hostname:port
+ * @param[out] port the returned port integer
+ * @param[out] topic optional topic portion of the address starting with '/'
  * @return the address string
  */
-char* MQTTProtocol_addressPort(const char* uri, int* port)
+size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic)
 {
 	char* colon_pos = strrchr(uri, ':'); /* reverse find to allow for ':' in IPv6 addresses */
 	char* buf = (char*)uri;
@@ -61,27 +64,31 @@ char* MQTTProtocol_addressPort(const char* uri, int* port)
 
 	if (colon_pos) /* have to strip off the port */
 	{
-		size_t addr_len = colon_pos - uri;
-		buf = malloc(addr_len + 1);
+		len = colon_pos - uri;
 		*port = atoi(colon_pos + 1);
-		MQTTStrncpy(buf, uri, addr_len+1);
 	}
 	else
+	{
+		len = strlen(buf);
 		*port = DEFAULT_PORT;
+	}
 
-	len = strlen(buf);
+	/* try and find topic portion */
+	if ( topic )
+	{
+		const char* addr_start = uri;
+		if ( colon_pos )
+			addr_start = colon_pos;
+		*topic = strchr( addr_start, '/' );
+	}
+
 	if (buf[len - 1] == ']')
 	{
-		if (buf == (char*)uri)
-		{
-			buf = malloc(len);  /* we are stripping off the final ], so length is 1 shorter */
-			MQTTStrncpy(buf, uri, len);
-		}
-		else
-			buf[len - 1] = '\0';
+		/* we are stripping off the final ], so length is 1 shorter */
+		--len;
 	}
 	FUNC_EXIT;
-	return buf;
+	return len;
 }
 
 
@@ -94,48 +101,54 @@ char* MQTTProtocol_addressPort(const char* uri, int* port)
  * @return return code
  */
 #if defined(OPENSSL)
-int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int MQTTVersion)
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int websocket, int MQTTVersion,
+		MQTTProperties* connectProperties, MQTTProperties* willProperties)
 #else
-int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int MQTTVersion)
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket, int MQTTVersion,
+		MQTTProperties* connectProperties, MQTTProperties* willProperties)
 #endif
 {
 	int rc, port;
-	char* addr;
+	size_t addr_len;
 
 	FUNC_ENTRY;
 	aClient->good = 1;
 
-	addr = MQTTProtocol_addressPort(ip_address, &port);
-	rc = Socket_new(addr, port, &(aClient->net.socket));
+	addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL);
+	rc = Socket_new(ip_address, addr_len, port, &(aClient->net.socket));
 	if (rc == EINPROGRESS || rc == EWOULDBLOCK)
-		aClient->connect_state = 1; /* TCP connect called - wait for connect completion */
+		aClient->connect_state = TCP_IN_PROGRESS; /* TCP connect called - wait for connect completion */
 	else if (rc == 0)
 	{	/* TCP connect completed. If SSL, send SSL connect */
 #if defined(OPENSSL)
 		if (ssl)
 		{
-			if (SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts, addr) == 1)
+			if (SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts, ip_address, addr_len) == 1)
 			{
-				rc = SSLSocket_connect(aClient->net.ssl, aClient->net.socket);
+				rc = SSLSocket_connect(aClient->net.ssl, aClient->net.socket,
+						ip_address, aClient->sslopts->verify);
 				if (rc == TCPSOCKET_INTERRUPTED)
-					aClient->connect_state = 2; /* SSL connect called - wait for completion */
+					aClient->connect_state = SSL_IN_PROGRESS; /* SSL connect called - wait for completion */
 			}
 			else
 				rc = SOCKET_ERROR;
 		}
 #endif
-		
+		if ( websocket )
+		{
+			rc = WebSocket_connect( &aClient->net, ip_address );
+			if ( rc == TCPSOCKET_INTERRUPTED )
+				aClient->connect_state = WEBSOCKET_IN_PROGRESS; /* Websocket connect called - wait for completion */
+		}
 		if (rc == 0)
 		{
 			/* Now send the MQTT connect packet */
-			if ((rc = MQTTPacket_send_connect(aClient, MQTTVersion)) == 0)
-				aClient->connect_state = 3; /* MQTT Connect sent - wait for CONNACK */ 
+			if ((rc = MQTTPacket_send_connect(aClient, MQTTVersion, connectProperties, willProperties)) == 0)
+				aClient->connect_state = WAIT_FOR_CONNACK; /* MQTT Connect sent - wait for CONNACK */
 			else
-				aClient->connect_state = 0;
+				aClient->connect_state = NOT_IN_PROGRESS;
 		}
 	}
-	if (addr != ip_address)
-		free(addr);
 
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -167,15 +180,17 @@ int MQTTProtocol_handlePingresps(void* pack, int sock)
  * @param client the client structure
  * @param topics list of topics
  * @param qoss corresponding list of QoSs
+ * @param opts MQTT 5.0 subscribe options
+ * @param props MQTT 5.0 subscribe properties
  * @return completion code
  */
-int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss, int msgID)
+int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss, int msgID,
+		MQTTSubscribe_options* opts, MQTTProperties* props)
 {
 	int rc = 0;
 
 	FUNC_ENTRY;
-	/* we should stack this up for retry processing too */
-	rc = MQTTPacket_send_subscribe(topics, qoss, msgID, 0, &client->net, client->clientID);
+	rc = MQTTPacket_send_subscribe(topics, qoss, opts, props, msgID, 0, client);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -208,13 +223,12 @@ int MQTTProtocol_handleSubacks(void* pack, int sock)
  * @param topics list of topics
  * @return completion code
  */
-int MQTTProtocol_unsubscribe(Clients* client, List* topics, int msgID)
+int MQTTProtocol_unsubscribe(Clients* client, List* topics, int msgID, MQTTProperties* props)
 {
 	int rc = 0;
 
 	FUNC_ENTRY;
-	/* we should stack this up for retry processing too? */
-	rc = MQTTPacket_send_unsubscribe(topics, msgID, 0, &client->net, client->clientID);
+	rc = MQTTPacket_send_unsubscribe(topics, props, msgID, 0, client);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -235,7 +249,7 @@ int MQTTProtocol_handleUnsubacks(void* pack, int sock)
 	FUNC_ENTRY;
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	Log(LOG_PROTOCOL, 24, NULL, sock, client->clientID, unsuback->msgId);
-	free(unsuback);
+	MQTTPacket_freeUnsuback(unsuback);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

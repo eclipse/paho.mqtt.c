@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,6 +16,7 @@
  *    Ian Craggs - bug #415042 - start Linux thread as disconnected
  *    Ian Craggs - fix for bug #420851
  *    Ian Craggs - change MacOS semaphore implementation
+ *    Ian Craggs - fix for clock #284
  *******************************************************************************/
 
 /**
@@ -196,6 +197,14 @@ sem_type Thread_create_sem(void)
 		        FALSE,              /* initial state is nonsignaled */
 		        NULL                /* object name */
 		        );
+#if 0
+		sem = CreateSemaphore(
+				NULL,				/* default security attributes */
+				0,       	        /* initial count - non signaled */
+				1, 					/* maximum count */
+				NULL 				/* unnamed semaphore */
+		);
+#endif
 	#elif defined(OSX)
 		sem = dispatch_semaphore_create(0L);
 		rc = (sem == NULL) ? -1 : 0;
@@ -233,9 +242,15 @@ int Thread_wait_sem(sem_type sem, int timeout)
 
 	FUNC_ENTRY;
 	#if defined(WIN32) || defined(WIN64)
+		/* returns 0 (WAIT_OBJECT_0) on success, non-zero (WAIT_TIMEOUT) if timeout occurred */
 		rc = WaitForSingleObject(sem, timeout < 0 ? 0 : timeout);
-  #elif defined(OSX)
+		if (rc == WAIT_TIMEOUT)
+			rc = ETIMEDOUT;
+	#elif defined(OSX)
+		/* returns 0 on success, non-zero if timeout occurred */
 		rc = (int)dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, (int64_t)timeout*1000000L));
+		if (rc != 0)
+			rc = ETIMEDOUT;
 	#elif defined(USE_TRYWAIT)
 		while (++i < count && (rc = sem_trywait(sem)) != 0)
 		{
@@ -247,6 +262,9 @@ int Thread_wait_sem(sem_type sem, int timeout)
 			usleep(interval); /* microseconds - .1 of a second */
 		}
 	#else
+		/* We have to use CLOCK_REALTIME rather than MONOTONIC for sem_timedwait interval.
+		 * Does this make it susceptible to system clock changes?
+		 */
 		if (clock_gettime(CLOCK_REALTIME, &ts) != -1)
 		{
 			ts.tv_sec += timeout;
@@ -260,20 +278,25 @@ int Thread_wait_sem(sem_type sem, int timeout)
 
 
 /**
- * Check to see if a semaphore has been posted, without waiting.
+ * Check to see if a semaphore has been posted, without waiting
+ * The semaphore will be unchanged, if the return value is false.
+ * The semaphore will have been decremented, if the return value is true.
  * @param sem the semaphore
  * @return 0 (false) or 1 (true)
  */
 int Thread_check_sem(sem_type sem)
 {
 #if defined(WIN32) || defined(WIN64)
+	/* if the return value is not 0, the semaphore will not have been decremented */
 	return WaitForSingleObject(sem, 0) == WAIT_OBJECT_0;
 #elif defined(OSX)
-  return dispatch_semaphore_wait(sem, DISPATCH_TIME_NOW) == 0;
+	/* if the return value is not 0, the semaphore will not have been decremented */
+	return dispatch_semaphore_wait(sem, DISPATCH_TIME_NOW) == 0;
 #else
-	int semval = -1;
+	/*int semval = -1;
 	sem_getvalue(sem, &semval);
-	return semval > 0;
+	return semval > 0;*/
+	return sem_trywait(sem) == 0;
 #endif
 }
 
@@ -281,7 +304,7 @@ int Thread_check_sem(sem_type sem)
 /**
  * Post a semaphore
  * @param sem the semaphore
- * @return completion code
+ * @return 0 on success
  */
 int Thread_post_sem(sem_type sem)
 {
@@ -333,11 +356,17 @@ int Thread_destroy_sem(sem_type sem)
 cond_type Thread_create_cond(void)
 {
 	cond_type condvar = NULL;
+	pthread_condattr_t attr;
 	int rc = 0;
 
 	FUNC_ENTRY;
+	pthread_condattr_init(&attr);
+#if !defined(OSX)
+	pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+#endif
+
 	condvar = malloc(sizeof(cond_type_struct));
-	rc = pthread_cond_init(&condvar->cond, NULL);
+	rc = pthread_cond_init(&condvar->cond, &attr);
 	rc = pthread_mutex_init(&condvar->mutex, NULL);
 
 	FUNC_EXIT_RC(rc);
@@ -352,29 +381,32 @@ int Thread_signal_cond(cond_type condvar)
 {
 	int rc = 0;
 
+	FUNC_ENTRY;
 	pthread_mutex_lock(&condvar->mutex);
 	rc = pthread_cond_signal(&condvar->cond);
 	pthread_mutex_unlock(&condvar->mutex);
 
+	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
 /**
  * Wait with a timeout (seconds) for condition variable
- * @return completion code
+ * @return 0 for success, ETIMEDOUT otherwise
  */
 int Thread_wait_cond(cond_type condvar, int timeout)
 {
-	FUNC_ENTRY;
 	int rc = 0;
 	struct timespec cond_timeout;
-	struct timeval cur_time;
 
-	gettimeofday(&cur_time, NULL);
+	FUNC_ENTRY;
+#if defined(OSX)
+	clock_gettime(CLOCK_REALTIME, &cond_timeout);
+#else
+	clock_gettime(CLOCK_MONOTONIC, &cond_timeout);
+#endif
 
-	cond_timeout.tv_sec = cur_time.tv_sec + timeout;
-	cond_timeout.tv_nsec = cur_time.tv_usec * 1000;
-
+	cond_timeout.tv_sec += timeout;
 	pthread_mutex_lock(&condvar->mutex);
 	rc = pthread_cond_timedwait(&condvar->cond, &condvar->mutex, &cond_timeout);
 	pthread_mutex_unlock(&condvar->mutex);
@@ -402,61 +434,201 @@ int Thread_destroy_cond(cond_type condvar)
 
 #if defined(THREAD_UNIT_TESTS)
 
+#if defined(WIN32) || defined(_WINDOWS)
+#define mqsleep(A) Sleep(1000*A)
+#define START_TIME_TYPE DWORD
+static DWORD start_time = 0;
+START_TIME_TYPE start_clock(void)
+{
+	return GetTickCount();
+}
+#elif defined(AIX)
+#define mqsleep sleep
+#define START_TIME_TYPE struct timespec
+START_TIME_TYPE start_clock(void)
+{
+	static struct timespec start;
+	clock_gettime(CLOCK_REALTIME, &start);
+	return start;
+}
+#else
+#define mqsleep sleep
+#define START_TIME_TYPE struct timeval
+/* TODO - unused - remove? static struct timeval start_time; */
+START_TIME_TYPE start_clock(void)
+{
+	struct timeval start_time;
+	gettimeofday(&start_time, NULL);
+	return start_time;
+}
+#endif
+
+
+#if defined(WIN32)
+long elapsed(START_TIME_TYPE start_time)
+{
+	return GetTickCount() - start_time;
+}
+#elif defined(AIX)
+#define assert(a)
+long elapsed(struct timespec start)
+{
+	struct timespec now, res;
+
+	clock_gettime(CLOCK_REALTIME, &now);
+	ntimersub(now, start, res);
+	return (res.tv_sec)*1000L + (res.tv_nsec)/1000000L;
+}
+#else
+long elapsed(START_TIME_TYPE start_time)
+{
+	struct timeval now, res;
+
+	gettimeofday(&now, NULL);
+	timersub(&now, &start_time, &res);
+	return (res.tv_sec)*1000 + (res.tv_usec)/1000;
+}
+#endif
+
+
+int tests = 0, failures = 0;
+
+void myassert(char* filename, int lineno, char* description, int value, char* format, ...)
+{
+	++tests;
+	if (!value)
+	{
+		va_list args;
+
+		++failures;
+		printf("Assertion failed, file %s, line %d, description: %s\n", filename, lineno, description);
+
+		va_start(args, format);
+		vprintf(format, args);
+		va_end(args);
+
+		//cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n",
+        //                description, filename, lineno);
+	}
+    else
+    		printf("Assertion succeeded, file %s, line %d, description: %s\n", filename, lineno, description);
+}
+
+#define assert(a, b, c, d) myassert(__FILE__, __LINE__, a, b, c, d)
+#define assert1(a, b, c, d, e) myassert(__FILE__, __LINE__, a, b, c, d, e)
+
 #include <stdio.h>
 
-thread_return_type secondary(void* n)
+thread_return_type cond_secondary(void* n)
 {
 	int rc = 0;
-
-	/*
 	cond_type cond = n;
 
-	printf("Secondary thread about to wait\n");
-	rc = Thread_wait_cond(cond);
-	printf("Secondary thread returned from wait %d\n", rc);*/
+	printf("This should return immediately as it was posted already\n");
+	rc = Thread_wait_cond(cond, 99999);
+	assert("rc 1 from wait_cond", rc == 1, "rc was %d", rc);
 
+	printf("This should hang around a few seconds\n");
+	rc = Thread_wait_cond(cond, 99999);
+	assert("rc 1 from wait_cond", rc == 1, "rc was %d", rc);
+
+	printf("Secondary cond thread ending\n");
+	return 0;
+}
+
+
+int cond_test()
+{
+	int rc = 0;
+	cond_type cond = Thread_create_cond();
+	thread_type thread;
+
+	printf("Post secondary so it should return immediately\n");
+	rc = Thread_signal_cond(cond);
+	assert("rc 0 from signal cond", rc == 0, "rc was %d", rc);
+
+	printf("Starting secondary thread\n");
+	thread = Thread_start(cond_secondary, (void*)cond);
+
+	sleep(3);
+
+	printf("post secondary\n");
+	rc = Thread_signal_cond(cond);
+	assert("rc 1 from signal cond", rc == 1, "rc was %d", rc);
+
+	sleep(3);
+
+	printf("Main thread ending\n");
+
+	return failures;
+}
+
+
+thread_return_type sem_secondary(void* n)
+{
+	int rc = 0;
 	sem_type sem = n;
 
+	printf("Secondary semaphore pointer %p\n", sem);
+
+	rc = Thread_check_sem(sem);
+	assert("rc 1 from check_sem", rc == 1, "rc was %d", rc);
+
 	printf("Secondary thread about to wait\n");
-	rc = Thread_wait_sem(sem);
+	rc = Thread_wait_sem(sem, 99999);
 	printf("Secondary thread returned from wait %d\n", rc);
 
 	printf("Secondary thread about to wait\n");
-	rc = Thread_wait_sem(sem);
+	rc = Thread_wait_sem(sem, 99999);
 	printf("Secondary thread returned from wait %d\n", rc);
 	printf("Secondary check sem %d\n", Thread_check_sem(sem));
 
+	printf("Secondary thread ending\n");
 	return 0;
+}
+
+
+int sem_test()
+{
+	int rc = 0;
+	sem_type sem = Thread_create_sem();
+	thread_type thread;
+
+	printf("Primary semaphore pointer %p\n", sem);
+
+	rc = Thread_check_sem(sem);
+	assert("rc 0 from check_sem", rc == 0, "rc was %d\n", rc);
+
+	printf("post secondary so then check should be 1\n");
+	rc = Thread_post_sem(sem);
+	assert("rc 0 from post_sem", rc == 0, "rc was %d\n", rc);
+
+	rc = Thread_check_sem(sem);
+	assert("rc 1 from check_sem", rc == 1, "rc was %d", rc);
+
+	printf("Starting secondary thread\n");
+	thread = Thread_start(sem_secondary, (void*)sem);
+
+	sleep(3);
+	rc = Thread_check_sem(sem);
+	assert("rc 1 from check_sem", rc == 1, "rc was %d", rc);
+
+	printf("post secondary\n");
+	rc = Thread_post_sem(sem);
+	assert("rc 1 from post_sem", rc == 1, "rc was %d", rc);
+
+	sleep(3);
+
+	printf("Main thread ending\n");
+
+	return failures;
 }
 
 
 int main(int argc, char *argv[])
 {
-	int rc = 0;
-
-	sem_type sem = Thread_create_sem();
-
-	printf("check sem %d\n", Thread_check_sem(sem));
-
-	printf("post secondary\n");
-	rc = Thread_post_sem(sem);
-	printf("posted secondary %d\n", rc);
-
-	printf("check sem %d\n", Thread_check_sem(sem));
-
-	printf("Starting secondary thread\n");
-	Thread_start(secondary, (void*)sem);
-
-	sleep(3);
-	printf("check sem %d\n", Thread_check_sem(sem));
-
-	printf("post secondary\n");
-	rc = Thread_post_sem(sem);
-	printf("posted secondary %d\n", rc);
-
-	sleep(3);
-
-	printf("Main thread ending\n");
+	sem_test();
+	//cond_test();
 }
 
 #endif

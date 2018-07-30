@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -21,15 +21,18 @@
 #if !defined(THREAD_H)
 #define THREAD_H
 
+#include "mutex_type.h" /* Needed for mutex_type */
+
 #if defined(WIN32) || defined(WIN64)
 	#include <windows.h>
 	#define thread_type HANDLE
 	#define thread_id_type DWORD
 	#define thread_return_type DWORD
 	#define thread_fn LPTHREAD_START_ROUTINE
-	#define mutex_type HANDLE
 	#define cond_type HANDLE
 	#define sem_type HANDLE
+	#undef ETIMEDOUT
+	#define ETIMEDOUT WSAETIMEDOUT
 #else
 	#include <pthread.h>
 
@@ -37,7 +40,6 @@
 	#define thread_id_type pthread_t
 	#define thread_return_type void*
 	typedef thread_return_type (*thread_fn)(void*);
-	#define mutex_type pthread_mutex_t*
 	typedef struct { pthread_cond_t cond; pthread_mutex_t mutex; } cond_type_struct;
 	typedef cond_type_struct *cond_type;
 	#if defined(OSX)

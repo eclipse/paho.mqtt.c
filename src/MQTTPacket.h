@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,6 +15,7 @@
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - MQTT 3.1.1 support
  *    Ian Craggs - big endian Linux reversed definition
+ *    Ian Craggs - MQTT 5.0 support
  *******************************************************************************/
 
 #if !defined(MQTTPACKET_H)
@@ -27,22 +28,26 @@
 #include "LinkedList.h"
 #include "Clients.h"
 
-/*BE
-include "Socket"
-include "LinkedList"
-include "Clients"
-BE*/
-
 typedef unsigned int bool;
-typedef void* (*pf)(unsigned char, char*, size_t);
+typedef void* (*pf)(int, unsigned char, char*, size_t);
 
-#define BAD_MQTT_PACKET -4
+#include "MQTTProperties.h"
+#include "MQTTReasonCodes.h"
+
+enum errors
+{
+	MQTTPACKET_BAD = -4,
+	MQTTPACKET_BUFFER_TOO_SHORT = -2,
+	MQTTPACKET_READ_ERROR = -1,
+	MQTTPACKET_READ_COMPLETE
+};
+
 
 enum msgTypes
 {
 	CONNECT = 1, CONNACK, PUBLISH, PUBACK, PUBREC, PUBREL,
 	PUBCOMP, SUBSCRIBE, SUBACK, UNSUBSCRIBE, UNSUBACK,
-	PINGREQ, PINGRESP, DISCONNECT
+	PINGREQ, PINGRESP, DISCONNECT, AUTH
 };
 
 #if defined(__linux__)
@@ -145,7 +150,9 @@ typedef struct
 		} bits;
 #endif
 	} flags;	 /**< connack flags byte */
-	char rc; /**< connack return code */
+	char rc; /**< connack reason code */
+	int MQTTVersion;  /**< the version of MQTT */
+	MQTTProperties properties; /**< MQTT 5.0 properties.  Not used for MQTT < 5.0 */
 } Connack;
 
 
@@ -159,39 +166,29 @@ typedef struct
 
 
 /**
- * Data for a subscribe packet.
- */
-typedef struct
-{
-	Header header;	/**< MQTT header byte */
-	int msgId;		/**< MQTT message id */
-	List* topics;	/**< list of topic strings */
-	List* qoss;		/**< list of corresponding QoSs */
-	int noTopics;	/**< topic and qos count */
-} Subscribe;
-
-
-/**
  * Data for a suback packet.
  */
 typedef struct
 {
 	Header header;	/**< MQTT header byte */
 	int msgId;		/**< MQTT message id */
-	List* qoss;		/**< list of granted QoSs */
+	int MQTTVersion;  /**< the version of MQTT */
+	MQTTProperties properties; /**< MQTT 5.0 properties.  Not used for MQTT < 5.0 */
+	List* qoss;		/**< list of granted QoSs (MQTT 3/4) / reason codes (MQTT 5) */
 } Suback;
 
 
 /**
- * Data for an unsubscribe packet.
+ * Data for an MQTT V5 unsuback packet.
  */
 typedef struct
 {
 	Header header;	/**< MQTT header byte */
 	int msgId;		/**< MQTT message id */
-	List* topics;	/**< list of topic strings */
-	int noTopics;	/**< topic count */
-} Unsubscribe;
+	int MQTTVersion;  /**< the version of MQTT */
+	MQTTProperties properties; /**< MQTT 5.0 properties.  Not used for MQTT < 5.0 */
+	List* reasonCodes;	/**< list of reason codes */
+} Unsuback;
 
 
 /**
@@ -205,6 +202,8 @@ typedef struct
 	int msgId;		/**< MQTT message id */
 	char* payload;	/**< binary payload, length delimited */
 	int payloadlen;	/**< payload length */
+	int MQTTVersion;  /**< the version of MQTT */
+	MQTTProperties properties; /**< MQTT 5.0 properties.  Not used for MQTT < 5.0 */
 } Publish;
 
 
@@ -215,13 +214,15 @@ typedef struct
 {
 	Header header;	/**< MQTT header byte */
 	int msgId;		/**< MQTT message id */
+	unsigned char rc; /**< MQTT 5 reason code */
+	int MQTTVersion;  /**< the version of MQTT */
+	MQTTProperties properties; /**< MQTT 5.0 properties.  Not used for MQTT < 5.0 */
 } Ack;
 
 typedef Ack Puback;
 typedef Ack Pubrec;
 typedef Ack Pubrel;
 typedef Ack Pubcomp;
-typedef Ack Unsuback;
 
 int MQTTPacket_encode(char* buf, size_t length);
 int MQTTPacket_decode(networkHandles* net, size_t* value);
@@ -235,28 +236,35 @@ void writeData(char** pptr, const void* data, int datalen);
 
 const char* MQTTPacket_name(int ptype);
 
-void* MQTTPacket_Factory(networkHandles* net, int* error);
+void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error);
 int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buflen, int free);
 int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffers, size_t* buflens, int* frees);
 
-void* MQTTPacket_header_only(unsigned char aHeader, char* data, size_t datalen);
-int MQTTPacket_send_disconnect(networkHandles* net, const char* clientID);
+void* MQTTPacket_header_only(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen);
+int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQTTProperties* props);
 
-void* MQTTPacket_publish(unsigned char aHeader, char* data, size_t datalen);
+void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen);
 void MQTTPacket_freePublish(Publish* pack);
 int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, networkHandles* net, const char* clientID);
 int MQTTPacket_send_puback(int msgid, networkHandles* net, const char* clientID);
-void* MQTTPacket_ack(unsigned char aHeader, char* data, size_t datalen);
+void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen);
 
+void MQTTPacket_freeAck(Ack* pack);
 void MQTTPacket_freeSuback(Suback* pack);
+void MQTTPacket_freeUnsuback(Unsuback* pack);
 int MQTTPacket_send_pubrec(int msgid, networkHandles* net, const char* clientID);
 int MQTTPacket_send_pubrel(int msgid, int dup, networkHandles* net, const char* clientID);
 int MQTTPacket_send_pubcomp(int msgid, networkHandles* net, const char* clientID);
 
 void MQTTPacket_free_packet(MQTTPacket* pack);
 
-#if !defined(NO_BRIDGE)
-	#include "MQTTPacketOut.h"
-#endif
+void writeInt4(char** pptr, int anInt);
+int readInt4(char** pptr);
+void writeMQTTLenString(char** pptr, MQTTLenString lenstring);
+int MQTTLenStringRead(MQTTLenString* lenstring, char** pptr, char* enddata);
+int MQTTPacket_VBIlen(int rem_len);
+int MQTTPacket_decodeBuf(char* buf, int* value);
+
+#include "MQTTPacketOut.h"
 
 #endif /* MQTTPACKET_H */

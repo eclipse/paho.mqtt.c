@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2013 IBM Corp.
+ * Copyright (c) 2012, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,9 +25,11 @@
 #include <windows.h>
 #endif
 
+#if defined(_WRS_KERNEL)
 #include <OsWrapper.h>
+#endif
 
-#define ADDRESS     "tcp://m2m.eclipse.org:1883"
+#define ADDRESS     "tcp://iot.eclipse.org:1883"
 #define CLIENTID    "ExampleClientPub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
@@ -104,7 +106,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	opts.context = client;
 
 	pubmsg.payload = PAYLOAD;
-	pubmsg.payloadlen = strlen(PAYLOAD);
+	pubmsg.payloadlen = (int)strlen(PAYLOAD);
 	pubmsg.qos = QOS;
 	pubmsg.retained = 0;
 	deliveredtoken = 0;

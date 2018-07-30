@@ -39,7 +39,7 @@ int MQTTPersistence_initialize(Clients* c, const char* serverURI);
 int MQTTPersistence_close(Clients* c);
 int MQTTPersistence_clear(Clients* c);
 int MQTTPersistence_restore(Clients* c);
-void* MQTTPersistence_restorePacket(char* buffer, size_t buflen);
+void* MQTTPersistence_restorePacket(int MQTTVersion, char* buffer, size_t buflen);
 void MQTTPersistence_insertInOrder(List* list, void* content, size_t size);
 int MQTTPersistence_put(int socket, char* buf0, size_t buf0len, int count, 
 								 char** buffers, size_t* buflens, int htype, int msgId, int scr);

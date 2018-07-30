@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs, Allan Stockdill-Mander - initial implementation 
  *    Ian Craggs - SNI support
+ *    Ian Craggs - post connect checks and CApath
  *******************************************************************************/
 #if !defined(SSLSOCKET_H)
 #define SSLSOCKET_H
@@ -36,14 +37,14 @@ void SSLSocket_handleOpensslInit(int bool_value);
 
 int SSLSocket_initialize(void);
 void SSLSocket_terminate(void);
-int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, char* hostname);
+int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts, const char* hostname, size_t hostname_len);
 
 int SSLSocket_getch(SSL* ssl, int socket, char* c);
 char *SSLSocket_getdata(SSL* ssl, int socket, size_t bytes, size_t* actual_len);
 
 int SSLSocket_close(networkHandles* net);
 int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens, int* frees);
-int SSLSocket_connect(SSL* ssl, int socket);
+int SSLSocket_connect(SSL* ssl, int sock, const char* hostname, int verify);
 
 int SSLSocket_getPendingRead(void);
 int SSLSocket_continueWrite(pending_writes* pw);

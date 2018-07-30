@@ -29,15 +29,15 @@ IF (WIN32)
 ENDIF()
 
 # sample files c
-ADD_EXECUTABLE(paho_c_pub paho_c_pub.c)
-ADD_EXECUTABLE(paho_c_sub paho_c_sub.c)
-ADD_EXECUTABLE(paho_cs_pub paho_cs_pub.c)
-ADD_EXECUTABLE(paho_cs_sub paho_cs_sub.c)
+ADD_EXECUTABLE(paho_c_pub paho_c_pub.c pubsub_opts.c)
+ADD_EXECUTABLE(paho_c_sub paho_c_sub.c pubsub_opts.c)
+ADD_EXECUTABLE(paho_cs_pub paho_cs_pub.c pubsub_opts.c)
+ADD_EXECUTABLE(paho_cs_sub paho_cs_sub.c pubsub_opts.c)
 
-TARGET_LINK_LIBRARIES(paho_c_pub paho-mqtt3a)
-TARGET_LINK_LIBRARIES(paho_c_sub paho-mqtt3a)
-TARGET_LINK_LIBRARIES(paho_cs_pub paho-mqtt3c)
-TARGET_LINK_LIBRARIES(paho_cs_sub paho-mqtt3c)
+TARGET_LINK_LIBRARIES(paho_c_pub paho-mqtt3as)
+TARGET_LINK_LIBRARIES(paho_c_sub paho-mqtt3as)
+TARGET_LINK_LIBRARIES(paho_cs_pub paho-mqtt3cs)
+TARGET_LINK_LIBRARIES(paho_cs_sub paho-mqtt3cs)
 
 ADD_EXECUTABLE(MQTTAsync_subscribe MQTTAsync_subscribe.c)
 ADD_EXECUTABLE(MQTTAsync_publish MQTTAsync_publish.c)

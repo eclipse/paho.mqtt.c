@@ -293,6 +293,7 @@ int test1_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 		pubmsg.qos = 2;
 		pubmsg.retained = 0;
 		rc = MQTTAsync_sendMessage(c, test_topic, &pubmsg, &opts);
+		assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	}
 	else
 	{
@@ -324,6 +325,7 @@ void test1_onSubscribe(void* context, MQTTAsync_successData* response)
 	pubmsg.retained = 0;
 
 	rc = MQTTAsync_send(c, test_topic, pubmsg.payloadlen, pubmsg.payload, pubmsg.qos, pubmsg.retained, NULL);
+	assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 }
 
 
@@ -471,7 +473,7 @@ int test2(struct Options options)
 	opts.cleansession = 1;
 	opts.username = "testuser";
 	opts.binarypwd.data = "testpassword";
-	opts.binarypwd.len = strlen(opts.binarypwd.data);
+	opts.binarypwd.len = (int)strlen(opts.binarypwd.data);
 	opts.MQTTVersion = options.MQTTVersion;
 
 	opts.will = &wopts;

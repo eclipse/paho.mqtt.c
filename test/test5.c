@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2017 IBM Corp.
+ * Copyright (c) 2012, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -66,6 +66,7 @@ struct Options
 	int verbose;
 	int test_no;
 	int size;
+	int websockets;
 } options =
 {
 	"ssl://m2m.eclipse.org:18883",
@@ -79,7 +80,8 @@ struct Options
 	NULL,
 	0,
 	0,
-	5000000
+	5000000,
+	0,
 };
 
 typedef struct
@@ -143,20 +145,27 @@ void getopts(int argc, char** argv)
 		{
 			if (++count < argc)
 			{
-				sprintf(options.connection, "ssl://%s:18883", argv[count]);
+				char* prefix = (options.websockets) ? "wss" : "ssl";
+
+				sprintf(options.connection, "%s://%s:18883", prefix, argv[count]);
 				printf("Setting connection to %s\n", options.connection);
-				sprintf(options.mutual_auth_connection, "ssl://%s:18884", argv[count]);
+				sprintf(options.mutual_auth_connection, "%s://%s:18884", prefix, argv[count]);
 				printf("Setting mutual_auth_connection to %s\n", options.mutual_auth_connection);
-				sprintf(options.nocert_mutual_auth_connection, "ssl://%s:18887", argv[count]);
+				sprintf(options.nocert_mutual_auth_connection, "%s://%s:18887", prefix, argv[count]);
 				printf("Setting nocert_mutual_auth_connection to %s\n",
 					options.nocert_mutual_auth_connection);
-				sprintf(options.server_auth_connection, "ssl://%s:18885", argv[count]);
+				sprintf(options.server_auth_connection, "%s://%s:18885", prefix, argv[count]);
 				printf("Setting server_auth_connection to %s\n", options.server_auth_connection);
-				sprintf(options.anon_connection, "ssl://%s:18886", argv[count]);
+				sprintf(options.anon_connection, "%s://%s:18886", prefix, argv[count]);
 				printf("Setting anon_connection to %s\n", options.anon_connection);
 			}
 			else
 				usage();
+		}
+		else if (strcmp(argv[count], "--ws") == 0)
+		{
+			options.websockets = 1;
+			printf("\nSetting websockets on\n");
 		}
 		count++;
 	}
@@ -613,6 +622,10 @@ int test1(struct Options options)
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
+	rc = MQTTAsync_create(&c, "rubbish://wrong", "test1", MQTTCLIENT_PERSISTENCE_DEFAULT,
+			NULL);
+	assert("bad rc from create", rc == MQTTASYNC_BAD_PROTOCOL, "rc was %d \n", rc);
+
 	rc = MQTTAsync_create(&c, options.connection, "test1", MQTTCLIENT_PERSISTENCE_DEFAULT,
 			NULL);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
@@ -636,6 +649,9 @@ int test1(struct Options options)
 	opts.onSuccess = test1OnConnect;
 	opts.onFailure = test1OnFailure;
 	opts.context = c;
+
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Bad rc from connect", rc == MQTTASYNC_NULL_PARAMETER, "rc was %d ", rc);
 
 	opts.ssl = &sslopts;
 	opts.ssl->enableServerCertAuth = 0;
@@ -742,6 +758,9 @@ int test2a(struct Options options)
 		opts.ssl->privateKeyPassword = options.client_key_pass;
 	//opts.ssl->enabledCipherSuites = "DEFAULT";
 	//opts.ssl->enabledServerCertAuth = 1;
+	opts.ssl->verify = 1;
+	MyLog(LOGA_DEBUG, "enableServerCertAuth %d\n", opts.ssl->enableServerCertAuth);
+	MyLog(LOGA_DEBUG, "verify %d\n", opts.ssl->verify);
 
 	rc = MQTTAsync_setCallbacks(c, &tc, NULL, asyncTestMessageArrived,
 			asyncTestOnDeliveryComplete);
@@ -1025,7 +1044,7 @@ int test2d(struct Options options)
 	{
 		count = 0;
 		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
-		
+
 		rc = MQTTAsync_create(&c, options.mutual_auth_connection,
 				      "test2d", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 		assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
@@ -2046,8 +2065,7 @@ int test7(struct Options options)
 {
 	char* testname = "test7";
 	int subsqos = 2;
-	AsyncTestClient tc =
-	AsyncTestClient_initializer;
+	AsyncTestClient tc = AsyncTestClient_initializer;
 	MQTTAsync c;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,7 @@
  *    Juergen Kosel, Ian Craggs - fix for issue #135
  *    Ian Craggs - issue #217
  *    Ian Craggs - fix for issue #186
+ *    Ian Craggs - remove StackTrace print debugging calls
  *******************************************************************************/
 
 /**
@@ -103,7 +104,6 @@ int Socket_error(char* aString, int sock)
 	int errno;
 #endif
 
-	FUNC_ENTRY;
 #if defined(WIN32) || defined(WIN64)
 	errno = WSAGetLastError();
 #endif
@@ -112,7 +112,6 @@ int Socket_error(char* aString, int sock)
 		if (strcmp(aString, "shutdown") != 0 || (errno != ENOTCONN && errno != ECONNRESET))
 			Log(TRACE_MINIMUM, -1, "Socket error %s(%d) in %s for socket %d", strerror(errno), errno, aString, sock);
 	}
-	FUNC_EXIT_RC(errno);
 	return errno;
 }
 
@@ -228,7 +227,7 @@ int isReady(int socket, fd_set* read_set, fd_set* write_set)
  *  @param tp the timeout to be used for the select, unless overridden
  *  @return the socket next ready, or 0 if none is ready
  */
-int Socket_getReadySocket(int more_work, struct timeval *tp)
+int Socket_getReadySocket(int more_work, struct timeval *tp, mutex_type mutex)
 {
 	int rc = 0;
 	static struct timeval zero = {0L, 0L}; /* 0 seconds */
@@ -236,6 +235,7 @@ int Socket_getReadySocket(int more_work, struct timeval *tp)
 	struct timeval timeout = one;
 
 	FUNC_ENTRY;
+	Thread_lock_mutex(mutex);
 	if (s.clientsds->count == 0)
 		goto exit;
 
@@ -258,7 +258,11 @@ int Socket_getReadySocket(int more_work, struct timeval *tp)
 
 		memcpy((void*)&(s.rset), (void*)&(s.rset_saved), sizeof(s.rset));
 		memcpy((void*)&(pwset), (void*)&(s.pending_wset), sizeof(pwset));
-		if ((rc = select(s.maxfdp1, &(s.rset), &pwset, NULL, &timeout)) == SOCKET_ERROR)
+		/* Prevent performance issue by unlocking the socket_mutex while waiting for a ready socket. */
+		Thread_unlock_mutex(mutex);
+		rc = select(s.maxfdp1, &(s.rset), &pwset, NULL, &timeout);
+		Thread_lock_mutex(mutex);
+		if (rc == SOCKET_ERROR)
 		{
 			Socket_error("read select", 0);
 			goto exit;
@@ -301,6 +305,7 @@ int Socket_getReadySocket(int more_work, struct timeval *tp)
 		ListNextElement(s.clientsds, &s.cur_clientsds);
 	}
 exit:
+	Thread_unlock_mutex(mutex);
 	FUNC_EXIT_RC(rc);
 	return rc;
 } /* end getReadySocket */
@@ -386,7 +391,7 @@ char *Socket_getdata(int socket, size_t bytes, size_t* actual_len)
 	else /* we didn't read the whole packet */
 	{
 		SocketBuffer_interrupted(socket, *actual_len);
-		Log(TRACE_MAX, -1, "%d bytes expected but %d bytes now received", bytes, *actual_len);
+		Log(TRACE_MAX, -1, "%d bytes expected but %d bytes now received", (int)bytes, (int)*actual_len);
 	}
 exit:
 	FUNC_EXIT;
@@ -498,7 +503,6 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 	if (!Socket_noPendingWrites(socket))
 	{
 		Log(LOG_SEVERE, -1, "Trying to write to socket %d for which there is already pending output", socket);
-		StackTrace_printStack(stdout);
 		rc = SOCKET_ERROR;
 		goto exit;
 	}
@@ -523,12 +527,11 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 		else
 		{
 			int* sockmem = (int*)malloc(sizeof(int));
-			Log(TRACE_MIN, -1, "Partial write: %ld bytes of %d actually written on socket %d",
+			Log(TRACE_MIN, -1, "Partial write: %lu bytes of %d actually written on socket %d",
 					bytes, total, socket);
 #if defined(OPENSSL)
 			SocketBuffer_pendingWrite(socket, NULL, count+1, iovecs, frees1, total, bytes);
 #else
-			StackTrace_printStack(stdout);
 			SocketBuffer_pendingWrite(socket, count+1, iovecs, frees1, total, bytes);
 #endif
 			*sockmem = socket;
@@ -538,6 +541,12 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 		}
 	}
 exit:
+#if 0
+        if (rc == TCPSOCKET_INTERRUPTED)
+        {
+            Log(LOG_ERROR, -1, "Socket_putdatas: TCPSOCKET_INTERRUPTED");
+        }
+#endif
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -639,9 +648,10 @@ void Socket_close(int socket)
  *  @param sock returns the new socket
  *  @return completion code
  */
-int Socket_new(char* addr, int port, int* sock)
+int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 {
 	int type = SOCK_STREAM;
+	char *addr_mem;
 	struct sockaddr_in address;
 #if defined(AF_INET6)
 	struct sockaddr_in6 address6;
@@ -660,9 +670,16 @@ int Socket_new(char* addr, int port, int* sock)
 	memset(&address6, '\0', sizeof(address6));
 
 	if (addr[0] == '[')
-	  ++addr;
+	{
+		++addr;
+		--addr_len;
+	}
 
-	if ((rc = getaddrinfo(addr, NULL, &hints, &result)) == 0)
+	addr_mem = malloc( addr_len + 1u );
+	memcpy( addr_mem, addr, addr_len );
+	addr_mem[addr_len] = '\0';
+
+	if ((rc = getaddrinfo(addr_mem, NULL, &hints, &result)) == 0)
 	{
 		struct addrinfo* res = result;
 
@@ -697,10 +714,10 @@ int Socket_new(char* addr, int port, int* sock)
 		freeaddrinfo(result);
 	}
 	else
-	  	Log(LOG_ERROR, -1, "getaddrinfo failed for addr %s with rc %d", addr, rc);
+	  	Log(LOG_ERROR, -1, "getaddrinfo failed for addr %s with rc %d", addr_mem, rc);
 
 	if (rc != 0)
-		Log(LOG_ERROR, -1, "%s is not a valid IP address", addr);
+		Log(LOG_ERROR, -1, "%s is not a valid IP address", addr_mem);
 	else
 	{
 		*sock =	(int)socket(family, type, 0);
@@ -760,6 +777,10 @@ int Socket_new(char* addr, int port, int* sock)
                         }
 		}
 	}
+
+	if (addr_mem)
+		free(addr_mem);
+
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -826,7 +847,10 @@ int Socket_continueWrite(int socket)
 			for (i = 0; i < pw->count; i++)
 			{
 				if (pw->frees[i])
+                                {
 					free(pw->iovecs[i].iov_base);
+                                        pw->iovecs[i].iov_base = NULL;
+                                }
 			}
 			rc = 1; /* signal complete */
 			Log(TRACE_MIN, -1, "ContinueWrite: partial write now complete for socket %d", socket);
@@ -842,7 +866,10 @@ int Socket_continueWrite(int socket)
 		for (i = 0; i < pw->count; i++)
 		{
 			if (pw->frees[i])
+                        {
 				free(pw->iovecs[i].iov_base);
+                                pw->iovecs[i].iov_base = NULL;
+                        }
 		}
 	}
 #if defined(OPENSSL)
@@ -971,9 +998,8 @@ char* Socket_getpeer(int sock)
 {
 	struct sockaddr_in6 sa;
 	socklen_t sal = sizeof(sa);
-	int rc;
 
-	if ((rc = getpeername(sock, (struct sockaddr*)&sa, &sal)) == SOCKET_ERROR)
+	if (getpeername(sock, (struct sockaddr*)&sa, &sal) == SOCKET_ERROR)
 	{
 		Socket_error("getpeername", sock);
 		return "unknown";

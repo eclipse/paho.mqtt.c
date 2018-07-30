@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,8 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - MQTT 3.1.1 support
+ *    Ian Craggs - fix for issue 453
+ *    Ian Craggs - MQTT 5.0 support
  *******************************************************************************/
 
 /**
@@ -30,6 +32,7 @@
 #endif
 #include "Messages.h"
 #include "StackTrace.h"
+#include "WebSocket.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -41,13 +44,13 @@
 #endif
 
 /**
- * List of the predefined MQTT v3 packet names.
+ * List of the predefined MQTT v3/v5 packet names.
  */
 static const char *packet_names[] =
 {
 	"RESERVED", "CONNECT", "CONNACK", "PUBLISH", "PUBACK", "PUBREC", "PUBREL",
 	"PUBCOMP", "SUBSCRIBE", "SUBACK", "UNSUBSCRIBE", "UNSUBACK",
-	"PINGREQ", "PINGRESP", "DISCONNECT"
+	"PINGREQ", "PINGRESP", "DISCONNECT", "AUTH"
 };
 
 const char** MQTTClient_packet_names = packet_names;
@@ -60,7 +63,7 @@ const char** MQTTClient_packet_names = packet_names;
  */
 const char* MQTTPacket_name(int ptype)
 {
-	return (ptype >= 0 && ptype <= DISCONNECT) ? packet_names[ptype] : "UNKNOWN";
+	return (ptype >= 0 && ptype <= AUTH) ? packet_names[ptype] : "UNKNOWN";
 }
 
 /**
@@ -79,10 +82,11 @@ pf new_packets[] =
 	NULL, /**< MQTTPacket_subscribe*/
 	MQTTPacket_suback, /**< SUBACK */
 	NULL, /**< MQTTPacket_unsubscribe*/
-	MQTTPacket_ack, /**< UNSUBACK */
+	MQTTPacket_unsuback, /**< UNSUBACK */
 	MQTTPacket_header_only, /**< PINGREQ */
 	MQTTPacket_header_only, /**< PINGRESP */
-	MQTTPacket_header_only  /**< DISCONNECT */
+	MQTTPacket_ack,  /**< DISCONNECT */
+	MQTTPacket_ack   /**< AUTH */
 };
 
 
@@ -95,7 +99,7 @@ static int MQTTPacket_send_ack(int type, int msgid, int dup, networkHandles *net
  * @param error pointer to the error code which is completed if no packet is returned
  * @return the packet structure or NULL if there was an error
  */
-void* MQTTPacket_Factory(networkHandles* net, int* error)
+void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
 {
 	char* data = NULL;
 	static Header header;
@@ -108,11 +112,7 @@ void* MQTTPacket_Factory(networkHandles* net, int* error)
 	*error = SOCKET_ERROR;  /* indicate whether an error occurred, or not */
 
 	/* read the packet data from the socket */
-#if defined(OPENSSL)
-	*error = (net->ssl) ? SSLSocket_getch(net->ssl, net->socket, &header.byte) : Socket_getch(net->socket, &header.byte); 
-#else
-	*error = Socket_getch(net->socket, &header.byte);
-#endif
+	*error = WebSocket_getch(net, &header.byte);
 	if (*error != TCPSOCKET_COMPLETE)   /* first byte is the header byte */
 		goto exit; /* packet not read, *error indicates whether SOCKET_ERROR occurred */
 
@@ -121,12 +121,7 @@ void* MQTTPacket_Factory(networkHandles* net, int* error)
 		goto exit; /* packet not read, *error indicates whether SOCKET_ERROR occurred */
 
 	/* now read the rest, the variable header and payload */
-#if defined(OPENSSL)
-	data = (net->ssl) ? SSLSocket_getdata(net->ssl, net->socket, remaining_length, &actual_len) : 
-						Socket_getdata(net->socket, remaining_length, &actual_len);
-#else
-	data = Socket_getdata(net->socket, remaining_length, &actual_len);
-#endif
+	data = WebSocket_getdata(net, remaining_length, &actual_len);
 	if (data == NULL)
 	{
 		*error = SOCKET_ERROR;
@@ -138,12 +133,17 @@ void* MQTTPacket_Factory(networkHandles* net, int* error)
 	else
 	{
 		ptype = header.bits.type;
-		if (ptype < CONNECT || ptype > DISCONNECT || new_packets[ptype] == NULL)
+		if (ptype < CONNECT || (MQTTVersion < MQTTVERSION_5 && ptype >= DISCONNECT) ||
+				(MQTTVersion >= MQTTVERSION_5 && ptype > AUTH) ||
+				new_packets[ptype] == NULL)
 			Log(TRACE_MIN, 2, NULL, ptype);
 		else
 		{
-			if ((pack = (*new_packets[ptype])(header.byte, data, remaining_length)) == NULL)
-				*error = BAD_MQTT_PACKET;
+			if ((pack = (*new_packets[ptype])(MQTTVersion, header.byte, data, remaining_length)) == NULL)
+			{
+				*error = SOCKET_ERROR; // was BAD_MQTT_PACKET;
+				Log(LOG_ERROR, -1, "Bad MQTT packet, type %d", ptype);
+			}
 #if !defined(NO_PERSISTENCE)
 			else if (header.bits.type == PUBLISH && header.bits.qos == 2)
 			{
@@ -178,29 +178,33 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 {
 	int rc;
 	size_t buf0len;
+	size_t ws_header;
 	char *buf;
+	int count = 0;
 
 	FUNC_ENTRY;
-	buf = malloc(10);
-	buf[0] = header.byte;
-	buf0len = 1 + MQTTPacket_encode(&buf[1], buflen);
+	ws_header = WebSocket_calculateFrameHeaderSize(net, 1, buflen + 10);
+
+	buf = malloc(10 + ws_header);
+	if ( !buf ) return -1;
+	buf[ws_header] = header.byte;
+	buf0len = 1 + MQTTPacket_encode(&buf[ws_header + 1], buflen);
+
+	if (buffer != NULL)
+		count = 1;
+
 #if !defined(NO_PERSISTENCE)
 	if (header.bits.type == PUBREL)
 	{
 		char* ptraux = buffer;
 		int msgId = readInt(&ptraux);
-		rc = MQTTPersistence_put(net->socket, buf, buf0len, 1, &buffer, &buflen,
+
+		rc = MQTTPersistence_put(net->socket, &buf[ws_header], buf0len, count, &buffer, &buflen,
 			header.bits.type, msgId, 0);
 	}
 #endif
+	rc = WebSocket_putdatas(net, &buf[ws_header], buf0len, count, &buffer, &buflen, &freeData);
 
-#if defined(OPENSSL)
-	if (net->ssl)
-		rc = SSLSocket_putdatas(net->ssl, net->socket, buf, buf0len, 1, &buffer, &buflen, &freeData);
-	else
-#endif
-		rc = Socket_putdatas(net->socket, buf, buf0len, 1, &buffer, &buflen, &freeData);
-		
 	if (rc == TCPSOCKET_COMPLETE)
 		time(&(net->lastSent));
 	
@@ -225,30 +229,31 @@ int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffe
 {
 	int i, rc;
 	size_t buf0len, total = 0;
+	size_t ws_header;
 	char *buf;
 
 	FUNC_ENTRY;
-	buf = malloc(10);
-	buf[0] = header.byte;
+
 	for (i = 0; i < count; i++)
 		total += buflens[i];
-	buf0len = 1 + MQTTPacket_encode(&buf[1], total);
+
+	ws_header = WebSocket_calculateFrameHeaderSize(net, 1, total + 10);
+	buf = malloc(10 + ws_header);
+	if ( !buf ) return -1;
+
+	buf[ws_header] = header.byte;
+	buf0len = 1 + MQTTPacket_encode(&buf[ws_header + 1], total);
 #if !defined(NO_PERSISTENCE)
 	if (header.bits.type == PUBLISH && header.bits.qos != 0)
 	{   /* persist PUBLISH QoS1 and Qo2 */
 		char *ptraux = buffers[2];
 		int msgId = readInt(&ptraux);
-		rc = MQTTPersistence_put(net->socket, buf, buf0len, count, buffers, buflens,
+		rc = MQTTPersistence_put(net->socket, &buf[ws_header], buf0len, count, buffers, buflens,
 			header.bits.type, msgId, 0);
 	}
 #endif
-#if defined(OPENSSL)
-	if (net->ssl)
-		rc = SSLSocket_putdatas(net->ssl, net->socket, buf, buf0len, count, buffers, buflens, frees);
-	else
-#endif
-		rc = Socket_putdatas(net->socket, buf, buf0len, count, buffers, buflens, frees);
-		
+	rc = WebSocket_putdatas(net, &buf[ws_header], buf0len, count, buffers, buflens, frees);
+
 	if (rc == TCPSOCKET_COMPLETE)
 		time(&(net->lastSent));
 	
@@ -307,11 +312,7 @@ int MQTTPacket_decode(networkHandles* net, size_t* value)
 			rc = SOCKET_ERROR;	/* bad data */
 			goto exit;
 		}
-#if defined(OPENSSL)
-		rc = (net->ssl) ? SSLSocket_getch(net->ssl, net->socket, &c) : Socket_getch(net->socket, &c);
-#else
-		rc = Socket_getch(net->socket, &c);
-#endif
+		rc = WebSocket_getch(net, &c);
 		if (rc != TCPSOCKET_COMPLETE)
 				goto exit;
 		*value += (c & 127) * multiplier;
@@ -456,12 +457,13 @@ void writeData(char** pptr, const void* data, int datalen)
 
 /**
  * Function used in the new packets table to create packets which have only a header.
+ * @param MQTTVersion the version of MQTT
  * @param aHeader the MQTT header byte
  * @param data the rest of the packet
  * @param datalen the length of the rest of the packet
  * @return pointer to the packet structure
  */
-void* MQTTPacket_header_only(unsigned char aHeader, char* data, size_t datalen)
+void* MQTTPacket_header_only(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
 	static unsigned char header = 0;
 	header = aHeader;
@@ -474,7 +476,7 @@ void* MQTTPacket_header_only(unsigned char aHeader, char* data, size_t datalen)
  * @param socket the open socket to send the data to
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-int MQTTPacket_send_disconnect(networkHandles *net, const char* clientID)
+int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQTTProperties* props)
 {
 	Header header;
 	int rc = 0;
@@ -482,8 +484,25 @@ int MQTTPacket_send_disconnect(networkHandles *net, const char* clientID)
 	FUNC_ENTRY;
 	header.byte = 0;
 	header.bits.type = DISCONNECT;
-	rc = MQTTPacket_send(net, header, NULL, 0, 0);
-	Log(LOG_PROTOCOL, 28, NULL, net->socket, clientID, rc);
+
+	if (client->MQTTVersion >= 5)
+	{
+		if (props || reason != SUCCESS)
+		{
+			size_t buflen = 1 + ((props == NULL) ? 0 : MQTTProperties_len(props));
+			char *buf = malloc(buflen), *ptr = NULL;
+
+			ptr = buf;
+			writeChar(&ptr, reason);
+			if (props)
+				MQTTProperties_write(&ptr, props);
+			if ((rc = MQTTPacket_send(&client->net, header, buf, buflen, 1)) != TCPSOCKET_INTERRUPTED)
+				free(buf);
+		}
+	}
+	else
+		rc = MQTTPacket_send(&client->net, header, NULL, 0, 0);
+	Log(LOG_PROTOCOL, 28, NULL, client->net.socket, client->clientID, rc);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -491,18 +510,20 @@ int MQTTPacket_send_disconnect(networkHandles *net, const char* clientID)
 
 /**
  * Function used in the new packets table to create publish packets.
+ * @param MQTTVersion
  * @param aHeader the MQTT header byte
  * @param data the rest of the packet
  * @param datalen the length of the rest of the packet
  * @return pointer to the packet structure
  */
-void* MQTTPacket_publish(unsigned char aHeader, char* data, size_t datalen)
+void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
 	Publish* pack = malloc(sizeof(Publish));
 	char* curdata = data;
 	char* enddata = &data[datalen];
 
 	FUNC_ENTRY;
+	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
 	if ((pack->topic = readUTFlen(&curdata, enddata, &pack->topiclen)) == NULL) /* Topic name on which to publish */
 	{
@@ -514,6 +535,17 @@ void* MQTTPacket_publish(unsigned char aHeader, char* data, size_t datalen)
 		pack->msgId = readInt(&curdata);
 	else
 		pack->msgId = 0;
+	if (MQTTVersion >= MQTTVERSION_5)
+	{
+		MQTTProperties props = MQTTProperties_initializer;
+		pack->properties = props;
+		if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
+		{
+			free(pack);
+			pack = NULL;
+			goto exit;
+		}
+	}
 	pack->payload = curdata;
 	pack->payloadlen = (int)(datalen-(curdata-data));
 exit:
@@ -531,6 +563,22 @@ void MQTTPacket_freePublish(Publish* pack)
 	FUNC_ENTRY;
 	if (pack->topic != NULL)
 		free(pack->topic);
+	if (pack->MQTTVersion >= MQTTVERSION_5)
+		MQTTProperties_free(&pack->properties);
+	free(pack);
+	FUNC_EXIT;
+}
+
+
+/**
+ * Free allocated storage for an ack packet.
+ * @param pack pointer to the publish packet structure
+ */
+void MQTTPacket_freeAck(Ack* pack)
+{
+	FUNC_ENTRY;
+	if (pack->MQTTVersion >= MQTTVERSION_5)
+		MQTTProperties_free(&pack->properties);
 	free(pack);
 	FUNC_EXIT;
 }
@@ -591,8 +639,28 @@ int MQTTPacket_send_puback(int msgid, networkHandles* net, const char* clientID)
 void MQTTPacket_freeSuback(Suback* pack)
 {
 	FUNC_ENTRY;
+	if (pack->MQTTVersion >= MQTTVERSION_5)
+		MQTTProperties_free(&pack->properties);
 	if (pack->qoss != NULL)
 		ListFree(pack->qoss);
+	free(pack);
+	FUNC_EXIT;
+}
+
+
+/**
+ * Free allocated storage for a suback packet.
+ * @param pack pointer to the suback packet structure
+ */
+void MQTTPacket_freeUnsuback(Unsuback* pack)
+{
+	FUNC_ENTRY;
+	if (pack->MQTTVersion >= MQTTVERSION_5)
+	{
+		MQTTProperties_free(&pack->properties);
+		if (pack->reasonCodes != NULL)
+			ListFree(pack->reasonCodes);
+	}
 	free(pack);
 	FUNC_EXIT;
 }
@@ -663,14 +731,36 @@ int MQTTPacket_send_pubcomp(int msgid, networkHandles* net, const char* clientID
  * @param datalen the length of the rest of the packet
  * @return pointer to the packet structure
  */
-void* MQTTPacket_ack(unsigned char aHeader, char* data, size_t datalen)
+void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
 	Ack* pack = malloc(sizeof(Ack));
 	char* curdata = data;
+	char* enddata = &data[datalen];
 
 	FUNC_ENTRY;
+	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
-	pack->msgId = readInt(&curdata);
+	if (pack->header.bits.type != DISCONNECT)
+		pack->msgId = readInt(&curdata);
+	if (MQTTVersion >= MQTTVERSION_5)
+	{
+		MQTTProperties props = MQTTProperties_initializer;
+
+		pack->rc = SUCCESS;
+		pack->properties = props;
+
+		if (datalen > 2)
+			pack->rc = readChar(&curdata); /* reason code */
+
+		if (datalen > 3)
+		{
+			if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
+			{
+				free(pack);
+				pack = NULL; /* signal protocol error */
+			}
+		}
+	}
 	FUNC_EXIT;
 	return pack;
 }
@@ -699,20 +789,25 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 	header.bits.dup = dup;
 	header.bits.qos = qos;
 	header.bits.retain = retained;
-	if (qos > 0)
+	if (qos > 0 || pack->MQTTVersion >= 5)
 	{
-		char *buf = malloc(2);
-		char *ptr = buf;
-		char* bufs[4] = {topiclen, pack->topic, buf, pack->payload};
-		size_t lens[4] = {2, strlen(pack->topic), 2, pack->payloadlen};
+		int buflen = ((qos > 0) ? 2 : 0) + ((pack->MQTTVersion >= 5) ? MQTTProperties_len(&pack->properties) : 0);
+		char *ptr = NULL;
+		char* bufs[4] = {topiclen, pack->topic, NULL, pack->payload};
+		size_t lens[4] = {2, strlen(pack->topic), buflen, pack->payloadlen};
 		int frees[4] = {1, 0, 1, 0};
 
-		writeInt(&ptr, pack->msgId);
+		bufs[2] = ptr = malloc(buflen);
+		if (qos > 0)
+			writeInt(&ptr, pack->msgId);
+		if (pack->MQTTVersion >= 5)
+			MQTTProperties_write(&ptr, &pack->properties);
+
 		ptr = topiclen;
 		writeInt(&ptr, (int)lens[1]);
 		rc = MQTTPacket_sends(net, header, 4, bufs, lens, frees);
 		if (rc != TCPSOCKET_INTERRUPTED)
-			free(buf);
+			free(bufs[2]);
 	}
 	else
 	{
@@ -753,3 +848,143 @@ void MQTTPacket_free_packet(MQTTPacket* pack)
 		free(pack);
 	FUNC_EXIT;
 }
+
+
+/**
+ * Writes an integer as 4 bytes to an output buffer.
+ * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
+ * @param anInt the integer to write
+ */
+void writeInt4(char** pptr, int anInt)
+{
+  **pptr = (char)(anInt / 16777216);
+  (*pptr)++;
+  anInt %= 16777216;
+  **pptr = (char)(anInt / 65536);
+  (*pptr)++;
+  anInt %= 65536;
+	**pptr = (char)(anInt / 256);
+	(*pptr)++;
+	**pptr = (char)(anInt % 256);
+	(*pptr)++;
+}
+
+
+/**
+ * Calculates an integer from two bytes read from the input buffer
+ * @param pptr pointer to the input buffer - incremented by the number of bytes used & returned
+ * @return the integer value calculated
+ */
+int readInt4(char** pptr)
+{
+	unsigned char* ptr = (unsigned char*)*pptr;
+	int value = 16777216*(*ptr) + 65536*(*(ptr+1)) + 256*(*(ptr+2)) + (*(ptr+3));
+	*pptr += 4;
+	return value;
+}
+
+
+void writeMQTTLenString(char** pptr, MQTTLenString lenstring)
+{
+  writeInt(pptr, lenstring.len);
+  memcpy(*pptr, lenstring.data, lenstring.len);
+  *pptr += lenstring.len;
+}
+
+
+int MQTTLenStringRead(MQTTLenString* lenstring, char** pptr, char* enddata)
+{
+	int len = 0;
+
+	/* the first two bytes are the length of the string */
+	if (enddata - (*pptr) > 1) /* enough length to read the integer? */
+	{
+		lenstring->len = readInt(pptr); /* increments pptr to point past length */
+		if (&(*pptr)[lenstring->len] <= enddata)
+		{
+			lenstring->data = (char*)*pptr;
+			*pptr += lenstring->len;
+			len = 2 + lenstring->len;
+		}
+	}
+	return len;
+}
+
+/*
+if (prop->value.integer4 >= 0 && prop->value.integer4 <= 127)
+  len = 1;
+else if (prop->value.integer4 >= 128 && prop->value.integer4 <= 16383)
+  len = 2;
+else if (prop->value.integer4 >= 16384 && prop->value.integer4 < 2097151)
+  len = 3;
+else if (prop->value.integer4 >= 2097152 && prop->value.integer4 < 268435455)
+  len = 4;
+*/
+int MQTTPacket_VBIlen(int rem_len)
+{
+	int rc = 0;
+
+	if (rem_len < 128)
+		rc = 1;
+	else if (rem_len < 16384)
+		rc = 2;
+	else if (rem_len < 2097152)
+		rc = 3;
+	else
+		rc = 4;
+  return rc;
+}
+
+
+/**
+ * Decodes the message length according to the MQTT algorithm
+ * @param getcharfn pointer to function to read the next character from the data source
+ * @param value the decoded length returned
+ * @return the number of bytes read from the socket
+ */
+int MQTTPacket_VBIdecode(int (*getcharfn)(char*, int), int* value)
+{
+	char c;
+	int multiplier = 1;
+	int len = 0;
+#define MAX_NO_OF_REMAINING_LENGTH_BYTES 4
+
+	*value = 0;
+	do
+	{
+		int rc = MQTTPACKET_READ_ERROR;
+
+		if (++len > MAX_NO_OF_REMAINING_LENGTH_BYTES)
+		{
+			rc = MQTTPACKET_READ_ERROR;	/* bad data */
+			goto exit;
+		}
+		rc = (*getcharfn)(&c, 1);
+		if (rc != 1)
+			goto exit;
+		*value += (c & 127) * multiplier;
+		multiplier *= 128;
+	} while ((c & 128) != 0);
+exit:
+	return len;
+}
+
+
+static char* bufptr;
+
+int bufchar(char* c, int count)
+{
+	int i;
+
+	for (i = 0; i < count; ++i)
+		*c = *bufptr++;
+	return count;
+}
+
+
+int MQTTPacket_decodeBuf(char* buf, int* value)
+{
+	bufptr = buf;
+	return MQTTPacket_VBIdecode(bufchar, value);
+}
+

@@ -547,7 +547,7 @@ int test2(struct Options options)
 	opts.MQTTVersion = options.MQTTVersion;
 	opts.username = "testuser";
 	opts.binarypwd.data = "testpassword";
-	opts.binarypwd.len = strlen(opts.binarypwd.data);
+	opts.binarypwd.len = (int)strlen(opts.binarypwd.data);
 	if (options.haconnections != NULL)
 	{
 		opts.serverURIs = options.haconnections;
@@ -1068,7 +1068,7 @@ int test6a(struct Options options)
 	opts.MQTTVersion = MQTTVERSION_3_1_1;
 	opts.will = &wopts;
 	opts.will->payload.data = test6_will_message;
-	opts.will->payload.len = strlen(test6_will_message) + 1;
+	opts.will->payload.len = (int)strlen(test6_will_message) + 1;
 	opts.will->qos = 1;
 	opts.will->retained = 0;
 	opts.will->topicName = test6_will_topic;
@@ -1166,7 +1166,7 @@ int main(int argc, char** argv)
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
 
 	setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
-	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 0);
+	setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 1);
 
 	getopts(argc, argv);
 

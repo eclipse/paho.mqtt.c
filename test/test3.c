@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2017 IBM Corp.
+ * Copyright (c) 2012, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Allan Stockdill-Mander - initial API and implementation and/or initial documentation
+ *    Ian Craggs - add SSL options NULL test
  *******************************************************************************/
 
 /**
@@ -83,6 +84,7 @@ struct Options
 	char* client_private_key_file;
 	int verbose;
 	int test_no;
+	int websockets;
 } options =
 {
 	"ssl://m2m.eclipse.org:18883",
@@ -96,6 +98,7 @@ struct Options
 	NULL,
 	"../../../test/ssl/test-root-ca.crt",
 	NULL,
+	0,
 	0,
 	0,
 };
@@ -153,16 +156,18 @@ void getopts(int argc, char** argv)
 		{
 			if (++count < argc)
 			{
-				sprintf(options.connection, "ssl://%s:18883", argv[count]);
+				char* prefix = (options.websockets) ? "wss" : "ssl";
+
+				sprintf(options.connection, "%s://%s:18883", prefix, argv[count]);
 				printf("Setting connection to %s\n", options.connection);
-				sprintf(options.mutual_auth_connection, "ssl://%s:18884", argv[count]);
+				sprintf(options.mutual_auth_connection, "%s://%s:18884", prefix, argv[count]);
 				printf("Setting mutual_auth_connection to %s\n", options.mutual_auth_connection);
-				sprintf(options.nocert_mutual_auth_connection, "ssl://%s:18887", argv[count]);
+				sprintf(options.nocert_mutual_auth_connection, "%s://%s:18887", prefix, argv[count]);
 				printf("Setting nocert_mutual_auth_connection to %s\n",
 					options.nocert_mutual_auth_connection);
-				sprintf(options.server_auth_connection, "ssl://%s:18885", argv[count]);
+				sprintf(options.server_auth_connection, "%s://%s:18885", prefix, argv[count]);
 				printf("Setting server_auth_connection to %s\n", options.server_auth_connection);
-				sprintf(options.anon_connection, "ssl://%s:18886", argv[count]);
+				sprintf(options.anon_connection, "%s://%s:18886", prefix, argv[count]);
 				printf("Setting anon_connection to %s\n", options.anon_connection);
 			}
 			else
@@ -241,8 +246,12 @@ void getopts(int argc, char** argv)
 		else if (strcmp(argv[count], "--verbose") == 0)
 		{
 			options.verbose = 1;
-			//TODO
 			printf("\nSetting verbose on\n");
+		}
+		else if (strcmp(argv[count], "--ws") == 0)
+		{
+			options.websockets = 1;
+			printf("\nSetting websockets on\n");
 		}
 		count++;
 	}
@@ -570,6 +579,9 @@ int test1(struct Options options)
 	fprintf(xml, "<testcase classname=\"test3\" name=\"SSL connect fail to nonSSL MQTT server\"");
 	global_start_time = start_clock();
 
+	rc = MQTTClient_create(&c, "a b://wrong protocol", "test1",	MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
+	assert("bad rc from create", rc == MQTTCLIENT_BAD_PROTOCOL, "rc was %d \n", rc);
+
 	rc = MQTTClient_create(&c, options.connection, "test1",	MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
 	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d \n", rc)))
 		goto exit;
@@ -583,6 +595,10 @@ int test1(struct Options options)
 		opts.serverURIs = options.haconnections;
 		opts.serverURIcount = options.hacount;
 	}
+
+	/* Try with ssl opts == NULL - should get error */
+	rc = MQTTClient_connect(c, &opts);
+	assert("Connect should fail", rc == MQTTCLIENT_NULL_PARAMETER, "rc was %d ", rc);
 
 	opts.ssl = &sslopts;
 	if (options.server_key_file != NULL)

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -56,6 +56,8 @@ static mutex_type heap_mutex = &heap_mutex_store;
 static heap_info state = {0, 0}; /**< global heap state information */
 static int eyecatcher = 0x88888888;
 
+/*#define HEAP_STACK 1 */
+
 /**
  * Each item on the heap is recorded with this structure.
  */
@@ -65,6 +67,9 @@ typedef struct
 	int line;		/**< the line no in the source file where it was allocated */
 	void* ptr;		/**< pointer to the allocated storage */
 	size_t size;    /**< size of the allocated storage */
+#if defined(HEAP_STACK)
+	char* stack;
+#endif
 } storageElement;
 
 static Tree heap;	/**< Tree that holds the allocation records */
@@ -168,6 +173,17 @@ void* mymalloc(char* file, int line, size_t size)
 	}
 	space += filenamelen;
 	strcpy(s->file, file);
+#if defined(HEAP_STACK)
+#define STACK_LEN 300
+	if ((s->stack = malloc(STACK_LEN)) == NULL)
+	{
+		Log(LOG_ERROR, 13, errmsg);
+		free(s->file);
+		free(s);
+		return NULL;
+	}
+	StackTrace_get(Thread_getid(), s->stack, STACK_LEN);
+#endif
 	s->line = line;
 	/* Add space for eyecatcher at each end */
 	if ((s->ptr = malloc(size + 2*sizeof(int))) == NULL)
@@ -180,7 +196,7 @@ void* mymalloc(char* file, int line, size_t size)
 	space += size + 2*sizeof(int);
 	*(int*)(s->ptr) = eyecatcher; /* start eyecatcher */
 	*(int*)(((char*)(s->ptr)) + (sizeof(int) + size)) = eyecatcher; /* end eyecatcher */
-	Log(TRACE_MAX, -1, "Allocating %d bytes in heap at file %s line %d ptr %p\n", size, file, line, s->ptr);
+	Log(TRACE_MAX, -1, "Allocating %d bytes in heap at file %s line %d ptr %p\n", (int)size, file, line, s->ptr);
 	TreeAdd(&heap, s, space);
 	state.current_size += size;
 	if (state.current_size > state.max_size)
@@ -225,7 +241,7 @@ static int Internal_heap_unlink(char* file, int line, void* p)
 	{
 		storageElement* s = (storageElement*)(e->content);
 		Log(TRACE_MAX, -1, "Freeing %d bytes in heap at file %s line %d, heap use now %d bytes\n",
-											 s->size, file, line, state.current_size);
+											 (int)s->size, file, line, state.current_size);
 		checkEyecatchers(file, line, p, s->size);
 		/* free(s->ptr); */
 		free(s->file);
@@ -247,10 +263,17 @@ static int Internal_heap_unlink(char* file, int line, void* p)
  */
 void myfree(char* file, int line, void* p)
 {
-	Thread_lock_mutex(heap_mutex);
-	if (Internal_heap_unlink(file, line, p))
-		free(((int*)p)-1);
-	Thread_unlock_mutex(heap_mutex);
+	if (p) /* it is legal und usual to call free(NULL) */
+	{
+		Thread_lock_mutex(heap_mutex);
+		if (Internal_heap_unlink(file, line, p))
+			free(((int*)p)-1);
+		Thread_unlock_mutex(heap_mutex);
+	}
+	else
+	{
+		Log(LOG_ERROR, -1, "Call of free(NULL) in %s,%d",file,line);
+	}
 }
 
 
@@ -348,12 +371,15 @@ static void HeapScan(enum LOG_LEVELS log_level)
 	Node* current = NULL;
 
 	Thread_lock_mutex(heap_mutex);
-	Log(log_level, -1, "Heap scan start, total %d bytes", state.current_size);
+	Log(log_level, -1, "Heap scan start, total %d bytes", (int)state.current_size);
 	while ((current = TreeNextElement(&heap, current)) != NULL)
 	{
 		storageElement* s = (storageElement*)(current->content);
-		Log(log_level, -1, "Heap element size %d, line %d, file %s, ptr %p", s->size, s->line, s->file, s->ptr);
-		Log(log_level, -1, "  Content %*.s", (10 > current->size) ? s->size : 10, (char*)(((int*)s->ptr) + 1));
+		Log(log_level, -1, "Heap element size %d, line %d, file %s, ptr %p", (int)s->size, s->line, s->file, s->ptr);
+		Log(log_level, -1, "  Content %.*s", (10 > current->size) ? (int)s->size : 10, (char*)(((int*)s->ptr) + 1));
+#if defined(HEAP_STACK)
+		Log(log_level, -1, "  Stack:\n%s", s->stack);
+#endif
 	}
 	Log(log_level, -1, "Heap scan end");
 	Thread_unlock_mutex(heap_mutex);
@@ -376,7 +402,7 @@ int Heap_initialize(void)
  */
 void Heap_terminate(void)
 {
-	Log(TRACE_MIN, -1, "Maximum heap use was %d bytes", state.max_size);
+	Log(TRACE_MIN, -1, "Maximum heap use was %d bytes", (int)state.max_size);
 	if (state.current_size > 20) /* One log list is freed after this function is called */
 	{
 		Log(LOG_ERROR, -1, "Some memory not freed at shutdown, possible memory leak");
@@ -479,3 +505,8 @@ int main(int argc, char *argv[])
 }
 
 #endif /* HEAP_UNIT_TESTS */
+
+/* Local Variables: */
+/* indent-tabs-mode: t */
+/* c-basic-offset: 8 */
+/* End: */

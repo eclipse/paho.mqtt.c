@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,6 +16,7 @@
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
  *    Ian Craggs - change will payload to binary
  *    Ian Craggs - password to binary
+ *    Ian Craggs - MQTT 5 support
  *******************************************************************************/
 
 #if !defined(CLIENTS_H)
@@ -31,19 +32,8 @@
 #include "MQTTClient.h"
 #include "LinkedList.h"
 #include "MQTTClientPersistence.h"
-/*BE
-include "LinkedList"
-BE*/
 
-/*BE
-def PUBLICATIONS
-{
-   n32 ptr STRING open "topic"
-   n32 ptr DATA "payload"
-   n32 dec "payloadlen"
-   n32 dec "refcount"
-}
-BE*/
+
 /**
  * Stored publication data to minimize copying
  */
@@ -56,28 +46,6 @@ typedef struct
 	int refcount;
 } Publications;
 
-/*BE
-// This should get moved to MQTTProtocol, but the includes don't quite work yet
-map MESSAGE_TYPES
-{
-   "PUBREC" 5
-   "PUBREL" .
-   "PUBCOMP" .
-}
-
-
-def MESSAGES
-{
-   n32 dec "qos"
-   n32 map bool "retain"
-   n32 dec "msgid"
-   n32 ptr PUBLICATIONS "publish"
-   n32 time "lastTouch"
-   n8 map MESSAGE_TYPES "nextMessageType"
-   n32 dec "len"
-}
-defList(MESSAGES)
-BE*/
 /**
  * Client publication message data
  */
@@ -86,22 +54,13 @@ typedef struct
 	int qos;
 	int retain;
 	int msgid;
+	int MQTTVersion;
+	MQTTProperties properties;
 	Publications *publish;
 	time_t lastTouch;		/**> used for retry and expiry */
 	char nextMessageType;	/**> PUBREC, PUBREL, PUBCOMP */
 	int len;				/**> length of the whole structure+data */
 } Messages;
-
-
-/*BE
-def WILLMESSAGES
-{
-   n32 ptr STRING open "topic"
-   n32 ptr DATA open "msg"
-   n32 dec "retained"
-   n32 dec "qos"
-}
-BE*/
 
 /**
  * Client will message data
@@ -115,40 +74,6 @@ typedef struct
 	int qos;
 } willMessages;
 
-/*BE
-map CLIENT_BITS
-{
-	"cleansession" 1 : .
-	"connected" 2 : .
-	"good" 4 : .
-	"ping_outstanding" 8 : .
-}
-def CLIENTS
-{
-	n32 ptr STRING open "clientID"
-	n32 ptr STRING open "username"
-	n32 ptr STRING open "password"
-	n32 map CLIENT_BITS "bits"
-	at 4 n8 bits 7:6 dec "connect_state"
-	at 8
-	n32 dec "socket"
-	n32 ptr "SSL"
-	n32 dec "msgID"
-	n32 dec "keepAliveInterval"
-	n32 dec "maxInflightMessages"
-	n32 ptr BRIDGECONNECTIONS "bridge_context"
-	n32 time "lastContact"
-	n32 ptr WILLMESSAGES "will"
-	n32 ptr MESSAGESList open "inboundMsgs"
-	n32 ptr MESSAGESList open "outboundMsgs"
-	n32 ptr MESSAGESList open "messageQueue"
-	n32 dec "discardedMsgs"
-}
-
-defList(CLIENTS)
-
-BE*/
-
 typedef struct
 {
 	int socket;
@@ -158,7 +83,24 @@ typedef struct
 	SSL* ssl;
 	SSL_CTX* ctx;
 #endif
+	int websocket; /**< socket has been upgraded to use web sockets */
+	char *websocket_key;
 } networkHandles;
+
+
+/* connection states */
+/** no connection in progress, see connected value */
+#define NOT_IN_PROGRESS  0x0
+/** TCP connection in progress */
+#define TCP_IN_PROGRESS  0x1
+/** SSL connection in progress */
+#define SSL_IN_PROGRESS  0x2
+/** Websocket connection in progress */
+#define WEBSOCKET_IN_PROGRESS   0x3
+/** TCP completed, waiting for MQTT ACK */
+#define WAIT_FOR_CONNACK 0x4
+/** Disconnecting */
+#define DISCONNECTING    -2
 
 /**
  * Data related to one client
@@ -169,7 +111,8 @@ typedef struct
 	const char* username;					/**< MQTT v3.1 user name */
 	int passwordlen;              /**< MQTT password length */
 	const void* password;					/**< MQTT v3.1 binary password */
-	unsigned int cleansession : 1;	/**< MQTT clean session flag */
+	unsigned int cleansession : 1;	/**< MQTT V3 clean session flag */
+	unsigned int cleanstart : 1;		/**< MQTT V5 clean start flag */
 	unsigned int connected : 1;		/**< whether it is currently connected */
 	unsigned int good : 1; 			  /**< if we have an error on the socket we turn this off */
 	unsigned int ping_outstanding : 1;
@@ -188,6 +131,7 @@ typedef struct
 	MQTTClient_persistence* persistence; /* a persistence implementation */
 	void* context; /* calling context - used when calling disconnect_internal */
 	int MQTTVersion;
+	int sessionExpiry; /**< MQTT 5 session expiry */
 #if defined(OPENSSL)
 	MQTTClient_SSLOptions *sslopts;
 	SSL_SESSION* session;    /***< SSL session pointer for fast handhake */

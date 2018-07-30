@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 IBM Corp.
+ * Copyright (c) 2012, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -60,7 +60,7 @@
 
 char* FindString(char* filename, const char* eyecatcher_input);
 int printVersionInfo(MQTTAsync_nameValue* info);
-int loadandcall(char* libname);
+int loadandcall(const char* libname);
 void printEyecatchers(char* filename);
 
 
@@ -133,16 +133,14 @@ int printVersionInfo(MQTTAsync_nameValue* info)
 
 typedef MQTTAsync_nameValue* (*func_type)(void);
 
-int loadandcall(char* libname)
+int loadandcall(const char* libname)
 {
 	int rc = 0;
 	MQTTAsync_nameValue* (*func_address)(void) = NULL;
 #if defined(WIN32) || defined(WIN64)
-	wchar_t wlibname[30];
 	HMODULE APILibrary;
 
-	mbstowcs(wlibname, libname, strlen(libname) + 1);
-	if ((APILibrary = LoadLibrary(wlibname)) == NULL)
+	if ((APILibrary = LoadLibraryA(libname)) == NULL)
 		printf("Error loading library %s, error code %d\n", libname, GetLastError());
 	else
 	{
@@ -192,7 +190,7 @@ void printEyecatchers(char* filename)
 int main(int argc, char** argv)
 {
 	printf("MQTTVersion: print the version strings of an MQTT client library\n"); 
-	printf("Copyright (c) 2012, 2015 IBM Corp.\n");
+	printf("Copyright (c) 2012, 2018 IBM Corp.\n");
 	
 	if (argc == 1)
 	{
@@ -205,6 +203,8 @@ int main(int argc, char** argv)
 		{
 #if defined(WIN32) || defined(WIN64)
 			sprintf(namebuf, "%s.dll", libraries[i]);
+#elif defined(OSX)
+			sprintf(namebuf, "lib%s.1.dylib", libraries[i]);
 #else
 			sprintf(namebuf, "lib%s.so.1", libraries[i]);
 #endif

@@ -25,6 +25,7 @@ struct pubsub_opts
 {
 	/* debug app options */
 	int publisher;  /* publisher app? */
+	int quiet;
 	int verbose;
 	int tracelevel;
 	char* delimiter;
@@ -68,8 +69,17 @@ struct pubsub_opts
 	} user_property;
 };
 
-void usage(struct pubsub_opts* opts, const char* version);
+typedef struct
+{
+	const char* name;
+	const char* value;
+} pubsub_opts_nameValue;
+
+//void usage(struct pubsub_opts* opts, const char* version, const char* program_name);
+void usage(struct pubsub_opts* opts, pubsub_opts_nameValue* name_values, const char* program_name);
 int getopts(int argc, char** argv, struct pubsub_opts* opts);
+char* readfile(int* data_len, struct pubsub_opts* opts);
+void logProperties(MQTTProperties *props);
 
 #endif
 

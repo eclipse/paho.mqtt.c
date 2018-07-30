@@ -14,12 +14,6 @@
  *    Ian Craggs - initial contribution
  *******************************************************************************/
 
- /*
-
-Synchronous API version of paho_c_pub.c
-
-*/
-
 #include "MQTTClient.h"
 #include "MQTTClientPersistence.h"
 #include "pubsub_opts.h"
@@ -47,7 +41,7 @@ void cfinish(int sig)
 
 struct pubsub_opts opts =
 {
-	1, 0, 0, "\n", 100,  	/* debug/app options */
+	1, 0, 0, 0, "\n", 100,  	/* debug/app options */
 	NULL, NULL, 1, 0, 0, /* message options */
 	MQTTVERSION_DEFAULT, NULL, "paho-cs-pub", 0, 0, NULL, NULL, "localhost", "1883", NULL, 10, /* MQTT options */
 	NULL, NULL, 0, 0, /* will options */
@@ -90,7 +84,7 @@ int myconnect(MQTTClient* client)
 			strncmp(opts.connection, "wss://", 6) == 0))
 	{
 		if (opts.insecure)
-			ssl_opts.enableServerCertAuth = 0;
+			ssl_opts.verify = 0;
 		ssl_opts.CApath = opts.capath;
 		ssl_opts.keyStore = opts.cert;
 		ssl_opts.trustStore = opts.cafile;
@@ -118,6 +112,8 @@ int myconnect(MQTTClient* client)
 
 	if (opts.verbose && rc == MQTTCLIENT_SUCCESS)
 		printf("Connected\n");
+	else if (rc != MQTTCLIENT_SUCCESS && !opts.quiet)
+		fprintf(stderr, "Connect failed with rc %d\n", rc);
 
 	return rc;
 }
@@ -132,7 +128,7 @@ int messageArrived(void* context, char* topicName, int topicLen, MQTTClient_mess
 
 void trace_callback(enum MQTTCLIENT_TRACE_LEVELS level, char* message)
 {
-	printf("Trace : %d, %s\n", level, message);
+	fprintf(stderr, "Trace : %d, %s\n", level, message);
 }
 
 
@@ -143,24 +139,18 @@ int main(int argc, char** argv)
 	char* buffer = NULL;
 	int rc = 0;
 	char* url;
-	MQTTClient_nameValue* infos = MQTTClient_getVersionInfo();
 	const char* version = NULL;
-
-	while (infos->name)
-	{
-		if (strcmp(infos->name, "Version") == 0)
-		{
-			version = infos->value;
-			break;
-		}
-		++infos;
-	}
+#if !defined(WIN32)
+    struct sigaction sa;
+#endif
+	const char* program_name = "paho_cs_pub";
+	MQTTClient_nameValue* infos = MQTTClient_getVersionInfo();
 
 	if (argc < 2)
-		usage(&opts, version);
+		usage(&opts, (pubsub_opts_nameValue*)infos, program_name);
 
 	if (getopts(argc, argv, &opts) != 0)
-		usage(&opts, version);
+		usage(&opts, (pubsub_opts_nameValue*)infos, program_name);
 
 	if (opts.connection)
 		url = opts.connection;
@@ -180,14 +170,22 @@ int main(int argc, char** argv)
 
 	rc = MQTTClient_create(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL);
 
+#if defined(WIN32)
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
+#else
+    memset(&sa, 0, sizeof(struct sigaction));
+    sa.sa_handler = cfinish;
+    sa.sa_flags = 0;
+
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+#endif
 
 	rc = MQTTClient_setCallbacks(client, NULL, NULL, messageArrived, NULL);
 
-	myconnect(client);
-
-	buffer = malloc(opts.maxdatalen);
+	if (myconnect(client) != MQTTCLIENT_SUCCESS)
+		goto exit;
 
 	if (opts.MQTTVersion >= MQTTVERSION_5)
 	{
@@ -215,19 +213,39 @@ int main(int argc, char** argv)
 		int data_len = 0;
 		int delim_len = 0;
 
-		delim_len = (int)strlen(opts.delimiter);
-		do
+		if (opts.stdin_lines)
 		{
-			buffer[data_len++] = getchar();
-			if (data_len > delim_len)
-			{
-				if (strncmp(opts.delimiter, &buffer[data_len - delim_len], delim_len) == 0)
-					break;
-			}
-		} while (data_len < opts.maxdatalen);
+			buffer = malloc(opts.maxdatalen);
 
+			delim_len = (int)strlen(opts.delimiter);
+			do
+			{
+				int c = getchar();
+
+				if (c < 0)
+					goto exit;
+				buffer[data_len++] = c;
+				if (data_len > delim_len)
+				{
+					if (strncmp(opts.delimiter, &buffer[data_len - delim_len], delim_len) == 0)
+						break;
+				}
+			} while (data_len < opts.maxdatalen);
+		}
+		else if (opts.message)
+		{
+			buffer = opts.message;
+			data_len = strlen(opts.message);
+		}
+		else if (opts.filename)
+		{
+			buffer = readfile(&data_len, &opts);
+			if (buffer == NULL)
+				goto exit;
+		}
 		if (opts.verbose)
-			printf("Publishing data of length %d\n", data_len);
+			fprintf(stderr, "Publishing data of length %d\n", data_len);
+
 		if (opts.MQTTVersion == MQTTVERSION_5)
 		{
 			MQTTResponse response = MQTTResponse_initializer;
@@ -237,6 +255,9 @@ int main(int argc, char** argv)
 		}
 		else
 			rc = MQTTClient_publish(client, opts.topic, data_len, buffer, opts.qos, opts.retained, NULL);
+		if (opts.stdin_lines == 0)
+			break;
+
 		if (rc != 0)
 		{
 			myconnect(client);
@@ -254,9 +275,9 @@ int main(int argc, char** argv)
 			MQTTClient_yield();
 	}
 
-	printf("Stopping\n");
-
-	free(buffer);
+exit:
+	if (opts.filename || opts.stdin_lines)
+		free(buffer);
 
 	if (opts.MQTTVersion == MQTTVERSION_5)
 		rc = MQTTClient_disconnect5(client, 0, SUCCESS, NULL);

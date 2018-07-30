@@ -2621,7 +2621,7 @@ MQTTClient_nameValue* MQTTClient_getVersionInfo(void)
 	int i = 0;
 
 	libinfo[i].name = "Product name";
-	libinfo[i++].value = "Paho Synchronous MQTT C Client Library";
+	libinfo[i++].value = "Eclipse Paho Synchronous MQTT C Client Library";
 
 	libinfo[i].name = "Version";
 	libinfo[i++].value = CLIENT_VERSION;

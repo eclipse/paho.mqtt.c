@@ -40,7 +40,7 @@ volatile int toStop = 0;
 
 struct pubsub_opts opts =
 {
-	1, 0, 0, "\n", 100,  	/* debug/app options */
+	1, 0, 0, 0, "\n", 100,  	/* debug/app options */
 	NULL, NULL, 1, 0, 0, /* message options */
 	MQTTVERSION_DEFAULT, NULL, "paho-c-pub", 0, 0, NULL, NULL, "localhost", "1883", NULL, 10, /* MQTT options */
 	NULL, NULL, 0, 0, /* will options */
@@ -124,6 +124,16 @@ void onConnect5(void* context, MQTTAsync_successData5* response)
 		rc = mypublish(client, 0, "");
 	else if (opts.message)
 		rc = mypublish(client, strlen(opts.message), opts.message);
+	else if (opts.filename)
+	{
+		int data_len = 0;
+		char* buffer = readfile(&data_len, &opts);
+
+		if (buffer == NULL)
+			toStop = 1;
+		else
+			rc = mypublish(client, data_len, buffer);
+	}
 
 	connected = 1;
 }
@@ -140,6 +150,16 @@ void onConnect(void* context, MQTTAsync_successData* response)
 		rc = mypublish(client, 0, "");
 	else if (opts.message)
 		rc = mypublish(client, strlen(opts.message), opts.message);
+	else if (opts.filename)
+	{
+		int data_len = 0;
+		char* buffer = readfile(&data_len, &opts);
+
+		if (buffer == NULL)
+			toStop = 1;
+		else
+			rc = mypublish(client, data_len, buffer);
+	}
 
 	connected = 1;
 }
@@ -229,7 +249,7 @@ void myconnect(MQTTAsync client)
 			strncmp(opts.connection, "wss://", 6) == 0))
 	{
 		if (opts.insecure)
-			ssl_opts.enableServerCertAuth = 0;
+			ssl_opts.verify = 0;
 		ssl_opts.CApath = opts.capath;
 		ssl_opts.keyStore = opts.cert;
 		ssl_opts.trustStore = opts.cafile;
@@ -256,7 +276,7 @@ int mypublish(MQTTAsync client, int datalen, char* data)
 		printf("Publishing data of length %d\n", datalen);
 
 	rc = MQTTAsync_send(client, opts.topic, datalen, data, opts.qos, opts.retained, &pub_opts);
-	if (opts.verbose && rc != MQTTASYNC_SUCCESS)
+	if (opts.verbose && rc != MQTTASYNC_SUCCESS && !opts.quiet)
 		fprintf(stderr, "Error from MQTTAsync_send %d\n", rc);
 
 	return rc;
@@ -277,24 +297,15 @@ int main(int argc, char** argv)
 	char* buffer = NULL;
 	char* url = NULL;
 	int rc = 0;
-	MQTTAsync_nameValue* infos = MQTTAsync_getVersionInfo();
 	const char* version = NULL;
-
-	while (infos->name)
-	{
-		if (strcmp(infos->name, "Version") == 0)
-		{
-			version = infos->value;
-			break;
-		}
-		++infos;
-	}
+	const char* program_name = "paho_c_pub";
+	MQTTAsync_nameValue* infos = MQTTAsync_getVersionInfo();
 
 	if (argc < 2)
-		usage(&opts, version);
+		usage(&opts, (pubsub_opts_nameValue*)infos, program_name);
 
 	if (getopts(argc, argv, &opts) != 0)
-		usage(&opts, version);
+		usage(&opts, (pubsub_opts_nameValue*)infos, program_name);
 
 	if (opts.connection)
 		url = opts.connection;
@@ -354,7 +365,6 @@ int main(int argc, char** argv)
 	{
 		int data_len = 0;
 		int delim_len = 0;
-		static int count = 0;
 
 		if (opts.stdin_lines)
 		{
@@ -377,9 +387,6 @@ int main(int argc, char** argv)
 			mysleep(100);
 	}
 
-	if (opts.verbose)
-		printf("Stopping\n");
-
 	if (opts.message == 0 && opts.null_message == 0 && opts.filename == 0)
 		free(buffer);
 
@@ -389,7 +396,8 @@ int main(int argc, char** argv)
 		disc_opts.onSuccess = onDisconnect;
 	if ((rc = MQTTAsync_disconnect(client, &disc_opts)) != MQTTASYNC_SUCCESS)
 	{
-		fprintf(stderr, "Failed to start disconnect, return code %d\n", rc);
+		if (!opts.quiet)
+			fprintf(stderr, "Failed to start disconnect, return code %d\n", rc);
 		exit(EXIT_FAILURE);
 	}
 

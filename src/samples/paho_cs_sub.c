@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2013 IBM Corp.
+ * Copyright (c) 2012, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,11 +16,6 @@
  *    Guilherme Maciel Ferreira - add keep alive option
  *******************************************************************************/
 
-/*
-
- stdout subscriber
-
-*/
 #include "MQTTClient.h"
 #include "MQTTClientPersistence.h"
 #include "pubsub_opts.h"
@@ -43,7 +38,7 @@ volatile int toStop = 0;
 
 struct pubsub_opts opts =
 {
-	0, 0, 0, "\n", 100,  	/* debug/app options */
+	0, 0, 0, 0, "\n", 100,  	/* debug/app options */
 	NULL, NULL, 1, 0, 0, /* message options */
 	MQTTVERSION_DEFAULT, NULL, "paho-cs-sub", 0, 0, NULL, NULL, "localhost", "1883", NULL, 10, /* MQTT options */
 	NULL, NULL, 0, 0, /* will options */
@@ -52,14 +47,73 @@ struct pubsub_opts opts =
 };
 
 
-void myconnect(MQTTClient* client, MQTTClient_connectOptions* opts)
+int myconnect(MQTTClient* client)
 {
+	MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;
+	MQTTClient_willOptions will_opts = MQTTClient_willOptions_initializer;
 	int rc = 0;
-	if ((rc = MQTTClient_connect(*client, opts)) != 0)
+
+	if (opts.verbose)
+		printf("Connecting\n");
+
+	if (opts.MQTTVersion == MQTTVERSION_5)
 	{
-		printf("Failed to connect, return code %d\n", rc);
-		exit(EXIT_FAILURE);
+		MQTTClient_connectOptions conn_opts5 = MQTTClient_connectOptions_initializer5;
+		conn_opts = conn_opts5;
 	}
+
+	conn_opts.keepAliveInterval = opts.keepalive;
+	conn_opts.username = opts.username;
+	conn_opts.password = opts.password;
+	conn_opts.MQTTVersion = opts.MQTTVersion;
+
+	if (opts.will_topic) 	/* will options */
+	{
+		will_opts.message = opts.will_payload;
+		will_opts.topicName = opts.will_topic;
+		will_opts.qos = opts.will_qos;
+		will_opts.retained = opts.will_retain;
+		conn_opts.will = &will_opts;
+	}
+
+	if (opts.connection && (strncmp(opts.connection, "ssl://", 6) == 0 ||
+			strncmp(opts.connection, "wss://", 6) == 0))
+	{
+		if (opts.insecure)
+			ssl_opts.verify = 0;
+		ssl_opts.CApath = opts.capath;
+		ssl_opts.keyStore = opts.cert;
+		ssl_opts.trustStore = opts.cafile;
+		ssl_opts.privateKey = opts.key;
+		ssl_opts.privateKeyPassword = opts.keypass;
+		ssl_opts.enabledCipherSuites = opts.ciphers;
+		conn_opts.ssl = &ssl_opts;
+	}
+
+	if (opts.MQTTVersion == MQTTVERSION_5)
+	{
+		MQTTProperties props = MQTTProperties_initializer;
+		MQTTProperties willProps = MQTTProperties_initializer;
+		MQTTResponse response = MQTTResponse_initializer;
+
+		conn_opts.cleanstart = 1;
+		response = MQTTClient_connect5(client, &conn_opts, &props, &willProps);
+		rc = response.reasonCode;
+		MQTTResponse_free(response);
+	}
+	else
+	{
+		conn_opts.cleansession = 1;
+		rc = MQTTClient_connect(client, &conn_opts);
+	}
+
+	if (opts.verbose && rc == MQTTCLIENT_SUCCESS)
+		printf("Connected\n");
+	else if (rc != MQTTCLIENT_SUCCESS && !opts.quiet)
+		fprintf(stderr, "Connect failed with rc %d\n", rc);
+
+	return rc;
 }
 
 
@@ -70,55 +124,81 @@ void cfinish(int sig)
 }
 
 
+void trace_callback(enum MQTTCLIENT_TRACE_LEVELS level, char* message)
+{
+	fprintf(stderr, "Trace : %d, %s\n", level, message);
+}
+
+
 int main(int argc, char** argv)
 {
 	MQTTClient client;
 	MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
-	char* topic = NULL;
 	int rc = 0;
-	char url[100];
-	MQTTClient_nameValue* infos = MQTTClient_getVersionInfo();
+	char* url;
 	const char* version = NULL;
-
-	while (infos->name)
-	{
-		if (strcmp(infos->name, "Version") == 0)
-		{
-			version = infos->value;
-			break;
-		}
-		++infos;
-	}
+#if !defined(WIN32)
+    struct sigaction sa;
+#endif
+	const char* program_name = "paho_cs_sub";
+	MQTTClient_nameValue* infos = MQTTClient_getVersionInfo();
 
 	if (argc < 2)
-		usage(&opts, version);
-
-	topic = argv[1];
-
-	if (strchr(topic, '#') || strchr(topic, '+'))
-		opts.verbose = 1;
-	if (opts.verbose)
-		printf("topic is %s\n", topic);
+		usage(&opts, (pubsub_opts_nameValue*)infos, program_name);
 
 	if (getopts(argc, argv, &opts) != 0)
-		usage(&opts, version);
+		usage(&opts, (pubsub_opts_nameValue*)infos, program_name);
 
-	sprintf(url, "%s:%s", opts.host, opts.port);
+	if (strchr(opts.topic, '#') || strchr(opts.topic, '+'))
+		opts.verbose = 1;
+
+	if (opts.connection)
+		url = opts.connection;
+	else
+	{
+		url = malloc(100);
+		sprintf(url, "%s:%s", opts.host, opts.port);
+	}
+	if (opts.verbose)
+		printf("URL is %s\n", url);
+
+	if (opts.tracelevel > 0)
+	{
+		MQTTClient_setTraceCallback(trace_callback);
+		MQTTClient_setTraceLevel(opts.tracelevel);
+	}
 
 	rc = MQTTClient_create(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL);
 
+#if defined(WIN32)
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
+#else
+    memset(&sa, 0, sizeof(struct sigaction));
+    sa.sa_handler = cfinish;
+    sa.sa_flags = 0;
 
-	conn_opts.keepAliveInterval = opts.keepalive;
-	conn_opts.reliable = 0;
-	conn_opts.cleansession = 1;
-	conn_opts.username = opts.username;
-	conn_opts.password = opts.password;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+#endif
 
-	myconnect(&client, &conn_opts);
+	if (myconnect(client) != MQTTCLIENT_SUCCESS)
+		goto exit;
 
-	rc = MQTTClient_subscribe(client, topic, opts.qos);
+	if (opts.MQTTVersion >= MQTTVERSION_5)
+	{
+		MQTTResponse response = MQTTClient_subscribe5(client, opts.topic, opts.qos, NULL, NULL);
+		rc = response.reasonCode;
+		MQTTResponse_free(response);
+	}
+	else
+		rc = MQTTClient_subscribe(client, opts.topic, opts.qos);
+	if (rc != MQTTCLIENT_SUCCESS)
+	{
+		if (!opts.quiet)
+			fprintf(stderr, "Error %d subscribing to topic %s\n", rc, opts.topic);
+		goto exit;
+	}
 
 	while (!toStop)
 	{
@@ -129,22 +209,28 @@ int main(int argc, char** argv)
 		rc = MQTTClient_receive(client, &topicName, &topicLen, &message, 1000);
 		if (message)
 		{
+			int delimlen = 0;
+
 			if (opts.verbose)
 				printf("%s\t", topicName);
-			if (opts.delimiter == NULL)
+			if (opts.delimiter)
+				delimlen = strlen(opts.delimiter);
+			if (opts.delimiter == NULL || (message->payloadlen > delimlen &&
+				strncmp(opts.delimiter, &message->payload[message->payloadlen - delimlen], delimlen) == 0))
 				printf("%.*s", message->payloadlen, (char*)message->payload);
 			else
 				printf("%.*s%s", message->payloadlen, (char*)message->payload, opts.delimiter);
+			if (message->struct_version == 1 && opts.verbose)
+				logProperties(&message->properties);
 			fflush(stdout);
 			MQTTClient_freeMessage(&message);
 			MQTTClient_free(topicName);
 		}
 		if (rc != 0)
-			myconnect(&client, &conn_opts);
+			myconnect(&client);
 	}
 
-	printf("Stopping\n");
-
+exit:
 	MQTTClient_disconnect(client, 0);
 
 	MQTTClient_destroy(&client);

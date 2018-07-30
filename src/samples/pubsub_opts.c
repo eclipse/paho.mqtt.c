@@ -14,34 +14,109 @@
  *    Ian Craggs - initial contribution
  *******************************************************************************/
 
-#include "MQTTAsync.h"
-#include "MQTTClientPersistence.h"
 #include "pubsub_opts.h"
 
 #include <string.h>
 #include <stdlib.h>
 
 
-void usage(struct pubsub_opts* opts, const char* version)
+int printVersionInfo(pubsub_opts_nameValue* info)
+{
+	int rc = 0;
+
+	printf("\nLibrary information:\n");
+	while (info->name)
+	{
+		printf("%s: %s\n", info->name, info->value);
+		info++;
+		rc = 1;  /* at least one value printed */
+	}
+	if (rc == 1)
+		printf("\n");
+	return rc;
+}
+
+
+void usage(struct pubsub_opts* opts, pubsub_opts_nameValue* name_values, const char* program_name)
 {
 	printf("Eclipse Paho MQTT C %s\n", opts->publisher ? "publisher" : "subscriber");
-	printf("Eclipse Paho C library version %s\n", version);
+	printVersionInfo(name_values);
 
-	printf("Usage: paho_c_pub <topicname> <options>, where options are:\n"
-	"  -t (--topic) MQTT topic to publish to\n"
-	"  -h (--host) host to connect to (default is %s)\n"
-	"  -p (--port) network port to connect to (default is %s)\n"
-	"  -c (--connection) connection string, overrides host/port e.g wss://hostname:port/ws\n"
-	"  -q (--qos) MQTT QoS to publish on (0, 1 or 2) (default is %d)\n"
-	"  -r (--retained) use MQTT retain option? (default is %s)\n"
-	"  -i (--clientid) <clientid> (default is %s)\n"
-	"  -u (--username) MQTT username (default is none)\n"
-	"  -P (--password) MQTT password (default is none)\n"
-	"  -k (--keepalive) MQTT keepalive timeout value (default is %d seconds)\n"
-	"  --delimiter <delim> (default is \\n)\n"
-	"  --maxdatalen <bytes> (default is %d)\n",
-	opts->host, opts->port, opts->qos, opts->retained ? "on" : "off",
-			opts->clientid, opts->maxdatalen, opts->keepalive);
+	printf("Usage: %s [topicname] [-t topic] [-c connection] [-h host] [-p port]\n"
+		   "       [-q qos] [-i clientid] [-u username] [-P password] [-k keepalive_timeout]\n"
+			, program_name);
+	printf("       [-V MQTT-version] [--quiet] [--trace trace-level]\n");
+	if (opts->publisher)
+	{
+		printf("       [-r] [-n] [-m message] [-f filename]\n");
+		printf("       [--maxdatalen len] [--message-expiry seconds] [--user-property name value]\n");
+	}
+	else
+		printf("       [-R] [--no-delimiter]\n");
+	printf("       [--will-topic topic] [--will-payload message] [--will-qos qos] [--will-retain]\n");
+	printf("       [--cafile filename] [--capath dirname] [--cert filename] [--key filename]\n"
+		   "       [--keypass string] [--ciphers string] [--insecure]");
+
+	printf(
+	"\n\n  -t (--topic)        : MQTT topic to %s to\n"
+	"  -c (--connection)   : connection string, overrides host/port e.g wss://hostname:port/ws.  Use this option\n"
+	"                        rather than host/port to connect with TLS and/or web sockets. No default.\n"
+	"  -h (--host)         : host to connect to.  Default is %s.\n"
+	"  -p (--port)         : network port to connect to. Default is %s.\n"
+	"  -q (--qos)          : MQTT QoS to publish on (0, 1 or 2). Default is %d.\n"
+	"  -V                  : MQTT version (31, 311, or 5).  Default is 311.\n"
+	"  --quiet             : do not print error messages.\n"
+	"  --trace             : print internal trace (\"error\", \"min\", \"max\" or \"protocol\").\n",
+	opts->publisher ? "publish" : "subscribe", opts->host, opts->port, opts->qos);
+
+	if (opts->publisher)
+	{
+		printf("  -r (--retained)   : use MQTT retain option.  Default is off.\n");
+		printf("  -n (--null-message) : send 0-length message.\n");
+		printf("  -m (--message)    : the payload to send.\n");
+		printf("  -f (--filename)   : use the contents of the named file as the payload.\n");
+	}
+
+	printf(
+	"  -i (--clientid)     : MQTT client id. Default is %s.\n"
+	"  -u (--username)     : MQTT username. No default.\n"
+	"  -P (--password)     : MQTT password. No default.\n"
+	"  -k (--keepalive)    : MQTT keepalive timeout value. Default is %d seconds.\n"
+	"  --delimiter         : delimiter string.  Default is \\n.\n",
+	opts->clientid,  opts->keepalive);
+
+	if (opts->publisher)
+	{
+		printf("  --maxdatalen        : maximum length of data to read when publishing strings (default is %d)\n",
+				opts->maxdatalen);
+		printf("  --message-expiry    : MQTT 5 only.  Sets the message expiry property in seconds.\n");
+		printf("  --user-property     : MQTT 5 only.  Sets a user property.\n");
+	}
+	else
+	{
+		printf("  --nodelimiter       : do not use a delimiter string between messages.\n");
+		printf("  -R (--no-retained)  : do not print retained messages.\n");
+	}
+
+	printf(
+	"  --will-topic        : will topic on connect.  No default.\n"
+	"  --will-payload      : will message.  If the will topic is set, but not payload, a null message will be set.\n"
+	"  --will-retain       : set the retained flag on the will message.  The default is off.\n"
+	"  --will-qos          : the will message QoS.  The default is 0.\n"
+	);
+
+	printf(
+	"  --cafile            : a filename for the TLS truststore.\n"
+	"  --capath            : a directory name containing TLS trusted server certificates.\n"
+	"  --cert              : a filename for the TLS keystore containing client certificates.\n"
+	"  --key               : client private key file.\n"
+	"  --keypass           : password for the client private key file.\n"
+	"  --ciphers           : the list of cipher suites that the client will present to the server during\n"
+	"                        the TLS handshake.\n"
+	"  --insecure          : don't check that the server certificate common name matches the hostname.\n"
+	);
+
+	printf("\nSee http://eclipse.org/paho for more information about the Eclipse Paho project.\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -61,6 +136,8 @@ int getopts(int argc, char** argv, struct pubsub_opts* opts)
 	{
 		if (strcmp(argv[count], "--verbose") == 0 || strcmp(argv[count], "-v") == 0)
 			opts->verbose = 1;
+		else if (strcmp(argv[count], "--quiet") == 0)
+			opts->quiet = 1;
 		else if (strcmp(argv[count], "--qos") == 0 || strcmp(argv[count], "-q") == 0)
 		{
 			if (++count < argc)
@@ -133,6 +210,8 @@ int getopts(int argc, char** argv, struct pubsub_opts* opts)
 			else
 				return 1;
 		}
+		else if (strcmp(argv[count], "--nodelimiter") == 0)
+			opts->delimiter = NULL;
 		else if (strcmp(argv[count], "--keepalive") == 0 || strcmp(argv[count], "-k") == 0)
 		{
 			if (++count < argc)
@@ -260,7 +339,7 @@ int getopts(int argc, char** argv, struct pubsub_opts* opts)
 		}
 		else if (opts->publisher == 0)
 		{
-			if (strcmp(argv[count], "--no-print-retained") == 0 || strcmp(argv[count], "-R") == 0)
+			if (strcmp(argv[count], "--no-retained") == 0 || strcmp(argv[count], "-R") == 0)
 				opts->retained = 1;
 			else
 			{
@@ -304,7 +383,7 @@ int getopts(int argc, char** argv, struct pubsub_opts* opts)
 				if (++count < argc)
 				{
 					opts->stdin_lines = 0;
-					opts->message = argv[count];
+					opts->filename = argv[count];
 				}
 				else
 					return 1;
@@ -333,4 +412,76 @@ int getopts(int argc, char** argv, struct pubsub_opts* opts)
 		return 1;
 
 	return 0;
+}
+
+
+char* readfile(int* data_len, struct pubsub_opts* opts)
+{
+	char* buffer = NULL;
+	long filesize = 0L;
+	FILE* infile = fopen(opts->filename, "rb");
+
+	if (infile == NULL)
+	{
+		fprintf(stderr, "Can't open file %s\n", opts->filename);
+		return NULL;
+	}
+	fseek(infile, 0, SEEK_END);
+	filesize = ftell(infile);
+	rewind(infile);
+
+	buffer = malloc(sizeof(char)*filesize);
+	if (buffer == NULL)
+	{
+		fprintf(stderr, "Can't allocate buffer to read file %s\n", opts->filename);
+		return NULL;
+	}
+	*data_len = fread(buffer, 1, filesize, infile);
+	if (*data_len != filesize)
+	{
+		fprintf(stderr, "%d bytes read of %ld expected for file %s\n", *data_len, filesize, opts->filename);
+		return NULL;
+	}
+
+	fclose(infile);
+	return buffer;
+}
+
+
+void logProperties(MQTTProperties *props)
+{
+	int i = 0;
+
+	for (i = 0; i < props->count; ++i)
+	{
+		int id = props->array[i].identifier;
+		const char* name = MQTTPropertyName(id);
+		char* intformat = "Property name %s value %d\n";
+
+		switch (MQTTProperty_getType(id))
+		{
+		case PROPERTY_TYPE_BYTE:
+		  printf(intformat, name, props->array[i].value.byte);
+		  break;
+		case TWO_BYTE_INTEGER:
+		  printf(intformat, name, props->array[i].value.integer2);
+		  break;
+		case FOUR_BYTE_INTEGER:
+		  printf(intformat, name, props->array[i].value.integer4);
+		  break;
+		case VARIABLE_BYTE_INTEGER:
+		  printf(intformat, name, props->array[i].value.integer4);
+		  break;
+		case BINARY_DATA:
+		case UTF_8_ENCODED_STRING:
+		  printf("Property name %s value len %.*s\n", name,
+				  props->array[i].value.data.len, props->array[i].value.data.data);
+		  break;
+		case UTF_8_STRING_PAIR:
+		  printf("Property name %s key %.*s value %.*s\n", name,
+			  props->array[i].value.data.len, props->array[i].value.data.data,
+		  	  props->array[i].value.value.len, props->array[i].value.value.data);
+		  break;
+		}
+	}
 }

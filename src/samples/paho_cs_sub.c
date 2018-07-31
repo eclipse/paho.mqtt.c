@@ -209,14 +209,14 @@ int main(int argc, char** argv)
 		rc = MQTTClient_receive(client, &topicName, &topicLen, &message, 1000);
 		if (message)
 		{
-			int delimlen = 0;
+			size_t delimlen = 0;
 
 			if (opts.verbose)
 				printf("%s\t", topicName);
 			if (opts.delimiter)
 				delimlen = strlen(opts.delimiter);
 			if (opts.delimiter == NULL || (message->payloadlen > delimlen &&
-				strncmp(opts.delimiter, &message->payload[message->payloadlen - delimlen], delimlen) == 0))
+				strncmp(opts.delimiter, &((char*)message->payload)[message->payloadlen - delimlen], delimlen) == 0))
 				printf("%.*s", message->payloadlen, (char*)message->payload);
 			else
 				printf("%.*s%s", message->payloadlen, (char*)message->payload, opts.delimiter);

@@ -63,11 +63,12 @@ void usage(struct pubsub_opts* opts, pubsub_opts_nameValue* name_values, const c
 	"                        rather than host/port to connect with TLS and/or web sockets. No default.\n"
 	"  -h (--host)         : host to connect to.  Default is %s.\n"
 	"  -p (--port)         : network port to connect to. Default is %s.\n"
-	"  -q (--qos)          : MQTT QoS to publish on (0, 1 or 2). Default is %d.\n"
-	"  -V                  : MQTT version (31, 311, or 5).  Default is 311.\n"
+	"  -q (--qos)          : MQTT QoS to %s with (0, 1 or 2). Default is %d.\n"
+	"  -V (--MQTTversion)  : MQTT version (31, 311, or 5).  Default is 311.\n"
 	"  --quiet             : do not print error messages.\n"
 	"  --trace             : print internal trace (\"error\", \"min\", \"max\" or \"protocol\").\n",
-	opts->publisher ? "publish" : "subscribe", opts->host, opts->port, opts->qos);
+			opts->publisher ? "publish" : "subscribe", opts->host, opts->port,
+			opts->publisher ? "publish" : "subscribe", opts->qos);
 
 	if (opts->publisher)
 	{
@@ -94,7 +95,7 @@ void usage(struct pubsub_opts* opts, pubsub_opts_nameValue* name_values, const c
 	}
 	else
 	{
-		printf("  --nodelimiter       : do not use a delimiter string between messages.\n");
+		printf("  --no-delimiter      : do not use a delimiter string between messages.\n");
 		printf("  -R (--no-retained)  : do not print retained messages.\n");
 	}
 
@@ -210,7 +211,7 @@ int getopts(int argc, char** argv, struct pubsub_opts* opts)
 			else
 				return 1;
 		}
-		else if (strcmp(argv[count], "--nodelimiter") == 0)
+		else if (strcmp(argv[count], "--no-delimiter") == 0)
 			opts->delimiter = NULL;
 		else if (strcmp(argv[count], "--keepalive") == 0 || strcmp(argv[count], "-k") == 0)
 		{

@@ -109,7 +109,7 @@ int myconnect(MQTTClient* client)
 	}
 
 	if (opts.verbose && rc == MQTTCLIENT_SUCCESS)
-		printf("Connected\n");
+		fprintf(stderr, "Connected\n");
 	else if (rc != MQTTCLIENT_SUCCESS && !opts.quiet)
 		fprintf(stderr, "Connect failed with rc %d\n", rc);
 

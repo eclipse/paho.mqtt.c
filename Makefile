@@ -73,6 +73,11 @@ endif
 bindir = $(exec_prefix)/bin
 includedir = $(prefix)/include
 libdir = $(exec_prefix)/lib
+datarootdir = $(prefix)/share
+mandir = $(datarootdir)/man
+man1dir = $(mandir)/man1
+man2dir = $(mandir)/man2
+man3dir = $(mandir)/man3
 
 SOURCE_FILES = $(wildcard $(srcdir)/*.c)
 SOURCE_FILES_C = $(filter-out $(srcdir)/MQTTAsync.c $(srcdir)/MQTTVersion.c $(srcdir)/SSLSocket.c, $(SOURCE_FILES))
@@ -127,11 +132,25 @@ MAJOR_VERSION = 1
 MINOR_VERSION = 0
 VERSION = ${MAJOR_VERSION}.${MINOR_VERSION}
 
-MQTTLIB_C_TARGET = ${blddir}/lib${MQTTLIB_C}.so.${VERSION}
-MQTTLIB_CS_TARGET = ${blddir}/lib${MQTTLIB_CS}.so.${VERSION}
-MQTTLIB_A_TARGET = ${blddir}/lib${MQTTLIB_A}.so.${VERSION}
-MQTTLIB_AS_TARGET = ${blddir}/lib${MQTTLIB_AS}.so.${VERSION}
-MQTTVERSION_TARGET = ${blddir}/MQTTVersion
+MQTTLIB_C_NAME = lib${MQTTLIB_C}.so.${VERSION}
+MQTTLIB_CS_NAME = lib${MQTTLIB_CS}.so.${VERSION}
+MQTTLIB_A_NAME = lib${MQTTLIB_A}.so.${VERSION}
+MQTTLIB_AS_NAME = lib${MQTTLIB_AS}.so.${VERSION}
+MQTTVERSION_NAME = paho_c_version
+PAHO_C_PUB_NAME = paho_c_pub
+PAHO_C_SUB_NAME = paho_c_sub
+PAHO_CS_PUB_NAME = paho_cs_pub
+PAHO_CS_SUB_NAME = paho_cs_sub
+
+MQTTLIB_C_TARGET = ${blddir}/${MQTTLIB_C_NAME}
+MQTTLIB_CS_TARGET = ${blddir}/${MQTTLIB_CS_NAME}
+MQTTLIB_A_TARGET = ${blddir}/${MQTTLIB_A_NAME}
+MQTTLIB_AS_TARGET = ${blddir}/${MQTTLIB_AS_NAME}
+MQTTVERSION_TARGET = ${blddir}/${MQTTVERSION_NAME}
+PAHO_C_PUB_TARGET = ${blddir}/samples/${PAHO_C_PUB_NAME}
+PAHO_C_SUB_TARGET = ${blddir}/samples/${PAHO_C_SUB_NAME}
+PAHO_CS_PUB_TARGET = ${blddir}/samples/${PAHO_CS_PUB_NAME}
+PAHO_CS_SUB_TARGET = ${blddir}/samples/${PAHO_CS_SUB_NAME}
 
 CCFLAGS_SO = -g -fPIC $(CFLAGS) -Os -Wall -fvisibility=hidden -I$(blddir_work) -fpermissive
 FLAGS_EXE = $(LDFLAGS) -I ${srcdir} -lpthread -L ${blddir}
@@ -257,32 +276,66 @@ install: build
 	$(INSTALL_DATA) ${INSTALL_OPTS} ${MQTTLIB_A_TARGET} $(DESTDIR)${libdir}
 	$(INSTALL_DATA) ${INSTALL_OPTS} ${MQTTLIB_AS_TARGET} $(DESTDIR)${libdir}
 	$(INSTALL_PROGRAM) ${INSTALL_OPTS} ${MQTTVERSION_TARGET} $(DESTDIR)${bindir}
+	$(INSTALL_PROGRAM) ${INSTALL_OPTS} ${PAHO_C_PUB_TARGET} $(DESTDIR)${bindir}
+	$(INSTALL_PROGRAM) ${INSTALL_OPTS} ${PAHO_C_SUB_TARGET} $(DESTDIR)${bindir}
+	$(INSTALL_PROGRAM) ${INSTALL_OPTS} ${PAHO_CS_PUB_TARGET} $(DESTDIR)${bindir}
+	$(INSTALL_PROGRAM) ${INSTALL_OPTS} ${PAHO_CS_SUB_TARGET} $(DESTDIR)${bindir}
 	$(LDCONFIG) $(DESTDIR)${libdir}
 	ln -s lib$(MQTTLIB_C).so.${MAJOR_VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_C).so
 	ln -s lib$(MQTTLIB_CS).so.${MAJOR_VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_CS).so
 	ln -s lib$(MQTTLIB_A).so.${MAJOR_VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so
 	ln -s lib$(MQTTLIB_AS).so.${MAJOR_VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_AS).so
+	@if test ! -f $(DESTDIR)${blddir}/lib$(MQTTLIB_C).so.${MAJOR_VERSION}; then ln -s lib$(MQTTLIB_C).so.${VERSION} $(DESTDIR)${blddir}/lib$(MQTTLIB_C).so.${MAJOR_VERSION}; fi
+	@if test ! -f $(DESTDIR)${libdir}/lib$(MQTTLIB_CS).so.${MAJOR_VERSION}; then ln -s lib$(MQTTLIB_CS).so.${VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_CS).so.${MAJOR_VERSION}; fi
+	@if test ! -f $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so.${MAJOR_VERSION}; then ln -s lib$(MQTTLIB_A).so.${VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so.${MAJOR_VERSION}; fi
+	@if test ! -f $(DESTDIR)${libdir}/lib$(MQTTLIB_AS).so.${MAJOR_VERSION}; then ln -s lib$(MQTTLIB_AS).so.${VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_AS).so.${MAJOR_VERSION}; fi
 	$(INSTALL_DATA) ${srcdir}/MQTTAsync.h $(DESTDIR)${includedir}
 	$(INSTALL_DATA) ${srcdir}/MQTTClient.h $(DESTDIR)${includedir}
 	$(INSTALL_DATA) ${srcdir}/MQTTClientPersistence.h $(DESTDIR)${includedir}
 	$(INSTALL_DATA) ${srcdir}/MQTTProperties.h $(DESTDIR)${includedir}
 	$(INSTALL_DATA) ${srcdir}/MQTTReasonCodes.h $(DESTDIR)${includedir}
-	$(INSTALL_DATA) ${srcdir}/MQTTSubscribeOpts.h $(DESTDIR)${includedir}
-
+	$(INSTALL_DATA) ${srcdir}/MQTTSubscribeOpts.h $(DESTDIR)${includedir}	
+	- $(INSTALL_DATA) doc/man/man1/paho_c_pub.1 $(DESTDIR)${man1dir}
+	- $(INSTALL_DATA) doc/man/man1/paho_c_sub.1 $(DESTDIR)${man1dir}
+	- $(INSTALL_DATA) doc/man/man1/paho_cs_pub.1 $(DESTDIR)${man1dir}
+	- $(INSTALL_DATA) doc/man/man1/paho_cs_sub.1 $(DESTDIR)${man1dir}
+	
+	- $(INSTALL_DATA) ${blddir}/doc/MQTTClient/man/man3/MQTTClient.h.3 $(DESTDIR)${man3dir}
+	- $(INSTALL_DATA) ${blddir}/doc/MQTTAsync/man/man3/MQTTAsync.h.3 $(DESTDIR)${man3dir}
+	
 uninstall:
-	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_C).so.${VERSION}
-	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_CS).so.${VERSION}
-	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so.${VERSION}
-	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_AS).so.${VERSION}
-	rm $(DESTDIR)${bindir}/MQTTVersion
+	- rm $(DESTDIR)${libdir}/${MQTTLIB_C_NAME} 
+	- rm $(DESTDIR)${libdir}/${MQTTLIB_CS_NAME} 
+	- rm $(DESTDIR)${libdir}/${MQTTLIB_A_NAME} 
+	- rm $(DESTDIR)${libdir}/${MQTTLIB_AS_NAME} 
+	- rm $(DESTDIR)${bindir}/${MQTTVERSION_NAME} 
+	- rm $(DESTDIR)${bindir}/${PAHO_C_PUB_NAME} 
+	- rm $(DESTDIR)${bindir}/${PAHO_C_SUB_NAME} 
+	- rm $(DESTDIR)${bindir}/${PAHO_CS_PUB_NAME} 
+	- rm $(DESTDIR)${bindir}/${PAHO_CS_SUB_NAME} 
 	$(LDCONFIG) $(DESTDIR)${libdir}
-	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_C).so
-	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_CS).so
-	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so
-	rm $(DESTDIR)${libdir}/lib$(MQTTLIB_AS).so
-	rm $(DESTDIR)${includedir}/MQTTAsync.h
-	rm $(DESTDIR)${includedir}/MQTTClient.h
-	rm $(DESTDIR)${includedir}/MQTTClientPersistence.h
+	- rm $(DESTDIR)${libdir}/lib$(MQTTLIB_C).so
+	- rm $(DESTDIR)${libdir}/lib$(MQTTLIB_CS).so
+	- rm $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so
+	- rm $(DESTDIR)${libdir}/lib$(MQTTLIB_AS).so
+	- rm $(DESTDIR)${blddir}/lib$(MQTTLIB_C).so.${MAJOR_VERSION}
+	- rm $(DESTDIR)${libdir}/lib$(MQTTLIB_CS).so.${MAJOR_VERSION}
+	- rm $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so.${MAJOR_VERSION}
+	- rm $(DESTDIR)${libdir}/lib$(MQTTLIB_AS).so.${MAJOR_VERSION}
+	- rm $(DESTDIR)${includedir}/MQTTAsync.h
+	- rm $(DESTDIR)${includedir}/MQTTClient.h
+	- rm $(DESTDIR)${includedir}/MQTTClientPersistence.h
+	- rm $(DESTDIR)${includedir}/MQTTProperties.h
+	- rm $(DESTDIR)${includedir}/MQTTReasonCodes.h
+	- rm $(DESTDIR)${includedir}/MQTTSubscribeOpts.h
+	
+	- rm $(DESTDIR)${man1dir}/paho_c_pub.1
+	- rm $(DESTDIR)${man1dir}/paho_c_sub.1
+	- rm $(DESTDIR)${man1dir}/paho_cs_pub.1
+	- rm $(DESTDIR)${man1dir}/paho_cs_sub.1
+	
+	- rm $(DESTDIR)${man3dir}/MQTTClient.h.3
+	- rm $(DESTDIR)${man3dir}/MQTTAsync.h.3
 
 REGEX_DOXYGEN := \
     's;@PROJECT_SOURCE_DIR@/src/\?;;' \

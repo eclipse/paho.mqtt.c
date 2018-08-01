@@ -487,7 +487,7 @@ int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQT
 
 	if (client->MQTTVersion >= 5)
 	{
-		if (props || reason != SUCCESS)
+		if (props || reason != MQTTREASONCODE_SUCCESS)
 		{
 			size_t buflen = 1 + ((props == NULL) ? 0 : MQTTProperties_len(props));
 			char *buf = malloc(buflen), *ptr = NULL;
@@ -746,7 +746,7 @@ void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t 
 	{
 		MQTTProperties props = MQTTProperties_initializer;
 
-		pack->rc = SUCCESS;
+		pack->rc = MQTTREASONCODE_SUCCESS;
 		pack->properties = props;
 
 		if (datalen > 2)

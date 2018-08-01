@@ -266,24 +266,24 @@ void logProperties(MQTTProperties *props)
 
 		switch (MQTTProperty_getType(id))
 		{
-		case PROPERTY_TYPE_BYTE:
+		case MQTTPROPERTY_TYPE_BYTE:
 		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.byte);
 		  break;
-		case TWO_BYTE_INTEGER:
+		case MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER:
 		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer2);
 		  break;
-		case FOUR_BYTE_INTEGER:
+		case MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER:
 		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer4);
 		  break;
-		case VARIABLE_BYTE_INTEGER:
+		case MQTTPROPERTY_TYPE_VARIABLE_BYTE_INTEGER:
 		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer4);
 		  break;
-		case BINARY_DATA:
-		case UTF_8_ENCODED_STRING:
+		case MQTTPROPERTY_TYPE_BINARY_DATA:
+		case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
 		  MyLog(LOGA_INFO, "Property name %s value len %.*s", name,
 				  props->array[i].value.data.len, props->array[i].value.data.data);
 		  break;
-		case UTF_8_STRING_PAIR:
+		case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
 		  MyLog(LOGA_INFO, "Property name %s key %.*s value %.*s", name,
 			  props->array[i].value.data.len, props->array[i].value.data.data,
 		  	  props->array[i].value.value.len, props->array[i].value.value.data);
@@ -321,9 +321,9 @@ void test1_onUnsubscribe(void* context, MQTTAsync_successData5* response)
 
 	opts.onSuccess = test1_onDisconnect;
 	opts.context = c;
-	opts.reasonCode = UNSPECIFIED_ERROR;
+	opts.reasonCode = MQTTREASONCODE_UNSPECIFIED_ERROR;
 
-	property.identifier = SESSION_EXPIRY_INTERVAL;
+	property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 	property.value.integer4 = 0;
 	MQTTProperties_add(&opts.properties, &property);
 
@@ -357,7 +357,7 @@ int test1_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 		MQTTProperty property;
 		MQTTProperties props = MQTTProperties_initializer;
 
-		property.identifier = USER_PROPERTY;
+		property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 		property.value.data.data = "test user property";
 		property.value.data.len = strlen(property.value.data.data);
 		property.value.value.data = "test user property value";
@@ -379,7 +379,7 @@ int test1_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 		MQTTProperties props = MQTTProperties_initializer;
 		MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 
-		property.identifier = USER_PROPERTY;
+		property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 		property.value.data.data = "test user property";
 		property.value.data.len = strlen(property.value.data.data);
 		property.value.value.data = "test user property value";
@@ -410,13 +410,13 @@ void test1_onSubscribe(void* context, MQTTAsync_successData5* response)
 	MQTTAsync_callOptions opts = MQTTAsync_callOptions_initializer;
 
 	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback %p granted qos %d", c, response->reasonCode);
-	assert("Subscribe response should be 2", response->reasonCode == GRANTED_QOS_2,
+	assert("Subscribe response should be 2", response->reasonCode == MQTTREASONCODE_GRANTED_QOS_2,
 			"response was %d", response->reasonCode);
 
 	MyLog(LOGA_INFO, "Suback properties:");
 	logProperties(&response->properties);
 
-	property.identifier = USER_PROPERTY;
+	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "test user property";
 	property.value.data.len = strlen(property.value.data.data);
 	property.value.value.data = "test user property value";
@@ -444,7 +444,7 @@ void test1_onConnect(void* context, MQTTAsync_successData5* response)
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
 
-	assert("Reason code should be 0", response->reasonCode == SUCCESS,
+	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
 	MyLog(LOGA_INFO, "Connack properties:");
@@ -453,12 +453,12 @@ void test1_onConnect(void* context, MQTTAsync_successData5* response)
 	opts.onSuccess5 = test1_onSubscribe;
 	opts.context = c;
 
-	property.identifier = SUBSCRIPTION_IDENTIFIER;
+	property.identifier = MQTTPROPERTY_CODE_SUBSCRIPTION_IDENTIFIER;
 	property.value.integer4 = 33;
 	MQTTProperties_add(&props, &property);
 	opts.properties = props;
 
-	opts.subscribe_options.retainAsPublished = 1;
+	opts.subscribeOptions.retainAsPublished = 1;
 
 	rc = MQTTAsync_subscribe(c, test_topic, 2, &opts);
 	assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -516,11 +516,11 @@ int test1(struct Options options)
 	opts.onFailure5 = NULL;
 	opts.context = c;
 
-	property.identifier = SESSION_EXPIRY_INTERVAL;
+	property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 	property.value.integer4 = 30;
 	MQTTProperties_add(&props, &property);
 
-	property.identifier = USER_PROPERTY;
+	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "test user property";
 	property.value.data.len = strlen(property.value.data.data);
 	property.value.value.data = "test user property value";
@@ -928,7 +928,7 @@ int test4_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 		opts.onSuccess5 = test1_onUnsubscribe;
 		opts.context = c;
 
-		property.identifier = USER_PROPERTY;
+		property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 		property.value.data.data = "test user property";
 		property.value.data.len = strlen(property.value.data.data);
 		property.value.value.data = "test user property value";
@@ -983,7 +983,7 @@ void test4_onConnect(void* context, MQTTAsync_successData5* response)
 	MQTTAsync_callOptions opts = MQTTAsync_callOptions_initializer;
 	int rc;
 
-	test4_packet_size = MQTTProperties_getNumericValue(&response->properties, MAXIMUM_PACKET_SIZE);
+	test4_packet_size = MQTTProperties_getNumericValue(&response->properties, MQTTPROPERTY_CODE_MAXIMUM_PACKET_SIZE);
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
 	opts.onSuccess5 = test4_onSubscribe;
@@ -1421,7 +1421,7 @@ int test7(struct Options options)
 	MyLog(LOGA_DEBUG, "Connecting");
 	opts.cleanstart = 1;
 	opts.connectProperties = &props;
-	property.identifier = SESSION_EXPIRY_INTERVAL;
+	property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 	property.value.integer4 = 999999;
 	MQTTProperties_add(opts.connectProperties, &property);
 	opts.onSuccess5 = test7_onConnect;
@@ -1746,7 +1746,7 @@ int test8(struct Options options)
 	MyLog(LOGA_DEBUG, "Connecting");
 	opts.onSuccess5 = test8_onConnect;
 
-	property.identifier = SESSION_EXPIRY_INTERVAL;
+	property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 	property.value.integer4 = 30;
 	MQTTProperties_add(&props, &property);
 

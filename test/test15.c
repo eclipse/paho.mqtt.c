@@ -302,7 +302,7 @@ void test1_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 	pubmsg.qos = qos;
 	pubmsg.retained = 0;
 
-	property.identifier = USER_PROPERTY;
+	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "test user property";
 	property.value.data.len = strlen(property.value.data.data);
 	property.value.value.data = "test user property value";
@@ -368,24 +368,24 @@ void logProperties(MQTTProperties *props)
 
 		switch (MQTTProperty_getType(id))
 		{
-		case PROPERTY_TYPE_BYTE:
+		case MQTTPROPERTY_TYPE_BYTE:
 		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.byte);
 		  break;
-		case TWO_BYTE_INTEGER:
+		case MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER:
 		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer2);
 		  break;
-		case FOUR_BYTE_INTEGER:
+		case MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER:
 		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer4);
 		  break;
-		case VARIABLE_BYTE_INTEGER:
+		case MQTTPROPERTY_TYPE_VARIABLE_BYTE_INTEGER:
 		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer4);
 		  break;
-		case BINARY_DATA:
-		case UTF_8_ENCODED_STRING:
+		case MQTTPROPERTY_TYPE_BINARY_DATA:
+		case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
 		  MyLog(LOGA_INFO, "Property name %s value %.*s", name,
 				  props->array[i].value.data.len, props->array[i].value.data.data);
 		  break;
-		case UTF_8_STRING_PAIR:
+		case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
 		  MyLog(LOGA_INFO, "Property name %s key %.*s value %.*s", name,
 			  props->array[i].value.data.len, props->array[i].value.data.data,
 		  	  props->array[i].value.value.len, props->array[i].value.value.data);
@@ -441,11 +441,11 @@ int test1(struct Options options)
 	opts.will->topicName = "will topic";
 	opts.will = NULL;
 
-	property.identifier = SESSION_EXPIRY_INTERVAL;
+	property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 	property.value.integer4 = 30;
 	MQTTProperties_add(&props, &property);
 
-	property.identifier = USER_PROPERTY;
+	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "test user property";
 	property.value.data.len = strlen(property.value.data.data);
 	property.value.value.data = "test user property value";
@@ -467,7 +467,7 @@ int test1(struct Options options)
 	}
 
 	subopts.retainAsPublished = 1;
-	property.identifier = SUBSCRIPTION_IDENTIFIER;
+	property.identifier = MQTTPROPERTY_CODE_SUBSCRIPTION_IDENTIFIER;
 	property.value.integer4 = 33;
 	MQTTProperties_add(&props, &property);
 	response = MQTTClient_subscribe5(c, test_topic, subsqos, &subopts, &props);
@@ -487,7 +487,7 @@ int test1(struct Options options)
 	MyLog(LOGA_DEBUG, "Stopping\n");
 
 	MQTTProperties_free(&props);
-	property.identifier = USER_PROPERTY;
+	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "User property name";
 	property.value.data.len = strlen(property.value.data.data);
 	property.value.value.data = "User property value";
@@ -499,18 +499,18 @@ int test1(struct Options options)
 	MQTTResponse_free(response);
 
 	MQTTProperties_free(&props);
-	property.identifier = SESSION_EXPIRY_INTERVAL;
+	property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 	property.value.integer4 = 0;
 	MQTTProperties_add(&props, &property);
 
-	rc = MQTTClient_disconnect5(c, 0, SUCCESS, &props);
+	rc = MQTTClient_disconnect5(c, 0, MQTTREASONCODE_SUCCESS, &props);
 	assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
 	/* Just to make sure we can connect again */
 	response = MQTTClient_connect5(c, &opts, NULL, NULL);
 	assert("Connect successful",  response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
 	MQTTResponse_free(response);
-	rc = MQTTClient_disconnect5(c, 0, SUCCESS, &props);
+	rc = MQTTClient_disconnect5(c, 0, MQTTREASONCODE_SUCCESS, &props);
 	assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
 	MQTTProperties_free(&props);
@@ -689,7 +689,7 @@ int test2(struct Options options)
 
 	response = MQTTClient_unsubscribe5(c, test_topic, &props);
 	assert("Unsubscribe successful", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", rc);
-	rc = MQTTClient_disconnect5(c, 0, SUCCESS, &props);
+	rc = MQTTClient_disconnect5(c, 0, MQTTREASONCODE_SUCCESS, &props);
 	assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
 	MQTTClient_destroy(&c);
@@ -825,7 +825,7 @@ int test4_run(int qos)
 
 	MyLog(LOGA_DEBUG, "Cleanup by connecting clean start, add session expiry > 0\n");
 	opts.cleanstart = 1;
-	property.identifier = SESSION_EXPIRY_INTERVAL;
+	property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 	property.value.integer4 = 30; /* in seconds */
 	MQTTProperties_add(&props, &property);
 	response = MQTTClient_connect5(c, &opts, &props, NULL);
@@ -848,7 +848,7 @@ int test4_run(int qos)
 	}
 
 	/* disconnect immediately without receiving the incoming messages */
-	MQTTClient_disconnect5(c, 0, SUCCESS, NULL); /* now there should be "orphaned" publications */
+	MQTTClient_disconnect5(c, 0, MQTTREASONCODE_SUCCESS, NULL); /* now there should be "orphaned" publications */
 
 	rc = MQTTClient_getPendingDeliveryTokens(c, &tokens);
  	assert("getPendingDeliveryTokens rc == 0", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
@@ -922,7 +922,7 @@ int test4_run(int qos)
 	assert("getPendingDeliveryTokens rc == 0", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 	assert("should get no tokens back", tokens == NULL, "tokens was %p", tokens);
 
-	rc = MQTTClient_disconnect5(c, 0, SUCCESS, NULL);
+	rc = MQTTClient_disconnect5(c, 0, MQTTREASONCODE_SUCCESS, NULL);
 
 	MQTTClient_destroy(&c);
 
@@ -987,7 +987,7 @@ int test5(struct Options options)
 		opts.serverURIs = options.haconnections;
 		opts.serverURIcount = options.hacount;
 	}
-	property.identifier = SESSION_EXPIRY_INTERVAL;
+	property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 	property.value.integer4 = 30;
 	MQTTProperties_add(&props, &property);
 
@@ -1011,7 +1011,7 @@ int test5(struct Options options)
 		assert("Good rc from publish", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
 	}
 
-	MQTTClient_disconnect5(c, 1000, SUCCESS, NULL); /* now there should be no "orphaned" publications */
+	MQTTClient_disconnect5(c, 1000, MQTTREASONCODE_SUCCESS, NULL); /* now there should be no "orphaned" publications */
 	MyLog(LOGA_DEBUG, "Disconnected");
 
 	rc = MQTTClient_getPendingDeliveryTokens(c, &tokens);
@@ -1131,7 +1131,7 @@ int test6(struct Options options)
 	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d\n", response.reasonCode);
 
 	response = MQTTClient_subscribe5(test6_c2, test6_will_topic, 2, NULL, NULL);
-	assert("Good rc from subscribe", response.reasonCode == GRANTED_QOS_2, "rc was %d\n", response.reasonCode);
+	assert("Good rc from subscribe", response.reasonCode == MQTTREASONCODE_GRANTED_QOS_2, "rc was %d\n", response.reasonCode);
 
 	/* now send the command which will break the connection and cause the will message to be sent */
 	response = MQTTClient_publish5(test6_c1, mqttsas_topic, (int)strlen("TERMINATE"), "TERMINATE", 0, 0, NULL, NULL);
@@ -1163,7 +1163,7 @@ int test6(struct Options options)
 	rc = MQTTClient_isConnected(test6_c1);
 	assert("Client-1 not connected", rc == 0, "isconnected is %d", rc);
 
-	rc = MQTTClient_disconnect5(test6_c2, 100L, SUCCESS, NULL);
+	rc = MQTTClient_disconnect5(test6_c2, 100L, MQTTREASONCODE_SUCCESS, NULL);
 	assert("Good rc from disconnect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
 	MQTTClient_destroy(&test6_c1);
@@ -1243,7 +1243,7 @@ int test6a(struct Options options)
 	assert("Good rc from connect", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d\n", response.reasonCode);
 
 	response = MQTTClient_subscribe5(test6_c2, test6_will_topic, 2, NULL, NULL);
-	assert("Good rc from subscribe", response.reasonCode == GRANTED_QOS_2, "rc was %d\n", response.reasonCode);
+	assert("Good rc from subscribe", response.reasonCode == MQTTREASONCODE_GRANTED_QOS_2, "rc was %d\n", response.reasonCode);
 
 	/* now send the command which will break the connection and cause the will message to be sent */
 	response = MQTTClient_publish5(test6_c1, mqttsas_topic, (int)strlen("TERMINATE"), "TERMINATE", 0, 0, NULL, NULL);
@@ -1275,7 +1275,7 @@ int test6a(struct Options options)
 	rc = MQTTClient_isConnected(test6_c1);
 	assert("Client-1 not connected", rc == 0, "isconnected is %d", rc);
 
-	rc = MQTTClient_disconnect5(test6_c2, 100L, SUCCESS, NULL);
+	rc = MQTTClient_disconnect5(test6_c2, 100L, MQTTREASONCODE_SUCCESS, NULL);
 	assert("Good rc from disconnect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
 	MQTTClient_destroy(&test6_c1);

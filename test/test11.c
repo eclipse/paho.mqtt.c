@@ -262,24 +262,24 @@ void logProperties(MQTTProperties *props)
 
 		switch (MQTTProperty_getType(id))
 		{
-		case PROPERTY_TYPE_BYTE:
+		case MQTTPROPERTY_TYPE_BYTE:
 		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.byte);
 		  break;
-		case TWO_BYTE_INTEGER:
+		case MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER:
 		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer2);
 		  break;
-		case FOUR_BYTE_INTEGER:
+		case MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER:
 		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer4);
 		  break;
-		case VARIABLE_BYTE_INTEGER:
+		case MQTTPROPERTY_TYPE_VARIABLE_BYTE_INTEGER:
 		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer4);
 		  break;
-		case BINARY_DATA:
-		case UTF_8_ENCODED_STRING:
+		case MQTTPROPERTY_TYPE_BINARY_DATA:
+		case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
 		  MyLog(LOGA_INFO, "Property name %s value len %.*s", name,
 				  props->array[i].value.data.len, props->array[i].value.data.data);
 		  break;
-		case UTF_8_STRING_PAIR:
+		case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
 		  MyLog(LOGA_INFO, "Property name %s key %.*s value %.*s", name,
 			  props->array[i].value.data.len, props->array[i].value.data.data,
 		  	  props->array[i].value.value.len, props->array[i].value.value.data);
@@ -321,8 +321,8 @@ int test_client_topic_aliases_messageArrived(void* context, char* topicName, int
 	{
 		const int props_count = 0;
 
-		assert("No topic alias", MQTTProperties_hasProperty(&message->properties, TOPIC_ALIAS) == 0,
-				"topic alias is %d\n", MQTTProperties_hasProperty(&message->properties, TOPIC_ALIAS));
+		assert("No topic alias", MQTTProperties_hasProperty(&message->properties, MQTTPROPERTY_CODE_TOPIC_ALIAS) == 0,
+				"topic alias is %d\n", MQTTProperties_hasProperty(&message->properties, MQTTPROPERTY_CODE_TOPIC_ALIAS));
 
 		assert("Topic should be name", strcmp(topicName, test_client_topic_aliases_globals.test_topic) == 0,
 					"Topic name was %s\n", topicName);
@@ -357,7 +357,7 @@ void test_client_topic_aliases_onSubscribe(void* context, MQTTAsync_successData5
 	pubmsg.qos = 1;
 
 	/* first set the topic alias */
-	property.identifier = TOPIC_ALIAS;
+	property.identifier = MQTTPROPERTY_CODE_TOPIC_ALIAS;
 	property.value.integer2 = 1;
 	MQTTProperties_add(&pubmsg.properties, &property);
 
@@ -397,7 +397,7 @@ void test_client_topic_aliases_onConnect(void* context, MQTTAsync_successData5* 
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
 
-	assert("Reason code should be 0", response->reasonCode == SUCCESS,
+	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
 	MyLog(LOGA_INFO, "Connack properties:");
@@ -412,7 +412,7 @@ void test_client_topic_aliases_onConnect(void* context, MQTTAsync_successData5* 
 		pubmsg.retained = 0;
 
 		/* a Topic Alias of 0 is not allowed, so we should be disconnected */
-		property.identifier = TOPIC_ALIAS;
+		property.identifier = MQTTPROPERTY_CODE_TOPIC_ALIAS;
 		property.value.integer2 = 0;
 		MQTTProperties_add(&pubmsg.properties, &property);
 
@@ -486,11 +486,11 @@ int test_client_topic_aliases(struct Options options)
 	opts.onFailure5 = NULL;
 	opts.context = c;
 
-	property.identifier = SESSION_EXPIRY_INTERVAL;
+	property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 	property.value.integer4 = 30;
 	MQTTProperties_add(&props, &property);
 
-	property.identifier = USER_PROPERTY;
+	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "test user property";
 	property.value.data.len = strlen(property.value.data.data);
 	property.value.value.data = "test user property value";
@@ -565,8 +565,8 @@ int test_server_topic_aliases_messageArrived(void* context, char* topicName, int
 	{
 		const int props_count = 0;
 
-		if (MQTTProperties_hasProperty(&message->properties, TOPIC_ALIAS))
-			topicAlias = MQTTProperties_getNumericValue(&message->properties, TOPIC_ALIAS);
+		if (MQTTProperties_hasProperty(&message->properties, MQTTPROPERTY_CODE_TOPIC_ALIAS))
+			topicAlias = MQTTProperties_getNumericValue(&message->properties, MQTTPROPERTY_CODE_TOPIC_ALIAS);
 
 		if (received == 1)
 		{
@@ -635,7 +635,7 @@ void test_server_topic_aliases_onConnect(void* context, MQTTAsync_successData5* 
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
 
-	assert("Reason code should be 0", response->reasonCode == SUCCESS,
+	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
 	MyLog(LOGA_INFO, "Connack properties:");
@@ -683,7 +683,7 @@ int test_server_topic_aliases(struct Options options)
 	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	/* Allow at least one server topic alias */
-	property.identifier = TOPIC_ALIAS_MAXIMUM;
+	property.identifier = MQTTPROPERTY_CODE_TOPIC_ALIAS_MAXIMUM;
 	property.value.integer2 = 1;
 	MQTTProperties_add(&connect_props, &property);
 
@@ -750,11 +750,11 @@ int test_subscription_ids_messageArrived(void* context, char* topicName, int top
 	{
 		int subsidcount = 0, i = 0;
 
-		subsidcount = MQTTProperties_propertyCount(&message->properties, SUBSCRIPTION_IDENTIFIER);
+		subsidcount = MQTTProperties_propertyCount(&message->properties, MQTTPROPERTY_CODE_SUBSCRIPTION_IDENTIFIER);
 
 		for (i = 0; i < subsidcount; ++i)
 		{
-			int subsid = MQTTProperties_getNumericValueAt(&message->properties, SUBSCRIPTION_IDENTIFIER, i);
+			int subsid = MQTTProperties_getNumericValueAt(&message->properties, MQTTPROPERTY_CODE_SUBSCRIPTION_IDENTIFIER, i);
 			assert("Subsid is i+1", subsid == i+1, "subsid is not correct %d\n", subsid);
 		}
 		logProperties(&message->properties);
@@ -784,7 +784,7 @@ void test_subscription_ids_onSubscribe(void* context, MQTTAsync_successData5* re
 	if (++subs_count == 1)
 	{
 		/* subscribe to a wildcard */
-		property.identifier = SUBSCRIPTION_IDENTIFIER;
+		property.identifier = MQTTPROPERTY_CODE_SUBSCRIPTION_IDENTIFIER;
 		property.value.integer4 = 2;
 		MQTTProperties_add(&opts.properties, &property);
 
@@ -822,7 +822,7 @@ void test_subscription_ids_onConnect(void* context, MQTTAsync_successData5* resp
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
 
-	assert("Reason code should be 0", response->reasonCode == SUCCESS,
+	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
 	MyLog(LOGA_INFO, "Connack properties:");
@@ -831,7 +831,7 @@ void test_subscription_ids_onConnect(void* context, MQTTAsync_successData5* resp
 	opts.onSuccess5 = test_subscription_ids_onSubscribe;
 	opts.context = c;
 	/* subscribe to the test topic */
-	property.identifier = SUBSCRIPTION_IDENTIFIER;
+	property.identifier = MQTTPROPERTY_CODE_SUBSCRIPTION_IDENTIFIER;
 	property.value.integer4 = 1;
 	MQTTProperties_add(&opts.properties, &property);
 
@@ -971,14 +971,14 @@ void test_flow_control_onConnect(void* context, MQTTAsync_successData5* response
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
 
-	assert("Reason code should be 0", response->reasonCode == SUCCESS,
+	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
 	MyLog(LOGA_INFO, "Connack properties:");
 	logProperties(&response->properties);
 
-	if (MQTTProperties_hasProperty(&response->properties, RECEIVE_MAXIMUM))
-		test_flow_control_globals.receive_maximum = MQTTProperties_getNumericValue(&response->properties, RECEIVE_MAXIMUM);
+	if (MQTTProperties_hasProperty(&response->properties, MQTTPROPERTY_CODE_RECEIVE_MAXIMUM))
+		test_flow_control_globals.receive_maximum = MQTTProperties_getNumericValue(&response->properties, MQTTPROPERTY_CODE_RECEIVE_MAXIMUM);
 
 	opts.onSuccess5 = test_flow_control_onSubscribe;
 	opts.context = c;
@@ -1122,7 +1122,7 @@ void test_error_reporting_onSubscribe(void* context, MQTTAsync_successData5* res
 	opts.onSuccess5 = test_error_reporting_onUnsubscribe;
 	opts.context = c;
 
-	property.identifier = USER_PROPERTY;
+	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "test user property";
 	property.value.data.len = strlen(property.value.data.data);
 	property.value.value.data = "test user property value";
@@ -1149,7 +1149,7 @@ void test_error_reporting_onConnect(void* context, MQTTAsync_successData5* respo
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
 
-	assert("Reason code should be 0", response->reasonCode == SUCCESS,
+	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
 	MyLog(LOGA_INFO, "Connack properties:");
@@ -1158,15 +1158,15 @@ void test_error_reporting_onConnect(void* context, MQTTAsync_successData5* respo
 	opts.onSuccess5 = test_error_reporting_onSubscribe;
 	opts.context = c;
 
-	property.identifier = USER_PROPERTY;
+	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "test user property";
 	property.value.data.len = strlen(property.value.data.data);
 	property.value.value.data = "test user property value";
 	property.value.value.len = strlen(property.value.value.data);
 	MQTTProperties_add(&opts.properties, &property);
 
-	opts.subscribe_options_count = 2;
-	opts.subscribe_options_list = subopts;
+	opts.subscribeOptionsCount = 2;
+	opts.subscribeOptionsList = subopts;
 
 	rc = MQTTAsync_subscribeMany(c, 2, topics, qoss, &opts);
 	assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -1287,7 +1287,7 @@ void test_qos_1_2_errors_onPublishFailure2(void* context, MQTTAsync_failureData5
 	pubmsg.qos = 2;
 	pubmsg.retained = 0;
 
-	property.identifier = USER_PROPERTY;
+	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "pub user property";
 	property.value.data.len = strlen(property.value.data.data);
 	property.value.value.data = "pub user property value";
@@ -1296,7 +1296,7 @@ void test_qos_1_2_errors_onPublishFailure2(void* context, MQTTAsync_failureData5
 
 	rc = MQTTAsync_sendMessage(c, "test_qos_1_2_errors_pubcomp", &pubmsg, &opts);
 	assert("Good rc from publish", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
-	if (rc != SUCCESS)
+	if (rc != MQTTREASONCODE_SUCCESS)
 		test_qos_1_2_errors_globals.test_finished = 1;
 
 	MQTTProperties_free(&pubmsg.properties);
@@ -1325,7 +1325,7 @@ void test_qos_1_2_errors_onPublishFailure(void* context, MQTTAsync_failureData5*
 	pubmsg.qos = 2;
 	pubmsg.retained = 0;
 
-	property.identifier = USER_PROPERTY;
+	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "pub user property";
 	property.value.data.len = strlen(property.value.data.data);
 	property.value.value.data = "pub user property value";
@@ -1334,7 +1334,7 @@ void test_qos_1_2_errors_onPublishFailure(void* context, MQTTAsync_failureData5*
 
 	rc = MQTTAsync_sendMessage(c, test_qos_1_2_errors_globals.test_topic, &pubmsg, &opts);
 	assert("Good rc from publish", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
-	if (rc != SUCCESS)
+	if (rc != MQTTREASONCODE_SUCCESS)
 		test_qos_1_2_errors_globals.test_finished = 1;
 
 	MQTTProperties_free(&pubmsg.properties);
@@ -1351,7 +1351,7 @@ void test_qos_1_2_errors_onConnect(void* context, MQTTAsync_successData5* respon
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
 
-	assert("Reason code should be 0", response->reasonCode == SUCCESS,
+	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
 	MyLog(LOGA_INFO, "Connack properties:");
@@ -1366,7 +1366,7 @@ void test_qos_1_2_errors_onConnect(void* context, MQTTAsync_successData5* respon
 	pubmsg.qos = 1;
 	pubmsg.retained = 0;
 
-	property.identifier = USER_PROPERTY;
+	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "pub user property";
 	property.value.data.len = strlen(property.value.data.data);
 	property.value.value.data = "pub user property value";
@@ -1375,7 +1375,7 @@ void test_qos_1_2_errors_onConnect(void* context, MQTTAsync_successData5* respon
 
 	rc = MQTTAsync_sendMessage(c, test_qos_1_2_errors_globals.test_topic, &pubmsg, &opts);
 	assert("Good rc from publish", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
-	if (rc != SUCCESS)
+	if (rc != MQTTREASONCODE_SUCCESS)
 		test_qos_1_2_errors_globals.test_finished = 1;
 
 	MQTTProperties_free(&pubmsg.properties);
@@ -1476,16 +1476,16 @@ int test_request_response_messageArrived(void* context, char* topicName, int top
 				strcmp(test_request_response_globals.request_topic, topicName) == 0,
 				"topic was %s\n", topicName);
 
-		if (MQTTProperties_hasProperty(&message->properties, RESPONSE_TOPIC))
-			response_topic_prop = MQTTProperties_getProperty(&message->properties, RESPONSE_TOPIC);
+		if (MQTTProperties_hasProperty(&message->properties, MQTTPROPERTY_CODE_RESPONSE_TOPIC))
+			response_topic_prop = MQTTProperties_getProperty(&message->properties, MQTTPROPERTY_CODE_RESPONSE_TOPIC);
 
 		assert("Topic should be response",
 		strncmp(test_request_response_globals.response_topic, response_topic_prop->value.data.data,
 				response_topic_prop->value.data.len) == 0,
 			"topic was %.4s\n", response_topic_prop->value.data.data);
 
-		if (MQTTProperties_hasProperty(&message->properties, CORRELATION_DATA))
-			corr_prop = MQTTProperties_getProperty(&message->properties, CORRELATION_DATA);
+		if (MQTTProperties_hasProperty(&message->properties, MQTTPROPERTY_CODE_CORRELATION_DATA))
+			corr_prop = MQTTProperties_getProperty(&message->properties, MQTTPROPERTY_CODE_CORRELATION_DATA);
 
 		assert("Correlation data should be",
 		strncmp(test_request_response_globals.correlation_id, corr_prop->value.data.data,
@@ -1498,7 +1498,7 @@ int test_request_response_messageArrived(void* context, char* topicName, int top
 		pubmsg.retained = 0;
 		pubmsg.qos = 1;
 
-		property.identifier = CORRELATION_DATA;
+		property.identifier = MQTTPROPERTY_CODE_CORRELATION_DATA;
 		property.value.data.data = test_request_response_globals.correlation_id;
 		property.value.data.len = strlen(property.value.data.data);
 		MQTTProperties_add(&pubmsg.properties, &property);
@@ -1506,7 +1506,7 @@ int test_request_response_messageArrived(void* context, char* topicName, int top
 		memcpy(myTopicName, response_topic_prop->value.data.data, response_topic_prop->value.data.len);
 		myTopicName[response_topic_prop->value.data.len] = '\0';
 		rc = MQTTAsync_sendMessage(c, myTopicName, &pubmsg, &opts);
-		if (rc != SUCCESS)
+		if (rc != MQTTREASONCODE_SUCCESS)
 			test_request_response_globals.test_finished = 1;
 		assert("Good rc from sendMessage", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
@@ -1521,8 +1521,8 @@ int test_request_response_messageArrived(void* context, char* topicName, int top
 				strcmp(test_request_response_globals.response_topic, topicName) == 0,
 				"topic was %s\n", topicName);
 
-		if (MQTTProperties_hasProperty(&message->properties, CORRELATION_DATA))
-			corr_prop = MQTTProperties_getProperty(&message->properties, CORRELATION_DATA);
+		if (MQTTProperties_hasProperty(&message->properties, MQTTPROPERTY_CODE_CORRELATION_DATA))
+			corr_prop = MQTTProperties_getProperty(&message->properties, MQTTPROPERTY_CODE_CORRELATION_DATA);
 
 		assert("Correlation data should be",
 		strncmp(test_request_response_globals.correlation_id, corr_prop->value.data.data,
@@ -1562,7 +1562,7 @@ void test_request_response_onSubscribe(void* context, MQTTAsync_successData5* re
 		for (i = 0; i < response->alt.sub.reasonCodeCount; ++i)
 		{
 			MyLog(LOGA_INFO, "Subscribe reason code %d", response->alt.sub.reasonCodes[i]);
-			assert("Reason code should be 2", response->alt.sub.reasonCodes[i] == GRANTED_QOS_2,
+			assert("Reason code should be 2", response->alt.sub.reasonCodes[i] == MQTTREASONCODE_GRANTED_QOS_2,
 				   "Reason code was %d\n", response->alt.sub.reasonCodes[i]);
 		}
 	}
@@ -1572,18 +1572,18 @@ void test_request_response_onSubscribe(void* context, MQTTAsync_successData5* re
 	pubmsg.retained = 0;
 	pubmsg.qos = 1;
 
-	property.identifier = RESPONSE_TOPIC;
+	property.identifier = MQTTPROPERTY_CODE_RESPONSE_TOPIC;
 	property.value.data.data = test_request_response_globals.response_topic;
 	property.value.data.len = strlen(property.value.data.data);
 	MQTTProperties_add(&pubmsg.properties, &property);
 
-	property.identifier = CORRELATION_DATA;
+	property.identifier = MQTTPROPERTY_CODE_CORRELATION_DATA;
 	property.value.data.data = test_request_response_globals.correlation_id;
 	property.value.data.len = strlen(property.value.data.data);
 	MQTTProperties_add(&pubmsg.properties, &property);
 
 	rc = MQTTAsync_sendMessage(c, test_request_response_globals.request_topic, &pubmsg, &opts);
-	if (rc != SUCCESS)
+	if (rc != MQTTREASONCODE_SUCCESS)
 		test_request_response_globals.test_finished = 1;
 	assert("Good rc from sendMessage", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
@@ -1602,7 +1602,7 @@ void test_request_response_onConnect(void* context, MQTTAsync_successData5* resp
 
 	MyLog(LOGA_DEBUG, "In request response connect onSuccess callback, context %p", context);
 
-	assert("Reason code should be 0", response->reasonCode == SUCCESS,
+	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
 	MyLog(LOGA_INFO, "Connack properties:");
@@ -1611,7 +1611,7 @@ void test_request_response_onConnect(void* context, MQTTAsync_successData5* resp
 	opts.onSuccess5 = test_request_response_onSubscribe;
 	opts.context = c;
 	rc = MQTTAsync_subscribeMany(c, 2, topics, qos, &opts);
-	if (rc != SUCCESS)
+	if (rc != MQTTREASONCODE_SUCCESS)
 		test_request_response_globals.test_finished = 1;
 	assert("Good rc from subscribeMany", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 }
@@ -1673,7 +1673,7 @@ struct
 	char* topic1;
 	char* topic2;
 	int messages_arrived;
-} test_subscribe_options_globals =
+} test_subscribeOptions_globals =
 {
 	0,
 	"subscribe options topic",
@@ -1682,12 +1682,12 @@ struct
 };
 
 
-int test_subscribe_options_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* message)
+int test_subscribeOptions_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* message)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	int rc;
 
-	test_subscribe_options_globals.messages_arrived++;
+	test_subscribeOptions_globals.messages_arrived++;
 
 	assert("Message structure version should be 1", message->struct_version == 1,
 				"message->struct_version was %d", message->struct_version);
@@ -1697,17 +1697,17 @@ int test_subscribe_options_messageArrived(void* context, char* topicName, int to
 	if (message->struct_version == 1)
 		logProperties(&message->properties);
 
-	if (test_subscribe_options_globals.messages_arrived == 1)
+	if (test_subscribeOptions_globals.messages_arrived == 1)
 	{
 		int subsidcount, subsid;
 
-		subsidcount = MQTTProperties_propertyCount(&message->properties, SUBSCRIPTION_IDENTIFIER);
+		subsidcount = MQTTProperties_propertyCount(&message->properties, MQTTPROPERTY_CODE_SUBSCRIPTION_IDENTIFIER);
 		assert("Subsidcount is i", subsidcount == 1, "subsidcount is not correct %d\n", subsidcount);
 
-		subsid = MQTTProperties_getNumericValueAt(&message->properties, SUBSCRIPTION_IDENTIFIER, 0);
+		subsid = MQTTProperties_getNumericValueAt(&message->properties, MQTTPROPERTY_CODE_SUBSCRIPTION_IDENTIFIER, 0);
 		assert("Subsid is 2", subsid == 2, "subsid is not correct %d\n", subsid);
 
-		test_subscribe_options_globals.test_finished = 1;
+		test_subscribeOptions_globals.test_finished = 1;
 	}
 
 	MQTTAsync_freeMessage(&message);
@@ -1717,7 +1717,7 @@ int test_subscribe_options_messageArrived(void* context, char* topicName, int to
 }
 
 
-void test_subscribe_options_onSubscribe(void* context, MQTTAsync_successData5* response)
+void test_subscribeOptions_onSubscribe(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
@@ -1727,7 +1727,7 @@ void test_subscribe_options_onSubscribe(void* context, MQTTAsync_successData5* r
 	MyLog(LOGA_DEBUG, "In subscribe options connect onSuccess callback, context %p", context);
 	called++;
 
-	assert("Reason code should be 0", response->reasonCode == GRANTED_QOS_2,
+	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_GRANTED_QOS_2,
 		   "Reason code was %d\n", response->reasonCode);
 
 	if (response->properties.count > 0)
@@ -1740,17 +1740,17 @@ void test_subscribe_options_onSubscribe(void* context, MQTTAsync_successData5* r
 	{
 		MQTTProperty property;
 
-		property.identifier = SUBSCRIPTION_IDENTIFIER;
+		property.identifier = MQTTPROPERTY_CODE_SUBSCRIPTION_IDENTIFIER;
 		property.value.integer4 = 2;
 		MQTTProperties_add(&opts.properties, &property);
 
-		opts.onSuccess5 = test_subscribe_options_onSubscribe;
+		opts.onSuccess5 = test_subscribeOptions_onSubscribe;
 		opts.context = c;
-		opts.subscribe_options.retainHandling = 2;
-		opts.subscribe_options.retainAsPublished = 1;
-		rc = MQTTAsync_subscribe(c, test_subscribe_options_globals.topic2, 2, &opts);
-		if (rc != SUCCESS)
-			test_subscribe_options_globals.test_finished = 1;
+		opts.subscribeOptions.retainHandling = 2;
+		opts.subscribeOptions.retainAsPublished = 1;
+		rc = MQTTAsync_subscribe(c, test_subscribeOptions_globals.topic2, 2, &opts);
+		if (rc != MQTTREASONCODE_SUCCESS)
+			test_subscribeOptions_globals.test_finished = 1;
 		assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 		MQTTProperties_free(&opts.properties);
@@ -1764,15 +1764,15 @@ void test_subscribe_options_onSubscribe(void* context, MQTTAsync_successData5* r
 		pubmsg.retained = 0;
 		pubmsg.qos = 2;
 
-		rc = MQTTAsync_sendMessage(c, test_subscribe_options_globals.topic1, &pubmsg, &opts);
+		rc = MQTTAsync_sendMessage(c, test_subscribeOptions_globals.topic1, &pubmsg, &opts);
 		assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 		if (rc != MQTTASYNC_SUCCESS)
-			test_subscribe_options_globals.test_finished = 1;
+			test_subscribeOptions_globals.test_finished = 1;
 	}
 }
 
 
-void test_subscribe_options_onConnect(void* context, MQTTAsync_successData5* response)
+void test_subscribeOptions_onConnect(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
@@ -1781,21 +1781,21 @@ void test_subscribe_options_onConnect(void* context, MQTTAsync_successData5* res
 
 	MyLog(LOGA_DEBUG, "In subscribe options connect onSuccess callback, context %p", context);
 
-	assert("Reason code should be 0", response->reasonCode == SUCCESS,
+	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
 	MyLog(LOGA_INFO, "Connack properties:");
 	logProperties(&response->properties);
 
-	property.identifier = SUBSCRIPTION_IDENTIFIER;
+	property.identifier = MQTTPROPERTY_CODE_SUBSCRIPTION_IDENTIFIER;
 	property.value.integer4 = 1;
 	MQTTProperties_add(&opts.properties, &property);
-	opts.subscribe_options.noLocal = 1;
+	opts.subscribeOptions.noLocal = 1;
 
-	opts.onSuccess5 = test_subscribe_options_onSubscribe;
+	opts.onSuccess5 = test_subscribeOptions_onSubscribe;
 	opts.context = c;
-	rc = MQTTAsync_subscribe(c, test_subscribe_options_globals.topic1, 2, &opts);
-	if (rc != SUCCESS)
+	rc = MQTTAsync_subscribe(c, test_subscribeOptions_globals.topic1, 2, &opts);
+	if (rc != MQTTREASONCODE_SUCCESS)
 		test_request_response_globals.test_finished = 1;
 	assert("Good rc from subscribeMany", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
@@ -1803,7 +1803,7 @@ void test_subscribe_options_onConnect(void* context, MQTTAsync_successData5* res
 }
 
 
-int test_subscribe_options(struct Options options)
+int test_subscribeOptions(struct Options options)
 {
 	MQTTAsync c;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
@@ -1822,11 +1822,11 @@ int test_subscribe_options(struct Options options)
 		goto exit;
 	}
 
-	rc = MQTTAsync_setCallbacks(c, c, NULL, test_subscribe_options_messageArrived, NULL);
+	rc = MQTTAsync_setCallbacks(c, c, NULL, test_subscribeOptions_messageArrived, NULL);
 	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	opts.MQTTVersion = options.MQTTVersion;
-	opts.onSuccess5 = test_subscribe_options_onConnect;
+	opts.onSuccess5 = test_subscribeOptions_onConnect;
 	opts.context = c;
 	opts.cleanstart = 1;
 
@@ -1836,7 +1836,7 @@ int test_subscribe_options(struct Options options)
 	if (rc != MQTTASYNC_SUCCESS)
 		goto exit;
 
-	while (test_subscribe_options_globals.test_finished == 0)
+	while (test_subscribeOptions_globals.test_finished == 0)
 		#if defined(WIN32)
 			Sleep(100);
 		#else
@@ -1905,7 +1905,7 @@ void test_shared_subscriptions_onSubscribe(void* context, MQTTAsync_successData5
 	called++;
 	MyLog(LOGA_DEBUG, "In subscribe options connect onSuccess callback, context %p, called %d", context, called);
 
-	assert("Reason code should be 0", response->reasonCode == GRANTED_QOS_2,
+	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_GRANTED_QOS_2,
 		   "Reason code was %d\n", response->reasonCode);
 
 	if (response->properties.count > 0)
@@ -1933,7 +1933,7 @@ void test_shared_subscriptions_onSubscribe(void* context, MQTTAsync_successData5
 			assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 			if (rc != MQTTASYNC_SUCCESS)
 			{
-				test_subscribe_options_globals.test_finished = 1;
+				test_subscribeOptions_globals.test_finished = 1;
 				break;
 			}
 		}
@@ -1950,14 +1950,14 @@ void test_shared_subscriptions_onConnectd(void* context, MQTTAsync_successData5*
 
 	MyLog(LOGA_DEBUG, "In shared subscriptions connect d onSuccess callback, context %p", context);
 
-	assert("Reason code should be 0", response->reasonCode == SUCCESS,
+	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
 	opts.onSuccess5 = test_shared_subscriptions_onSubscribe;
 	opts.context = d;
 	rc = MQTTAsync_subscribe(d, test_shared_subscriptions_globals.shared_topic, 2, &opts);
-	assert("Good rc from subscribe", rc == SUCCESS, "rc was %d", rc);
-	if (rc != SUCCESS)
+	assert("Good rc from subscribe", rc == MQTTREASONCODE_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTREASONCODE_SUCCESS)
 		test_shared_subscriptions_globals.test_finished = 1;
 }
 
@@ -1971,14 +1971,14 @@ void test_shared_subscriptions_onConnectc(void* context, MQTTAsync_successData5*
 
 	MyLog(LOGA_DEBUG, "In shared subscriptions connect c onSuccess callback, context %p", context);
 
-	assert("Reason code should be 0", response->reasonCode == SUCCESS,
+	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
 	opts.onSuccess5 = test_shared_subscriptions_onSubscribe;
 	opts.context = c;
 	rc = MQTTAsync_subscribe(c, test_shared_subscriptions_globals.shared_topic, 2, &opts);
-	assert("Good rc from subscribe", rc == SUCCESS, "rc was %d", rc);
-	if (rc != SUCCESS)
+	assert("Good rc from subscribe", rc == MQTTREASONCODE_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTREASONCODE_SUCCESS)
 		test_shared_subscriptions_globals.test_finished = 1;
 }
 
@@ -2081,7 +2081,7 @@ int main(int argc, char** argv)
 		test_error_reporting,
 		test_qos_1_2_errors,
 		test_request_response,
-		test_subscribe_options,
+		test_subscribeOptions,
 		test_shared_subscriptions
  	}; /* indexed starting from 1 */
 	MQTTAsync_nameValue* info;

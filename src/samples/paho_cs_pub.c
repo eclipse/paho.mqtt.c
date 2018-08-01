@@ -193,13 +193,13 @@ int main(int argc, char** argv)
 
 		if (opts.message_expiry > 0)
 		{
-			property.identifier = MESSAGE_EXPIRY_INTERVAL;
+			property.identifier = MQTTPROPERTY_CODE_MESSAGE_EXPIRY_INTERVAL;
 			property.value.integer4 = opts.message_expiry;
 			MQTTProperties_add(&pub_props, &property);
 		}
 		if (opts.user_property.name)
 		{
-			property.identifier = USER_PROPERTY;
+			property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 			property.value.data.data = opts.user_property.name;
 			property.value.data.len = strlen(opts.user_property.name);
 			property.value.value.data = opts.user_property.value;
@@ -280,7 +280,7 @@ exit:
 		free(buffer);
 
 	if (opts.MQTTVersion == MQTTVERSION_5)
-		rc = MQTTClient_disconnect5(client, 0, SUCCESS, NULL);
+		rc = MQTTClient_disconnect5(client, 0, MQTTREASONCODE_SUCCESS, NULL);
 	else
 		rc = MQTTClient_disconnect(client, 0);
 

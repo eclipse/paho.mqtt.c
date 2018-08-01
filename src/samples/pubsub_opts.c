@@ -461,24 +461,24 @@ void logProperties(MQTTProperties *props)
 
 		switch (MQTTProperty_getType(id))
 		{
-		case PROPERTY_TYPE_BYTE:
+		case MQTTPROPERTY_TYPE_BYTE:
 		  printf(intformat, name, props->array[i].value.byte);
 		  break;
-		case TWO_BYTE_INTEGER:
+		case MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER:
 		  printf(intformat, name, props->array[i].value.integer2);
 		  break;
-		case FOUR_BYTE_INTEGER:
+		case MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER:
 		  printf(intformat, name, props->array[i].value.integer4);
 		  break;
-		case VARIABLE_BYTE_INTEGER:
+		case MQTTPROPERTY_TYPE_VARIABLE_BYTE_INTEGER:
 		  printf(intformat, name, props->array[i].value.integer4);
 		  break;
-		case BINARY_DATA:
-		case UTF_8_ENCODED_STRING:
+		case MQTTPROPERTY_TYPE_BINARY_DATA:
+		case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
 		  printf("Property name %s value len %.*s\n", name,
 				  props->array[i].value.data.len, props->array[i].value.data.data);
 		  break;
-		case UTF_8_STRING_PAIR:
+		case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
 		  printf("Property name %s key %.*s value %.*s\n", name,
 			  props->array[i].value.data.len, props->array[i].value.data.data,
 		  	  props->array[i].value.value.len, props->array[i].value.value.data);

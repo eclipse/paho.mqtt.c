@@ -1585,7 +1585,7 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 	{
 		MQTTAsync_queuedCommand* conn;
 
-		MQTTAsync_closeOnly(m->c, SUCCESS, NULL);
+		MQTTAsync_closeOnly(m->c, MQTTREASONCODE_SUCCESS, NULL);
 		/* put the connect command back to the head of the command queue, using the next serverURI */
 		conn = malloc(sizeof(MQTTAsync_queuedCommand));
 		memset(conn, '\0', sizeof(MQTTAsync_queuedCommand));
@@ -1608,7 +1608,7 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 	}
 	else
 	{
-		MQTTAsync_closeSession(m->c, SUCCESS, NULL);
+		MQTTAsync_closeSession(m->c, MQTTREASONCODE_SUCCESS, NULL);
 		if (m->connect.onFailure)
 		{
 			MQTTAsync_failureData data;
@@ -1879,7 +1879,7 @@ void MQTTAsync_destroy(MQTTAsync* handle)
 	if (m == NULL)
 		goto exit;
 
-	MQTTAsync_closeSession(m->c, SUCCESS, NULL);
+	MQTTAsync_closeSession(m->c, MQTTREASONCODE_SUCCESS, NULL);
 
 	MQTTAsync_removeResponsesAndCommands(m);
 	ListFree(m->responses);
@@ -2046,7 +2046,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 			else if (m->c->connect_state != NOT_IN_PROGRESS)
 				nextOrClose(m, rc, "socket error");
 			else /* calling disconnect_internal won't have any effect if we're already disconnected */
-				MQTTAsync_closeOnly(m->c, SUCCESS, NULL);
+				MQTTAsync_closeOnly(m->c, MQTTREASONCODE_SUCCESS, NULL);
 		}
 		else
 		{
@@ -2128,9 +2128,9 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 						}
 						if (m->c->MQTTVersion >= MQTTVERSION_5)
 						{
-							if (MQTTProperties_hasProperty(&connack->properties, RECEIVE_MAXIMUM))
+							if (MQTTProperties_hasProperty(&connack->properties, MQTTPROPERTY_CODE_RECEIVE_MAXIMUM))
 							{
-								int recv_max = MQTTProperties_getNumericValue(&connack->properties, RECEIVE_MAXIMUM);
+								int recv_max = MQTTProperties_getNumericValue(&connack->properties, MQTTPROPERTY_CODE_RECEIVE_MAXIMUM);
 								if (m->c->maxInflightMessages > recv_max)
 									m->c->maxInflightMessages = recv_max;
 							}
@@ -2161,7 +2161,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 							 */
 							if (m->c->MQTTVersion >= MQTTVERSION_5)
 							{
-								if (sub->qoss->count == 1 && *(int*)(sub->qoss->first->content) >= UNSPECIFIED_ERROR)
+								if (sub->qoss->count == 1 && *(int*)(sub->qoss->first->content) >= MQTTREASONCODE_UNSPECIFIED_ERROR)
 								{
 									if (command->command.onFailure5)
 									{
@@ -2930,9 +2930,9 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 			*m->connectProps = initialized;
 			*m->connectProps = MQTTProperties_copy(options->connectProperties);
 
-			if (MQTTProperties_hasProperty(options->connectProperties, SESSION_EXPIRY_INTERVAL))
+			if (MQTTProperties_hasProperty(options->connectProperties, MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL))
 				m->c->sessionExpiry = MQTTProperties_getNumericValue(options->connectProperties,
-						SESSION_EXPIRY_INTERVAL);
+						MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL);
 
 		}
 		if (options->willProperties)
@@ -3143,8 +3143,8 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int
 		rc = MQTTASYNC_NO_MORE_MSGIDS;
 		goto exit;
 	}
-	if (m->c->MQTTVersion >= MQTTVERSION_5 && count > 1 && (count != response->subscribe_options_count
-			&& response->subscribe_options_count != 0))
+	if (m->c->MQTTVersion >= MQTTVERSION_5 && count > 1 && (count != response->subscribeOptionsCount
+			&& response->subscribeOptionsCount != 0))
 	{
 		rc = MQTTASYNC_BAD_MQTT_OPTIONS;
 		goto exit;
@@ -3166,11 +3166,11 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int
 		if (m->c->MQTTVersion >= MQTTVERSION_5)
 		{
 			sub->command.properties = MQTTProperties_copy(&response->properties);
-			sub->command.details.sub.opts = response->subscribe_options;
+			sub->command.details.sub.opts = response->subscribeOptions;
 			if (count > 1)
 			{
 				sub->command.details.sub.optlist = malloc(sizeof(MQTTSubscribe_options) * count);
-				if (response->subscribe_options_count == 0)
+				if (response->subscribeOptionsCount == 0)
 				{
 					MQTTSubscribe_options initialized = MQTTSubscribe_options_initializer;
 					for (i = 0; i < count; ++i)
@@ -3179,7 +3179,7 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int
 				else
 				{
 					for (i = 0; i < count; ++i)
-						sub->command.details.sub.optlist[i] = response->subscribe_options_list[i];
+						sub->command.details.sub.optlist[i] = response->subscribeOptionsList[i];
 				}
 			}
 		}
@@ -3642,7 +3642,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 				}
 				if (!m)
 					Log(LOG_ERROR, -1, "PUBCOMP, PUBACK or PUBREC received for no client, msgid %d", msgid);
-				if (m && (pack->header.bits.type != PUBREC || ack.rc >= UNSPECIFIED_ERROR))
+				if (m && (pack->header.bits.type != PUBREC || ack.rc >= MQTTREASONCODE_UNSPECIFIED_ERROR))
 				{
 					ListElement* current = NULL;
 
@@ -3672,7 +3672,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 								Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
 								(*(command->command.onSuccess))(command->command.context, &data);
 							}
-							else if (command->command.onSuccess5 && ack.rc < UNSPECIFIED_ERROR)
+							else if (command->command.onSuccess5 && ack.rc < MQTTREASONCODE_UNSPECIFIED_ERROR)
 							{
 								MQTTAsync_successData5 data = MQTTAsync_successData5_initializer;
 
@@ -3686,7 +3686,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 								Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
 								(*(command->command.onSuccess5))(command->command.context, &data);
 							}
-							else if (command->command.onFailure5 && ack.rc >= UNSPECIFIED_ERROR)
+							else if (command->command.onFailure5 && ack.rc >= MQTTREASONCODE_UNSPECIFIED_ERROR)
 							{
 								MQTTAsync_failureData5 data = MQTTAsync_failureData5_initializer;
 

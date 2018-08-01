@@ -426,7 +426,7 @@ int MQTTProtocol_handlePubrecs(void* pack, int sock)
 		}
 		else
 		{
-			if (pubrec->MQTTVersion >= MQTTVERSION_5 && pubrec->rc >= UNSPECIFIED_ERROR)
+			if (pubrec->MQTTVersion >= MQTTVERSION_5 && pubrec->rc >= MQTTREASONCODE_UNSPECIFIED_ERROR)
 			{
 				Log(TRACE_MIN, -1, "Pubrec error %d received for client %s msgid %d, not sending PUBREL",
 						pubrec->rc, client->clientID, pubrec->msgId);

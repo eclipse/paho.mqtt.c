@@ -849,7 +849,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 						dp->properties = malloc(sizeof(MQTTProperties));
 						*(dp->properties) = disc->properties;
 						free(disc);
-						MQTTClient_disconnect1(m, 10, 0, 1, SUCCESS, NULL);
+						MQTTClient_disconnect1(m, 10, 0, 1, MQTTREASONCODE_SUCCESS, NULL);
 						Log(TRACE_MIN, -1, "Calling disconnected for client %s", m->c->clientID);
 						Thread_start(call_disconnected, dp);
 					}
@@ -1302,7 +1302,7 @@ exit:
 		}
 	}
 	else
-		MQTTClient_disconnect1(handle, 0, 0, (MQTTVersion == 3), SUCCESS, NULL); /* don't want to call connection lost */
+		MQTTClient_disconnect1(handle, 0, 0, (MQTTVersion == 3), MQTTREASONCODE_SUCCESS, NULL); /* don't want to call connection lost */
 
 	resp.reasonCode = rc;
 	FUNC_EXIT_RC(resp.reasonCode);
@@ -1608,15 +1608,15 @@ MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connectOptions* o
 			}
 #endif
 			rc = MQTTClient_connectURI(handle, options, serverURI, connectProperties, willProperties);
-			if (rc.reasonCode == SUCCESS)
+			if (rc.reasonCode == MQTTREASONCODE_SUCCESS)
 				break;
 		}
 	}
-	if (rc.reasonCode == SUCCESS)
+	if (rc.reasonCode == MQTTREASONCODE_SUCCESS)
 	{
-		if (rc.properties && MQTTProperties_hasProperty(rc.properties, RECEIVE_MAXIMUM))
+		if (rc.properties && MQTTProperties_hasProperty(rc.properties, MQTTPROPERTY_CODE_RECEIVE_MAXIMUM))
 		{
-			int recv_max = MQTTProperties_getNumericValue(rc.properties, RECEIVE_MAXIMUM);
+			int recv_max = MQTTProperties_getNumericValue(rc.properties, MQTTPROPERTY_CODE_RECEIVE_MAXIMUM);
 			if (m->c->maxInflightMessages > recv_max)
 				m->c->maxInflightMessages = recv_max;
 		}
@@ -1696,7 +1696,7 @@ exit:
  */
 static int MQTTClient_disconnect_internal(MQTTClient handle, int timeout)
 {
-	return MQTTClient_disconnect1(handle, timeout, 1, 1, SUCCESS, NULL);
+	return MQTTClient_disconnect1(handle, timeout, 1, 1, MQTTREASONCODE_SUCCESS, NULL);
 }
 
 
@@ -1714,7 +1714,7 @@ int MQTTClient_disconnect(MQTTClient handle, int timeout)
 	int rc = 0;
 
 	Thread_lock_mutex(mqttclient_mutex);
-	rc = MQTTClient_disconnect1(handle, timeout, 0, 1, SUCCESS, NULL);
+	rc = MQTTClient_disconnect1(handle, timeout, 0, 1, MQTTREASONCODE_SUCCESS, NULL);
 	Thread_unlock_mutex(mqttclient_mutex);
 	return rc;
 }
@@ -2300,7 +2300,7 @@ static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
 			{
 				Pubrec* pubrec = (Pubrec*)pack;
 
-				if (m && m->c->MQTTVersion >= MQTTVERSION_5 && m->published && pubrec->rc >= UNSPECIFIED_ERROR)
+				if (m && m->c->MQTTVersion >= MQTTVERSION_5 && m->published && pubrec->rc >= MQTTREASONCODE_UNSPECIFIED_ERROR)
 				{
 					Log(TRACE_MIN, -1, "Calling published for client %s, msgid %d", m->c->clientID, ack.msgId);
 					(*(m->published))(m->published_context, pubrec->msgId, pack->header.bits.type,

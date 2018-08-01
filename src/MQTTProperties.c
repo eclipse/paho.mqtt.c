@@ -27,37 +27,37 @@
 
 static struct nameToType
 {
-  enum PropertyNames name;
-  enum PropertyTypes type;
+  enum MQTTPropertyCodes name;
+  enum MQTTPropertyTypes type;
 } namesToTypes[] =
 {
-  {PAYLOAD_FORMAT_INDICATOR, PROPERTY_TYPE_BYTE},
-  {MESSAGE_EXPIRY_INTERVAL, FOUR_BYTE_INTEGER},
-  {CONTENT_TYPE, UTF_8_ENCODED_STRING},
-  {RESPONSE_TOPIC, UTF_8_ENCODED_STRING},
-  {CORRELATION_DATA, BINARY_DATA},
-  {SUBSCRIPTION_IDENTIFIER, VARIABLE_BYTE_INTEGER},
-  {SESSION_EXPIRY_INTERVAL, FOUR_BYTE_INTEGER},
-  {ASSIGNED_CLIENT_IDENTIFER, UTF_8_ENCODED_STRING},
-  {SERVER_KEEP_ALIVE, TWO_BYTE_INTEGER},
-  {AUTHENTICATION_METHOD, UTF_8_ENCODED_STRING},
-  {AUTHENTICATION_DATA, BINARY_DATA},
-  {REQUEST_PROBLEM_INFORMATION, PROPERTY_TYPE_BYTE},
-  {WILL_DELAY_INTERVAL, FOUR_BYTE_INTEGER},
-  {REQUEST_RESPONSE_INFORMATION, PROPERTY_TYPE_BYTE},
-  {RESPONSE_INFORMATION, UTF_8_ENCODED_STRING},
-  {SERVER_REFERENCE, UTF_8_ENCODED_STRING},
-  {REASON_STRING, UTF_8_ENCODED_STRING},
-  {RECEIVE_MAXIMUM, TWO_BYTE_INTEGER},
-  {TOPIC_ALIAS_MAXIMUM, TWO_BYTE_INTEGER},
-  {TOPIC_ALIAS, TWO_BYTE_INTEGER},
-  {MAXIMUM_QOS, PROPERTY_TYPE_BYTE},
-  {RETAIN_AVAILABLE, PROPERTY_TYPE_BYTE},
-  {USER_PROPERTY, UTF_8_STRING_PAIR},
-  {MAXIMUM_PACKET_SIZE, FOUR_BYTE_INTEGER},
-  {WILDCARD_SUBSCRIPTION_AVAILABLE, PROPERTY_TYPE_BYTE},
-  {SUBSCRIPTION_IDENTIFIERS_AVAILABLE, PROPERTY_TYPE_BYTE},
-  {SHARED_SUBSCRIPTION_AVAILABLE, PROPERTY_TYPE_BYTE}
+  {MQTTPROPERTY_CODE_PAYLOAD_FORMAT_INDICATOR, MQTTPROPERTY_TYPE_BYTE},
+  {MQTTPROPERTY_CODE_MESSAGE_EXPIRY_INTERVAL, MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER},
+  {MQTTPROPERTY_CODE_CONTENT_TYPE, MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING},
+  {MQTTPROPERTY_CODE_RESPONSE_TOPIC, MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING},
+  {MQTTPROPERTY_CODE_CORRELATION_DATA, MQTTPROPERTY_TYPE_BINARY_DATA},
+  {MQTTPROPERTY_CODE_SUBSCRIPTION_IDENTIFIER, MQTTPROPERTY_TYPE_VARIABLE_BYTE_INTEGER},
+  {MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL, MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER},
+  {MQTTPROPERTY_CODE_ASSIGNED_CLIENT_IDENTIFER, MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING},
+  {MQTTPROPERTY_CODE_SERVER_KEEP_ALIVE, MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER},
+  {MQTTPROPERTY_CODE_AUTHENTICATION_METHOD, MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING},
+  {MQTTPROPERTY_CODE_AUTHENTICATION_DATA, MQTTPROPERTY_TYPE_BINARY_DATA},
+  {MQTTPROPERTY_CODE_REQUEST_PROBLEM_INFORMATION, MQTTPROPERTY_TYPE_BYTE},
+  {MQTTPROPERTY_CODE_WILL_DELAY_INTERVAL, MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER},
+  {MQTTPROPERTY_CODE_REQUEST_RESPONSE_INFORMATION, MQTTPROPERTY_TYPE_BYTE},
+  {MQTTPROPERTY_CODE_RESPONSE_INFORMATION, MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING},
+  {MQTTPROPERTY_CODE_SERVER_REFERENCE, MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING},
+  {MQTTPROPERTY_CODE_REASON_STRING, MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING},
+  {MQTTPROPERTY_CODE_RECEIVE_MAXIMUM, MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER},
+  {MQTTPROPERTY_CODE_TOPIC_ALIAS_MAXIMUM, MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER},
+  {MQTTPROPERTY_CODE_TOPIC_ALIAS, MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER},
+  {MQTTPROPERTY_CODE_MAXIMUM_QOS, MQTTPROPERTY_TYPE_BYTE},
+  {MQTTPROPERTY_CODE_RETAIN_AVAILABLE, MQTTPROPERTY_TYPE_BYTE},
+  {MQTTPROPERTY_CODE_USER_PROPERTY, MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR},
+  {MQTTPROPERTY_CODE_MAXIMUM_PACKET_SIZE, MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER},
+  {MQTTPROPERTY_CODE_WILDCARD_SUBSCRIPTION_AVAILABLE, MQTTPROPERTY_TYPE_BYTE},
+  {MQTTPROPERTY_CODE_SUBSCRIPTION_IDENTIFIERS_AVAILABLE, MQTTPROPERTY_TYPE_BYTE},
+  {MQTTPROPERTY_CODE_SHARED_SUBSCRIPTION_AVAILABLE, MQTTPROPERTY_TYPE_BYTE}
 };
 
 
@@ -69,13 +69,13 @@ static char* datadup(const MQTTLenString* str)
 }
 
 
-int MQTTProperty_getType(int identifier)
+int MQTTProperty_getType(enum MQTTPropertyCodes value)
 {
   int i, rc = -1;
 
   for (i = 0; i < ARRAY_SIZE(namesToTypes); ++i)
   {
-    if (namesToTypes[i].name == identifier)
+    if (namesToTypes[i].name == value)
     {
       rc = namesToTypes[i].type;
       break;
@@ -121,24 +121,24 @@ int MQTTProperties_add(MQTTProperties* props, const MQTTProperty* prop)
     /* calculate length */
     switch (type)
     {
-      case PROPERTY_TYPE_BYTE:
+      case MQTTPROPERTY_TYPE_BYTE:
         len = 1;
         break;
-      case TWO_BYTE_INTEGER:
+      case MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER:
         len = 2;
         break;
-      case FOUR_BYTE_INTEGER:
+      case MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER:
         len = 4;
         break;
-      case VARIABLE_BYTE_INTEGER:
+      case MQTTPROPERTY_TYPE_VARIABLE_BYTE_INTEGER:
         len = MQTTPacket_VBIlen(prop->value.integer4);
         break;
-      case BINARY_DATA:
-      case UTF_8_ENCODED_STRING:
-      case UTF_8_STRING_PAIR:
+      case MQTTPROPERTY_TYPE_BINARY_DATA:
+      case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
+      case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
         len = 2 + prop->value.data.len;
         props->array[props->count-1].value.data.data = datadup(&prop->value.data);
-        if (type == UTF_8_STRING_PAIR)
+        if (type == MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR)
         {
           len += 2 + prop->value.value.len;
           props->array[props->count-1].value.value.data = datadup(&prop->value.value);
@@ -159,33 +159,33 @@ int MQTTProperty_write(char** pptr, MQTTProperty* prop)
       type = -1;
 
   type = MQTTProperty_getType(prop->identifier);
-  if (type >= PROPERTY_TYPE_BYTE && type <= UTF_8_STRING_PAIR)
+  if (type >= MQTTPROPERTY_TYPE_BYTE && type <= MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR)
   {
     writeChar(pptr, prop->identifier);
     switch (type)
     {
-      case PROPERTY_TYPE_BYTE:
+      case MQTTPROPERTY_TYPE_BYTE:
         writeChar(pptr, prop->value.byte);
         rc = 1;
         break;
-      case TWO_BYTE_INTEGER:
+      case MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER:
         writeInt(pptr, prop->value.integer2);
         rc = 2;
         break;
-      case FOUR_BYTE_INTEGER:
+      case MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER:
         writeInt4(pptr, prop->value.integer4);
         rc = 4;
         break;
-      case VARIABLE_BYTE_INTEGER:
+      case MQTTPROPERTY_TYPE_VARIABLE_BYTE_INTEGER:
         rc = MQTTPacket_encode(*pptr, prop->value.integer4);
         *pptr += rc;
         break;
-      case BINARY_DATA:
-      case UTF_8_ENCODED_STRING:
+      case MQTTPROPERTY_TYPE_BINARY_DATA:
+      case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
         writeMQTTLenString(pptr, prop->value.data);
         rc = prop->value.data.len + 2; /* include length field */
         break;
-      case UTF_8_STRING_PAIR:
+      case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
         writeMQTTLenString(pptr, prop->value.data);
         writeMQTTLenString(pptr, prop->value.value);
         rc = prop->value.data.len + prop->value.value.len + 4; /* include length fields */
@@ -196,12 +196,6 @@ int MQTTProperty_write(char** pptr, MQTTProperty* prop)
 }
 
 
-/**
- * write the supplied properties into a packet buffer
- * @param pptr pointer to the buffer - move the pointer as we add data
- * @param properties pointer to the property list, can be NULL
- * @return whether the write succeeded or not, number of bytes written or < 0
- */
 int MQTTProperties_write(char** pptr, const MQTTProperties* properties)
 {
   int rc = -1;
@@ -239,32 +233,32 @@ int MQTTProperty_read(MQTTProperty* prop, char** pptr, char* enddata)
 
   prop->identifier = readChar(pptr);
   type = MQTTProperty_getType(prop->identifier);
-  if (type >= PROPERTY_TYPE_BYTE && type <= UTF_8_STRING_PAIR)
+  if (type >= MQTTPROPERTY_TYPE_BYTE && type <= MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR)
   {
     switch (type)
     {
-      case PROPERTY_TYPE_BYTE:
+      case MQTTPROPERTY_TYPE_BYTE:
         prop->value.byte = readChar(pptr);
         len = 1;
         break;
-      case TWO_BYTE_INTEGER:
+      case MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER:
         prop->value.integer2 = readInt(pptr);
         len = 2;
         break;
-      case FOUR_BYTE_INTEGER:
+      case MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER:
         prop->value.integer4 = readInt4(pptr);
         len = 4;
         break;
-      case VARIABLE_BYTE_INTEGER:
+      case MQTTPROPERTY_TYPE_VARIABLE_BYTE_INTEGER:
         len = MQTTPacket_decodeBuf(*pptr, &prop->value.integer4);
         *pptr += len;
         break;
-      case BINARY_DATA:
-      case UTF_8_ENCODED_STRING:
-      case UTF_8_STRING_PAIR:
+      case MQTTPROPERTY_TYPE_BINARY_DATA:
+      case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
+      case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
         len = MQTTLenStringRead(&prop->value.data, pptr, enddata);
         prop->value.data.data = datadup(&prop->value.data);
-        if (type == UTF_8_STRING_PAIR)
+        if (type == MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR)
         {
           len += MQTTLenStringRead(&prop->value.value, pptr, enddata);
           prop->value.value.data = datadup(&prop->value.value);
@@ -315,40 +309,40 @@ int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata)
 }
 
 struct {
-	enum PropertyNames value;
+	enum MQTTPropertyCodes value;
 	const char* name;
 } nameToString[] =
 {
-  {PAYLOAD_FORMAT_INDICATOR, "PAYLOAD_FORMAT_INDICATOR"},
-  {MESSAGE_EXPIRY_INTERVAL, "MESSAGE_EXPIRY_INTERVAL"},
-  {CONTENT_TYPE, "CONTENT_TYPE"},
-  {RESPONSE_TOPIC, "RESPONSE_TOPIC"},
-  {CORRELATION_DATA, "CORRELATION_DATA"},
-  {SUBSCRIPTION_IDENTIFIER, "SUBSCRIPTION_IDENTIFIER"},
-  {SESSION_EXPIRY_INTERVAL, "SESSION_EXPIRY_INTERVAL"},
-  {ASSIGNED_CLIENT_IDENTIFER, "ASSIGNED_CLIENT_IDENTIFER"},
-  {SERVER_KEEP_ALIVE, "SERVER_KEEP_ALIVE"},
-  {AUTHENTICATION_METHOD, "AUTHENTICATION_METHOD"},
-  {AUTHENTICATION_DATA, "AUTHENTICATION_DATA"},
-  {REQUEST_PROBLEM_INFORMATION, "REQUEST_PROBLEM_INFORMATION"},
-  {WILL_DELAY_INTERVAL, "WILL_DELAY_INTERVAL"},
-  {REQUEST_RESPONSE_INFORMATION, "REQUEST_RESPONSE_INFORMATION"},
-  {RESPONSE_INFORMATION, "RESPONSE_INFORMATION"},
-  {SERVER_REFERENCE, "SERVER_REFERENCE"},
-  {REASON_STRING, "REASON_STRING"},
-  {RECEIVE_MAXIMUM, "RECEIVE_MAXIMUM"},
-  {TOPIC_ALIAS_MAXIMUM, "TOPIC_ALIAS_MAXIMUM"},
-  {TOPIC_ALIAS, "TOPIC_ALIAS"},
-  {MAXIMUM_QOS, "MAXIMUM_QOS"},
-  {RETAIN_AVAILABLE, "RETAIN_AVAILABLE"},
-  {USER_PROPERTY, "USER_PROPERTY"},
-  {MAXIMUM_PACKET_SIZE, "MAXIMUM_PACKET_SIZE"},
-  {WILDCARD_SUBSCRIPTION_AVAILABLE, "WILDCARD_SUBSCRIPTION_AVAILABLE"},
-  {SUBSCRIPTION_IDENTIFIERS_AVAILABLE, "SUBSCRIPTION_IDENTIFIERS_AVAILABLE"},
-  {SHARED_SUBSCRIPTION_AVAILABLE, "SHARED_SUBSCRIPTION_AVAILABLE"}
+  {MQTTPROPERTY_CODE_PAYLOAD_FORMAT_INDICATOR, "PAYLOAD_FORMAT_INDICATOR"},
+  {MQTTPROPERTY_CODE_MESSAGE_EXPIRY_INTERVAL, "MESSAGE_EXPIRY_INTERVAL"},
+  {MQTTPROPERTY_CODE_CONTENT_TYPE, "CONTENT_TYPE"},
+  {MQTTPROPERTY_CODE_RESPONSE_TOPIC, "RESPONSE_TOPIC"},
+  {MQTTPROPERTY_CODE_CORRELATION_DATA, "CORRELATION_DATA"},
+  {MQTTPROPERTY_CODE_SUBSCRIPTION_IDENTIFIER, "SUBSCRIPTION_IDENTIFIER"},
+  {MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL, "SESSION_EXPIRY_INTERVAL"},
+  {MQTTPROPERTY_CODE_ASSIGNED_CLIENT_IDENTIFER, "ASSIGNED_CLIENT_IDENTIFER"},
+  {MQTTPROPERTY_CODE_SERVER_KEEP_ALIVE, "SERVER_KEEP_ALIVE"},
+  {MQTTPROPERTY_CODE_AUTHENTICATION_METHOD, "AUTHENTICATION_METHOD"},
+  {MQTTPROPERTY_CODE_AUTHENTICATION_DATA, "AUTHENTICATION_DATA"},
+  {MQTTPROPERTY_CODE_REQUEST_PROBLEM_INFORMATION, "REQUEST_PROBLEM_INFORMATION"},
+  {MQTTPROPERTY_CODE_WILL_DELAY_INTERVAL, "WILL_DELAY_INTERVAL"},
+  {MQTTPROPERTY_CODE_REQUEST_RESPONSE_INFORMATION, "REQUEST_RESPONSE_INFORMATION"},
+  {MQTTPROPERTY_CODE_RESPONSE_INFORMATION, "RESPONSE_INFORMATION"},
+  {MQTTPROPERTY_CODE_SERVER_REFERENCE, "SERVER_REFERENCE"},
+  {MQTTPROPERTY_CODE_REASON_STRING, "REASON_STRING"},
+  {MQTTPROPERTY_CODE_RECEIVE_MAXIMUM, "RECEIVE_MAXIMUM"},
+  {MQTTPROPERTY_CODE_TOPIC_ALIAS_MAXIMUM, "TOPIC_ALIAS_MAXIMUM"},
+  {MQTTPROPERTY_CODE_TOPIC_ALIAS, "TOPIC_ALIAS"},
+  {MQTTPROPERTY_CODE_MAXIMUM_QOS, "MAXIMUM_QOS"},
+  {MQTTPROPERTY_CODE_RETAIN_AVAILABLE, "RETAIN_AVAILABLE"},
+  {MQTTPROPERTY_CODE_USER_PROPERTY, "USER_PROPERTY"},
+  {MQTTPROPERTY_CODE_MAXIMUM_PACKET_SIZE, "MAXIMUM_PACKET_SIZE"},
+  {MQTTPROPERTY_CODE_WILDCARD_SUBSCRIPTION_AVAILABLE, "WILDCARD_SUBSCRIPTION_AVAILABLE"},
+  {MQTTPROPERTY_CODE_SUBSCRIPTION_IDENTIFIERS_AVAILABLE, "SUBSCRIPTION_IDENTIFIERS_AVAILABLE"},
+  {MQTTPROPERTY_CODE_SHARED_SUBSCRIPTION_AVAILABLE, "SHARED_SUBSCRIPTION_AVAILABLE"}
 };
 
-const char* MQTTPropertyName(enum PropertyNames value)
+const char* MQTTPropertyName(enum MQTTPropertyCodes value)
 {
   int i = 0;
   const char* result = NULL;
@@ -379,11 +373,11 @@ DLLExport void MQTTProperties_free(MQTTProperties* props)
 
     switch (type)
     {
-    case BINARY_DATA:
-    	case UTF_8_ENCODED_STRING:
-    	case UTF_8_STRING_PAIR:
+    case MQTTPROPERTY_TYPE_BINARY_DATA:
+    	case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
+    	case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
     	  free(props->array[i].value.data.data);
-    	  if (type == UTF_8_STRING_PAIR)
+    	  if (type == MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR)
     	    free(props->array[i].value.value.data);
 	  break;
     }
@@ -415,7 +409,7 @@ MQTTProperties MQTTProperties_copy(const MQTTProperties* props)
 }
 
 
-int MQTTProperties_hasProperty(MQTTProperties *props, int propid)
+int MQTTProperties_hasProperty(MQTTProperties *props, enum MQTTPropertyCodes propid)
 {
 	int i = 0;
 	int found = 0;
@@ -432,7 +426,7 @@ int MQTTProperties_hasProperty(MQTTProperties *props, int propid)
 }
 
 
-int MQTTProperties_propertyCount(MQTTProperties *props, int propid)
+int MQTTProperties_propertyCount(MQTTProperties *props, enum MQTTPropertyCodes propid)
 {
 	int i = 0;
 	int count = 0;
@@ -446,7 +440,7 @@ int MQTTProperties_propertyCount(MQTTProperties *props, int propid)
 }
 
 
-int MQTTProperties_getNumericValueAt(MQTTProperties *props, int propid, int index)
+int MQTTProperties_getNumericValueAt(MQTTProperties *props, enum MQTTPropertyCodes propid, int index)
 {
 	int i = 0;
 	int rc = -9999999;
@@ -465,14 +459,14 @@ int MQTTProperties_getNumericValueAt(MQTTProperties *props, int propid, int inde
 			}
 			switch (MQTTProperty_getType(id))
 			{
-			case PROPERTY_TYPE_BYTE:
+			case MQTTPROPERTY_TYPE_BYTE:
 				rc = props->array[i].value.byte;
 				break;
-			case TWO_BYTE_INTEGER:
+			case MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER:
 				rc = props->array[i].value.integer2;
 				break;
-			case FOUR_BYTE_INTEGER:
-			case VARIABLE_BYTE_INTEGER:
+			case MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER:
+			case MQTTPROPERTY_TYPE_VARIABLE_BYTE_INTEGER:
 				rc = props->array[i].value.integer4;
 				break;
 			default:
@@ -486,13 +480,13 @@ int MQTTProperties_getNumericValueAt(MQTTProperties *props, int propid, int inde
 }
 
 
-int MQTTProperties_getNumericValue(MQTTProperties *props, int propid)
+int MQTTProperties_getNumericValue(MQTTProperties *props, enum MQTTPropertyCodes propid)
 {
 	return MQTTProperties_getNumericValueAt(props, propid, 0);
 }
 
 
-MQTTProperty* MQTTProperties_getPropertyAt(MQTTProperties *props, int propid, int index)
+MQTTProperty* MQTTProperties_getPropertyAt(MQTTProperties *props, enum MQTTPropertyCodes propid, int index)
 {
 	int i = 0;
 	MQTTProperty* result = NULL;
@@ -517,7 +511,7 @@ MQTTProperty* MQTTProperties_getPropertyAt(MQTTProperties *props, int propid, in
 }
 
 
-MQTTProperty* MQTTProperties_getProperty(MQTTProperties *props, int propid)
+MQTTProperty* MQTTProperties_getProperty(MQTTProperties *props, enum MQTTPropertyCodes propid)
 {
 	return MQTTProperties_getPropertyAt(props, propid, 0);
 }

@@ -2034,7 +2034,7 @@ int MQTTClient_unsubscribe(MQTTClient handle, const char* topic)
 }
 
 
-MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int payloadlen, void* payload,
+MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int payloadlen, const void* payload,
 		int qos, int retained, MQTTProperties* properties, MQTTClient_deliveryToken* deliveryToken)
 {
 	int rc = MQTTCLIENT_SUCCESS;
@@ -2085,7 +2085,7 @@ MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int p
 	}
 
 	p = malloc(sizeof(Publish) + payloadlen);
-	p->payload = payload;
+	p->payload = (void*)payload;
 	p->payloadlen = payloadlen;
 	if (payloadlen > 0)
 	{
@@ -2147,7 +2147,7 @@ exit:
 }
 
 
-int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, void* payload,
+int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, const void* payload,
 							 int qos, int retained, MQTTClient_deliveryToken* deliveryToken)
 {
 	MQTTClients* m = handle;

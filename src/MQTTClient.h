@@ -1037,10 +1037,10 @@ DLLExport MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count,
   * @return ::MQTTCLIENT_SUCCESS if the message is accepted for publication.
   * An error code is returned if there was a problem accepting the message.
   */
-DLLExport int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, void* payload, int qos, int retained,
+DLLExport int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, const void* payload, int qos, int retained,
 																 MQTTClient_deliveryToken* dt);
 
-DLLExport MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int payloadlen, void* payload,
+DLLExport MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int payloadlen, const void* payload,
 		int qos, int retained, MQTTProperties* properties, MQTTClient_deliveryToken* dt);
 /**
   * This function attempts to publish a message to a given topic (see also

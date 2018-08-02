@@ -1316,7 +1316,7 @@ DLLExport int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* const
   * @return ::MQTTASYNC_SUCCESS if the message is accepted for publication.
   * An error code is returned if there was a problem accepting the message.
   */
-DLLExport int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen, void* payload, int qos,
+DLLExport int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen, const void* payload, int qos,
 		int retained, MQTTAsync_responseOptions* response);
 
 

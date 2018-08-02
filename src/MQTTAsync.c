@@ -3301,7 +3301,7 @@ static int MQTTAsync_countBufferedMessages(MQTTAsyncs* m)
 }
 
 
-int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen, void* payload,
+int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen, const void* payload,
 							 int qos, int retained, MQTTAsync_responseOptions* response)
 {
 	int rc = MQTTASYNC_SUCCESS;

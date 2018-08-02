@@ -239,6 +239,7 @@ ${ASYNC_UTILS}: ${blddir}/samples/%: ${srcdir}/samples/%.c ${srcdir}/samples/pub
 	${CC} -o $@ $< -l${MQTTLIB_AS} ${FLAGS_EXES} ${srcdir}/samples/pubsub_opts.c
 
 $(blddir_work)/VersionInfo.h: $(srcdir)/VersionInfo.h.in
+	-mkdir -p $(blddir_work)
 	$(SED_COMMAND) $< > $@
 
 ${MQTTLIB_C_TARGET}: ${SOURCE_FILES_C} ${HEADERS_C} $(blddir_work)/VersionInfo.h

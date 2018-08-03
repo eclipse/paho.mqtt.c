@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,6 +15,9 @@
  *    Ian Craggs - async client updates
  *    Ian Craggs - fix for bug 432903 - queue persistence
  *******************************************************************************/
+
+#if !defined(MQTTPERSISTENCE_H)
+#define MQTTPERSISTENCE_H
 
 #if defined(__cplusplus)
  extern "C" {
@@ -71,4 +74,6 @@ int MQTTPersistence_persistQueueEntry(Clients* aclient, MQTTPersistence_qEntry* 
 int MQTTPersistence_restoreMessageQueue(Clients* c);
 #ifdef __cplusplus
      }
+#endif
+
 #endif

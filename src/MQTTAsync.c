@@ -185,7 +185,7 @@ void MQTTAsync_init(void)
 #define WINAPI
 #endif
 
-static volatile int initialized = 0;
+static volatile int global_initialized = 0;
 static List* handles = NULL;
 static int tostop = 0;
 static List* commands = NULL;
@@ -514,7 +514,7 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 		goto exit;
 	}
 
-	if (!initialized)
+	if (!global_initialized)
 	{
 		#if defined(HEAP_H)
 			Heap_initialize();
@@ -528,7 +528,7 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 #if defined(OPENSSL)
 		SSLSocket_initialize();
 #endif
-		initialized = 1;
+		global_initialized = 1;
 	}
 	m = malloc(sizeof(MQTTAsyncs));
 	*handle = m;
@@ -606,7 +606,7 @@ static void MQTTAsync_terminate(void)
 {
 	FUNC_ENTRY;
 	MQTTAsync_stop();
-	if (initialized)
+	if (global_initialized)
 	{
 		ListElement* elem = NULL;
 		ListFree(bstate->clients);
@@ -620,7 +620,7 @@ static void MQTTAsync_terminate(void)
 			Heap_terminate();
 		#endif
 		Log_terminate();
-		initialized = 0;
+		global_initialized = 0;
 	}
 	FUNC_EXIT;
 }

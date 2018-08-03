@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -207,7 +207,7 @@ int SocketBuffer_getQueuedChar(int socket, char* c)
 		if (queue->index < queue->headerlen)
 		{
 			*c = queue->fixed_header[(queue->index)++];
-			Log(TRACE_MAX, -1, "index is now %d, headerlen %d", queue->index, queue->headerlen);
+			Log(TRACE_MAX, -1, "index is now %d, headerlen %d", queue->index, (int)queue->headerlen);
 			rc = SOCKETBUFFER_COMPLETE;
 			goto exit;
 		}
@@ -309,7 +309,7 @@ void SocketBuffer_queueChar(int socket, char c)
 		curq->fixed_header[(curq->index)++] = c;
 		curq->headerlen = curq->index;
 	}
-	Log(TRACE_MAX, -1, "queueChar: index is now %d, headerlen %d", curq->index, curq->headerlen);
+	Log(TRACE_MAX, -1, "queueChar: index is now %d, headerlen %d", curq->index, (int)curq->headerlen);
 	FUNC_EXIT;
 }
 

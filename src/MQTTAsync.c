@@ -1029,13 +1029,19 @@ static void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* comma
 		}
 		else if (command->onSuccess)
 		{
+			MQTTAsync_successData data;
+
+			memset(&data, '\0', sizeof(data));
 			Log(TRACE_MIN, -1, "Calling disconnect complete for client %s", m->c->clientID);
-			(*(command->onSuccess))(command->context, NULL);
+			(*(command->onSuccess))(command->context, &data);
 		}
 		else if (command->onSuccess5)
 		{
+			MQTTAsync_successData5 data = MQTTAsync_successData5_initializer;
+
+			data.reasonCode = MQTTASYNC_SUCCESS;
 			Log(TRACE_MIN, -1, "Calling disconnect complete for client %s", m->c->clientID);
-			(*(command->onSuccess5))(command->context, NULL);
+			(*(command->onSuccess5))(command->context, &data);
 		}
 	}
 	FUNC_EXIT;
@@ -1552,13 +1558,21 @@ static int MQTTAsync_processCommand(void)
 		{
 			if (command->command.onFailure)
 			{
+				MQTTAsync_failureData data;
+
+				data.token = 0;
+				data.code = rc;
+				data.message = NULL;
 				Log(TRACE_MIN, -1, "Calling command failure for client %s", command->client->c->clientID);
-				(*(command->command.onFailure))(command->command.context, NULL);
+				(*(command->command.onFailure))(command->command.context, &data);
 			}
 			else if (command->command.onFailure5)
 			{
+				MQTTAsync_failureData5 data = MQTTAsync_failureData5_initializer;
+
+				data.code = rc;
 				Log(TRACE_MIN, -1, "Calling command failure for client %s", command->client->c->clientID);
-				(*(command->command.onFailure5))(command->command.context, NULL);
+				(*(command->command.onFailure5))(command->command.context, &data);
 			}
 			if (command->command.type == CONNECT)
 			{
@@ -1678,15 +1692,22 @@ static void MQTTAsync_checkTimeouts(void)
 			{
 				if (com->command.onFailure)
 				{
+					MQTTAsync_failureData data;
+
+					memset(&data, '\0', sizeof(data));
+					data.code = MQTTASYNC_OPERATION_INCOMPLETE;
 					Log(TRACE_MIN, -1, "Calling %s failure for client %s",
 								MQTTPacket_name(com->command.type), m->c->clientID);
-					(*(com->command.onFailure))(com->command.context, NULL);
+					(*(com->command.onFailure))(com->command.context, &data);
 				}
 				else if (com->command.onFailure5)
 				{
+					MQTTAsync_failureData5 data = MQTTAsync_failureData5_initializer;
+
+					data.reasonCode = MQTTASYNC_OPERATION_INCOMPLETE;
 					Log(TRACE_MIN, -1, "Calling %s failure for client %s",
 								MQTTPacket_name(com->command.type), m->c->clientID);
-					(*(com->command.onFailure5))(com->command.context, NULL);
+					(*(com->command.onFailure5))(com->command.context, &data);
 				}
 				timed_out_count++;
 			}
@@ -2253,10 +2274,16 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 							{
 								Log(TRACE_MIN, -1, "Calling unsubscribe success for client %s", m->c->clientID);
 								if (command->command.onSuccess)
-									(*(command->command.onSuccess))(command->command.context, NULL);
+								{
+									MQTTAsync_successData data;
+
+									memset(&data, '\0', sizeof(data));
+									data.token = command->command.token;
+									(*(command->command.onSuccess))(command->command.context, &data);
+								}
 								else
 								{
-									MQTTAsync_successData5 data;
+									MQTTAsync_successData5 data = MQTTAsync_successData5_initializer;
 									enum MQTTReasonCodes* array = NULL;
 
 									data.reasonCode = *(enum MQTTReasonCodes*)(unsub->reasonCodes->first->content);

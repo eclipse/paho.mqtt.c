@@ -808,7 +808,6 @@ int WebSocket_receiveFrame(networkHandles *net,
 					}
 					/* convert from big-endian 64 to host */
 					payload_len = (size_t)be64toh(*(uint64_t*)b);
-					printf("payload len %lu\n", payload_len);
 				}
 
 				if ( has_mask )

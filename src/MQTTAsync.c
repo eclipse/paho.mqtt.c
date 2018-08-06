@@ -1663,10 +1663,6 @@ static void MQTTAsync_checkTimeouts(void)
 	last = now;
 	while (ListNextElement(handles, &current))		/* for each client */
 	{
-		ListElement* cur_response = NULL;
-		int i = 0,
-			timed_out_count = 0;
-
 		MQTTAsyncs* m = (MQTTAsyncs*)(current->content);
 
 		/* check disconnect timeout */
@@ -1680,40 +1676,11 @@ static void MQTTAsync_checkTimeouts(void)
 			continue;
 		}
 
-		timed_out_count = 0;
-		/* check response timeouts */
-		while (ListNextElement(m->responses, &cur_response))
-		{
-			MQTTAsync_queuedCommand* com = (MQTTAsync_queuedCommand*)(cur_response->content);
-
-			if (1 /*MQTTAsync_elapsed(com->command.start_time) < 120000*/)
-				break; /* command has not timed out */
-			else
-			{
-				if (com->command.onFailure)
-				{
-					MQTTAsync_failureData data;
-
-					memset(&data, '\0', sizeof(data));
-					data.code = MQTTASYNC_OPERATION_INCOMPLETE;
-					Log(TRACE_MIN, -1, "Calling %s failure for client %s",
-								MQTTPacket_name(com->command.type), m->c->clientID);
-					(*(com->command.onFailure))(com->command.context, &data);
-				}
-				else if (com->command.onFailure5)
-				{
-					MQTTAsync_failureData5 data = MQTTAsync_failureData5_initializer;
-
-					data.reasonCode = MQTTASYNC_OPERATION_INCOMPLETE;
-					Log(TRACE_MIN, -1, "Calling %s failure for client %s",
-								MQTTPacket_name(com->command.type), m->c->clientID);
-					(*(com->command.onFailure5))(com->command.context, &data);
-				}
-				timed_out_count++;
-			}
-		}
-		for (i = 0; i < timed_out_count; ++i)
-			ListRemoveHead(m->responses);	/* remove the first response in the list */
+		/* There was a section here that removed timed-out responses.  But if the command had completed and
+		 * there was a response, then we may as well report it, no?
+		 *
+		 * In any case, that section was disabled when automatic reconnect was implemented.
+		 */
 
 		if (m->automaticReconnect && m->retrying)
 		{

@@ -41,7 +41,7 @@
  * @endcond
  * @cond MQTTClient_main
  * @mainpage MQTT Client library for C
- * &copy; Copyright IBM Corp. 2009, 2017
+ * &copy; Copyright IBM Corp. 2009, 2018
  *
  * @brief An MQTT client library in C.
  *

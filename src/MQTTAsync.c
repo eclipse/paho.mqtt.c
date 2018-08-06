@@ -2069,8 +2069,8 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 				{
 					Connack* connack = (Connack*)pack;
 					int sessionPresent = connack->flags.bits.sessionPresent;
-					int rc = MQTTAsync_completeConnection(m, connack);
-
+          
+					rc = MQTTAsync_completeConnection(m, connack);
 					if (rc == MQTTASYNC_SUCCESS)
 					{
 						int onSuccess = 0;

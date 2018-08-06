@@ -213,7 +213,7 @@ static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
 			buf0[buf_len++] |= data_len & 0x7F;
 
 		/* 3rd byte & 4th bytes - extended payload length */
-		else if ( data_len <= 65536u )
+		else if ( data_len < 65536u )
 		{
 			uint16_t len = htobe16((uint16_t)data_len);
 			buf0[buf_len++] |= (126u & 0x7F);
@@ -283,11 +283,12 @@ size_t WebSocket_calculateFrameHeaderSize(networkHandles *net, int mask_data,
 	int ret = 0;
 	if ( net && net->websocket )
 	{
-		ret += 2; /* header 2 bytes */
-		if ( data_len >= 126 )
-			ret += 2; /* for extra 2-bytes for payload length */
-		else if ( data_len > 65536u )
-			ret += 8; /* for extra 8-bytes for payload length */
+		if ( data_len < 126u)
+			ret = 2; /* header 2 bytes */
+		else if ( data_len < 65536u )
+			ret = 4; /* for extra 2-bytes for payload length */
+		else if ( data_len < 0xFFFFFFFFFFFFFFFF )
+			ret = 10; /* for extra 8-bytes for payload length */
 		if ( mask_data & 0x1 )
 			ret += sizeof(uint32_t); /* for mask */
 	}
@@ -807,6 +808,7 @@ int WebSocket_receiveFrame(networkHandles *net,
 					}
 					/* convert from big-endian 64 to host */
 					payload_len = (size_t)be64toh(*(uint64_t*)b);
+					printf("payload len %lu\n", payload_len);
 				}
 
 				if ( has_mask )

@@ -75,7 +75,7 @@ int messageArrived(void *context, char *topicName, int topicLen, MQTTAsync_messa
 	size_t delimlen = 0;
 
 	if (opts.verbose)
-		printf("%s\t", topicName);
+		printf("%d %s\t", message->payloadlen, topicName);
 	if (opts.delimiter)
 		delimlen = strlen(opts.delimiter);
 	if (opts.delimiter == NULL || (message->payloadlen > delimlen &&

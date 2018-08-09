@@ -438,6 +438,7 @@ char* readfile(int* data_len, struct pubsub_opts* opts)
 	{
 		fprintf(stderr, "%d bytes read of %ld expected for file %s\n", *data_len, filesize, opts->filename);
 		fclose(infile);
+		free(buffer);
 		return NULL;
 	}
 

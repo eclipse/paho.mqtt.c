@@ -256,12 +256,7 @@ int getopts(int argc, char** argv, struct pubsub_opts* opts)
 				return 1;
 		}
 		else if (strcmp(argv[count], "--insecure") == 0)
-		{
-			if (++count < argc)
-				opts->insecure = 1;
-			else
-				return 1;
-		}
+			opts->insecure = 1;
 		else if (strcmp(argv[count], "--capath") == 0)
 		{
 			if (++count < argc)

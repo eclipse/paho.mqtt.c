@@ -161,7 +161,10 @@ void onConnect(void* context, MQTTAsync_successData* response)
 		if (buffer == NULL)
 			toStop = 1;
 		else
+		{
 			rc = mypublish(client, data_len, buffer);
+			free(buffer);
+		}
 	}
 
 	connected = 1;

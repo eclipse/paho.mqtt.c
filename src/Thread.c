@@ -31,6 +31,7 @@
 #if defined(THREAD_UNIT_TESTS)
 #define NOSTACKTRACE
 #endif
+#include "Log.h"
 #include "StackTrace.h"
 
 #undef malloc
@@ -369,7 +370,9 @@ cond_type Thread_create_cond(void)
 #if !defined(OSX)
 	if ((rc = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC)) != 0)
 	{
+#if !defined(NOLOG_MESSAGES)
 		Log(LOG_ERROR, -1, "Error %d calling pthread_condattr_setclock(CLOCK_MONOTONIC)", rc);
+#endif
 		use_clock_monotonic = 0;
 	}
 #endif

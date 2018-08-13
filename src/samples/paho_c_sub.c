@@ -202,6 +202,9 @@ int main(int argc, char** argv)
 	const char* version = NULL;
 	const char* program_name = "paho_c_sub";
 	MQTTAsync_nameValue* infos = MQTTAsync_getVersionInfo();
+#if !defined(WIN32)
+    struct sigaction sa;
+#endif
 
 	if (argc < 2)
 		usage(&opts, (pubsub_opts_nameValue*)infos, program_name);
@@ -232,14 +235,18 @@ int main(int argc, char** argv)
 
 	MQTTAsync_setCallbacks(client, client, NULL, messageArrived, NULL);
 
+#if defined(WIN32)
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
+#else
+    memset(&sa, 0, sizeof(struct sigaction));
+    sa.sa_handler = cfinish;
+    sa.sa_flags = 0;
 
-	conn_opts.keepAliveInterval = opts.keepalive;
-	conn_opts.cleansession = 1;
-	conn_opts.username = opts.username;
-	conn_opts.password = opts.password;
-	conn_opts.MQTTVersion = opts.MQTTVersion;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+#endif
+
 	if (opts.MQTTVersion == MQTTVERSION_5)
 	{
 		MQTTAsync_connectOptions conn_opts5 = MQTTAsync_connectOptions_initializer5;
@@ -252,6 +259,11 @@ int main(int argc, char** argv)
 		conn_opts.onSuccess = onConnect;
 		conn_opts.onFailure = onConnectFailure;
 	}
+	conn_opts.keepAliveInterval = opts.keepalive;
+	conn_opts.cleansession = 1;
+	conn_opts.username = opts.username;
+	conn_opts.password = opts.password;
+	conn_opts.MQTTVersion = opts.MQTTVersion;
 	conn_opts.context = client;
 	conn_opts.automaticReconnect = 1;
 

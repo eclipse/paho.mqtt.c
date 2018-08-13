@@ -95,7 +95,7 @@ int mypublish(MQTTAsync client, int datalen, char* data);
 
 void onConnectFailure5(void* context, MQTTAsync_failureData5* response)
 {
-	printf("Connect failed, rc %d reason code %d\n", response->code, response->reasonCode);
+	printf("Connect failed, rc %d reason code %u\n", response->code, response->reasonCode);
 	connected = -1;
 
 	MQTTAsync client = (MQTTAsync)context;
@@ -221,10 +221,6 @@ void myconnect(MQTTAsync client)
 
 	if (opts.verbose)
 		printf("Connecting\n");
-	conn_opts.keepAliveInterval = opts.keepalive;
-	conn_opts.username = opts.username;
-	conn_opts.password = opts.password;
-	conn_opts.MQTTVersion = opts.MQTTVersion;
 	if (opts.MQTTVersion == MQTTVERSION_5)
 	{
 		MQTTAsync_connectOptions conn_opts5 = MQTTAsync_connectOptions_initializer5;
@@ -239,6 +235,10 @@ void myconnect(MQTTAsync client)
 		conn_opts.onFailure = onConnectFailure;
 		conn_opts.cleansession = 1;
 	}
+	conn_opts.keepAliveInterval = opts.keepalive;
+	conn_opts.username = opts.username;
+	conn_opts.password = opts.password;
+	conn_opts.MQTTVersion = opts.MQTTVersion;
 	conn_opts.context = client;
 	conn_opts.automaticReconnect = 1;
 
@@ -306,6 +306,9 @@ int main(int argc, char** argv)
 	const char* version = NULL;
 	const char* program_name = "paho_c_pub";
 	MQTTAsync_nameValue* infos = MQTTAsync_getVersionInfo();
+#if !defined(WIN32)
+    struct sigaction sa;
+#endif
 
 	if (argc < 2)
 		usage(&opts, (pubsub_opts_nameValue*)infos, program_name);
@@ -332,8 +335,17 @@ int main(int argc, char** argv)
 	create_opts.sendWhileDisconnected = 1;
 	rc = MQTTAsync_createWithOptions(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL, &create_opts);
 
+#if defined(WIN32)
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
+#else
+    memset(&sa, 0, sizeof(struct sigaction));
+    sa.sa_handler = cfinish;
+    sa.sa_flags = 0;
+
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+#endif
 
 	rc = MQTTAsync_setCallbacks(client, client, NULL, messageArrived, NULL);
 

@@ -99,7 +99,6 @@ void onConnectFailure5(void* context, MQTTAsync_failureData5* response)
 	connected = -1;
 
 	MQTTAsync client = (MQTTAsync)context;
-	myconnect(client);
 }
 
 void onConnectFailure(void* context, MQTTAsync_failureData* response)
@@ -108,7 +107,6 @@ void onConnectFailure(void* context, MQTTAsync_failureData* response)
 	connected = -1;
 
 	MQTTAsync client = (MQTTAsync)context;
-	myconnect(client);
 }
 
 

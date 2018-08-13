@@ -349,6 +349,11 @@ int Thread_destroy_sem(sem_type sem)
 
 
 #if !defined(WIN32) && !defined(WIN64)
+
+#if !defined(OSX)
+static int use_clock_monotonic = 1;
+#endif
+
 /**
  * Create a new condition variable
  * @return the condition variable struct
@@ -362,7 +367,11 @@ cond_type Thread_create_cond(void)
 	FUNC_ENTRY;
 	pthread_condattr_init(&attr);
 #if !defined(OSX)
-	pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+	if ((rc = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC)) != 0)
+	{
+		Log(LOG_ERROR, -1, "Error %d calling pthread_condattr_setclock(CLOCK_MONOTONIC)", rc);
+		use_clock_monotonic = 0;
+	}
 #endif
 
 	condvar = malloc(sizeof(cond_type_struct));
@@ -403,7 +412,10 @@ int Thread_wait_cond(cond_type condvar, int timeout)
 #if defined(OSX)
 	clock_gettime(CLOCK_REALTIME, &cond_timeout);
 #else
-	clock_gettime(CLOCK_MONOTONIC, &cond_timeout);
+	if (use_clock_monotonic)
+		clock_gettime(CLOCK_MONOTONIC, &cond_timeout);
+	else
+		clock_gettime(CLOCK_REALTIME, &cond_timeout);
 #endif
 
 	cond_timeout.tv_sec += timeout;

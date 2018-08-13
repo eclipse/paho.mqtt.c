@@ -150,8 +150,8 @@ typedef struct
 		} bits;
 #endif
 	} flags;	 /**< connack flags byte */
-	char rc; /**< connack reason code */
-	int MQTTVersion;  /**< the version of MQTT */
+	unsigned char rc; /**< connack reason code */
+	unsigned int MQTTVersion;  /**< the version of MQTT */
 	MQTTProperties properties; /**< MQTT 5.0 properties.  Not used for MQTT < 5.0 */
 } Connack;
 

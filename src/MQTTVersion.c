@@ -80,7 +80,7 @@ char* FindString(char* filename, const char* eyecatcher_input)
 	if ((infile = fopen(filename, "rb")) != NULL)
 	{
 		size_t buflen = strlen(eyecatcher);
-		char* buffer = (char*) malloc(buflen);
+		char* buffer = (char*) malloc(buflen); /* lgtm [cpp/no-space-for-terminator] */
 
 		if (buffer != NULL)
 		{

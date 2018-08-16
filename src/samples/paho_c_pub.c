@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2018 IBM Corp.
+ * Copyright (c) 2012, 2018 IBM Corp., and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial contribution
  *    Guilherme Maciel Ferreira - add keep alive option
+ *    Ian Craggs - add full capability
  *******************************************************************************/
 
 #include "MQTTAsync.h"
@@ -121,7 +122,7 @@ void onConnect5(void* context, MQTTAsync_successData5* response)
 	if (opts.null_message == 1)
 		rc = mypublish(client, 0, "");
 	else if (opts.message)
-		rc = mypublish(client, strlen(opts.message), opts.message);
+		rc = mypublish(client, (int)strlen(opts.message), opts.message);
 	else if (opts.filename)
 	{
 		int data_len = 0;
@@ -150,7 +151,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	if (opts.null_message == 1)
 		rc = mypublish(client, 0, "");
 	else if (opts.message)
-		rc = mypublish(client, strlen(opts.message), opts.message);
+		rc = mypublish(client, (int)strlen(opts.message), opts.message);
 	else if (opts.filename)
 	{
 		int data_len = 0;
@@ -362,9 +363,9 @@ int main(int argc, char** argv)
 		{
 			property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 			property.value.data.data = opts.user_property.name;
-			property.value.data.len = strlen(opts.user_property.name);
+			property.value.data.len = (int)strlen(opts.user_property.name);
 			property.value.value.data = opts.user_property.value;
-			property.value.value.len = strlen(opts.user_property.value);
+			property.value.value.len = (int)strlen(opts.user_property.value);
 			MQTTProperties_add(&props, &property);
 		}
 		pub_opts.properties = props;

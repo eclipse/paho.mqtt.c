@@ -911,7 +911,6 @@ int test_flow_control(struct Options options)
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
 	MQTTProperties connect_props = MQTTProperties_initializer;
-	MQTTProperty property;
 	MQTTClient_message pubmsg = MQTTClient_message_initializer;
 	MQTTResponse response = MQTTResponse_initializer;
 	MQTTClient_deliveryToken dt;
@@ -1010,7 +1009,6 @@ int test_error_reporting(struct Options options)
 	MQTTProperties props = MQTTProperties_initializer;
 	MQTTProperty property;
 	MQTTResponse response = MQTTResponse_initializer;
-	MQTTClient_deliveryToken dt;
 	int rc = 0, i = 0, count = 0;
 	char* test_topic = "test_error_reporting";
 	int receive_maximum = 65535;
@@ -1055,9 +1053,9 @@ int test_error_reporting(struct Options options)
 
 	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "unsub user property";
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	property.value.value.data = "unsub user property value";
-	property.value.value.len = strlen(property.value.value.data);
+	property.value.value.len = (int)strlen(property.value.value.data);
 	MQTTProperties_add(&props, &property);
 	response = MQTTClient_subscribe5(c, test_topic, 2, NULL, &props);
 	assert("Good rc from subscribe", response.reasonCode == MQTTREASONCODE_GRANTED_QOS_2, "rc was %d", response.reasonCode);
@@ -1191,9 +1189,9 @@ int test_qos_1_2_errors(struct Options options)
 
 	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "unsub user property";
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	property.value.value.data = "unsub user property value";
-	property.value.value.len = strlen(property.value.value.data);
+	property.value.value.len = (int)strlen(property.value.value.data);
 	MQTTProperties_add(&pubmsg.properties, &property);
 
 	response = MQTTClient_publishMessage5(c, test_topic, &pubmsg, &dt);
@@ -1413,12 +1411,12 @@ int test_request_response(struct Options options)
 
 	property.identifier = MQTTPROPERTY_CODE_RESPONSE_TOPIC;
 	property.value.data.data = test_request_response_globals.response_topic;
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	MQTTProperties_add(&pubmsg.properties, &property);
 
 	property.identifier = MQTTPROPERTY_CODE_CORRELATION_DATA;
 	property.value.data.data = test_request_response_globals.correlation_id;
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	MQTTProperties_add(&pubmsg.properties, &property);
 
 	response = MQTTClient_publishMessage5(c, test_request_response_globals.request_topic, &pubmsg, &dt);
@@ -1439,7 +1437,7 @@ int test_request_response(struct Options options)
 	MQTTProperties_free(&pubmsg.properties);
 	property.identifier = MQTTPROPERTY_CODE_CORRELATION_DATA;
 	property.value.data.data = "request no 1";
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	MQTTProperties_add(&pubmsg.properties, &property);
 
 	response = MQTTClient_publishMessage5(c, test_request_response_globals.response_topic, &pubmsg, &dt);
@@ -1667,7 +1665,6 @@ int test_shared_subscriptions(struct Options options)
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer5;
 	MQTTProperties connect_props = MQTTProperties_initializer;
 	MQTTProperties subs_props = MQTTProperties_initializer;
-	MQTTProperty property;
 	MQTTClient_message pubmsg = MQTTClient_message_initializer;
 	MQTTResponse response = MQTTResponse_initializer;
 	MQTTClient_deliveryToken dt;

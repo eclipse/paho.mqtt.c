@@ -433,7 +433,7 @@ char* readfile(int* data_len, struct pubsub_opts* opts)
 		fclose(infile);
 		return NULL;
 	}
-	*data_len = fread(buffer, 1, filesize, infile);
+	*data_len = (int)fread(buffer, 1, filesize, infile);
 	if (*data_len != filesize)
 	{
 		fprintf(stderr, "%d bytes read of %ld expected for file %s\n", *data_len, filesize, opts->filename);

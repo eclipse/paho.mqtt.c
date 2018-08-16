@@ -312,7 +312,6 @@ int test_client_topic_aliases_messageArrived(void* context, char* topicName, int
 {
 	MQTTAsync c = (MQTTAsync)context;
 	static int received = 0;
-	int rc;
 
 	received++;
 	assert("Message structure version should be 1", message->struct_version == 1,
@@ -492,9 +491,9 @@ int test_client_topic_aliases(struct Options options)
 
 	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "test user property";
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	property.value.value.data = "test user property value";
-	property.value.value.len = strlen(property.value.value.data);
+	property.value.value.len = (int)strlen(property.value.value.data);
 	MQTTProperties_add(&props, &property);
 
 	opts.connectProperties = &props;
@@ -556,7 +555,6 @@ int test_server_topic_aliases_messageArrived(void* context, char* topicName, int
 	static int received = 0;
 	static int first_topic_alias = 0;
 	int topicAlias = 0;
-	int rc;
 
 	received++;
 	assert("Message structure version should be 1", message->struct_version == 1,
@@ -601,7 +599,6 @@ void test_server_topic_aliases_onSubscribe(void* context, MQTTAsync_successData5
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	MQTTProperty property;
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	int qos = 0, rc;
 
@@ -630,7 +627,6 @@ void test_server_topic_aliases_onConnect(void* context, MQTTAsync_successData5* 
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	MQTTProperty property;
 	int rc;
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
@@ -737,7 +733,6 @@ struct
 int test_subscription_ids_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* message)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	int rc;
 
 	test_subscription_ids_globals.messages_arrived++;
 
@@ -1071,7 +1066,6 @@ void test_error_reporting_onUnsubscribe(void* context, MQTTAsync_successData5* r
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	int rc;
 	int i = 0;
 
 	MyLog(LOGA_INFO, "Unsuback properties:");
@@ -1124,9 +1118,9 @@ void test_error_reporting_onSubscribe(void* context, MQTTAsync_successData5* res
 
 	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "test user property";
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	property.value.value.data = "test user property value";
-	property.value.value.len = strlen(property.value.value.data);
+	property.value.value.len = (int)strlen(property.value.value.data);
 	MQTTProperties_add(&opts.properties, &property);
 
 	rc = MQTTAsync_unsubscribeMany(c, 2, topics, &opts);
@@ -1160,9 +1154,9 @@ void test_error_reporting_onConnect(void* context, MQTTAsync_successData5* respo
 
 	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "test user property";
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	property.value.value.data = "test user property value";
-	property.value.value.len = strlen(property.value.value.data);
+	property.value.value.len = (int)strlen(property.value.value.data);
 	MQTTProperties_add(&opts.properties, &property);
 
 	opts.subscribeOptionsCount = 2;
@@ -1253,8 +1247,6 @@ void test_qos_1_2_errors_onPublishFailure3(void* context, MQTTAsync_failureData5
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	MQTTProperty property;
-	int rc;
 
 	MyLog(LOGA_INFO, "Callback: publish failure, reason code \"%s\" msgid: %d packet type: ",
 			MQTTReasonCodeString(response->reasonCode), response->token, response->packet_type);
@@ -1289,9 +1281,9 @@ void test_qos_1_2_errors_onPublishFailure2(void* context, MQTTAsync_failureData5
 
 	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "pub user property";
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	property.value.value.data = "pub user property value";
-	property.value.value.len = strlen(property.value.value.data);
+	property.value.value.len = (int)strlen(property.value.value.data);
 	MQTTProperties_add(&pubmsg.properties, &property);
 
 	rc = MQTTAsync_sendMessage(c, "test_qos_1_2_errors_pubcomp", &pubmsg, &opts);
@@ -1327,9 +1319,9 @@ void test_qos_1_2_errors_onPublishFailure(void* context, MQTTAsync_failureData5*
 
 	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "pub user property";
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	property.value.value.data = "pub user property value";
-	property.value.value.len = strlen(property.value.value.data);
+	property.value.value.len = (int)strlen(property.value.value.data);
 	MQTTProperties_add(&pubmsg.properties, &property);
 
 	rc = MQTTAsync_sendMessage(c, test_qos_1_2_errors_globals.test_topic, &pubmsg, &opts);
@@ -1368,9 +1360,9 @@ void test_qos_1_2_errors_onConnect(void* context, MQTTAsync_successData5* respon
 
 	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "pub user property";
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	property.value.value.data = "pub user property value";
-	property.value.value.len = strlen(property.value.value.data);
+	property.value.value.len = (int)strlen(property.value.value.data);
 	MQTTProperties_add(&pubmsg.properties, &property);
 
 	rc = MQTTAsync_sendMessage(c, test_qos_1_2_errors_globals.test_topic, &pubmsg, &opts);
@@ -1500,7 +1492,7 @@ int test_request_response_messageArrived(void* context, char* topicName, int top
 
 		property.identifier = MQTTPROPERTY_CODE_CORRELATION_DATA;
 		property.value.data.data = test_request_response_globals.correlation_id;
-		property.value.data.len = strlen(property.value.data.data);
+		property.value.data.len = (int)strlen(property.value.data.data);
 		MQTTProperties_add(&pubmsg.properties, &property);
 
 		memcpy(myTopicName, response_topic_prop->value.data.data, response_topic_prop->value.data.len);
@@ -1574,12 +1566,12 @@ void test_request_response_onSubscribe(void* context, MQTTAsync_successData5* re
 
 	property.identifier = MQTTPROPERTY_CODE_RESPONSE_TOPIC;
 	property.value.data.data = test_request_response_globals.response_topic;
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	MQTTProperties_add(&pubmsg.properties, &property);
 
 	property.identifier = MQTTPROPERTY_CODE_CORRELATION_DATA;
 	property.value.data.data = test_request_response_globals.correlation_id;
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	MQTTProperties_add(&pubmsg.properties, &property);
 
 	rc = MQTTAsync_sendMessage(c, test_request_response_globals.request_topic, &pubmsg, &opts);
@@ -1685,7 +1677,6 @@ struct
 int test_subscribeOptions_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* message)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	int rc;
 
 	test_subscribeOptions_globals.messages_arrived++;
 
@@ -1873,7 +1864,6 @@ struct
 int test_shared_subscriptions_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* message)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	int rc;
 
 	test_shared_subscriptions_globals.messages_arrived++;
 
@@ -1923,7 +1913,7 @@ void test_shared_subscriptions_onSubscribe(void* context, MQTTAsync_successData5
 		/* for each message we publish, only one of the subscribers should get it, not both */
 		sprintf(buf, "shared subscriptions sequence number %d", i);
 		pubmsg.payload = buf;
-		pubmsg.payloadlen = strlen(buf);
+		pubmsg.payloadlen = (int)strlen(buf);
 		pubmsg.retained = 0;
 		pubmsg.qos = 2;
 
@@ -1945,7 +1935,6 @@ void test_shared_subscriptions_onConnectd(void* context, MQTTAsync_successData5*
 {
 	MQTTAsync d = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	MQTTProperty property;
 	int rc;
 
 	MyLog(LOGA_DEBUG, "In shared subscriptions connect d onSuccess callback, context %p", context);
@@ -1966,7 +1955,6 @@ void test_shared_subscriptions_onConnectc(void* context, MQTTAsync_successData5*
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	MQTTProperty property;
 	int rc;
 
 	MyLog(LOGA_DEBUG, "In shared subscriptions connect c onSuccess callback, context %p", context);

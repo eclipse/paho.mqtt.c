@@ -305,7 +305,7 @@ int test_sem(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Main thread ending");
 
-	exit: MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
+	/*exit: */ MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 	write_test_result();
 
@@ -470,7 +470,7 @@ int test_mutex(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Main thread ending");
 
-	exit: MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
+	/*exit:*/ MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 	write_test_result();
 

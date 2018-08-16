@@ -359,9 +359,9 @@ int test1_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 
 		property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 		property.value.data.data = "test user property";
-		property.value.data.len = strlen(property.value.data.data);
+		property.value.data.len = (int)strlen(property.value.data.data);
 		property.value.value.data = "test user property value";
-		property.value.value.len = strlen(property.value.value.data);
+		property.value.value.len = (int)strlen(property.value.value.data);
 		MQTTProperties_add(&props, &property);
 		pubmsg.properties = props;
 
@@ -381,9 +381,9 @@ int test1_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 
 		property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 		property.value.data.data = "test user property";
-		property.value.data.len = strlen(property.value.data.data);
+		property.value.data.len = (int)strlen(property.value.data.data);
 		property.value.value.data = "test user property value";
-		property.value.value.len = strlen(property.value.value.data);
+		property.value.value.len = (int)strlen(property.value.value.data);
 		MQTTProperties_add(&props, &property);
 		opts.properties = props;
 
@@ -418,9 +418,9 @@ void test1_onSubscribe(void* context, MQTTAsync_successData5* response)
 
 	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "test user property";
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	property.value.value.data = "test user property value";
-	property.value.value.len = strlen(property.value.value.data);
+	property.value.value.len = (int)strlen(property.value.value.data);
 	MQTTProperties_add(&props, &property);
 	opts.properties = props;
 
@@ -522,9 +522,9 @@ int test1(struct Options options)
 
 	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "test user property";
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	property.value.value.data = "test user property value";
-	property.value.value.len = strlen(property.value.value.data);
+	property.value.value.len = (int)strlen(property.value.value.data);
 	MQTTProperties_add(&props, &property);
 
 	opts.connectProperties = &props;
@@ -611,7 +611,7 @@ int test2(struct Options options)
 	opts.keepAliveInterval = 20;
 	opts.username = "testuser";
 	opts.binarypwd.data = "testpassword";
-	opts.binarypwd.len = strlen(opts.binarypwd.data);
+	opts.binarypwd.len = (int)strlen(opts.binarypwd.data);
 	opts.MQTTVersion = options.MQTTVersion;
 
 	opts.will = &wopts;
@@ -930,9 +930,9 @@ int test4_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 
 		property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 		property.value.data.data = "test user property";
-		property.value.data.len = strlen(property.value.data.data);
+		property.value.data.len = (int)strlen(property.value.data.data);
 		property.value.value.data = "test user property value";
-		property.value.value.len = strlen(property.value.value.data);
+		property.value.value.len = (int)strlen(property.value.value.data);
 		MQTTProperties_add(&props, &property);
 
 		opts.properties = props;

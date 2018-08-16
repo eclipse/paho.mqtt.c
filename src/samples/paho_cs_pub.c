@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial contribution
+ *    Ian Craggs - add full capability
  *******************************************************************************/
 
 #include "MQTTClient.h"
@@ -201,9 +202,9 @@ int main(int argc, char** argv)
 		{
 			property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 			property.value.data.data = opts.user_property.name;
-			property.value.data.len = strlen(opts.user_property.name);
+			property.value.data.len = (int)strlen(opts.user_property.name);
 			property.value.value.data = opts.user_property.value;
-			property.value.value.len = strlen(opts.user_property.value);
+			property.value.value.len = (int)strlen(opts.user_property.value);
 			MQTTProperties_add(&pub_props, &property);
 		}
 	}
@@ -235,7 +236,7 @@ int main(int argc, char** argv)
 		else if (opts.message)
 		{
 			buffer = opts.message;
-			data_len = strlen(opts.message);
+			data_len = (int)strlen(opts.message);
 		}
 		else if (opts.filename)
 		{

@@ -304,9 +304,9 @@ void test1_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 
 	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "test user property";
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	property.value.value.data = "test user property value";
-	property.value.value.len = strlen(property.value.value.data);
+	property.value.value.len = (int)strlen(property.value.value.data);
 	MQTTProperties_add(&pubmsg.properties, &property);
 
 	for (i = 0; i < iterations; ++i)
@@ -447,9 +447,9 @@ int test1(struct Options options)
 
 	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "test user property";
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	property.value.value.data = "test user property value";
-	property.value.value.len = strlen(property.value.value.data);
+	property.value.value.len = (int)strlen(property.value.value.data);
 	MQTTProperties_add(&props, &property);
 
 	MyLog(LOGA_DEBUG, "Connecting");
@@ -489,9 +489,9 @@ int test1(struct Options options)
 	MQTTProperties_free(&props);
 	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	property.value.data.data = "User property name";
-	property.value.data.len = strlen(property.value.data.data);
+	property.value.data.len = (int)strlen(property.value.data.data);
 	property.value.value.data = "User property value";
-	property.value.value.len = strlen(property.value.value.data);
+	property.value.value.len = (int)strlen(property.value.value.data);
 	MQTTProperties_add(&props, &property);
 
 	response = MQTTClient_unsubscribe5(c, test_topic, &props);
@@ -660,7 +660,7 @@ int test2(struct Options options)
 	opts.MQTTVersion = options.MQTTVersion;
 	opts.username = "testuser";
 	opts.binarypwd.data = "testpassword";
-	opts.binarypwd.len = strlen(opts.binarypwd.data);
+	opts.binarypwd.len = (int)strlen(opts.binarypwd.data);
 	if (options.haconnections != NULL)
 	{
 		opts.serverURIs = options.haconnections;
@@ -1197,7 +1197,7 @@ int test6a(struct Options options)
 	opts.MQTTVersion = options.MQTTVersion;
 	opts.will = &wopts;
 	opts.will->payload.data = test6_will_message;
-	opts.will->payload.len = strlen(test6_will_message) + 1;
+	opts.will->payload.len = (int)strlen(test6_will_message) + 1;
 	opts.will->qos = 1;
 	opts.will->retained = 0;
 	opts.will->topicName = test6_will_topic;

@@ -125,8 +125,11 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 		{
 			if (SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts, ip_address, addr_len) == 1)
 			{
-				rc = SSLSocket_connect(aClient->net.ssl, aClient->net.socket,
-						ip_address, aClient->sslopts->verify);
+				rc = aClient->sslopts->struct_version >= 3 ?
+					SSLSocket_connect(aClient->net.ssl, aClient->net.socket, ip_address,
+						aClient->sslopts->verify, aClient->sslopts->ssl_error_cb, aClient->sslopts->ssl_error_context) :
+					SSLSocket_connect(aClient->net.ssl, aClient->net.socket, ip_address,
+						aClient->sslopts->verify, NULL, NULL);
 				if (rc == TCPSOCKET_INTERRUPTED)
 					aClient->connect_state = SSL_IN_PROGRESS; /* SSL connect called - wait for completion */
 			}

@@ -3449,8 +3449,11 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 				if (m->c->session != NULL)
 					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)
 						Log(TRACE_MIN, -1, "Failed to set SSL session with stored data, non critical");
-				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket,
-						m->serverURI, m->c->sslopts->verify);
+				rc = m->c->sslopts->struct_version >= 3 ?
+					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI,
+						m->c->sslopts->verify, m->c->sslopts->ssl_error_cb, m->c->sslopts->ssl_error_context) :
+					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI,
+						m->c->sslopts->verify, NULL, NULL);
 				if (rc == TCPSOCKET_INTERRUPTED)
 				{
 					rc = MQTTCLIENT_SUCCESS; /* the connect is still in progress */
@@ -3513,8 +3516,12 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 #if defined(OPENSSL)
 	else if (m->c->connect_state == SSL_IN_PROGRESS) /* SSL connect sent - wait for completion */
 	{
-		if ((rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket,
-				m->serverURI, m->c->sslopts->verify)) != 1)
+		rc = m->c->sslopts->struct_version >= 3 ?
+			SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI,
+				m->c->sslopts->verify, m->c->sslopts->ssl_error_cb, m->c->sslopts->ssl_error_context) :
+			SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI,
+				m->c->sslopts->verify, NULL, NULL);
+		if (rc != 1)
 			goto exit;
 
 		if(!m->c->cleansession && m->c->session == NULL)

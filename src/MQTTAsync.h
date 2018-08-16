@@ -944,9 +944,21 @@ typedef struct
      * Exists only if struct_version >= 2
 	 */
 	const char* CApath;
+
+    /**
+     * Callback function for OpenSSL error handler ERR_print_errors_cb
+     * Exists only if struct_version >= 3
+     */
+    int (*ssl_error_cb) (const char *str, size_t len, void *u);
+
+    /**
+     * Application-specific contex for OpenSSL error handler ERR_print_errors_cb
+     * Exists only if struct_version >= 3
+     */
+    void* ssl_error_context;
 } MQTTAsync_SSLOptions;
 
-#define MQTTAsync_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 2, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL }
+#define MQTTAsync_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 3, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL }
 
 /**
  * MQTTAsync_connectOptions defines several settings that control the way the

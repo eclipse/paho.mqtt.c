@@ -2000,7 +2000,7 @@ int test7(struct Options options)
 	/* let client c go: connect, and send disconnect command to proxy */
 	opts.will = &wopts;
 	opts.will->payload.data = "will message";
-	opts.will->payload.len = strlen(opts.will->payload.data) + 1;
+	opts.will->payload.len = (int)strlen(opts.will->payload.data) + 1;
 	opts.will->qos = 1;
 	opts.will->retained = 0;
 	opts.will->topicName = willTopic;

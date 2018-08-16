@@ -296,7 +296,7 @@ int test_373(struct Options options)
 		goto exit;
 	}
 	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
-	while (connectCnt < options.iterrations)
+	while (connectCnt < (int)options.iterrations)
 	{
 		if (!connected)
 		{

@@ -265,6 +265,7 @@ int Thread_wait_sem(sem_type sem, int timeout)
 	#else
 		/* We have to use CLOCK_REALTIME rather than MONOTONIC for sem_timedwait interval.
 		 * Does this make it susceptible to system clock changes?
+		 * The intervals are small enough, and repeated, that I think it's not an issue.
 		 */
 		if (clock_gettime(CLOCK_REALTIME, &ts) != -1)
 		{
@@ -294,9 +295,8 @@ int Thread_check_sem(sem_type sem)
 	/* if the return value is not 0, the semaphore will not have been decremented */
 	return dispatch_semaphore_wait(sem, DISPATCH_TIME_NOW) == 0;
 #else
-	/*int semval = -1;
-	sem_getvalue(sem, &semval);
-	return semval > 0;*/
+	/* If the call was unsuccessful, the state of the semaphore shall be unchanged,
+	 * and the function shall return a value of -1 */
 	return sem_trywait(sem) == 0;
 #endif
 }
@@ -351,10 +351,6 @@ int Thread_destroy_sem(sem_type sem)
 
 #if !defined(WIN32) && !defined(WIN64)
 
-#if !defined(OSX)
-static int use_clock_monotonic = 1;
-#endif
-
 /**
  * Create a new condition variable
  * @return the condition variable struct
@@ -367,14 +363,15 @@ cond_type Thread_create_cond(void)
 
 	FUNC_ENTRY;
 	pthread_condattr_init(&attr);
-#if !defined(OSX)
-	if ((rc = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC)) != 0)
-	{
-#if !defined(NOLOG_MESSAGES)
+
+#if 0
+    /* in theory, a monotonic clock should be able to be used.  However on at least
+     * one system reported, even though setclock() reported success, it didn't work.
+     */
+	if ((rc = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC)) == 0)
+		use_clock_monotonic = 1;
+	else
 		Log(LOG_ERROR, -1, "Error %d calling pthread_condattr_setclock(CLOCK_MONOTONIC)", rc);
-#endif
-		use_clock_monotonic = 0;
-	}
 #endif
 
 	condvar = malloc(sizeof(cond_type_struct));
@@ -412,14 +409,7 @@ int Thread_wait_cond(cond_type condvar, int timeout)
 	struct timespec cond_timeout;
 
 	FUNC_ENTRY;
-#if defined(OSX)
 	clock_gettime(CLOCK_REALTIME, &cond_timeout);
-#else
-	if (use_clock_monotonic)
-		clock_gettime(CLOCK_MONOTONIC, &cond_timeout);
-	else
-		clock_gettime(CLOCK_REALTIME, &cond_timeout);
-#endif
 
 	cond_timeout.tv_sec += timeout;
 	pthread_mutex_lock(&condvar->mutex);

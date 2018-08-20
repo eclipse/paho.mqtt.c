@@ -4,11 +4,11 @@ image:
   - Visual Studio 2015
   
 environment:
-matrix:
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-    PAHO_WINDOWS_BUILD_BIT: x86
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-    PAHO_WINDOWS_BUILD_BIT: x64
+  matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      PAHO_WINDOWS_BUILD_BIT: x86
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      PAHO_WINDOWS_BUILD_BIT: x64
     
 configuration: Debug
 install:

@@ -30,6 +30,7 @@
   #include <sys/socket.h>
 	#include <unistd.h>
   #include <errno.h>
+  #define WINAPI
 #else
 	#include <windows.h>
 #endif
@@ -213,8 +214,7 @@ void myassert(char* filename, int lineno, char* description, int value, char* fo
     	MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);
 }
 
-
-thread_return_type sem_secondary(void* n)
+static thread_return_type WINAPI sem_secondary(void* n)
 {
 	int rc = 0;
 	sem_type sem = n;
@@ -409,7 +409,7 @@ int test_cond(struct Options options)
 #endif
 
 
-thread_return_type mutex_secondary(void* n)
+static thread_return_type WINAPI mutex_secondary(void* n)
 {
 	int rc = 0;
 	mutex_type mutex = n;

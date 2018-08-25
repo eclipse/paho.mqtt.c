@@ -453,7 +453,7 @@ void* TreeRemoveNodeIndex(Tree* aTree, Node* curnode, int index)
 			{
 				Node temp;
 				memset(&temp, '\0', sizeof(Node));
-				temp.parent = (redundant) ? redundant->parent : NULL;
+				temp.parent = redundant->parent;
 				temp.red = 0;
 				TreeBalanceAfterRemove(aTree, &temp, index);
 			}

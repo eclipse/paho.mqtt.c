@@ -297,7 +297,7 @@ typedef struct
      * been retained by the MQTT server.
      *
      * <b>retained = false</b> <br>
-     * For publishers, this ndicates that this message should not be retained
+     * For publishers, this indicates that this message should not be retained
      * by the MQTT server. For subscribers, a false setting indicates this is
      * a normal message, received as a result of it being published to the
      * server.

@@ -1443,6 +1443,11 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 			if (options->ssl->CApath)
 				m->c->sslopts->CApath = MQTTStrdup(options->ssl->CApath);
 		}
+		if (m->c->sslopts->struct_version >= 3)
+		{
+			m->c->sslopts->ssl_error_cb = options->ssl->ssl_error_cb;
+			m->c->sslopts->ssl_error_context = options->ssl->ssl_error_context;
+		}
 	}
 #endif
 

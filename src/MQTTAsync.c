@@ -2859,6 +2859,11 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 			if (options->ssl->CApath)
 				m->c->sslopts->CApath = MQTTStrdup(options->ssl->CApath);
 		}
+		if (m->c->sslopts->struct_version >= 3)
+		{
+			m->c->sslopts->ssl_error_cb = options->ssl->ssl_error_cb;
+			m->c->sslopts->ssl_error_context = options->ssl->ssl_error_context;
+		}
 	}
 #else
 	if (options->struct_version != 0 && options->ssl)

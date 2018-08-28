@@ -1026,7 +1026,11 @@ typedef struct
       */
 	int connectTimeout;
 	/**
-	 * The time interval in seconds
+	 * The time interval in seconds after which unacknowledged publish requests are
+	 * retried during a TCP session.  With MQTT 3.1.1 and later, retries are
+	 * not required except on reconnect.  0 turns off in-session retries, and is the
+	 * recommended setting.  Adding retries to an already overloaded network only
+	 * exacerbates the problem.
 	 */
 	int retryInterval;
 	/**

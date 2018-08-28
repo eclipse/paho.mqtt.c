@@ -2996,8 +2996,7 @@ static int MQTTAsync_disconnect1(MQTTAsync handle, const MQTTAsync_disconnectOpt
 		dis->command.details.dis.timeout = options->timeout;
 		if (m->c->MQTTVersion >= MQTTVERSION_5 && options->struct_version >= 1)
 		{
-			if (options != NULL)
-				dis->command.properties = MQTTProperties_copy(&options->properties);
+			dis->command.properties = MQTTProperties_copy(&options->properties);
 			dis->command.details.dis.reasonCode = options->reasonCode;
 		}
 	}

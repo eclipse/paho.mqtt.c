@@ -45,8 +45,8 @@
 #  pragma comment(lib, "rpcrt4.lib")
 #  include <Rpc.h>
 #  define strncasecmp(s1,s2,c) _strnicmp(s1,s2,c)
-#  define htonll(x) ( ( (uint64_t)(htonl( (uint32_t)((x << 32) >> 32)))<< 32) | htonl( ((uint32_t)(x >> 32)) ))
-#  define ntohll(x) htonll(x)
+#  define htonll(x) _byteswap_uint64(x)
+#  define ntohll(x) _byteswap_uint64(x)
 
 #  if BYTE_ORDER == LITTLE_ENDIAN
 #    define htobe16(x)   htons(x)

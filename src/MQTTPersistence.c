@@ -524,7 +524,7 @@ int MQTTPersistence_persistQueueEntry(Clients* aclient, MQTTPersistence_qEntry* 
 	bufs[bufindex] = &qe->topicLen;
 	lens[bufindex++] = sizeof(qe->topicLen);			
 		
-	sprintf(key, "%s%d", PERSISTENCE_QUEUE_KEY, ++aclient->qentry_seqno);	
+	sprintf(key, "%s%u", PERSISTENCE_QUEUE_KEY, ++aclient->qentry_seqno);	
 	qe->seqno = aclient->qentry_seqno;
 
 	if ((rc = aclient->persistence->pput(aclient->phandle, key, nbufs, (char**)bufs, lens)) != 0)

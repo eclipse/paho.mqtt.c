@@ -676,7 +676,7 @@ static int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 				bufs[bufindex] = &command->details.sub.qoss[i];
 				lens[bufindex++] = sizeof(command->details.sub.qoss[i]);
 			}
-			sprintf(key, "%s%d", PERSISTENCE_COMMAND_KEY, ++aclient->command_seqno);
+			sprintf(key, "%s%u", PERSISTENCE_COMMAND_KEY, ++aclient->command_seqno);
 			break;
 
 		case UNSUBSCRIBE:
@@ -699,7 +699,7 @@ static int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 				bufs[bufindex] = command->details.unsub.topics[i];
 				lens[bufindex++] = (int)strlen(command->details.unsub.topics[i]) + 1;
 			}
-			sprintf(key, "%s%d", PERSISTENCE_COMMAND_KEY, ++aclient->command_seqno);
+			sprintf(key, "%s%u", PERSISTENCE_COMMAND_KEY, ++aclient->command_seqno);
 			break;
 
 		case PUBLISH:
@@ -729,7 +729,7 @@ static int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 			bufs[bufindex] = &command->details.pub.retained;
 			lens[bufindex++] = sizeof(command->details.pub.retained);
 
-			sprintf(key, "%s%d", PERSISTENCE_COMMAND_KEY, ++aclient->command_seqno);
+			sprintf(key, "%s%u", PERSISTENCE_COMMAND_KEY, ++aclient->command_seqno);
 			break;
 	}
 	if (nbufs > 0)

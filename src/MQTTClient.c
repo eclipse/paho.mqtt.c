@@ -1339,6 +1339,7 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 	start = MQTTClient_start_clock();
 
 	m->c->keepAliveInterval = options->keepAliveInterval;
+	m->c->retryInterval = options->retryInterval;
 	setRetryLoopInterval(options->keepAliveInterval);
 	m->c->MQTTVersion = options->MQTTVersion;
 	m->c->cleanstart = m->c->cleansession = 0;

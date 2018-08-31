@@ -882,8 +882,11 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 #if defined(OPENSSL)
 			else if (m->c->connect_state == SSL_IN_PROGRESS)
 			{
-				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket,
-						m->serverURI, m->c->sslopts->verify);
+				rc = m->c->sslopts->struct_version >= 3 ?
+					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI, 
+						m->c->sslopts->verify, m->c->sslopts->ssl_error_cb, m->c->sslopts->ssl_error_context) :
+					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI,
+						m->c->sslopts->verify, NULL, NULL);
 				if (rc == 1 || rc == SSL_FATAL)
 				{
 					if (rc == 1 && (m->c->cleansession == 0 && m->c->cleanstart == 0) && m->c->session == NULL)
@@ -1138,8 +1141,11 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 				if (m->c->session != NULL)
 					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)
 						Log(TRACE_MIN, -1, "Failed to set SSL session with stored data, non critical");
-				rc = SSLSocket_connect(m->c->net.ssl, m->c->net.socket,
-						m->serverURI, m->c->sslopts->verify);
+				rc = m->c->sslopts->struct_version >= 3 ?
+					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI,
+						m->c->sslopts->verify, m->c->sslopts->ssl_error_cb, m->c->sslopts->ssl_error_context) :
+					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI,
+						m->c->sslopts->verify, NULL, NULL);
 				if (rc == TCPSOCKET_INTERRUPTED)
 					m->c->connect_state = SSL_IN_PROGRESS;  /* the connect is still in progress */
 				else if (rc == SSL_FATAL)
@@ -1438,6 +1444,11 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 			if (options->ssl->CApath)
 				m->c->sslopts->CApath = MQTTStrdup(options->ssl->CApath);
 		}
+		if (m->c->sslopts->struct_version >= 3)
+		{
+			m->c->sslopts->ssl_error_cb = options->ssl->ssl_error_cb;
+			m->c->sslopts->ssl_error_context = options->ssl->ssl_error_context;
+		}
 	}
 #endif
 
@@ -1535,7 +1546,7 @@ MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connectOptions* o
 #if defined(OPENSSL)
 	if (options->struct_version != 0 && options->ssl) /* check validity of SSL options structure */
 	{
-		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version < 0 || options->ssl->struct_version > 2)
+		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version < 0 || options->ssl->struct_version > 3)
 		{
 			rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
 			goto exit;
@@ -2381,8 +2392,11 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 #if defined(OPENSSL)
 				else if (m->c->connect_state == SSL_IN_PROGRESS)
 				{
-					*rc = SSLSocket_connect(m->c->net.ssl, sock,
-							m->serverURI, m->c->sslopts->verify);
+					*rc = m->c->sslopts->struct_version >= 3 ?
+						SSLSocket_connect(m->c->net.ssl, sock, m->serverURI,
+							m->c->sslopts->verify, m->c->sslopts->ssl_error_cb, m->c->sslopts->ssl_error_context) :
+						SSLSocket_connect(m->c->net.ssl, sock, m->serverURI,
+							m->c->sslopts->verify, NULL, NULL);
 					if (*rc == SSL_FATAL)
 						break;
 					else if (*rc == 1) /* rc == 1 means SSL connect has finished and succeeded */

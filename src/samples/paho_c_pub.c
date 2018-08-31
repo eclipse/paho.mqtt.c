@@ -211,6 +211,13 @@ void onPublish(void* context, MQTTAsync_successData* response)
 }
 
 
+static int onSSLError(const char *str, size_t len, void *context)
+{
+	MQTTAsync client = (MQTTAsync)context;
+	return fprintf(stderr, "SSL error: %s\n", str);
+}
+
+
 void myconnect(MQTTAsync client)
 {
 	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
@@ -261,6 +268,8 @@ void myconnect(MQTTAsync client)
 		ssl_opts.privateKey = opts.key;
 		ssl_opts.privateKeyPassword = opts.keypass;
 		ssl_opts.enabledCipherSuites = opts.ciphers;
+		ssl_opts.ssl_error_cb = onSSLError;
+		ssl_opts.ssl_error_context = client;
 		conn_opts.ssl = &ssl_opts;
 	}
 

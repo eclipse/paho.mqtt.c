@@ -344,7 +344,7 @@ struct
 void disconnected(void* context, MQTTProperties* props, enum MQTTReasonCodes rc)
 {
 	MQTTClient c = (MQTTClient)context;
-	MyLog(LOGA_INFO, "Callback: disconnected, reason code \"%s\"", MQTTReasonCodeString(rc));
+	MyLog(LOGA_INFO, "Callback: disconnected, reason code \"%s\"", MQTTReasonCode_toString(rc));
 	logProperties(props);
 	test_topic_aliases_globals.disconnected = 1;
 }
@@ -1103,7 +1103,7 @@ void published(void* context, int msgid, int packet_type, MQTTProperties* props,
 {
 	MQTTClient c = (MQTTClient)context;
 	MyLog(LOGA_INFO, "Callback: published, reason code \"%s\" msgid: %d packet type: %d",
-			MQTTReasonCodeString(rc), msgid, packet_type);
+			MQTTReasonCode_toString(rc), msgid, packet_type);
 	test_qos_1_2_errors_globals.packet_type = packet_type;
 	test_qos_1_2_errors_globals.rc = rc;
 	if (props)

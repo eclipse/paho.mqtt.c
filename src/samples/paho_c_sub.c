@@ -113,7 +113,9 @@ void onSubscribe(void* context, MQTTAsync_successData* response)
 void onSubscribeFailure5(void* context, MQTTAsync_failureData5* response)
 {
 	if (!opts.quiet)
-		fprintf(stderr, "Subscribe failed, rc %d reason code %d\n", response->code, response->reasonCode);
+		fprintf(stderr, "Subscribe failed, rc %s reason code %s\n",
+				MQTTAsync_strerror(response->code),
+				MQTTReasonCode_toString(response->reasonCode));
 	finished = 1;
 }
 
@@ -121,7 +123,8 @@ void onSubscribeFailure5(void* context, MQTTAsync_failureData5* response)
 void onSubscribeFailure(void* context, MQTTAsync_failureData* response)
 {
 	if (!opts.quiet)
-		fprintf(stderr, "Subscribe failed, rc %d\n", response->code);
+		fprintf(stderr, "Subscribe failed, rc %s\n",
+			MQTTAsync_strerror(response->code));
 	finished = 1;
 }
 
@@ -129,7 +132,9 @@ void onSubscribeFailure(void* context, MQTTAsync_failureData* response)
 void onConnectFailure5(void* context, MQTTAsync_failureData5* response)
 {
 	if (!opts.quiet)
-		fprintf(stderr, "Connect failed, rc %d reason code %d\n", response->code, response->reasonCode);
+		fprintf(stderr, "Connect failed, rc %s reason code %s\n",
+			MQTTAsync_strerror(response->code),
+			MQTTReasonCode_toString(response->reasonCode));
 	finished = 1;
 }
 
@@ -137,7 +142,7 @@ void onConnectFailure5(void* context, MQTTAsync_failureData5* response)
 void onConnectFailure(void* context, MQTTAsync_failureData* response)
 {
 	if (!opts.quiet)
-		fprintf(stderr, "Connect failed, rc %d\n", response ? response->code : -99);
+		fprintf(stderr, "Connect failed, rc %s\n", response ? MQTTAsync_strerror(response->code) : "none");
 	finished = 1;
 }
 
@@ -157,7 +162,7 @@ void onConnect5(void* context, MQTTAsync_successData5* response)
 	if ((rc = MQTTAsync_subscribe(client, opts.topic, opts.qos, &copts)) != MQTTASYNC_SUCCESS)
 	{
 		if (!opts.quiet)
-			fprintf(stderr, "Failed to start subscribe, return code %d\n", rc);
+			fprintf(stderr, "Failed to start subscribe, return code %s\n", MQTTAsync_strerror(rc));
 		finished = 1;
 	}
 }
@@ -178,7 +183,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	if ((rc = MQTTAsync_subscribe(client, opts.topic, opts.qos, &ropts)) != MQTTASYNC_SUCCESS)
 	{
 		if (!opts.quiet)
-			fprintf(stderr, "Failed to start subscribe, return code %d\n", rc);
+			fprintf(stderr, "Failed to start subscribe, return code %s\n", MQTTAsync_strerror(rc));
 		finished = 1;
 	}
 }
@@ -233,8 +238,20 @@ int main(int argc, char** argv)
 	}
 
 	rc = MQTTAsync_create(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		if (!opts.quiet)
+			fprintf(stderr, "Failed to create client, return code: %s\n", MQTTAsync_strerror(rc));
+		exit(EXIT_FAILURE);
+	}
 
-	MQTTAsync_setCallbacks(client, client, NULL, messageArrived, NULL);
+	rc = MQTTAsync_setCallbacks(client, client, NULL, messageArrived, NULL);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		if (!opts.quiet)
+			fprintf(stderr, "Failed to set callbacks, return code: %s\n", MQTTAsync_strerror(rc));
+		exit(EXIT_FAILURE);
+	}
 
 #if defined(WIN32)
 	signal(SIGINT, cfinish);
@@ -294,7 +311,7 @@ int main(int argc, char** argv)
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		if (!opts.quiet)
-			fprintf(stderr, "Failed to start connect, return code %d\n", rc);
+			fprintf(stderr, "Failed to start connect, return code %s\n", MQTTAsync_strerror(rc));
 		exit(EXIT_FAILURE);
 	}
 
@@ -311,7 +328,7 @@ int main(int argc, char** argv)
 	if ((rc = MQTTAsync_disconnect(client, &disc_opts)) != MQTTASYNC_SUCCESS)
 	{
 		if (!opts.quiet)
-			fprintf(stderr, "Failed to start disconnect, return code %d\n", rc);
+			fprintf(stderr, "Failed to start disconnect, return code: %s\n", MQTTAsync_strerror(rc));
 		exit(EXIT_FAILURE);
 	}
 

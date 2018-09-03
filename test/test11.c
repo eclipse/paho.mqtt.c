@@ -379,7 +379,7 @@ void test_client_topic_aliases_onSubscribe(void* context, MQTTAsync_successData5
 void test_client_topic_aliases_disconnected(void* context, MQTTProperties* props, enum MQTTReasonCodes rc)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	MyLog(LOGA_INFO, "Callback: disconnected, reason code \"%s\"", MQTTReasonCodeString(rc));
+	MyLog(LOGA_INFO, "Callback: disconnected, reason code \"%s\"", MQTTReasonCode_toString(rc));
 	logProperties(props);
 	test_client_topic_aliases_globals.disconnected = 1;
 }
@@ -1235,7 +1235,7 @@ void test_qos_1_2_errors_onPublishSuccess(void* context, MQTTAsync_successData5*
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MyLog(LOGA_INFO, "Callback: publish success, reason code \"%s\" msgid: %d packet type: ",
-			MQTTReasonCodeString(response->reasonCode), response->token);
+			MQTTReasonCode_toString(response->reasonCode), response->token);
 
 	logProperties(&response->properties);
 
@@ -1249,7 +1249,7 @@ void test_qos_1_2_errors_onPublishFailure3(void* context, MQTTAsync_failureData5
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 
 	MyLog(LOGA_INFO, "Callback: publish failure, reason code \"%s\" msgid: %d packet type: ",
-			MQTTReasonCodeString(response->reasonCode), response->token, response->packet_type);
+			MQTTReasonCode_toString(response->reasonCode), response->token, response->packet_type);
 
 	logProperties(&response->properties);
 
@@ -1266,7 +1266,7 @@ void test_qos_1_2_errors_onPublishFailure2(void* context, MQTTAsync_failureData5
 	int rc;
 
 	MyLog(LOGA_INFO, "Callback: publish failure, reason code \"%s\" msgid: %d packet type: ",
-			MQTTReasonCodeString(response->reasonCode), response->token, response->packet_type);
+			MQTTReasonCode_toString(response->reasonCode), response->token, response->packet_type);
 
 	logProperties(&response->properties);
 
@@ -1304,7 +1304,7 @@ void test_qos_1_2_errors_onPublishFailure(void* context, MQTTAsync_failureData5*
 	int rc;
 
 	MyLog(LOGA_INFO, "Callback: publish failure, reason code \"%s\" msgid: %d packet type: ",
-			MQTTReasonCodeString(response->reasonCode), response->token, response->packet_type);
+			MQTTReasonCode_toString(response->reasonCode), response->token, response->packet_type);
 
 	logProperties(&response->properties);
 

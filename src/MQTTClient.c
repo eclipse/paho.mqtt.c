@@ -2667,6 +2667,8 @@ MQTTClient_nameValue* MQTTClient_getVersionInfo(void)
 
 const char* MQTTClient_strerror(int code)
 {
+  static char buf[30];
+
   switch (code) {
     case MQTTCLIENT_SUCCESS:
       return "Success";
@@ -2689,10 +2691,13 @@ const char* MQTTClient_strerror(int code)
     case MQTTCLIENT_SSL_NOT_SUPPORTED:
       return "SSL is not supported";
     case MQTTCLIENT_BAD_PROTOCOL:
-      return "Invalid protocole scheme";
+      return "Invalid protocol scheme";
+    case MQTTCLIENT_BAD_MQTT_OPTION:
+      return "Options for wrong MQTT version";
   }
 
-  return NULL;
+  sprintf(buf, "Unknown error code %d", code);
+  return buf;
 }
 
 

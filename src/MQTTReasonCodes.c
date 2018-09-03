@@ -75,7 +75,7 @@ static struct {
   {MQTTREASONCODE_WILDCARD_SUBSCRIPTIONS_NOT_SUPPORTED, "Wildcard Subscriptions not supported"}
 };
 
-const char* MQTTReasonCodeString(enum MQTTReasonCodes value)
+const char* MQTTReasonCode_toString(enum MQTTReasonCodes value)
 {
   int i = 0;
   const char* result = NULL;

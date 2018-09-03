@@ -1595,6 +1595,8 @@ exit:
 
 static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 {
+	FUNC_ENTRY;
+
 	if (MQTTAsync_checkConn(&m->connect, m))
 	{
 		MQTTAsync_queuedCommand* conn;
@@ -1645,6 +1647,8 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 		}
 		MQTTAsync_startConnectRetry(m);
 	}
+
+	FUNC_EXIT;
 }
 
 
@@ -2721,7 +2725,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	}
 	if (options->MQTTVersion >= MQTTVERSION_5 && options->cleansession != 0)
 	{
-		rc = MQTTASYNC_BAD_MQTT_OPTIONS;
+		rc = MQTTASYNC_BAD_MQTT_OPTION;
 		goto exit;
 	}
 	if (options->MQTTVersion < MQTTVERSION_5 && options->struct_version >= 6)
@@ -2729,7 +2733,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		if (options->cleanstart != 0 || options->onFailure5 || options->onSuccess5 ||
 				options->connectProperties || options->willProperties)
 		{
-			rc = MQTTASYNC_BAD_MQTT_OPTIONS;
+			rc = MQTTASYNC_BAD_MQTT_OPTION;
 			goto exit;
 		}
 	}
@@ -3144,7 +3148,7 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int
 	if (m->c->MQTTVersion >= MQTTVERSION_5 && count > 1 && (count != response->subscribeOptionsCount
 			&& response->subscribeOptionsCount != 0))
 	{
-		rc = MQTTASYNC_BAD_MQTT_OPTIONS;
+		rc = MQTTASYNC_BAD_MQTT_OPTION;
 		goto exit;
 	}
 
@@ -3326,12 +3330,12 @@ int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen
 		if (m->c->MQTTVersion >= MQTTVERSION_5)
 		{
 			if (response->struct_version == 0 || response->onFailure || response->onSuccess)
-				rc = MQTTASYNC_BAD_MQTT_OPTIONS;
+				rc = MQTTASYNC_BAD_MQTT_OPTION;
 		}
 		else if (m->c->MQTTVersion < MQTTVERSION_5)
 		{
 			if (response->struct_version >= 1 && (response->onFailure5 || response->onSuccess5))
-				rc = MQTTASYNC_BAD_MQTT_OPTIONS;
+				rc = MQTTASYNC_BAD_MQTT_OPTION;
 		}
 	}
 
@@ -3936,6 +3940,8 @@ MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void)
 
 const char* MQTTAsync_strerror(int code)
 {
+  static char buf[30];
+
   switch (code) {
     case MQTTASYNC_SUCCESS:
       return "Success";
@@ -3966,8 +3972,11 @@ const char* MQTTAsync_strerror(int code)
     case MQTTASYNC_SSL_NOT_SUPPORTED:
       return "SSL is not supported";
     case MQTTASYNC_BAD_PROTOCOL:
-      return "Invalid protocole scheme";
+      return "Invalid protocol scheme";
+    case MQTTASYNC_BAD_MQTT_OPTION:
+      return "Options for wrong MQTT version";
   }
 
-  return NULL;
+  sprintf(buf, "Unknown error code %d", code);
+  return buf;
 }

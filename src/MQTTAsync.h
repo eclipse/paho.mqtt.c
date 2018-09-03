@@ -182,7 +182,7 @@
  /**
   * Return code: don't use options for another version of MQTT
   */
- #define MQTTASYNC_BAD_MQTT_OPTIONS -15
+ #define MQTTASYNC_BAD_MQTT_OPTION -15
 
 
 /**

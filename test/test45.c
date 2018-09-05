@@ -1326,7 +1326,10 @@ int test7_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 
 	MyLog(LOGA_DEBUG, "Test7: received message id %d", message->msgid);
 
-	test7_messageCount++;
+	if (message->qos == 1 && message->dup == 1)
+		; /* ignore dups */
+	else
+		test7_messageCount++;
 
 	MQTTAsync_freeMessage(&message);
 	MQTTAsync_free(topicName);
@@ -1369,7 +1372,7 @@ void test7_onConnect(void* context, MQTTAsync_successData5* response)
 Test7: Pending tokens
 
 *********************************************************************/
-int test7(struct Options options)
+int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 {
 	int subsqos = 2;
 	MQTTAsync c;
@@ -1383,14 +1386,20 @@ int test7(struct Options options)
 	int msg_count = 6;
 	MQTTProperty property;
 	MQTTProperties props = MQTTProperties_initializer;
+	MQTTAsync_createOptions createOpts = MQTTAsync_createOptions_initializer;
 
-	MyLog(LOGA_INFO, "Starting test 7 - pending tokens");
+	MyLog(LOGA_INFO, "Starting test 7 - persistence, qos %d, MQTT versions: %s then %s", qos,
+			(start_mqtt_version == MQTTVERSION_5) ? "5" : "3.1.1",
+			(restore_mqtt_version == MQTTVERSION_5) ? "5" : "3.1.1");
+
 	fprintf(xml, "<testcase classname=\"test4\" name=\"pending tokens\"");
 	global_start_time = start_clock();
 	test_finished = 0;
 
-	rc = MQTTAsync_create(&c, options.connection, "async_test7",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = start_mqtt_version;
+	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+	rc = MQTTAsync_createWithOptions(&c, options.connection, "async_test7",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -1404,7 +1413,7 @@ int test7(struct Options options)
 	opts.keepAliveInterval = 20;
 	opts.username = "testuser";
 	opts.password = "testpassword";
-	opts.MQTTVersion = options.MQTTVersion;
+	opts.MQTTVersion = start_mqtt_version;
 
 	opts.will = &wopts;
 	opts.will->message = "will message";
@@ -1418,17 +1427,26 @@ int test7(struct Options options)
 
 	/* connect clean and then leave messages lying around */
 	test_finished = 0;
+	test7_subscribed = 0;
 	MyLog(LOGA_DEBUG, "Connecting");
-	opts.cleanstart = 1;
-	opts.connectProperties = &props;
-	property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
-	property.value.integer4 = 999999;
-	MQTTProperties_add(opts.connectProperties, &property);
-	opts.onSuccess5 = test7_onConnect;
-	rc = MQTTAsync_connect(c, &opts);
-	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
-	if (rc != MQTTASYNC_SUCCESS)
-		goto exit;
+
+	if (start_mqtt_version == MQTTVERSION_5)
+	{
+		opts.cleanstart = 1;
+		opts.connectProperties = &props;
+		property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
+		property.value.integer4 = 999999;
+		MQTTProperties_add(opts.connectProperties, &property);
+		opts.onSuccess5 = test7_onConnect;
+		rc = MQTTAsync_connect(c, &opts);
+		assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+		if (rc != MQTTASYNC_SUCCESS)
+			goto exit;
+	}
+	else
+	{
+		/* MQTT 3 version */
+	}
 
 	while (!test7_subscribed)
 		#if defined(WIN32)
@@ -1439,12 +1457,13 @@ int test7(struct Options options)
 
 	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
 	pubmsg.payloadlen = 11;
-	pubmsg.qos = 2;
+	pubmsg.qos = qos;
 	pubmsg.retained = 0;
 	rc = MQTTAsync_send(c, test7_topic, pubmsg.payloadlen, pubmsg.payload, pubmsg.qos, pubmsg.retained, &ropts);
+	assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	MyLog(LOGA_DEBUG, "Token was %d", ropts.token);
 	rc = MQTTAsync_isComplete(c, ropts.token);
-	/*assert("0 rc from isComplete", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);*/
+	assert("0 rc from isComplete", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	rc = MQTTAsync_waitForCompletion(c, ropts.token, 5000L);
 	assert("Good rc from waitForCompletion", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	rc = MQTTAsync_isComplete(c, ropts.token);
@@ -1452,12 +1471,11 @@ int test7(struct Options options)
 
 	test7_messageCount = 0;
 	int i = 0;
-	pubmsg.qos = 2;
+	pubmsg.qos = qos;
 	for (i = 0; i < msg_count; ++i)
 	{
 		pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
 		pubmsg.payloadlen = 11;
-		//pubmsg.qos = (pubmsg.qos == 2) ? 1 : 2;
 		pubmsg.retained = 0;
 		rc = MQTTAsync_sendMessage(c, test7_topic, &pubmsg, &ropts);
 	}
@@ -1485,7 +1503,9 @@ int test7(struct Options options)
 	MQTTAsync_destroy(&c); /* force re-reading persistence on create */
 
 	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
-	rc = MQTTAsync_create(&c, options.connection, "async_test7", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = restore_mqtt_version;
+	rc = MQTTAsync_createWithOptions(&c, options.connection, "async_test7",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -1510,6 +1530,7 @@ int test7(struct Options options)
 	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	MyLog(LOGA_DEBUG, "Reconnecting");
+	opts.MQTTVersion = restore_mqtt_version;
 	opts.context = c;
 	opts.cleanstart = 0;
 	if (MQTTAsync_connect(c, &opts) != 0)
@@ -1553,6 +1574,26 @@ exit:
 			(failures == 0) ? "passed" : "failed", tests, failures);
 	write_test_result();
 	return failures;
+}
+
+
+int test7(struct Options options)
+{
+	int rc = 0;
+	fprintf(xml, "<testcase classname=\"test7\" name=\"persistence\"");
+	global_start_time = start_clock();
+	rc = test7_run(1, MQTTVERSION_5, MQTTVERSION_5) +
+		 test7_run(2, MQTTVERSION_5, MQTTVERSION_5) /*+
+		 test7_run(2, MQTTVERSION_3_1_1, MQTTVERSION_5) +
+		 test7_run(2, MQTTVERSION_5, MQTTVERSION_3_1_1)*/;
+	fprintf(xml, " time=\"%ld\" >\n", elapsed(global_start_time) / 1000);
+	if (cur_output != output)
+	{
+		fprintf(xml, "%s", output);
+		cur_output = output;
+	}
+	fprintf(xml, "</testcase>\n");
+	return rc;
 }
 
 

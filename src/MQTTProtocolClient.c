@@ -309,7 +309,7 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 		if (m->MQTTVersion >= MQTTVERSION_5)
 			m->properties = MQTTProperties_copy(&publish->properties);
 		m->nextMessageType = PUBREL;
-		if ( ( listElem = ListFindItem(client->inboundMsgs, &(m->msgid), messageIDCompare) ) != NULL )
+		if ((listElem = ListFindItem(client->inboundMsgs, &(m->msgid), messageIDCompare)) != NULL)
 		{   /* discard queued publication with same msgID that the current incoming message */
 			Messages* msg = (Messages*)(listElem->content);
 			MQTTProtocol_removePublication(msg->publish);

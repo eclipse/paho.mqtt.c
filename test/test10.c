@@ -391,14 +391,16 @@ int test_client_topic_aliases(struct Options options)
 	int count = 0;
 	char* test_topic = "test_client_topic_aliases";
 	int topicAliasMaximum = 0;
+	MQTTClient_createOptions createOpts = MQTTClient_createOptions_initializer;
 
 	fprintf(xml, "<testcase classname=\"test_client_topic_aliases\" name=\"client topic aliases\"");
 	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 1 - client topic aliases");
 
-	rc = MQTTClient_create(&c, options.connection, "client_topic_alias_test",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTClient_createWithOptions(&c, options.connection, "client_topic_alias_test",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTCLIENT_SUCCESS)
 	{
@@ -647,14 +649,16 @@ int test_server_topic_aliases(struct Options options)
 	int topicAliasMaximum = 0;
 	int qos = 0;
 	const int msg_count = 3;
+	MQTTClient_createOptions createOpts = MQTTClient_createOptions_initializer;
 
 	fprintf(xml, "<testcase classname=\"test_server_topic_aliases\" name=\"server topic aliases\"");
 	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 2 - server topic aliases");
 
-	rc = MQTTClient_create(&c, options.connection, "server_topic_alias_test",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTClient_createWithOptions(&c, options.connection, "server_topic_alias_test",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTCLIENT_SUCCESS)
 	{
@@ -784,14 +788,16 @@ int test_subscription_ids(struct Options options)
 	char* test_topic = "test_subscription_ids";
 	const int msg_count = 1;
 	int subsids = 1;
+	MQTTClient_createOptions createOpts = MQTTClient_createOptions_initializer;
 
 	fprintf(xml, "<testcase classname=\"test_subscription_ids\" name=\"subscription ids\"");
 	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 3 - subscription ids");
 
-	rc = MQTTClient_create(&c, options.connection, "subscription_ids",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTClient_createWithOptions(&c, options.connection, "subscription_ids",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTCLIENT_SUCCESS)
 	{
@@ -917,6 +923,7 @@ int test_flow_control(struct Options options)
 	int rc = 0, i = 0, count = 0;
 	char* test_topic = "test_flow_control";
 	int receive_maximum = 65535;
+	MQTTClient_createOptions createOpts = MQTTClient_createOptions_initializer;
 
 	fprintf(xml, "<testcase classname=\"test_flow_control\" name=\"flow control\"");
 	global_start_time = start_clock();
@@ -925,8 +932,9 @@ int test_flow_control(struct Options options)
 
 	//MQTTClient_setTraceCallback(test_flow_control_trace_callback);
 
-	rc = MQTTClient_create(&c, options.connection, "flow_control",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTClient_createWithOptions(&c, options.connection, "flow_control",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTCLIENT_SUCCESS)
 		goto exit;
@@ -1012,6 +1020,7 @@ int test_error_reporting(struct Options options)
 	int rc = 0, i = 0, count = 0;
 	char* test_topic = "test_error_reporting";
 	int receive_maximum = 65535;
+	MQTTClient_createOptions createOpts = MQTTClient_createOptions_initializer;
 
 	fprintf(xml, "<testcase classname=\"test_error_reporting\" name=\"error reporting\"");
 	global_start_time = start_clock();
@@ -1020,8 +1029,9 @@ int test_error_reporting(struct Options options)
 
 	//MQTTClient_setTraceCallback(test_flow_control_trace_callback);
 
-	rc = MQTTClient_create(&c, options.connection, "error_reporting",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTClient_createWithOptions(&c, options.connection, "error_reporting",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTCLIENT_SUCCESS)
 		goto exit;
@@ -1140,6 +1150,7 @@ int test_qos_1_2_errors(struct Options options)
 	int rc = 0, i = 0, count = 0;
 	char* test_topic = "test_qos_1_2_errors";
 	int receive_maximum = 65535;
+	MQTTClient_createOptions createOpts = MQTTClient_createOptions_initializer;
 
 	fprintf(xml, "<testcase classname=\"test_qos_1_2_errors\" name=\"qos 1 2 errors\"");
 	global_start_time = start_clock();
@@ -1148,8 +1159,9 @@ int test_qos_1_2_errors(struct Options options)
 
 	//MQTTClient_setTraceCallback(test_trace_callback);
 
-	rc = MQTTClient_create(&c, options.connection, "error_reporting",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTClient_createWithOptions(&c, options.connection, "error_reporting",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTCLIENT_SUCCESS)
 		goto exit;
@@ -1354,14 +1366,16 @@ int test_request_response(struct Options options)
 	char* test_topic = "test_request_response";
 	const int msg_count = 1;
 	int subsids = 1;
+	MQTTClient_createOptions createOpts = MQTTClient_createOptions_initializer;
 
 	fprintf(xml, "<testcase classname=\"test_request_response\" name=\"request/response\"");
 	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 7 - request response");
 
-	rc = MQTTClient_create(&c, options.connection, "request_response",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTClient_createWithOptions(&c, options.connection, "request_response",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTCLIENT_SUCCESS)
 	{
@@ -1529,14 +1543,16 @@ int test_subscribe_options(struct Options options)
 	int count = 0;
 	const int msg_count = 1;
 	MQTTSubscribe_options subopts = MQTTSubscribe_options_initializer;
+	MQTTClient_createOptions createOpts = MQTTClient_createOptions_initializer;
 
 	fprintf(xml, "<testcase classname=\"test_subscribe_options\" name=\"subscribe options\"");
 	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 8 - subscribe options");
 
-	rc = MQTTClient_create(&c, options.connection, "subscribe_options",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTClient_createWithOptions(&c, options.connection, "subscribe_options",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTCLIENT_SUCCESS)
 	{
@@ -1673,14 +1689,16 @@ int test_shared_subscriptions(struct Options options)
 	const int msg_count = 1;
 	MQTTSubscribe_options subopts = MQTTSubscribe_options_initializer;
 	int i;
+	MQTTClient_createOptions createOpts = MQTTClient_createOptions_initializer;
 
 	fprintf(xml, "<testcase classname=\"test_shared_subscriptions\" name=\"shared subscriptions\"");
 	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 8 - shared subscriptions");
 
-	rc = MQTTClient_create(&c, options.connection, "shared_subscriptions",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTClient_createWithOptions(&c, options.connection, "shared_subscriptions",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTCLIENT_SUCCESS)
 	{
@@ -1688,8 +1706,8 @@ int test_shared_subscriptions(struct Options options)
 		goto exit;
 	}
 
-	rc = MQTTClient_create(&d, options.connection, "shared_subscriptions_1",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	rc = MQTTClient_createWithOptions(&d, options.connection, "shared_subscriptions_1",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTCLIENT_SUCCESS)
 	{

@@ -237,8 +237,8 @@ void writeData(char** pptr, const void* data, int datalen);
 const char* MQTTPacket_name(int ptype);
 
 void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error);
-int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buflen, int free);
-int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffers, size_t* buflens, int* frees);
+int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buflen, int free, int MQTTVersion);
+int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffers, size_t* buflens, int* frees, int MQTTVersion);
 
 void* MQTTPacket_header_only(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen);
 int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQTTProperties* props);

@@ -17,7 +17,7 @@
 
 /**
  * @file
- * SSL tests for the MQ Telemetry Asynchronous MQTT C client
+ * SSL tests for the Eclipse Paho Asynchronous MQTT C client
  */
 
 #include "MQTTAsync.h"

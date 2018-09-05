@@ -191,6 +191,10 @@
   * Return code: option not applicable to the requested version of MQTT
   */
  #define MQTTCLIENT_BAD_MQTT_OPTION -15
+ /**
+  * Return code: call not applicable to the requested version of MQTT
+  */
+ #define MQTTCLIENT_WRONG_MQTT_VERSION -16
 
 
 /**

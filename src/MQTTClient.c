@@ -1493,16 +1493,39 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 	return rc;
 }
 
+MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions* options,
+		MQTTProperties* connectProperties, MQTTProperties* willProperties);
 
 int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 {
-	MQTTResponse response = MQTTClient_connect5(handle, options, NULL, NULL);
+	MQTTClients* m = handle;
+
+	if (m->c->MQTTVersion >= MQTTVERSION_5)
+		return MQTTCLIENT_WRONG_MQTT_VERSION;
+
+	MQTTResponse response = MQTTClient_connectAll(handle, options, NULL, NULL);
 
 	return response.reasonCode;
 }
 
 
 MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connectOptions* options,
+		MQTTProperties* connectProperties, MQTTProperties* willProperties)
+{
+	MQTTClients* m = handle;
+	MQTTResponse response = MQTTResponse_initializer;
+
+	if (m->c->MQTTVersion < MQTTVERSION_5)
+	{
+		response.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
+		return response;
+	}
+
+	return MQTTClient_connectAll(handle, options, connectProperties, willProperties);
+}
+
+
+MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions* options,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties)
 {
 	MQTTClients* m = handle;
@@ -2130,7 +2153,6 @@ MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int p
 	{
 		while (m->c->connected == 1 && SocketBuffer_getWrite(m->c->net.socket))
 		{
-			printf("getwrite %p\n", SocketBuffer_getWrite(m->c->net.socket));
 			Thread_unlock_mutex(mqttclient_mutex);
 			MQTTClient_yield();
 			Thread_lock_mutex(mqttclient_mutex);

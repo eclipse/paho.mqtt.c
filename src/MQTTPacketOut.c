@@ -117,7 +117,7 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion,
 	if (client->password)
 		writeData(&ptr, client->password, client->passwordlen);
 
-	rc = MQTTPacket_send(&client->net, packet.header, buf, len, 1);
+	rc = MQTTPacket_send(&client->net, packet.header, buf, len, 1, MQTTVersion);
 	Log(LOG_PROTOCOL, 0, NULL, client->net.socket, client->clientID, client->cleansession, rc);
 exit:
 	if (rc != TCPSOCKET_INTERRUPTED)
@@ -197,7 +197,7 @@ int MQTTPacket_send_pingreq(networkHandles* net, const char* clientID)
 	FUNC_ENTRY;
 	header.byte = 0;
 	header.bits.type = PINGREQ;
-	rc = MQTTPacket_send(net, header, NULL, 0, 0);
+	rc = MQTTPacket_send(net, header, NULL, 0, 0, MQTTVERSION_3_1_1);
 	Log(LOG_PROTOCOL, 20, NULL, net->socket, clientID, rc);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -258,7 +258,7 @@ int MQTTPacket_send_subscribe(List* topics, List* qoss, MQTTSubscribe_options* o
 		writeChar(&ptr, subopts);
 		++i;
 	}
-	rc = MQTTPacket_send(&client->net, header, data, datalen, 1);
+	rc = MQTTPacket_send(&client->net, header, data, datalen, 1, client->MQTTVersion);
 	Log(LOG_PROTOCOL, 22, NULL, client->net.socket, client->clientID, msgid, rc);
 	if (rc != TCPSOCKET_INTERRUPTED)
 		free(data);
@@ -347,7 +347,7 @@ int MQTTPacket_send_unsubscribe(List* topics, MQTTProperties* props, int msgid, 
 	elem = NULL;
 	while (ListNextElement(topics, &elem))
 		writeUTF(&ptr, (char*)(elem->content));
-	rc = MQTTPacket_send(&client->net, header, data, datalen, 1);
+	rc = MQTTPacket_send(&client->net, header, data, datalen, 1, client->MQTTVersion);
 	Log(LOG_PROTOCOL, 25, NULL, client->net.socket, client->clientID, msgid, rc);
 	if (rc != TCPSOCKET_INTERRUPTED)
 		free(data);

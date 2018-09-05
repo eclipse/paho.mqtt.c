@@ -598,6 +598,56 @@ SET_TESTS_PROPERTIES(
 )
 
 ADD_EXECUTABLE(
+	test95
+	test95.c
+)
+
+TARGET_LINK_LIBRARIES(
+	test95
+	paho-mqtt3a
+)
+
+ADD_TEST(
+	NAME test95-1-offline-buffering-send-disconnected
+	COMMAND test95 "--test_no" "1" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
+ADD_TEST(
+	NAME test95-2-offline-buffering-send-disconnected-serverURIs
+	COMMAND test95 "--test_no" "2" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
+ADD_TEST(
+	NAME test95-3-offline-buffering-auto-reconnect
+	COMMAND test95 "--test_no" "3" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
+ADD_TEST(
+	NAME test95-4-offline-buffering-auto-reconnect-serverURIs
+	COMMAND test95 "--test_no" "4" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
+ADD_TEST(
+	NAME test95-5-offline-buffering-max-buffered
+	COMMAND test95 "--test_no" "5" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
+ADD_TEST(
+	NAME test95-6-offline-buffering-max-buffered-binary-will
+	COMMAND test95 "--test_no" "6" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
+SET_TESTS_PROPERTIES(
+	test95-1-offline-buffering-send-disconnected
+	test95-2-offline-buffering-send-disconnected-serverURIs
+	test95-3-offline-buffering-auto-reconnect
+	test95-4-offline-buffering-auto-reconnect-serverURIs
+	test95-5-offline-buffering-max-buffered
+	test95-6-offline-buffering-max-buffered-binary-will
+	PROPERTIES TIMEOUT 540
+)
+
+ADD_EXECUTABLE(
 	test10
 	test10.c
 )

@@ -253,30 +253,74 @@ void logProperties(MQTTProperties *props)
 		switch (MQTTProperty_getType(id))
 		{
 		case MQTTPROPERTY_TYPE_BYTE:
-		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.byte);
+		  MyLog(LOGA_DEBUG, intformat, name, props->array[i].value.byte);
 		  break;
 		case MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER:
-		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer2);
+		  MyLog(LOGA_DEBUG, intformat, name, props->array[i].value.integer2);
 		  break;
 		case MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER:
-		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer4);
+		  MyLog(LOGA_DEBUG, intformat, name, props->array[i].value.integer4);
 		  break;
 		case MQTTPROPERTY_TYPE_VARIABLE_BYTE_INTEGER:
-		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer4);
+		  MyLog(LOGA_DEBUG, intformat, name, props->array[i].value.integer4);
 		  break;
 		case MQTTPROPERTY_TYPE_BINARY_DATA:
 		case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
-		  MyLog(LOGA_INFO, "Property name %s value len %.*s", name,
+		  MyLog(LOGA_DEBUG, "Property name %s value len %.*s", name,
 				  props->array[i].value.data.len, props->array[i].value.data.data);
 		  break;
 		case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
-		  MyLog(LOGA_INFO, "Property name %s key %.*s value %.*s", name,
+		  MyLog(LOGA_DEBUG, "Property name %s key %.*s value %.*s", name,
 			  props->array[i].value.data.len, props->array[i].value.data.data,
 		  	  props->array[i].value.value.len, props->array[i].value.value.data);
 		  break;
 		}
 	}
 }
+
+
+void waitForNoPendingTokens(MQTTAsync c)
+{
+	int i = 0, rc = 0, count = 0;
+	MQTTAsync_token *tokens;
+
+	/* acks for outgoing messages could arrive after incoming exchanges are complete */
+	do
+	{
+		rc = MQTTAsync_getPendingTokens(c, &tokens);
+		assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+		i = 0;
+		if (tokens)
+		{
+			while (tokens[i] != -1)
+				++i;
+			MQTTAsync_free(tokens);
+		}
+		if (i > 0)
+			MySleep(100);
+	}
+	while (i > 0 && ++count < 10);
+	assert("Number of getPendingTokens should be 0", i == 0, "i was %d ", i);
+}
+
+
+void assert3PendingTokens(MQTTAsync c)
+{
+	int i = 0, rc = 0;
+	MQTTAsync_token *tokens;
+
+	rc = MQTTAsync_getPendingTokens(c, &tokens);
+	assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+	i = 0;
+	if (tokens)
+	{
+		while (tokens[i] != -1)
+			++i;
+		MQTTAsync_free(tokens);
+	}
+	assert("Number of getPendingTokens should be 3", i == 3, "i was %d ", i);
+}
+
 
 /*********************************************************************
 
@@ -443,7 +487,6 @@ int test1(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
 	MQTTProperties props = MQTTProperties_initializer;
 	MQTTProperties willProps = MQTTProperties_initializer;
 	MQTTProperty property;
@@ -567,6 +610,7 @@ int test1(struct Options options)
 		pubmsg.payloadlen = (int)strlen(pubmsg.payload) + 1;
 		pubmsg.qos = i;
 		pubmsg.retained = 0;
+	 	MyLog(LOGA_DEBUG, "Sending qos %d message", pubmsg.qos);
 
 		property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 		property.value.data.data = "test user property";
@@ -578,18 +622,10 @@ int test1(struct Options options)
 		rc = MQTTAsync_sendMessage(c, test_topic, &pubmsg, &opts);
 		assert("Good rc from sendMessage", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
 		MQTTProperties_free(&props);
+		MyLog(LOGA_DEBUG, "Sent qos %d message, token %d", pubmsg.qos, opts.token);
 	}
 
-	rc = MQTTAsync_getPendingTokens(c, &tokens);
- 	assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
- 	i = 0;
-	if (tokens)
-	{
- 		while (tokens[i] != -1)
- 			++i;
-		MQTTAsync_free(tokens);
-	}
- 	assert("Number of getPendingTokens should be 3", i == 3, "i was %d ", i);
+ 	assert3PendingTokens(c);
 
  	/* destroy and recreate to read from persistence */
  	MyLog(LOGA_DEBUG, "Destroy and recreate client c");
@@ -606,16 +642,7 @@ int test1(struct Options options)
 		goto exit;
 	}
 
-	rc = MQTTAsync_getPendingTokens(c, &tokens);
- 	assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
- 	i = 0;
-	if (tokens)
-	{
- 		while (tokens[i] != -1)
- 			++i;
-		MQTTAsync_free(tokens);
-	}
- 	assert("Number of getPendingTokens should be 3", i == 3, "i was %d ", i);
+	assert3PendingTokens(c);
 
 	rc = MQTTAsync_setConnected(c, c, test1cConnected);
 	assert("Good rc from setConnectedCallback", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -643,16 +670,7 @@ int test1(struct Options options)
 	while (test1_messages_received < 3 && ++count < 10000)
 		MySleep(100);
 
-	rc = MQTTAsync_getPendingTokens(c, &tokens);
- 	assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
- 	i = 0;
-	if (tokens)
-	{
- 		while (tokens[i] != -1)
- 			++i;
-		MQTTAsync_free(tokens);
-	}
- 	assert("Number of getPendingTokens should be 0", i == 0, "i was %d ", i);
+	waitForNoPendingTokens(c);
 
 	rc = MQTTAsync_disconnect(c, NULL);
  	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -794,7 +812,6 @@ int test2(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
 	char *URIs[2] = {"rubbish", options.proxy_connection};
 	MQTTProperties props = MQTTProperties_initializer;
 	MQTTProperty property;
@@ -912,16 +929,7 @@ int test2(struct Options options)
 	  assert("Good rc from sendMessage", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
 	}
 
-	rc = MQTTAsync_getPendingTokens(c, &tokens);
- 	assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
- 	i = 0;
-	if (tokens)
-	{
- 		while (tokens[i] != -1)
-	 		++i;
-		MQTTAsync_free(tokens);
-	}
- 	assert("Number of getPendingTokens should be 3", i == 3, "i was %d ", i);
+	assert3PendingTokens(c);
 
 	rc = MQTTAsync_reconnect(c);
  	assert("Good rc from reconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -934,16 +942,7 @@ int test2(struct Options options)
 	while (test2_messages_received < 3 && ++count < 10000)
 		MySleep(100);
 
-	rc = MQTTAsync_getPendingTokens(c, &tokens);
- 	assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
- 	i = 0;
-	if (tokens)
-	{
- 		while (tokens[i] != -1)
- 			++i;
-		MQTTAsync_free(tokens);
-	}
- 	assert("Number of getPendingTokens should be 0", i == 0, "i was %d ", i);
+ 	waitForNoPendingTokens(c);
 
 	rc = MQTTAsync_disconnect(c, NULL);
  	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -1085,7 +1084,6 @@ int test3(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
 	MQTTProperties props = MQTTProperties_initializer;
 	MQTTProperty property;
 
@@ -1201,16 +1199,7 @@ int test3(struct Options options)
 	  assert("Good rc from sendMessage", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
 	}
 
-	rc = MQTTAsync_getPendingTokens(c, &tokens);
- 	assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
- 	i = 0;
-	if (tokens)
-	{
- 		while (tokens[i] != -1)
- 			++i;
-		MQTTAsync_free(tokens);
-	}
- 	assert("Number of getPendingTokens should be 3", i == 3, "i was %d ", i);
+	assert3PendingTokens(c);
 
 	/* wait for client to be reconnected */
 	while (!test3c_connected && ++count < 10000)
@@ -1220,17 +1209,7 @@ int test3(struct Options options)
 	while (test3_messages_received < 3 && ++count < 10000)
 		MySleep(100);
 
-	rc = MQTTAsync_getPendingTokens(c, &tokens);
- 	assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
- 	i = 0;
-	if (tokens)
-	{
- 		while (tokens[i] != -1)
- 			++i;
-		MQTTAsync_free(tokens);
-	}
- 	assert("Number of getPendingTokens should be 0", i == 0, "i was %d ", i);
-
+ 	waitForNoPendingTokens(c);
 
 	rc = MQTTAsync_disconnect(c, NULL);
  	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -1373,7 +1352,6 @@ int test4(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
 	char *URIs[2] = {"rubbish", options.proxy_connection};
 	MQTTProperties props = MQTTProperties_initializer;
 	MQTTProperty property;
@@ -1490,16 +1468,7 @@ int test4(struct Options options)
 	  assert("Good rc from sendMessage", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
 	}
 
-	rc = MQTTAsync_getPendingTokens(c, &tokens);
- 	assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
- 	i = 0;
-	if (tokens)
-	{
- 		while (tokens[i] != -1)
-	 		++i;
-		MQTTAsync_free(tokens);
-	}
- 	assert("Number of getPendingTokens should be 3", i == 3, "i was %d ", i);
+	assert3PendingTokens(c);
 
 	/* wait for client to be reconnected */
 	while (!test4c_connected && ++count < 10000)
@@ -1509,16 +1478,7 @@ int test4(struct Options options)
 	while (test4_messages_received < 3 && ++count < 10000)
 		MySleep(100);
 
-	rc = MQTTAsync_getPendingTokens(c, &tokens);
- 	assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
- 	i = 0;
-	if (tokens)
-	{
- 		while (tokens[i] != -1)
- 			++i;
-		MQTTAsync_free(tokens);
-	}
- 	assert("Number of getPendingTokens should be 0", i == 0, "i was %d ", i);
+ 	waitForNoPendingTokens(c);
 
 	rc = MQTTAsync_disconnect(c, NULL);
  	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -1658,7 +1618,6 @@ int test5(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
 	MQTTProperties props = MQTTProperties_initializer;
 	MQTTProperty property;
 
@@ -1778,16 +1737,7 @@ int test5(struct Options options)
 	    assert("Bad rc from sendMessage", rc == MQTTASYNC_MAX_BUFFERED_MESSAGES, "rc was %d ", rc);
 	}
 
-	rc = MQTTAsync_getPendingTokens(c, &tokens);
- 	assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
- 	i = 0;
-	if (tokens)
-	{
- 		while (tokens[i] != -1)
- 			++i;
-		MQTTAsync_free(tokens);
-	}
- 	assert("Number of getPendingTokens should be 3", i == 3, "i was %d ", i);
+	assert3PendingTokens(c);
 
 	rc = MQTTAsync_reconnect(c);
  	assert("Good rc from reconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -1800,16 +1750,7 @@ int test5(struct Options options)
 	while (test5_messages_received < 3 && ++count < 10000)
 		MySleep(100);
 
-	rc = MQTTAsync_getPendingTokens(c, &tokens);
- 	assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
- 	i = 0;
-	if (tokens)
-	{
- 		while (tokens[i] != -1)
- 			++i;
-		MQTTAsync_free(tokens);
-	}
- 	assert("Number of getPendingTokens should be 0", i == 0, "i was %d ", i);
+ 	waitForNoPendingTokens(c);
 
 	rc = MQTTAsync_disconnect(c, NULL);
  	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -1841,7 +1782,6 @@ int test6(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
 	MQTTProperties props = MQTTProperties_initializer;
 	MQTTProperty property;
 
@@ -1968,16 +1908,7 @@ int test6(struct Options options)
 	    assert("Bad rc from sendMessage", rc == MQTTASYNC_MAX_BUFFERED_MESSAGES, "rc was %d ", rc);
 	}
 
-	rc = MQTTAsync_getPendingTokens(c, &tokens);
- 	assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
- 	i = 0;
-	if (tokens)
-	{
- 		while (tokens[i] != -1)
- 			++i;
-		MQTTAsync_free(tokens);
-	}
- 	assert("Number of getPendingTokens should be 3", i == 3, "i was %d ", i);
+	assert3PendingTokens(c);
 
 	rc = MQTTAsync_reconnect(c);
  	assert("Good rc from reconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -1990,16 +1921,7 @@ int test6(struct Options options)
 	while (test5_messages_received < 3 && ++count < 10000)
 		MySleep(100);
 
-	rc = MQTTAsync_getPendingTokens(c, &tokens);
- 	assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
- 	i = 0;
-	if (tokens)
-	{
- 		while (tokens[i] != -1)
- 			++i;
-		MQTTAsync_free(tokens);
-	}
- 	assert("Number of getPendingTokens should be 0", i == 0, "i was %d ", i);
+ 	waitForNoPendingTokens(c);
 
 	rc = MQTTAsync_disconnect(c, NULL);
  	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -2255,16 +2177,7 @@ int test7(struct Options options)
 	}
 
 #if 0
-	rc = MQTTAsync_getPendingTokens(c, &tokens);
- 	assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
- 	i = 0;
-	if (tokens)
-	{
- 		while (tokens[i] != -1)
- 			++i;
-		MQTTAsync_free(tokens);
-	}
- 	assert("Number of getPendingTokens should be 3", i == 3, "i was %d ", i);
+	assert3PendingTokens(c);
 
 	rc = MQTTAsync_reconnect(c);
  	assert("Good rc from reconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -2277,16 +2190,7 @@ int test7(struct Options options)
 	while (test5_messages_received < 3 && ++count < 10000)
 		MySleep(100);
 
-	rc = MQTTAsync_getPendingTokens(c, &tokens);
- 	assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
- 	i = 0;
-	if (tokens)
-	{
- 		while (tokens[i] != -1)
- 			++i;
-		MQTTAsync_free(tokens);
-	}
- 	assert("Number of getPendingTokens should be 0", i == 0, "i was %d ", i);
+ 	waitForNoPendingTokens(c);
 #endif
 
 exit:

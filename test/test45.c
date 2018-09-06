@@ -153,8 +153,17 @@ void MyLog(int LOGA_level, char* format, ...)
 #endif
 
 
+void MySleep(long milliseconds)
+{
+#if defined(WIN32) || defined(WIN64)
+	Sleep(milliseconds);
+#else
+	usleep(milliseconds*1000);
+#endif
+}
+
+
 #if defined(WIN32) || defined(_WINDOWS)
-#define mqsleep(A) Sleep(1000*A)
 #define START_TIME_TYPE DWORD
 static DWORD start_time = 0;
 START_TIME_TYPE start_clock(void)
@@ -162,7 +171,6 @@ START_TIME_TYPE start_clock(void)
 	return GetTickCount();
 }
 #elif defined(AIX)
-#define mqsleep sleep
 #define START_TIME_TYPE struct timespec
 START_TIME_TYPE start_clock(void)
 {
@@ -171,7 +179,6 @@ START_TIME_TYPE start_clock(void)
 	return start;
 }
 #else
-#define mqsleep sleep
 #define START_TIME_TYPE struct timeval
 /* TODO - unused - remove? static struct timeval start_time; */
 START_TIME_TYPE start_clock(void)
@@ -290,6 +297,31 @@ void logProperties(MQTTProperties *props)
 		  break;
 		}
 	}
+}
+
+
+void waitForNoPendingTokens(MQTTAsync c)
+{
+	int i = 0, rc = 0, count = 0;
+	MQTTAsync_token *tokens;
+
+	/* acks for outgoing messages could arrive after incoming exchanges are complete */
+	do
+	{
+		rc = MQTTAsync_getPendingTokens(c, &tokens);
+		assert("Good rc from getPendingTokens", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+		i = 0;
+		if (tokens)
+		{
+			while (tokens[i] != -1)
+				++i;
+			MQTTAsync_free(tokens);
+		}
+		if (i > 0)
+			MySleep(100);
+	}
+	while (i > 0 && ++count < 10);
+	assert("Number of getPendingTokens should be 0", i == 0, "i was %d ", i);
 }
 
 
@@ -1326,10 +1358,7 @@ int test7_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 
 	MyLog(LOGA_DEBUG, "Test7: received message id %d", message->msgid);
 
-	if (message->qos == 1 && message->dup == 1)
-		; /* ignore dups */
-	else
-		test7_messageCount++;
+	test7_messageCount++;
 
 	MQTTAsync_freeMessage(&message);
 	MQTTAsync_free(topicName);
@@ -1387,6 +1416,7 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 	MQTTProperty property;
 	MQTTProperties props = MQTTProperties_initializer;
 	MQTTAsync_createOptions createOpts = MQTTAsync_createOptions_initializer;
+	int i = 0;
 
 	MyLog(LOGA_INFO, "Starting test 7 - persistence, qos %d, MQTT versions: %s then %s", qos,
 			(start_mqtt_version == MQTTVERSION_5) ? "5" : "3.1.1",
@@ -1455,6 +1485,7 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 			usleep(10000L);
 		#endif
 
+	test7_messageCount = 0;
 	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
 	pubmsg.payloadlen = 11;
 	pubmsg.qos = qos;
@@ -1469,8 +1500,7 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 	rc = MQTTAsync_isComplete(c, ropts.token);
 	assert("1 rc from isComplete", rc == 1, "rc was %d", rc);
 
-	test7_messageCount = 0;
-	int i = 0;
+	i = 0;
 	pubmsg.qos = qos;
 	for (i = 0; i < msg_count; ++i)
 	{
@@ -1545,14 +1575,14 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 		usleep(5000000L);
 	#endif
 
-	rc = MQTTAsync_getPendingTokens(c, &tokens);
-	assert("getPendingTokens rc == 0", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	waitForNoPendingTokens(c);
 
-	/* following assertions fail against Mosquitto - needs testing */
-	assert("should get no tokens back", tokens == NULL, "tokens was %p", tokens);
-
-	assert("no of messages should be count", test7_messageCount == msg_count, "messages received %d\n",
-			test7_messageCount);
+	if (qos == 2)
+		assert("no of messages should be count", test7_messageCount == msg_count + 1,
+				"messages received %d\n", test7_messageCount);
+	else if (qos == 1)
+		assert("no of messages should be at least count", test7_messageCount >= msg_count + 1,
+				"messages received %d\n", test7_messageCount);
 
 	dopts.onFailure5 = test7_onDisconnectFailure;
 	dopts.onSuccess5 = test7_onDisconnect;
@@ -1773,9 +1803,7 @@ int test8(struct Options options)
 		#endif
 	test_finished = 0;
 
-	rc = MQTTAsync_getPendingTokens(c, &tokens);
- 	assert("getPendingTokens rc == 0", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
-	assert("should get no tokens back", tokens == NULL, "tokens was %p", tokens);
+	waitForNoPendingTokens(c);
 
 	assert("test8_publishFailures > 0", test8_publishFailures > 0,
 		   "test8_publishFailures = %d", test8_publishFailures);

@@ -555,9 +555,9 @@ int MQTTPersistence_unpersistQueueEntry(Clients* client, MQTTPersistence_qEntry*
 }
 
 
+#define MAX_NO_OF_BUFFERS 9
 int MQTTPersistence_persistQueueEntry(Clients* aclient, MQTTPersistence_qEntry* qe)
 {
-	const int MAX_NO_OF_BUFFERS = 9;
 	int rc = 0;
 	int bufindex = 0;
 	char key[PERSISTENCE_MAX_KEY_LENGTH + 1];

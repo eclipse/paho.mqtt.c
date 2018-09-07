@@ -1618,10 +1618,14 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 	createOpts.MQTTVersion = restore_mqtt_version;
 	rc = MQTTAsync_createWithOptions(&c, options.connection, "async_test7",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
-	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+
+	if (start_mqtt_version == MQTTVERSION_5 && restore_mqtt_version == MQTTVERSION_3_1_1)
+		assert("Persistence error from create", rc == MQTTASYNC_PERSISTENCE_ERROR, "rc was %d", rc);
+	else
+		assert("Good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
-		MQTTAsync_destroy(&c);
+		//MQTTAsync_destroy(&c);
 		goto exit;
 	}
 
@@ -1717,8 +1721,8 @@ int test7(struct Options options)
 	global_start_time = start_clock();
 	rc = test7_run(1, MQTTVERSION_5, MQTTVERSION_5) +
 		 test7_run(2, MQTTVERSION_5, MQTTVERSION_5) +
-		 test7_run(2, MQTTVERSION_3_1_1, MQTTVERSION_5) /*+
-		 test7_run(2, MQTTVERSION_5, MQTTVERSION_3_1_1)*/;
+		 test7_run(2, MQTTVERSION_3_1_1, MQTTVERSION_5) +
+		 test7_run(2, MQTTVERSION_5, MQTTVERSION_3_1_1);
 	fprintf(xml, " time=\"%ld\" >\n", elapsed(global_start_time) / 1000);
 	if (cur_output != output)
 	{

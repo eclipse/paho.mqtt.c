@@ -112,7 +112,7 @@ int myconnect(MQTTClient* client)
 	if (opts.verbose && rc == MQTTCLIENT_SUCCESS)
 		fprintf(stderr, "Connected\n");
 	else if (rc != MQTTCLIENT_SUCCESS && !opts.quiet)
-		fprintf(stderr, "Connect failed with rc %d\n", rc);
+		fprintf(stderr, "Connect failed return code: %s\n", MQTTClient_strerror(rc));
 
 	return rc;
 }
@@ -135,6 +135,7 @@ int main(int argc, char** argv)
 {
 	MQTTClient client;
 	MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_createOptions createOpts = MQTTClient_createOptions_initializer;
 	int rc = 0;
 	char* url;
 	const char* version = NULL;
@@ -169,7 +170,16 @@ int main(int argc, char** argv)
 		MQTTClient_setTraceLevel(opts.tracelevel);
 	}
 
-	rc = MQTTClient_create(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+	if (opts.MQTTVersion >= MQTTVERSION_5)
+		createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTClient_createWithOptions(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE,
+			NULL, &createOpts);
+	if (rc != MQTTCLIENT_SUCCESS)
+	{
+		if (!opts.quiet)
+			fprintf(stderr, "Failed to create client, return code: %s\n", MQTTClient_strerror(rc));
+		exit(EXIT_FAILURE);
+	}
 
 #if defined(WIN32)
 	signal(SIGINT, cfinish);
@@ -194,7 +204,7 @@ int main(int argc, char** argv)
 	}
 	else
 		rc = MQTTClient_subscribe(client, opts.topic, opts.qos);
-	if (rc != MQTTCLIENT_SUCCESS)
+	if (rc != MQTTCLIENT_SUCCESS && rc != opts.qos)
 	{
 		if (!opts.quiet)
 			fprintf(stderr, "Error %d subscribing to topic %s\n", rc, opts.topic);

@@ -346,6 +346,8 @@ int main(int argc, char** argv)
 	}
 
 	create_opts.sendWhileDisconnected = 1;
+	if (opts.MQTTVersion >= MQTTVERSION_5)
+		create_opts.MQTTVersion = MQTTVERSION_5;
 	rc = MQTTAsync_createWithOptions(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL, &create_opts);
 	if (rc != MQTTASYNC_SUCCESS)
 	{

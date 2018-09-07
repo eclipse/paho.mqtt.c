@@ -201,6 +201,7 @@ int main(int argc, char** argv)
 {
 	MQTTAsync client;
 	MQTTAsync_disconnectOptions disc_opts = MQTTAsync_disconnectOptions_initializer;
+	MQTTAsync_createOptions create_opts = MQTTAsync_createOptions_initializer;
 	MQTTAsync_willOptions will_opts = MQTTAsync_willOptions_initializer;
 	MQTTAsync_SSLOptions ssl_opts = MQTTAsync_SSLOptions_initializer;
 	int rc = 0;
@@ -237,7 +238,10 @@ int main(int argc, char** argv)
 		MQTTAsync_setTraceLevel(opts.tracelevel);
 	}
 
-	rc = MQTTAsync_create(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+	if (opts.MQTTVersion >= MQTTVERSION_5)
+		create_opts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE,
+			NULL, &create_opts);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
 		if (!opts.quiet)
@@ -271,14 +275,15 @@ int main(int argc, char** argv)
 		conn_opts = conn_opts5;
 		conn_opts.onSuccess5 = onConnect5;
 		conn_opts.onFailure5 = onConnectFailure5;
+		conn_opts.cleanstart = 1;
 	}
 	else
 	{
 		conn_opts.onSuccess = onConnect;
 		conn_opts.onFailure = onConnectFailure;
+		conn_opts.cleansession = 1;
 	}
 	conn_opts.keepAliveInterval = opts.keepalive;
-	conn_opts.cleansession = 1;
 	conn_opts.username = opts.username;
 	conn_opts.password = opts.password;
 	conn_opts.MQTTVersion = opts.MQTTVersion;

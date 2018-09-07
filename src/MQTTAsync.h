@@ -183,6 +183,10 @@
   * Return code: don't use options for another version of MQTT
   */
  #define MQTTASYNC_BAD_MQTT_OPTION -15
+ /**
+  * Return code: call not applicable to the client's version of MQTT
+  */
+ #define MQTTASYNC_WRONG_MQTT_VERSION -16
 
 
 /**

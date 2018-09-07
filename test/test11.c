@@ -263,24 +263,24 @@ void logProperties(MQTTProperties *props)
 		switch (MQTTProperty_getType(id))
 		{
 		case MQTTPROPERTY_TYPE_BYTE:
-		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.byte);
+		  MyLog(LOGA_DEBUG, intformat, name, props->array[i].value.byte);
 		  break;
 		case MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER:
-		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer2);
+		  MyLog(LOGA_DEBUG, intformat, name, props->array[i].value.integer2);
 		  break;
 		case MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER:
-		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer4);
+		  MyLog(LOGA_DEBUG, intformat, name, props->array[i].value.integer4);
 		  break;
 		case MQTTPROPERTY_TYPE_VARIABLE_BYTE_INTEGER:
-		  MyLog(LOGA_INFO, intformat, name, props->array[i].value.integer4);
+		  MyLog(LOGA_DEBUG, intformat, name, props->array[i].value.integer4);
 		  break;
 		case MQTTPROPERTY_TYPE_BINARY_DATA:
 		case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
-		  MyLog(LOGA_INFO, "Property name %s value len %.*s", name,
+		  MyLog(LOGA_DEBUG, "Property name %s value len %.*s", name,
 				  props->array[i].value.data.len, props->array[i].value.data.data);
 		  break;
 		case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
-		  MyLog(LOGA_INFO, "Property name %s key %.*s value %.*s", name,
+		  MyLog(LOGA_DEBUG, "Property name %s key %.*s value %.*s", name,
 			  props->array[i].value.data.len, props->array[i].value.data.data,
 		  	  props->array[i].value.value.len, props->array[i].value.value.data);
 		  break;
@@ -347,7 +347,7 @@ void test_client_topic_aliases_onSubscribe(void* context, MQTTAsync_successData5
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	int rc;
 
-	MyLog(LOGA_INFO, "Suback properties:");
+	MyLog(LOGA_DEBUG, "Suback properties:");
 	logProperties(&response->properties);
 
 	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
@@ -379,7 +379,7 @@ void test_client_topic_aliases_onSubscribe(void* context, MQTTAsync_successData5
 void test_client_topic_aliases_disconnected(void* context, MQTTProperties* props, enum MQTTReasonCodes rc)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	MyLog(LOGA_INFO, "Callback: disconnected, reason code \"%s\"", MQTTReasonCode_toString(rc));
+	MyLog(LOGA_DEBUG, "Callback: disconnected, reason code \"%s\"", MQTTReasonCode_toString(rc));
 	logProperties(props);
 	test_client_topic_aliases_globals.disconnected = 1;
 }
@@ -399,7 +399,7 @@ void test_client_topic_aliases_onConnect(void* context, MQTTAsync_successData5* 
 	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
-	MyLog(LOGA_INFO, "Connack properties:");
+	MyLog(LOGA_DEBUG, "Connack properties:");
 	logProperties(&response->properties);
 
 	if (first)
@@ -450,13 +450,15 @@ int test_client_topic_aliases(struct Options options)
 	MQTTProperty property;
 	int rc = 0;
 	char* test_topic = "V5 C client test client topic aliases";
+	MQTTAsync_createOptions createOpts = MQTTAsync_createOptions_initializer;
 
 	MyLog(LOGA_INFO, "Starting V5 test 1 - client topic aliases");
 	fprintf(xml, "<testcase classname=\"test11\" name=\"client topic aliases\"");
 	global_start_time = start_clock();
 
-	rc = MQTTAsync_create(&c, options.connection, "async_test",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&c, options.connection, "async_test_aliases",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -602,7 +604,7 @@ void test_server_topic_aliases_onSubscribe(void* context, MQTTAsync_successData5
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	int qos = 0, rc;
 
-	MyLog(LOGA_INFO, "Suback properties:");
+	MyLog(LOGA_DEBUG, "Suback properties:");
 	logProperties(&response->properties);
 
 	test_server_topic_aliases_globals.messages_arrived = 0;
@@ -634,7 +636,7 @@ void test_server_topic_aliases_onConnect(void* context, MQTTAsync_successData5* 
 	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
-	MyLog(LOGA_INFO, "Connack properties:");
+	MyLog(LOGA_DEBUG, "Connack properties:");
 	logProperties(&response->properties);
 
 	opts.onSuccess5 = test_server_topic_aliases_onSubscribe;
@@ -661,13 +663,15 @@ int test_server_topic_aliases(struct Options options)
 	MQTTProperty property;
 	int rc = 0;
 	char* test_topic = "V5 C client test server topic aliases";
+	MQTTAsync_createOptions createOpts = MQTTAsync_createOptions_initializer;
 
 	MyLog(LOGA_INFO, "Starting V5 test 2 - server topic aliases");
 	fprintf(xml, "<testcase classname=\"test11\" name=\"server topic aliases\"");
 	global_start_time = start_clock();
 
-	rc = MQTTAsync_create(&c, options.connection, "server_topic_aliases",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&c, options.connection, "server_topic_aliases",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -773,7 +777,7 @@ void test_subscription_ids_onSubscribe(void* context, MQTTAsync_successData5* re
 	int rc;
 	static int subs_count = 0;
 
-	MyLog(LOGA_INFO, "Suback properties:");
+	MyLog(LOGA_DEBUG, "Suback properties:");
 	logProperties(&response->properties);
 
 	if (++subs_count == 1)
@@ -820,7 +824,7 @@ void test_subscription_ids_onConnect(void* context, MQTTAsync_successData5* resp
 	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
-	MyLog(LOGA_INFO, "Connack properties:");
+	MyLog(LOGA_DEBUG, "Connack properties:");
 	logProperties(&response->properties);
 
 	opts.onSuccess5 = test_subscription_ids_onSubscribe;
@@ -843,14 +847,16 @@ int test_subscription_ids(struct Options options)
 {
 	MQTTAsync c;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
+	MQTTAsync_createOptions createOpts = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 
 	MyLog(LOGA_INFO, "Starting V5 test 3 - subscription ids");
 	fprintf(xml, "<testcase classname=\"test11\" name=\"subscription ids\"");
 	global_start_time = start_clock();
 
-	rc = MQTTAsync_create(&c, options.connection, "subscription_ids",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&c, options.connection, "subscription_ids",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -939,7 +945,7 @@ void test_flow_control_onSubscribe(void* context, MQTTAsync_successData5* respon
 	int rc;
 	int i = 0;
 
-	MyLog(LOGA_INFO, "Suback properties:");
+	MyLog(LOGA_DEBUG, "Suback properties:");
 	logProperties(&response->properties);
 
 	test_flow_control_globals.messages_arrived = 0;
@@ -969,7 +975,7 @@ void test_flow_control_onConnect(void* context, MQTTAsync_successData5* response
 	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
-	MyLog(LOGA_INFO, "Connack properties:");
+	MyLog(LOGA_DEBUG, "Connack properties:");
 	logProperties(&response->properties);
 
 	if (MQTTProperties_hasProperty(&response->properties, MQTTPROPERTY_CODE_RECEIVE_MAXIMUM))
@@ -1000,14 +1006,16 @@ int test_flow_control(struct Options options)
 {
 	MQTTAsync c;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
+	MQTTAsync_createOptions createOpts = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 
 	MyLog(LOGA_INFO, "Starting V5 test - flow control");
 	fprintf(xml, "<testcase classname=\"test11\" name=\"flow control\"");
 	global_start_time = start_clock();
 
-	rc = MQTTAsync_create(&c, options.connection, "flow_control",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&c, options.connection, "flow_control",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -1068,19 +1076,19 @@ void test_error_reporting_onUnsubscribe(void* context, MQTTAsync_successData5* r
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	int i = 0;
 
-	MyLog(LOGA_INFO, "Unsuback properties:");
+	MyLog(LOGA_DEBUG, "Unsuback properties:");
 	logProperties(&response->properties);
 
 	assert("Reason code count should be 2", response->alt.unsub.reasonCodeCount == 2,
 		   "Reason code count was %d\n", response->alt.unsub.reasonCodeCount);
 
 	if (response->alt.unsub.reasonCodeCount == 1)
-		MyLog(LOGA_INFO, "reason code %d", response->reasonCode);
+		MyLog(LOGA_DEBUG, "reason code %d", response->reasonCode);
 	else if (response->alt.unsub.reasonCodeCount > 1)
 	{
 		for (i = 0; i < response->alt.unsub.reasonCodeCount; ++i)
 		{
-			MyLog(LOGA_INFO, "Unsubscribe reason code %d", response->alt.unsub.reasonCodes[i]);
+			MyLog(LOGA_DEBUG, "Unsubscribe reason code %d", response->alt.unsub.reasonCodes[i]);
 		}
 	}
 
@@ -1097,19 +1105,19 @@ void test_error_reporting_onSubscribe(void* context, MQTTAsync_successData5* res
 	int rc;
 	int i = 0;
 
-	MyLog(LOGA_INFO, "Suback properties:");
+	MyLog(LOGA_DEBUG, "Suback properties:");
 	logProperties(&response->properties);
 
 	assert("Reason code count should be 2", response->alt.sub.reasonCodeCount == 2,
 		   "Reason code count was %d\n", response->alt.sub.reasonCodeCount);
 
 	if (response->alt.sub.reasonCodeCount == 1)
-		MyLog(LOGA_INFO, "reason code %d", response->reasonCode);
+		MyLog(LOGA_DEBUG, "reason code %d", response->reasonCode);
 	else if (response->alt.sub.reasonCodeCount > 1)
 	{
 		for (i = 0; i < response->alt.sub.reasonCodeCount; ++i)
 		{
-			MyLog(LOGA_INFO, "Subscribe reason code %d", response->alt.sub.reasonCodes[i]);
+			MyLog(LOGA_DEBUG, "Subscribe reason code %d", response->alt.sub.reasonCodes[i]);
 		}
 	}
 
@@ -1146,7 +1154,7 @@ void test_error_reporting_onConnect(void* context, MQTTAsync_successData5* respo
 	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
-	MyLog(LOGA_INFO, "Connack properties:");
+	MyLog(LOGA_DEBUG, "Connack properties:");
 	logProperties(&response->properties);
 
 	opts.onSuccess5 = test_error_reporting_onSubscribe;
@@ -1175,14 +1183,16 @@ int test_error_reporting(struct Options options)
 {
 	MQTTAsync c;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
+	MQTTAsync_createOptions createOpts = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 
 	MyLog(LOGA_INFO, "Starting V5 test - error reporting");
 	fprintf(xml, "<testcase classname=\"test11\" name=\"error reporting\"");
 	global_start_time = start_clock();
 
-	rc = MQTTAsync_create(&c, options.connection, "error reporting",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&c, options.connection, "error reporting",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -1234,7 +1244,7 @@ struct
 void test_qos_1_2_errors_onPublishSuccess(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	MyLog(LOGA_INFO, "Callback: publish success, reason code \"%s\" msgid: %d packet type: ",
+	MyLog(LOGA_DEBUG, "Callback: publish success, reason code \"%s\" msgid: %d",
 			MQTTReasonCode_toString(response->reasonCode), response->token);
 
 	logProperties(&response->properties);
@@ -1248,7 +1258,7 @@ void test_qos_1_2_errors_onPublishFailure3(void* context, MQTTAsync_failureData5
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 
-	MyLog(LOGA_INFO, "Callback: publish failure, reason code \"%s\" msgid: %d packet type: ",
+	MyLog(LOGA_DEBUG, "Callback: publish failure, reason code \"%s\" msgid: %d packet type: %d",
 			MQTTReasonCode_toString(response->reasonCode), response->token, response->packet_type);
 
 	logProperties(&response->properties);
@@ -1265,7 +1275,7 @@ void test_qos_1_2_errors_onPublishFailure2(void* context, MQTTAsync_failureData5
 	MQTTProperty property;
 	int rc;
 
-	MyLog(LOGA_INFO, "Callback: publish failure, reason code \"%s\" msgid: %d packet type: ",
+	MyLog(LOGA_DEBUG, "Callback: publish failure, reason code \"%s\" msgid: %d packet type: %d",
 			MQTTReasonCode_toString(response->reasonCode), response->token, response->packet_type);
 
 	logProperties(&response->properties);
@@ -1303,7 +1313,7 @@ void test_qos_1_2_errors_onPublishFailure(void* context, MQTTAsync_failureData5*
 	MQTTProperty property;
 	int rc;
 
-	MyLog(LOGA_INFO, "Callback: publish failure, reason code \"%s\" msgid: %d packet type: ",
+	MyLog(LOGA_DEBUG, "Callback: publish failure, reason code \"%s\" msgid: %d packet type: %d",
 			MQTTReasonCode_toString(response->reasonCode), response->token, response->packet_type);
 
 	logProperties(&response->properties);
@@ -1346,7 +1356,7 @@ void test_qos_1_2_errors_onConnect(void* context, MQTTAsync_successData5* respon
 	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
-	MyLog(LOGA_INFO, "Connack properties:");
+	MyLog(LOGA_DEBUG, "Connack properties:");
 	logProperties(&response->properties);
 
 	opts.onSuccess5 = test_qos_1_2_errors_onPublishSuccess;
@@ -1378,14 +1388,16 @@ int test_qos_1_2_errors(struct Options options)
 {
 	MQTTAsync c;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
+	MQTTAsync_createOptions createOpts = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 
 	MyLog(LOGA_INFO, "Starting V5 test - qos 1 and 2 errors");
 	fprintf(xml, "<testcase classname=\"test11\" name=\"qos 1 and 2 errors\"");
 	global_start_time = start_clock();
 
-	rc = MQTTAsync_create(&c, options.connection, "qos 1 and 2 errors",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&c, options.connection, "qos 1 and 2 errors",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -1541,19 +1553,19 @@ void test_request_response_onSubscribe(void* context, MQTTAsync_successData5* re
 	int rc;
 	int i = 0;
 
-	MyLog(LOGA_INFO, "Suback properties:");
+	MyLog(LOGA_DEBUG, "Suback properties:");
 	logProperties(&response->properties);
 
 	assert("Reason code count should be 2", response->alt.sub.reasonCodeCount == 2,
 		   "Reason code count was %d\n", response->alt.sub.reasonCodeCount);
 
 	if (response->alt.sub.reasonCodeCount == 1)
-		MyLog(LOGA_INFO, "reason code %d", response->reasonCode);
+		MyLog(LOGA_DEBUG, "reason code %d", response->reasonCode);
 	else if (response->alt.sub.reasonCodeCount > 1)
 	{
 		for (i = 0; i < response->alt.sub.reasonCodeCount; ++i)
 		{
-			MyLog(LOGA_INFO, "Subscribe reason code %d", response->alt.sub.reasonCodes[i]);
+			MyLog(LOGA_DEBUG, "Subscribe reason code %d", response->alt.sub.reasonCodes[i]);
 			assert("Reason code should be 2", response->alt.sub.reasonCodes[i] == MQTTREASONCODE_GRANTED_QOS_2,
 				   "Reason code was %d\n", response->alt.sub.reasonCodes[i]);
 		}
@@ -1597,7 +1609,7 @@ void test_request_response_onConnect(void* context, MQTTAsync_successData5* resp
 	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
-	MyLog(LOGA_INFO, "Connack properties:");
+	MyLog(LOGA_DEBUG, "Connack properties:");
 	logProperties(&response->properties);
 
 	opts.onSuccess5 = test_request_response_onSubscribe;
@@ -1613,14 +1625,16 @@ int test_request_response(struct Options options)
 {
 	MQTTAsync c;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
+	MQTTAsync_createOptions createOpts = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 
 	MyLog(LOGA_INFO, "Starting V5 test - request response");
 	fprintf(xml, "<testcase classname=\"test11\" name=\"request response\"");
 	global_start_time = start_clock();
 
-	rc = MQTTAsync_create(&c, options.connection, "request response",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&c, options.connection, "request response",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -1723,7 +1737,7 @@ void test_subscribeOptions_onSubscribe(void* context, MQTTAsync_successData5* re
 
 	if (response->properties.count > 0)
 	{
-		MyLog(LOGA_INFO, "Suback properties:");
+		MyLog(LOGA_DEBUG, "Suback properties:");
 		logProperties(&response->properties);
 	}
 
@@ -1775,7 +1789,7 @@ void test_subscribeOptions_onConnect(void* context, MQTTAsync_successData5* resp
 	assert("Reason code should be 0", response->reasonCode == MQTTREASONCODE_SUCCESS,
 		   "Reason code was %d\n", response->reasonCode);
 
-	MyLog(LOGA_INFO, "Connack properties:");
+	MyLog(LOGA_DEBUG, "Connack properties:");
 	logProperties(&response->properties);
 
 	property.identifier = MQTTPROPERTY_CODE_SUBSCRIPTION_IDENTIFIER;
@@ -1798,14 +1812,16 @@ int test_subscribeOptions(struct Options options)
 {
 	MQTTAsync c;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
+	MQTTAsync_createOptions createOpts = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 
 	MyLog(LOGA_INFO, "Starting V5 test - subscribe options");
 	fprintf(xml, "<testcase classname=\"test11\" name=\"subscribe options\"");
 	global_start_time = start_clock();
 
-	rc = MQTTAsync_create(&c, options.connection, "subscribe options",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&c, options.connection, "subscribe options",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -1900,7 +1916,7 @@ void test_shared_subscriptions_onSubscribe(void* context, MQTTAsync_successData5
 
 	if (response->properties.count > 0)
 	{
-		MyLog(LOGA_INFO, "Suback properties:");
+		MyLog(LOGA_DEBUG, "Suback properties:");
 		logProperties(&response->properties);
 	}
 
@@ -1975,14 +1991,16 @@ int test_shared_subscriptions(struct Options options)
 {
 	MQTTAsync c, d;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
+	MQTTAsync_createOptions createOpts = MQTTAsync_createOptions_initializer;
 	int rc = 0, count = 0;
 
 	MyLog(LOGA_INFO, "Starting V5 test - shared subscriptions");
 	fprintf(xml, "<testcase classname=\"test11\" name=\"shared subscriptions\"");
 	global_start_time = start_clock();
 
-	rc = MQTTAsync_create(&c, options.connection, "shared subscriptions c",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&c, options.connection, "shared subscriptions c",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -1990,8 +2008,8 @@ int test_shared_subscriptions(struct Options options)
 		goto exit;
 	}
 
-	rc = MQTTAsync_create(&d, options.connection, "shared subscriptions d",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	rc = MQTTAsync_createWithOptions(&d, options.connection, "shared subscriptions d",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{

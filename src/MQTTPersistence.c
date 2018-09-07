@@ -238,6 +238,11 @@ int MQTTPersistence_restore(Clients *c)
 						msg->nextMessageType = PUBREL;
 						/* order does not matter for persisted received messages */
 						ListAppend(c->inboundMsgs, msg, msg->len);
+						if (c->MQTTVersion >= MQTTVERSION_5)
+						{
+							free(msg->publish->payload);
+							free(msg->publish->topic);
+						}
 						publish->topic = NULL;
 						MQTTPacket_freePublish(publish);
 						msgs_rcvd++;
@@ -468,7 +473,8 @@ int MQTTPersistence_remove(Clients* c, char *type, int qos, int msgId)
 	if (c->persistence != NULL)
 	{
 		char *key = malloc(MESSAGE_FILENAME_LENGTH + 1);
-		if (strcmp(type, PERSISTENCE_PUBLISH_SENT) == 0) //&& qos == 2 )
+		if (strcmp(type, PERSISTENCE_PUBLISH_SENT) == 0 ||
+				strcmp(type, PERSISTENCE_V5_PUBLISH_SENT) == 0)
 		{
 			sprintf(key, "%s%d", PERSISTENCE_V5_PUBLISH_SENT, msgId) ;
 			rc = c->persistence->premove(c->phandle, key);

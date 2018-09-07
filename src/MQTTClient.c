@@ -2716,6 +2716,8 @@ const char* MQTTClient_strerror(int code)
       return "Invalid protocol scheme";
     case MQTTCLIENT_BAD_MQTT_OPTION:
       return "Options for wrong MQTT version";
+    case MQTTCLIENT_WRONG_MQTT_VERSION:
+    	  return "Client created for another version of MQTT";
   }
 
   sprintf(buf, "Unknown error code %d", code);

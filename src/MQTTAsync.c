@@ -2781,6 +2781,11 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 			goto exit;
 		}
 	}
+	if (options->MQTTVersion >= MQTTVERSION_5 && m->c->MQTTVersion < MQTTVERSION_5)
+	{
+		rc = MQTTASYNC_WRONG_MQTT_VERSION;
+		goto exit;
+	}
 	if ((options->username && !UTF8_validateString(options->username)) ||
 		(options->password && !UTF8_validateString(options->password)))
 	{
@@ -3181,45 +3186,50 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int
 {
 	MQTTAsyncs* m = handle;
 	int i = 0;
-	int rc = MQTTASYNC_FAILURE;
+	int rc = MQTTASYNC_SUCCESS;
 	MQTTAsync_queuedCommand* sub;
 	int msgid = 0;
 
 	FUNC_ENTRY;
 	if (m == NULL || m->c == NULL)
-	{
 		rc = MQTTASYNC_FAILURE;
-		goto exit;
-	}
-	if (m->c->connected == 0)
-	{
+	else if (m->c->connected == 0)
 		rc = MQTTASYNC_DISCONNECTED;
-		goto exit;
-	}
-	for (i = 0; i < count; i++)
+	else for (i = 0; i < count; i++)
 	{
 		if (!UTF8_validateString(topic[i]))
 		{
 			rc = MQTTASYNC_BAD_UTF8_STRING;
-			goto exit;
+			break;
 		}
 		if (qos[i] < 0 || qos[i] > 2)
 		{
 			rc = MQTTASYNC_BAD_QOS;
-			goto exit;
+			break;
 		}
 	}
-	if ((msgid = MQTTAsync_assignMsgId(m)) == 0)
-	{
+	if (rc != MQTTASYNC_SUCCESS)
+		; /* don't overwrite a previous error code */
+	else if ((msgid = MQTTAsync_assignMsgId(m)) == 0)
 		rc = MQTTASYNC_NO_MORE_MSGIDS;
-		goto exit;
-	}
-	if (m->c->MQTTVersion >= MQTTVERSION_5 && count > 1 && (count != response->subscribeOptionsCount
+	else if (m->c->MQTTVersion >= MQTTVERSION_5 && count > 1 && (count != response->subscribeOptionsCount
 			&& response->subscribeOptionsCount != 0))
-	{
 		rc = MQTTASYNC_BAD_MQTT_OPTION;
-		goto exit;
+	else if (response)
+	{
+		if (m->c->MQTTVersion >= MQTTVERSION_5)
+		{
+			if (response->struct_version == 0 || response->onFailure || response->onSuccess)
+				rc = MQTTASYNC_BAD_MQTT_OPTION;
+		}
+		else if (m->c->MQTTVersion < MQTTVERSION_5)
+		{
+			if (response->struct_version >= 1 && (response->onFailure5 || response->onSuccess5))
+				rc = MQTTASYNC_BAD_MQTT_OPTION;
+		}
 	}
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
 
 	/* Add subscribe request to operation queue */
 	sub = malloc(sizeof(MQTTAsync_queuedCommand));
@@ -3287,34 +3297,42 @@ int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* const* topic, M
 {
 	MQTTAsyncs* m = handle;
 	int i = 0;
-	int rc = SOCKET_ERROR;
+	int rc = MQTTASYNC_SUCCESS;
 	MQTTAsync_queuedCommand* unsub;
 	int msgid = 0;
 
 	FUNC_ENTRY;
 	if (m == NULL || m->c == NULL)
-	{
 		rc = MQTTASYNC_FAILURE;
-		goto exit;
-	}
-	if (m->c->connected == 0)
-	{
+	else if (m->c->connected == 0)
 		rc = MQTTASYNC_DISCONNECTED;
-		goto exit;
-	}
-	for (i = 0; i < count; i++)
+	else for (i = 0; i < count; i++)
 	{
 		if (!UTF8_validateString(topic[i]))
 		{
 			rc = MQTTASYNC_BAD_UTF8_STRING;
-			goto exit;
+			break;
 		}
 	}
-	if ((msgid = MQTTAsync_assignMsgId(m)) == 0)
-	{
+	if (rc != MQTTASYNC_SUCCESS)
+		; /* don't overwrite a previous error code */
+	else if ((msgid = MQTTAsync_assignMsgId(m)) == 0)
 		rc = MQTTASYNC_NO_MORE_MSGIDS;
-		goto exit;
+	else if (response)
+	{
+		if (m->c->MQTTVersion >= MQTTVERSION_5)
+		{
+			if (response->struct_version == 0 || response->onFailure || response->onSuccess)
+				rc = MQTTASYNC_BAD_MQTT_OPTION;
+		}
+		else if (m->c->MQTTVersion < MQTTVERSION_5)
+		{
+			if (response->struct_version >= 1 && (response->onFailure5 || response->onSuccess5))
+				rc = MQTTASYNC_BAD_MQTT_OPTION;
+		}
 	}
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
 
 	/* Add unsubscribe request to operation queue */
 	unsub = malloc(sizeof(MQTTAsync_queuedCommand));
@@ -4044,6 +4062,8 @@ const char* MQTTAsync_strerror(int code)
       return "Invalid protocol scheme";
     case MQTTASYNC_BAD_MQTT_OPTION:
       return "Options for wrong MQTT version";
+    case MQTTASYNC_WRONG_MQTT_VERSION:
+    	  return "Client created for another version of MQTT";
   }
 
   sprintf(buf, "Unknown error code %d", code);

@@ -335,7 +335,7 @@ int test1(struct Options options)
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 1 - asynchronous connect");
 
-	rc = MQTTAsync_create(&c, options.connection, "async_test",
+	rc = MQTTAsync_create(&c, options.connection, "async_8_test1",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)

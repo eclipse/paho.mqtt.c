@@ -2046,7 +2046,7 @@ int test7(struct Options options)
 	MQTTAsync c, d;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
-	//MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
+	MQTTAsync_createOptions createOpts = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 	int count = 0;
 	char clientidc[50];
@@ -2070,7 +2070,9 @@ int test7(struct Options options)
 	fprintf(xml, "<testcase classname=\"test7\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	rc = MQTTAsync_create(&c, options.proxy_connection, clientidc, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&c, options.proxy_connection, clientidc, MQTTCLIENT_PERSISTENCE_DEFAULT,
+			NULL, &createOpts);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -2078,7 +2080,9 @@ int test7(struct Options options)
 		goto exit;
 	}
 
-	rc = MQTTAsync_create(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT,
+			NULL, &createOpts);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{

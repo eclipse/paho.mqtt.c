@@ -530,7 +530,11 @@ typedef struct
 	char struct_id[4];
 	/** The version number of this structure.  Must be 0 */
 	int struct_version;
-	/** Whether the MQTT version is 3 and 4, or 5.  To use 5, this must be set. */
+	/** Whether the MQTT version is 3.1, 3.1.1, or 5.  To use V5, this must be set.
+	 *  MQTT V5 has to be chosen here, because during the create call the message persistence
+	 *  is initialized, and we want to know whether the format of any persisted messages
+	 *  is appropriate for the MQTT version we are going to connect with.  Selecting 3.1 or
+	 *  3.1.1 and attempting to read 5.0 persisted messages will result in an error on create.  */
 	int MQTTVersion;
 } MQTTClient_createOptions;
 

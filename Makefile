@@ -24,7 +24,7 @@ SHELL = /bin/sh
 .PHONY: clean, mkdir, install, uninstall, html
 
 ifndef release.version
-  release.version = 1.2.1
+  release.version = 1.3.0
 endif
 
 # determine current platform

@@ -579,7 +579,7 @@ int MQTTProtocol_handlePubcomps(void* pack, int sock)
 							(m->MQTTVersion >= MQTTVERSION_5) ? PERSISTENCE_V5_PUBLISH_SENT : PERSISTENCE_PUBLISH_SENT,
 							m->qos, pubcomp->msgId);
 					if (rc != 0)
-						Log(LOG_ERROR, -1, "Error removing PUBCOMP msgid id %d from persistence", client->clientID, pubcomp->msgId);
+						Log(LOG_ERROR, -1, "Error removing PUBCOMP for client id %s msgid %d from persistence", client->clientID, pubcomp->msgId);
 				#endif
 				MQTTProtocol_removePublication(m->publish);
 				if (m->MQTTVersion >= MQTTVERSION_5)

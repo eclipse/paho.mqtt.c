@@ -48,6 +48,7 @@ addons:
       - cmake-data
       - mosquitto
       - doxygen
+  ssh_known_hosts: build.eclipse.org
 
 after_success:
     - ls -l build.paho/*.tar.gz

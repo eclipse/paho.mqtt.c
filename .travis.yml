@@ -17,7 +17,7 @@ matrix:
       os: linux
 
 before_install:
-  - if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_REPO_SLUG" = "eclipse/paho.mqtt.c" ]; then export DEPLOY=true; fi
+  # - if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_REPO_SLUG" = "eclipse/paho.mqtt.c" ]; then export DEPLOY=true; fi
   - if [ "$DEPLOY" = "true" ]; then ./travis-setup-deploy.sh; fi
   - ./travis-install.sh
 

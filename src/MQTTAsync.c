@@ -1618,7 +1618,7 @@ static int MQTTAsync_processCommand(void)
 					command->command.details.conn.MQTTVersion = 	MQTTVERSION_DEFAULT;
 				}
 			} else
-				command->command.details.conn.currentURI++;
+				command->command.details.conn.currentURI++; /* Here currentURI becomes larger than command->client->serverURIcount. This needs to be handled to avoid segmentation faults! */
 
 			/* put the connect command back to the head of the command queue, using the next serverURI */
 			rc = MQTTAsync_addCommand(command,

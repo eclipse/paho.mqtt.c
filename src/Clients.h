@@ -82,7 +82,9 @@ typedef struct
 #if defined(OPENSSL)
 	SSL* ssl;
 	SSL_CTX* ctx;
+	char *https_proxy;
 #endif
+	char *http_proxy;
 	int websocket; /**< socket has been upgraded to use web sockets */
 	char *websocket_key;
 } networkHandles;
@@ -99,6 +101,8 @@ typedef struct
 #define WEBSOCKET_IN_PROGRESS   0x3
 /** TCP completed, waiting for MQTT ACK */
 #define WAIT_FOR_CONNACK 0x4
+/** Proxy connection in progress */
+#define PROXY_CONNECY_IN_PROGRESS 0x5
 /** Disconnecting */
 #define DISCONNECTING    -2
 

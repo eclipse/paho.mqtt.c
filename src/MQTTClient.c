@@ -897,6 +897,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 				}
 			}
 #endif
+
 			else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS)
 			{
 				Log(TRACE_MIN, -1, "Posting websocket handshake for client %s rc %d", m->c->clientID, m->rc);
@@ -1132,6 +1133,12 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 			const char *topic;
 			int setSocketForSSLrc = 0;
 
+			if (m->websocket && m->c->net.https_proxy) {
+				m->c->connect_state = PROXY_CONNECY_IN_PROGRESS;
+				if ((rc = WebSocket_proxy_connect( &m->c->net, m->serverURI)) == SOCKET_ERROR )
+					goto exit;
+			}
+
 			hostname_len = MQTTProtocol_addressPort(m->serverURI, &port, &topic);
 			setSocketForSSLrc = SSLSocket_setSocketForSSL(&m->c->net, m->c->sslopts,
 				m->serverURI, hostname_len);
@@ -1185,6 +1192,12 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 #endif
 		else if (m->websocket)
 		{
+			if (m->c->net.http_proxy) {
+				m->c->connect_state = PROXY_CONNECY_IN_PROGRESS;
+				if ((rc = WebSocket_proxy_connect( &m->c->net, m->serverURI)) == SOCKET_ERROR )
+					goto exit;
+			}
+
 			m->c->connect_state = WEBSOCKET_IN_PROGRESS;
 			if ( WebSocket_connect(&m->c->net, m->serverURI) == SOCKET_ERROR )
 			{
@@ -2430,6 +2443,11 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 				}
 #endif
 				else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS )
+				{
+					*rc = 1;
+					break;
+				}
+				else if (m->c->connect_state == PROXY_CONNECY_IN_PROGRESS )
 				{
 					*rc = 1;
 					break;

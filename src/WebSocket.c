@@ -89,6 +89,8 @@
 /** @brief raw uuid type */
 typedef unsigned char uuid_t[16];
 
+#define HTTP_PROTOCOL(x) x ? "https" : "http"
+
 /**
  * @brief generates a uuid, compatible with RFC 4122, version 4 (random)
  * @note Uses a very insecure algorithm but no external dependencies
@@ -345,12 +347,18 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 			"Host: %.*s:%d\r\n"
 			"Upgrade: websocket\r\n"
 			"Connection: Upgrade\r\n"
-			"Origin: http://%.*s:%d\r\n"
+			"Origin: %s://%.*s:%d\r\n"
 			"Sec-WebSocket-Key: %s\r\n"
 			"Sec-WebSocket-Version: 13\r\n"
 			"Sec-WebSocket-Protocol: mqtt\r\n"
 			"\r\n", topic,
 			(int)hostname_len, uri, port,
+#if defined(OPENSSL)
+			HTTP_PROTOCOL(net->ssl),
+#else
+			HTTP_PROTOCOL(0),
+#endif
+			
 			(int)hostname_len, uri, port,
 			net->websocket_key );
 
@@ -1064,3 +1072,48 @@ exit:
 	return rc;
 }
 
+/**
+ * Notify the IP address and port of the endpoint to proxy, and wait connection to endpoint.
+ *
+ * @param[in]  net               network connection to proxy.
+ * @param[in]  hostname          hostname of endpoint.
+ *
+ * @retval SOCKET_ERROR          failed to network connection
+ * @retval 0                     connection to endpoint
+ * 
+ */
+int WebSocket_proxy_connect( networkHandles *net, const char *hostname)
+{
+	int port, i, rc = 0, buf_len=0;
+	char *buf = NULL;
+	size_t hostname_len, actual_len = 0; 
+	FUNC_ENTRY;
+ 
+	hostname_len = MQTTProtocol_addressPort(hostname, &port, NULL);
+	for ( i = 0; i < 2; ++i ) {
+		buf_len = snprintf( buf, (size_t)buf_len, "CONNECT %.*s:%d HTTP/1.1\r\n\r\n",
+			(int)hostname_len, hostname, port);  
+		if ( i==0 && buf_len > 0 ) {
+			++buf_len;
+			buf = malloc( buf_len );
+		}  
+	}
+
+	Socket_putdatas( net->socket, buf, buf_len, 0, NULL, NULL, NULL );
+	free(buf);
+	buf = NULL;
+
+	while(!actual_len)
+		buf = Socket_getdata(net->socket, (size_t)12, &actual_len);
+
+	if ( strcmp( buf, "HTTP/1.1 200" ) != 0 )
+		rc = SOCKET_ERROR;
+
+	/* flash the SocketBuffer */
+	actual_len = 1;
+	while(actual_len)
+		buf = Socket_getdata(net->socket, (size_t)1, &actual_len);
+
+	FUNC_EXIT_RC(rc);
+	return rc;
+}

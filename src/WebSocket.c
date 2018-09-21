@@ -18,6 +18,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+// for timeout process in WebSocket_proxy_connect()
+#include <time.h>
+#include <unistd.h>
 
 #include "WebSocket.h"
 
@@ -1087,6 +1090,7 @@ int WebSocket_proxy_connect( networkHandles *net, const char *hostname)
 	int port, i, rc = 0, buf_len=0;
 	char *buf = NULL;
 	size_t hostname_len, actual_len = 0; 
+	time_t current, timeout;
 	FUNC_ENTRY;
  
 	hostname_len = MQTTProtocol_addressPort(hostname, &port, NULL);
@@ -1103,11 +1107,25 @@ int WebSocket_proxy_connect( networkHandles *net, const char *hostname)
 	free(buf);
 	buf = NULL;
 
-	while(!actual_len)
-		buf = Socket_getdata(net->socket, (size_t)12, &actual_len);
+	time(&timeout);
+	timeout += (time_t)10;
 
-	if ( strcmp( buf, "HTTP/1.1 200" ) != 0 )
-		rc = SOCKET_ERROR;
+	while(1) {
+		buf = Socket_getdata(net->socket, (size_t)12, &actual_len);
+		if(actual_len) {
+			if ( (strcmp( buf, "HTTP/1.0 200" ) != 0) &&  (strcmp( buf, "HTTP/1.1 200" ) != 0) )
+				rc = SOCKET_ERROR;
+			break;
+		}
+		else {
+			time(&current);
+			if(current > timeout) {
+				rc = SOCKET_ERROR;
+				break;
+			}
+			usleep(250000);
+		}
+	}
 
 	/* flash the SocketBuffer */
 	actual_len = 1;

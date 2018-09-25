@@ -743,9 +743,9 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
                                 goto free_ctx;
 
                         mbedtls_ssl_conf_ca_chain(net->sslHdl.conf, net->sslHdl.ca_cert, NULL);
-                        mbedtls_ssl_conf_authmode(net->sslHdl.conf,
-                           opts->enableServerCertAuth ? MBEDTLS_SSL_VERIFY_REQUIRED : MBEDTLS_SSL_VERIFY_NONE);
                 }
+                mbedtls_ssl_conf_authmode(net->sslHdl.conf,
+                        opts->enableServerCertAuth ? MBEDTLS_SSL_VERIFY_REQUIRED : MBEDTLS_SSL_VERIFY_NONE);
 
                 /* Set client certificate */
                 if (opts->keyStore)

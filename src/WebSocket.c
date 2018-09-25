@@ -20,7 +20,11 @@
 #include <string.h>
 // for timeout process in WebSocket_proxy_connect()
 #include <time.h>
+#if defined(WIN32) || defined(WIN64)
+#include <windows.h>
+#else
 #include <unistd.h>
+#endif
 
 #include "WebSocket.h"
 
@@ -1123,7 +1127,11 @@ int WebSocket_proxy_connect( networkHandles *net, const char *hostname)
 				rc = SOCKET_ERROR;
 				break;
 			}
+#if defined(WIN32) || defined(WIN64)
+			Sleep(250);
+#else
 			usleep(250000);
+#endif
 		}
 	}
 

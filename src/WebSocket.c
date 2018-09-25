@@ -79,6 +79,8 @@
 #endif /* defined(OPENSSL) */
 #include "Socket.h"
 
+#define HTTP_PROTOCOL(x) x ? "https" : "http"
+
 #if !(defined(WIN32) || defined(WIN64))
 #if defined(LIBUUID)
 #include <uuid/uuid.h>
@@ -95,8 +97,6 @@
 
 /** @brief raw uuid type */
 typedef unsigned char uuid_t[16];
-
-#define HTTP_PROTOCOL(x) x ? "https" : "http"
 
 /**
  * @brief generates a uuid, compatible with RFC 4122, version 4 (random)

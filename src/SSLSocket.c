@@ -851,14 +851,17 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts,
                 if(mbedtls_ssl_setup(net->sslHdl.ssl, net->sslHdl.conf) != 0)
                         goto error;
 
-                hostname_plus_null = malloc(hostname_len + 1u );
-		MQTTStrncpy(hostname_plus_null, hostname, hostname_len + 1u);
-                if(mbedtls_ssl_set_hostname(net->sslHdl.ssl, hostname_plus_null) != 0)
+                if (opts->verify == 1)
                 {
-                        free(hostname_plus_null);
-                        goto error;
+                    hostname_plus_null = malloc(hostname_len + 1u );
+		    MQTTStrncpy(hostname_plus_null, hostname, hostname_len + 1u);
+                    if(mbedtls_ssl_set_hostname(net->sslHdl.ssl, hostname_plus_null) != 0)
+                    {
+                            free(hostname_plus_null);
+                            goto error;
+                    }
+                    free(hostname_plus_null);
                 }
-                free(hostname_plus_null);
 
                 mbedtls_ssl_set_bio(net->sslHdl.ssl, net->sslHdl.ctx, mbedtls_net_send, mbedtls_net_recv, NULL);
 #endif
@@ -936,11 +939,6 @@ int SSLSocket_connect(sslHandler* sslHdl, int sock, const char* hostname, int ve
         else
         {
                 rc = 1;
-
-                if (verify == 1)
-                {
-                        /* Nothing to do with mbedTLS */
-                }
         }
 
         SSL_unlock_mutex(&sslCoreMutex);
@@ -1191,7 +1189,6 @@ int SSLSocket_putdatas(sslHandler* sslHdl, int socket, char* buf0, size_t buf0le
 #if defined(OPENSSL)
 	if ((rc = SSL_write(sslHdl->ssl, iovec.iov_base, iovec.iov_len)) == iovec.iov_len)
 #elif defined(MBEDTLS)
-        if ((rc = mbedtls_ssl_write(sslHdl->ssl, iovec.iov_base, iovec.iov_len)) == iovec.iov_len)
         while ((rc = mbedtls_ssl_write(sslHdl->ssl, iovec.iov_base + writen_bytes, iovec.iov_len - writen_bytes)) >= 0)
         {
                 writen_bytes += rc;

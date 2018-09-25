@@ -1113,7 +1113,7 @@ int WebSocket_proxy_connect( networkHandles *net, const char *hostname)
 	while(1) {
 		buf = Socket_getdata(net->socket, (size_t)12, &actual_len);
 		if(actual_len) {
-			if ( (strcmp( buf, "HTTP/1.0 200" ) != 0) &&  (strcmp( buf, "HTTP/1.1 200" ) != 0) )
+			if ( (strncmp( buf, "HTTP/1.0 200", 12 ) != 0) &&  (strncmp( buf, "HTTP/1.1 200", 12 ) != 0) )
 				rc = SOCKET_ERROR;
 			break;
 		}

@@ -935,6 +935,8 @@ int SSLSocket_connect(sslHandler* sslHdl, int sock, const char* hostname, int ve
         {
                 if (rc == MBEDTLS_ERR_SSL_WANT_READ || rc == MBEDTLS_ERR_SSL_WANT_WRITE)
                         rc = TCPSOCKET_INTERRUPTED;
+                else
+                        rc = SSL_FATAL;
         }
         else
         {

@@ -227,7 +227,7 @@ static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
 			buf0[buf_len++] |= data_len & 0x7F;
 
 		/* 3rd byte & 4th bytes - extended payload length */
-		else if ( data_len <= 65536u )
+		else if ( data_len < 65536u )
 		{
 			uint16_t len = htobe16((uint16_t)data_len);
 			buf0[buf_len++] |= (126u & 0x7F);
@@ -297,11 +297,12 @@ size_t WebSocket_calculateFrameHeaderSize(networkHandles *net, int mask_data,
 	int ret = 0;
 	if ( net && net->websocket )
 	{
-		ret += 2; /* header 2 bytes */
-		if ( data_len >= 126 )
-			ret += 2; /* for extra 2-bytes for payload length */
-		else if ( data_len > 65536u )
-			ret += 8; /* for extra 8-bytes for payload length */
+		if ( data_len < 126u)
+			ret = 2; /* header 2 bytes */
+		else if ( data_len < 65536u )
+			ret = 4; /* for extra 2-bytes for payload length */
+		else if ( data_len < 0xFFFFFFFFFFFFFFFF )
+			ret = 10; /* for extra 8-bytes for payload length */
 		if ( mask_data & 0x1 )
 			ret += sizeof(uint32_t); /* for mask */
 	}
@@ -492,7 +493,7 @@ int WebSocket_getch(networkHandles *net, char* c)
 			size_t actual_len = 0u;
 			rc =  WebSocket_receiveFrame( net, 1u, &actual_len );
 			if ( rc != TCPSOCKET_COMPLETE )
-				return rc;
+				goto exit;
 
 			/* we got a frame, let take off the top of queue */
 			if ( in_frames->first )
@@ -515,6 +516,7 @@ int WebSocket_getch(networkHandles *net, char* c)
 	else
 		rc = Socket_getch(net->socket, c);
 
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -557,7 +559,7 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 					free( last_frame );
 				last_frame = ListDetachHead(in_frames);
 			}
-			return rv;
+			goto exit;
 		}
 
 		/* no current frame, let's see if there's one in the list */
@@ -591,6 +593,7 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 	else
 		rv = WebSocket_getRawSocketData(net, bytes, actual_len);
 
+exit:
 	rc = rv != NULL;
 	FUNC_EXIT_RC(rc);
 	return rv;

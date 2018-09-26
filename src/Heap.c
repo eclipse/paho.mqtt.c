@@ -241,7 +241,7 @@ static int Internal_heap_unlink(char* file, int line, void* p)
 	{
 		storageElement* s = (storageElement*)(e->content);
 		Log(TRACE_MAX, -1, "Freeing %d bytes in heap at file %s line %d, heap use now %d bytes\n",
-											 (int)s->size, file, line, state.current_size);
+											 (int)s->size, file, line, (int)state.current_size);
 		checkEyecatchers(file, line, p, s->size);
 		/* free(s->ptr); */
 		free(s->file);

@@ -41,7 +41,7 @@
  * @endcond
  * @cond MQTTClient_main
  * @mainpage MQTT Client library for C
- * &copy; Copyright IBM Corp. 2009, 2017
+ * &copy; Copyright IBM Corp. 2009, 2018
  *
  * @brief An MQTT client library in C.
  *
@@ -191,6 +191,10 @@
   * Return code: option not applicable to the requested version of MQTT
   */
  #define MQTTCLIENT_BAD_MQTT_OPTION -15
+ /**
+  * Return code: call not applicable to the requested version of MQTT
+  */
+ #define MQTTCLIENT_WRONG_MQTT_VERSION -16
 
 
 /**
@@ -297,7 +301,7 @@ typedef struct
      * been retained by the MQTT server.
      *
      * <b>retained = false</b> <br>
-     * For publishers, this ndicates that this message should not be retained
+     * For publishers, this indicates that this message should not be retained
      * by the MQTT server. For subscribers, a false setting indicates this is
      * a normal message, received as a result of it being published to the
      * server.
@@ -421,35 +425,56 @@ DLLExport int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTClie
 
 
 /**
- * This is a callback function, which will be called when the client
- * library successfully connects.  This is superfluous when the connection
- * is made in response to a MQTTAsync_connect call, because the onSuccess
- * callback can be used.  It is intended for use when automatic reconnect
- * is enabled, so that when a reconnection attempt succeeds in the background,
- * the application is notified and can take any required actions.
+ * This is a callback function, which will be called when the a disconnect
+ * packet is received from the server.  This applies to MQTT V5 and above only.
  * @param context A pointer to the <i>context</i> value originally passed to
- * MQTTAsync_setCallbacks(), which contains any application-specific context.
- * @param cause The reason for the disconnection.
+ * ::MQTTAsync_setDisconnected(), which contains any application-specific context.
+ * @param properties The MQTT V5 properties received with the disconnect, if any.
+ * @param reasonCode The MQTT V5 reason code received with the disconnect.
  * Currently, <i>cause</i> is always set to NULL.
  */
 typedef void MQTTClient_disconnected(void* context, MQTTProperties* properties,
 		enum MQTTReasonCodes reasonCode);
 
 /**
- * Sets the MQTTClient_disconnected() callback function for a client.
+ * Sets the MQTTClient_disconnected() callback function for a client.  This will be called
+ * if a disconnect packet is received from the server.  Only valid for MQTT V5 and above.
  * @param handle A valid client handle from a successful call to
- * MQTTAsync_create().
+ * MQTTClient_create().
  * @param context A pointer to any application-specific context. The
  * the <i>context</i> pointer is passed to each of the callback functions to
  * provide access to the context information in the callback.
- * @param co A pointer to an MQTTAsync_connected() callback
+ * @param co A pointer to an MQTTClient_disconnected() callback
  * function.  NULL removes the callback setting.
- * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
- * ::MQTTASYNC_FAILURE if an error occurred.
+ * @return ::MQTTCLIENT_SUCCESS if the callbacks were correctly set,
+ * ::MQTTCLIENT_FAILURE if an error occurred.
  */
 DLLExport int MQTTClient_setDisconnected(MQTTClient handle, void* context, MQTTClient_disconnected* co);
 
-typedef void MQTTClient_published(void* context, int msgid, int packet_type, MQTTProperties* properties,
+/**
+ * This is a callback function, the MQTT V5 version of MQTTClient_deliveryComplete().
+ * The client application
+ * must provide an implementation of this function to enable asynchronous
+ * notification of the completed delivery of messages.
+ * It is called by the client library after the client application has
+ * published a message to the server. It indicates that the necessary
+ * handshaking and acknowledgements for the requested quality of service (see
+ * MQTTClient_message.qos) have been completed. This function is executed on a
+ * separate thread to the one on which the client application is running.
+ * <b>Note:</b> It is not called when messages are published at QoS0.
+ * @param context A pointer to the <i>context</i> value originally passed to
+ * MQTTClient_setCallbacks(), which contains any application-specific context.
+ * @param dt The ::MQTTClient_deliveryToken associated with
+ * the published message. Applications can check that all messages have been
+ * correctly published by matching the delivery tokens returned from calls to
+ * MQTTClient_publish() and MQTTClient_publishMessage() with the tokens passed
+ * to this callback.
+ * @param packet_type the last received packet type for this completion. For QoS 1
+ * always PUBACK.  For QoS 2 could be PUBREC or PUBCOMP.
+ * @param properties the MQTT V5 properties returned with the last packet from the server
+ * @param reasonCode the reason code returned from the server
+ */
+typedef void MQTTClient_published(void* context, int dt, int packet_type, MQTTProperties* properties,
 		enum MQTTReasonCodes reasonCode);
 
 DLLExport int MQTTClient_setPublished(MQTTClient handle, void* context, MQTTClient_published* co);
@@ -505,12 +530,60 @@ typedef struct
 	char struct_id[4];
 	/** The version number of this structure.  Must be 0 */
 	int struct_version;
-	/** Whether the MQTT version is 3 and 4, or 5.  To use 5, this must be set. */
+	/** Whether the MQTT version is 3.1, 3.1.1, or 5.  To use V5, this must be set.
+	 *  MQTT V5 has to be chosen here, because during the create call the message persistence
+	 *  is initialized, and we want to know whether the format of any persisted messages
+	 *  is appropriate for the MQTT version we are going to connect with.  Selecting 3.1 or
+	 *  3.1.1 and attempting to read 5.0 persisted messages will result in an error on create.  */
 	int MQTTVersion;
 } MQTTClient_createOptions;
 
 #define MQTTClient_createOptions_initializer { {'M', 'Q', 'C', 'O'}, MQTTVERSION_DEFAULT }
 
+/**
+ * A version of :MQTTClient_create() with additional options.
+ * This function creates an MQTT client ready for connection to the
+ * specified server and using the specified persistent storage (see
+ * MQTTClient_persistence). See also MQTTClient_destroy().
+ * @param handle A pointer to an ::MQTTClient handle. The handle is
+ * populated with a valid client reference following a successful return from
+ * this function.
+ * @param serverURI A null-terminated string specifying the server to
+ * which the client will connect. It takes the form <i>protocol://host:port</i>.
+ * Currently, <i>protocol</i> must be <i>tcp</i> or <i>ssl</i>.
+ * For <i>host</i>, you can
+ * specify either an IP address or a host name. For instance, to connect to
+ * a server running on the local machines with the default MQTT port, specify
+ * <i>tcp://localhost:1883</i>.
+ * @param clientId The client identifier passed to the server when the
+ * client connects to it. It is a null-terminated UTF-8 encoded string.
+ * @param persistence_type The type of persistence to be used by the client:
+ * <br>
+ * ::MQTTCLIENT_PERSISTENCE_NONE: Use in-memory persistence. If the device or
+ * system on which the client is running fails or is switched off, the current
+ * state of any in-flight messages is lost and some messages may not be
+ * delivered even at QoS1 and QoS2.
+ * <br>
+ * ::MQTTCLIENT_PERSISTENCE_DEFAULT: Use the default (file system-based)
+ * persistence mechanism. Status about in-flight messages is held in persistent
+ * storage and provides some protection against message loss in the case of
+ * unexpected failure.
+ * <br>
+ * ::MQTTCLIENT_PERSISTENCE_USER: Use an application-specific persistence
+ * implementation. Using this type of persistence gives control of the
+ * persistence mechanism to the application. The application has to implement
+ * the MQTTClient_persistence interface.
+ * @param persistence_context If the application uses
+ * ::MQTTCLIENT_PERSISTENCE_NONE persistence, this argument is unused and should
+ * be set to NULL. For ::MQTTCLIENT_PERSISTENCE_DEFAULT persistence, it
+ * should be set to the location of the persistence directory (if set
+ * to NULL, the persistence directory used is the working directory).
+ * Applications that use ::MQTTCLIENT_PERSISTENCE_USER persistence set this
+ * argument to point to a valid MQTTClient_persistence structure.
+ * @param options additional options for the create.
+ * @return ::MQTTCLIENT_SUCCESS if the client is successfully created, otherwise
+ * an error code is returned.
+ */
 DLLExport int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context, MQTTClient_createOptions* options);
 
@@ -550,7 +623,7 @@ typedef struct
   /** The LWT payload in binary form. This is only checked and used if the message option is NULL */
 	struct
 	{
-  	int len;            /**< binary payload length */
+		int len;            /**< binary payload length */
 		const void* data;  /**< binary payload data */
 	} payload;
 } MQTTClient_willOptions;
@@ -629,9 +702,21 @@ typedef struct
 	 */
 	const char* CApath;
 
+    /**
+     * Callback function for OpenSSL error handler ERR_print_errors_cb
+     * Exists only if struct_version >= 3
+     */
+    int (*ssl_error_cb) (const char *str, size_t len, void *u);
+
+    /**
+     * Application-specific contex for OpenSSL error handler ERR_print_errors_cb
+     * Exists only if struct_version >= 3
+     */
+    void* ssl_error_context;
+
 } MQTTClient_SSLOptions;
 
-#define MQTTClient_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 2, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL }
+#define MQTTClient_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 3, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL }
 
 /**
  * MQTTClient_connectOptions defines several settings that control the way the
@@ -725,7 +810,11 @@ typedef struct
    */
 	int connectTimeout;
 	/**
-	 * The time interval in seconds
+	 * The time interval in seconds after which unacknowledged publish requests are
+	 * retried during a TCP session.  With MQTT 3.1.1 and later, retries are
+	 * not required except on reconnect.  0 turns off in-session retries, and is the
+	 * recommended setting.  Adding retries to an already overloaded network only
+	 * exacerbates the problem.
 	 */
 	int retryInterval;
 	/**
@@ -783,9 +872,9 @@ typedef struct
 	int cleanstart;
 } MQTTClient_connectOptions;
 
-#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 6, 60, 1, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0}
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 6, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL, 0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0}
 
-#define MQTTClient_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 6, 60, 0, 1, NULL, NULL, NULL, 30, 20, NULL, 0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1}
+#define MQTTClient_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 6, 60, 0, 1, NULL, NULL, NULL, 30, 0, NULL, 0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1}
 
 /**
   * MQTTClient_libraryInfo is used to store details relating to the currently used
@@ -839,7 +928,7 @@ typedef struct MQTTResponse
 	MQTTProperties* properties;         /* optional */
 } MQTTResponse;
 
-#define MQTTResponse_initializer {1, SUCCESS, 0, NULL, NULL}
+#define MQTTResponse_initializer {1, MQTTREASONCODE_SUCCESS, 0, NULL, NULL}
 
 DLLExport void MQTTResponse_free(MQTTResponse response);
 
@@ -972,10 +1061,10 @@ DLLExport MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count,
   * @return ::MQTTCLIENT_SUCCESS if the message is accepted for publication.
   * An error code is returned if there was a problem accepting the message.
   */
-DLLExport int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, void* payload, int qos, int retained,
+DLLExport int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, const void* payload, int qos, int retained,
 																 MQTTClient_deliveryToken* dt);
 
-DLLExport MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int payloadlen, void* payload,
+DLLExport MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int payloadlen, const void* payload,
 		int qos, int retained, MQTTProperties* properties, MQTTClient_deliveryToken* dt);
 /**
   * This function attempts to publish a message to a given topic (see also

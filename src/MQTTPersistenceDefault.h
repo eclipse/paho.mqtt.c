@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +13,9 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
+
+#if !defined(MQTTPERSISTENCEDEFAULT_H)
+#define MQTTPERSISTENCEDEFAULT_H
 
 /** 8.3 filesystem */
 #define MESSAGE_FILENAME_LENGTH 8    
@@ -30,4 +33,6 @@ int pstclear(void* handle);
 int pstcontainskey(void* handle, char* key);
 
 int pstmkdir(char *pPathname);
+
+#endif
 

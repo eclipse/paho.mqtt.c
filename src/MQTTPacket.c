@@ -152,7 +152,7 @@ void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
 				buf[0] = header.byte;
 				buf0len = 1 + MQTTPacket_encode(&buf[1], remaining_length);
 				*error = MQTTPersistence_put(net->socket, buf, buf0len, 1,
-					&data, &remaining_length, header.bits.type, ((Publish *)pack)->msgId, 1);
+					&data, &remaining_length, header.bits.type, ((Publish *)pack)->msgId, 1, MQTTVersion);
 				free(buf);
 			}
 #endif
@@ -172,9 +172,11 @@ exit:
  * @param header the one-byte MQTT header
  * @param buffer the rest of the buffer to write (not including remaining length)
  * @param buflen the length of the data in buffer to be written
+ * @param MQTTVersion the version of MQTT being used
  * @return the completion code (TCPSOCKET_COMPLETE etc)
  */
-int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buflen, int freeData)
+int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buflen, int freeData,
+		int MQTTVersion)
 {
 	int rc;
 	size_t buf0len;
@@ -200,7 +202,7 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 		int msgId = readInt(&ptraux);
 
 		rc = MQTTPersistence_put(net->socket, &buf[ws_header], buf0len, count, &buffer, &buflen,
-			header.bits.type, msgId, 0);
+			header.bits.type, msgId, 0, MQTTVersion);
 	}
 #endif
 	rc = WebSocket_putdatas(net, &buf[ws_header], buf0len, count, &buffer, &buflen, &freeData);
@@ -223,9 +225,11 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
  * @param count the number of buffers
  * @param buffers the rest of the buffers to write (not including remaining length)
  * @param buflens the lengths of the data in the array of buffers to be written
+ * @param the MQTT version being used
  * @return the completion code (TCPSOCKET_COMPLETE etc)
  */
-int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffers, size_t* buflens, int* frees)
+int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffers, size_t* buflens,
+		int* frees, int MQTTVersion)
 {
 	int i, rc;
 	size_t buf0len, total = 0;
@@ -249,7 +253,7 @@ int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffe
 		char *ptraux = buffers[2];
 		int msgId = readInt(&ptraux);
 		rc = MQTTPersistence_put(net->socket, &buf[ws_header], buf0len, count, buffers, buflens,
-			header.bits.type, msgId, 0);
+			header.bits.type, msgId, 0, MQTTVersion);
 	}
 #endif
 	rc = WebSocket_putdatas(net, &buf[ws_header], buf0len, count, buffers, buflens, frees);
@@ -487,7 +491,7 @@ int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQT
 
 	if (client->MQTTVersion >= 5)
 	{
-		if (props || reason != SUCCESS)
+		if (props || reason != MQTTREASONCODE_SUCCESS)
 		{
 			size_t buflen = 1 + ((props == NULL) ? 0 : MQTTProperties_len(props));
 			char *buf = malloc(buflen), *ptr = NULL;
@@ -496,12 +500,13 @@ int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQT
 			writeChar(&ptr, reason);
 			if (props)
 				MQTTProperties_write(&ptr, props);
-			if ((rc = MQTTPacket_send(&client->net, header, buf, buflen, 1)) != TCPSOCKET_INTERRUPTED)
+			if ((rc = MQTTPacket_send(&client->net, header, buf, buflen, 1,
+					                   client->MQTTVersion)) != TCPSOCKET_INTERRUPTED)
 				free(buf);
 		}
 	}
 	else
-		rc = MQTTPacket_send(&client->net, header, NULL, 0, 0);
+		rc = MQTTPacket_send(&client->net, header, NULL, 0, 0, client->MQTTVersion);
 	Log(LOG_PROTOCOL, 28, NULL, client->net.socket, client->clientID, rc);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -523,6 +528,7 @@ void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, siz
 	char* enddata = &data[datalen];
 
 	FUNC_ENTRY;
+	memset(pack, '\0', sizeof(Publish));
 	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
 	if ((pack->topic = readUTFlen(&curdata, enddata, &pack->topiclen)) == NULL) /* Topic name on which to publish */
@@ -606,7 +612,7 @@ static int MQTTPacket_send_ack(int type, int msgid, int dup, networkHandles *net
 	if (type == PUBREL)
 	    header.bits.qos = 1;
 	writeInt(&ptr, msgid);
-	if ((rc = MQTTPacket_send(net, header, buf, 2, 1)) != TCPSOCKET_INTERRUPTED)
+	if ((rc = MQTTPacket_send(net, header, buf, 2, 1, MQTTVERSION_3_1_1)) != TCPSOCKET_INTERRUPTED)
 		free(buf);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -746,7 +752,7 @@ void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t 
 	{
 		MQTTProperties props = MQTTProperties_initializer;
 
-		pack->rc = SUCCESS;
+		pack->rc = MQTTREASONCODE_SUCCESS;
 		pack->properties = props;
 
 		if (datalen > 2)
@@ -805,7 +811,7 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 
 		ptr = topiclen;
 		writeInt(&ptr, (int)lens[1]);
-		rc = MQTTPacket_sends(net, header, 4, bufs, lens, frees);
+		rc = MQTTPacket_sends(net, header, 4, bufs, lens, frees, pack->MQTTVersion);
 		if (rc != TCPSOCKET_INTERRUPTED)
 			free(bufs[2]);
 	}
@@ -817,7 +823,7 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 		int frees[3] = {1, 0, 0};
 
 		writeInt(&ptr, (int)lens[1]);
-		rc = MQTTPacket_sends(net, header, 3, bufs, lens, frees);
+		rc = MQTTPacket_sends(net, header, 3, bufs, lens, frees, pack->MQTTVersion);
 	}
 	if (rc != TCPSOCKET_INTERRUPTED)
 		free(topiclen);

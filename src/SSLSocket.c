@@ -57,7 +57,7 @@ extern Sockets s;
 /* 1 ~ we are responsible for initializing openssl; 0 ~ openssl init is done externally */
 static int handle_openssl_init = 1;
 
-int SSLSocket_error(char* aString, SSL* ssl, int sock, int rc);
+static int SSLSocket_error(char* aString, SSL* ssl, int sock, int rc, int (*cb)(const char *str, size_t len, void *u), void* u);
 char* SSL_get_verify_result_string(int rc);
 void SSL_CTX_info_callback(const SSL* ssl, int where, int ret);
 char* SSLSocket_get_version_string(int version);
@@ -105,9 +105,12 @@ static ssl_mutex_type sslCoreMutex;
  * Gets the specific error corresponding to SOCKET_ERROR
  * @param aString the function that was being used when the error occurred
  * @param sock the socket on which the error occurred
+ * @param rc the return code
+ * @param cb the callback function to be passed as first argument to ERR_print_errors_cb
+ * @param u context to be passed as second argument to ERR_print_errors_cb
  * @return the specific TCP error code
  */
-int SSLSocket_error(char* aString, SSL* ssl, int sock, int rc)
+static int SSLSocket_error(char* aString, SSL* ssl, int sock, int rc, int (*cb)(const char *str, size_t len, void *u), void* u)
 {
     int error;
 
@@ -126,7 +129,8 @@ int SSLSocket_error(char* aString, SSL* ssl, int sock, int rc)
 
         if (strcmp(aString, "shutdown") != 0)
         	Log(TRACE_MIN, -1, "SSLSocket error %s(%d) in %s for socket %d rc %d errno %d %s\n", buf, error, aString, sock, rc, errno, strerror(errno));
-         ERR_print_errors_fp(stderr);
+        if (cb)
+            ERR_print_errors_cb(cb, u);
 		if (error == SSL_ERROR_SSL || error == SSL_ERROR_SYSCALL)
 			error = SSL_FATAL;
     }
@@ -589,7 +593,10 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 		}
 		if (net->sslHdl.ctx == NULL)
 		{
-			SSLSocket_error("SSL_CTX_new", NULL, net->socket, rc);
+			if (opts->struct_version >= 3)
+				SSLSocket_error("SSL_CTX_new", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
+			else
+				SSLSocket_error("SSL_CTX_new", NULL, net->socket, rc, NULL, NULL);
 			goto exit;
 		}
 	}
@@ -598,7 +605,10 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	{
 		if ((rc = SSL_CTX_use_certificate_chain_file(net->sslHdl.ctx, opts->keyStore)) != 1)
 		{
-			SSLSocket_error("SSL_CTX_use_certificate_chain_file", NULL, net->socket, rc);
+			if (opts->struct_version >= 3)
+				SSLSocket_error("SSL_CTX_use_certificate_chain_file", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
+			else
+				SSLSocket_error("SSL_CTX_use_certificate_chain_file", NULL, net->socket, rc, NULL, NULL);
 			goto free_ctx; /*If we can't load the certificate (chain) file then loading the privatekey won't work either as it needs a matching cert already loaded */
 		}
 
@@ -617,7 +627,10 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 			opts->privateKey = NULL;
 		if (rc != 1)
 		{
-			SSLSocket_error("SSL_CTX_use_PrivateKey_file", NULL, net->socket, rc);
+			if (opts->struct_version >= 3)
+				SSLSocket_error("SSL_CTX_use_PrivateKey_file", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
+			else
+				SSLSocket_error("SSL_CTX_use_PrivateKey_file", NULL, net->socket, rc, NULL, NULL);
 			goto free_ctx;
 		}
 	}
@@ -626,13 +639,19 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	{
 		if ((rc = SSL_CTX_load_verify_locations(net->sslHdl.ctx, opts->trustStore, NULL)) != 1)
 		{
-			SSLSocket_error("SSL_CTX_load_verify_locations", NULL, net->socket, rc);
+			if (opts->struct_version >= 3)
+				SSLSocket_error("SSL_CTX_load_verify_locations", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
+			else
+				SSLSocket_error("SSL_CTX_load_verify_locations", NULL, net->socket, rc, NULL, NULL);
 			goto free_ctx;
 		}
 	}
 	else if ((rc = SSL_CTX_set_default_verify_paths(net->sslHdl.ctx)) != 1)
 	{
-		SSLSocket_error("SSL_CTX_set_default_verify_paths", NULL, net->socket, rc);
+		if (opts->struct_version >= 3)
+			SSLSocket_error("SSL_CTX_set_default_verify_paths", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
+		else
+			SSLSocket_error("SSL_CTX_set_default_verify_paths", NULL, net->socket, rc, NULL, NULL);
 		goto free_ctx;
 	}
 
@@ -640,7 +659,10 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	{
 		if ((rc = SSL_CTX_set_cipher_list(net->sslHdl.ctx, opts->enabledCipherSuites)) != 1)
 		{
-			SSLSocket_error("SSL_CTX_set_cipher_list", NULL, net->socket, rc);
+			if (opts->struct_version >= 3)
+				SSLSocket_error("SSL_CTX_set_cipher_list", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
+			else
+				SSLSocket_error("SSL_CTX_set_cipher_list", NULL, net->socket, rc, NULL, NULL);
 			goto free_ctx;
 		}
 	}
@@ -804,14 +826,21 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts,
 			if (cipher == NULL)
 				break;
 			Log(TRACE_PROTOCOL, 1, "SSL cipher available: %d:%s", i, cipher);
-	    	}
-		if ((rc = SSL_set_fd(net->sslHdl.ssl, net->socket)) != 1)
-			SSLSocket_error("SSL_set_fd", net->sslHdl.ssl, net->socket, rc);
-
+		}
+		if ((rc = SSL_set_fd(net->sslHdl.ssl, net->socket)) != 1) {
+			if (opts->struct_version >= 3)
+				SSLSocket_error("SSL_set_fd", net->sslHdl.ssl, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
+			else
+				SSLSocket_error("SSL_set_fd", net->sslHdl.ssl, net->socket, rc, NULL, NULL);
+		}
 		hostname_plus_null = malloc(hostname_len + 1u );
 		MQTTStrncpy(hostname_plus_null, hostname, hostname_len + 1u);
-		if ((rc = SSL_set_tlsext_host_name(net->sslHdl.ssl, hostname_plus_null)) != 1)
-			SSLSocket_error("SSL_set_tlsext_host_name", NULL, net->socket, rc);
+		if ((rc = SSL_set_tlsext_host_name(net->sslHdl.ssl, hostname_plus_null)) != 1) {
+			if (opts->struct_version >= 3)
+				SSLSocket_error("SSL_set_tlsext_host_name", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
+			else
+				SSLSocket_error("SSL_set_tlsext_host_name", NULL, net->socket, rc, NULL, NULL);
+		}
 		free(hostname_plus_null);
 #elif defined(MBEDTLS)
                 if (!(net->sslHdl.ssl = malloc(sizeof(mbedtls_ssl_context))))
@@ -851,7 +880,7 @@ exit:
 /*
  * Return value: 1 - success, TCPSOCKET_INTERRUPTED - try again, anything else is failure
  */
-int SSLSocket_connect(sslHandler* sslHdl, int sock, const char* hostname, int verify)
+int SSLSocket_connect(sslHandler* sslHdl, int sock, const char* hostname, int verify, int (*cb)(const char *str, size_t len, void *u), void* u)
 {
 	int rc = 0;
 
@@ -862,7 +891,7 @@ int SSLSocket_connect(sslHandler* sslHdl, int sock, const char* hostname, int ve
 	if (rc != 1)
 	{
 		int error;
-		error = SSLSocket_error("SSL_connect", sslHdl->ssl, sock, rc);
+		error = SSLSocket_error("SSL_connect", sslHdl->ssl, sock, rc, cb, u);
 		if (error == SSL_FATAL)
 			rc = error;
 		if (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE)
@@ -940,7 +969,7 @@ int SSLSocket_getch(sslHandler* sslHdl, int socket, char* c)
 #if defined(OPENSSL)
 	if ((rc = SSL_read(sslHdl->ssl, c, (size_t)1)) < 0)
 	{
-		int err = SSLSocket_error("SSL_read - getch", sslHdl->ssl, socket, rc);
+		int err = SSLSocket_error("SSL_read - getch", sslHdl->ssl, socket, rc, NULL, NULL);
 		if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
 #elif defined(MBEDTLS)
         if ((rc = mbedtls_ssl_read(sslHdl->ssl, (unsigned char *)c, (size_t)1)) < 0)
@@ -991,7 +1020,7 @@ char *SSLSocket_getdata(sslHandler* sslHdl, int socket, size_t bytes, size_t* ac
 #if defined(OPENSSL)
 	if ((rc = SSL_read(sslHdl->ssl, buf + (*actual_len), (int)(bytes - (*actual_len)))) < 0)
 	{
-		rc = SSLSocket_error("SSL_read - getdata", sslHdl->ssl, socket, rc);
+		rc = SSLSocket_error("SSL_read - getdata", sslHdl->ssl, socket, rc, NULL, NULL);
 		if (rc != SSL_ERROR_WANT_READ && rc != SSL_ERROR_WANT_WRITE)
 #elif defined(MBEDTLS)
         if ((rc = mbedtls_ssl_read(sslHdl->ssl, (unsigned char *)(buf + (*actual_len)), (int)(bytes - (*actual_len)))) < 0)
@@ -1179,7 +1208,7 @@ int SSLSocket_putdatas(sslHandler* sslHdl, int socket, char* buf0, size_t buf0le
 	else
 	{
 #if defined(OPENSSL)
-		int sslerror = SSLSocket_error("SSL_write", sslHdl->ssl, socket, rc);
+		sslerror = SSLSocket_error("SSL_write", sslHdl->ssl, socket, rc, NULL, NULL);
 
 		if (sslerror == SSL_ERROR_WANT_WRITE)
 #elif defined(MBEDTLS)
@@ -1270,7 +1299,7 @@ int SSLSocket_continueWrite(pending_writes* pw)
 	else
 	{
 #if defined(OPENSSL)
-		int sslerror = SSLSocket_error("SSL_write", pw->sslHdl->ssl, pw->socket, rc);
+		int sslerror = SSLSocket_error("SSL_write", pw->sslHdl->ssl, pw->socket, rc, NULL, NULL);
 		if (sslerror == SSL_ERROR_WANT_WRITE)
 #elif defined(MBEDTLS)
                 if (rc == MBEDTLS_ERR_SSL_WANT_WRITE)

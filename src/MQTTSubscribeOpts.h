@@ -17,7 +17,7 @@
 #if !defined(SUBOPTS_H)
 #define SUBOPTS_H
 
-
+/** The MQTT V5 subscribe options, apart from QoS which existed before V5. */
 typedef struct MQTTSubscribe_options
 {
 	/** The eyecatcher for this structure. Must be MQSO. */
@@ -25,9 +25,20 @@ typedef struct MQTTSubscribe_options
 	/** The version number of this structure.  Must be 0.
 	 */
 	int struct_version;
-	unsigned char noLocal; /* 0 or 1 */
-	unsigned char retainAsPublished; /* 0 or 1 */
-	unsigned char retainHandling; /* 0, 1 or 2 */
+	/** To not receive our own publications, set to 1.
+	 *  0 is the original MQTT behaviour - all messages matching the subscription are received.
+	 */
+	unsigned char noLocal;
+	/** To keep the retain flag as on the original publish message, set to 1.
+	 *  If 0, defaults to the original MQTT behaviour where the retain flag is only set on
+	 *  publications sent by a broker if in response to a subscribe request.
+	 */
+	unsigned char retainAsPublished;
+	/** 0 - send retained messages at the time of the subscribe (original MQTT behaviour)
+	 *  1 - send retained messages on subscribe only if the subscription is new
+	 *  2 - do not send retained messages at all
+	 */
+	unsigned char retainHandling;
 } MQTTSubscribe_options;
 
 #define MQTTSubscribe_options_initializer { {'M', 'Q', 'S', 'O'}, 0, 0, 0, 0 }

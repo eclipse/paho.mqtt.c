@@ -146,7 +146,7 @@ typedef struct
 	unsigned int connected : 1;		/**< whether it is currently connected */
 	unsigned int good : 1; 			  /**< if we have an error on the socket we turn this off */
 	unsigned int ping_outstanding : 1;
-	int connect_state : 4;
+	signed int connect_state : 4;
 	networkHandles net;
 	int msgID;
 	int keepAliveInterval;

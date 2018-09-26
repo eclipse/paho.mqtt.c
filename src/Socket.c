@@ -527,7 +527,7 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 		else
 		{
 			int* sockmem = (int*)malloc(sizeof(int));
-			Log(TRACE_MIN, -1, "Partial write: %lu bytes of %d actually written on socket %d",
+			Log(TRACE_MIN, -1, "Partial write: %lu bytes of %lu actually written on socket %d",
 					bytes, total, socket);
 #if defined(OPENSSL) || defined (MBEDTLS)
 			SocketBuffer_pendingWrite(socket, NULL, count+1, iovecs, frees1, total, bytes);
@@ -704,6 +704,7 @@ int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 #endif
 		if (res->ai_family == AF_INET)
 		{
+			memset(&address.sin_zero, 0, sizeof(address.sin_zero));
 			address.sin_port = htons(port);
 			address.sin_family = family = AF_INET;
 			address.sin_addr = ((struct sockaddr_in*)(res->ai_addr))->sin_addr;

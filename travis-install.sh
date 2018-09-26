@@ -1,5 +1,14 @@
 #!/bin/bash
 
+if [ "$ENABLE_MBEDTLS" == "yes" ]; then
+	git clone --depth 5 --branch mbedtls-2.13.1 https://github.com/ARMmbed/mbedtls
+	pushd mbedtls
+	cmake -DUSE_SHARED_MBEDTLS_LIBRARY:BOOL=ON -DUSE_STATIC_MBEDTLS_LIBRARY:BOOL=OFF .
+	make
+	sudo make install
+	popd
+fi
+
 if [ "$TRAVIS_OS_NAME" == "linux" ]; then
 	pwd
 	sudo service mosquitto stop

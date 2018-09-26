@@ -1,23 +1,27 @@
 sudo: required
 language: c
 
-compiler:
-  - gcc
-  - clang
-
-os:
-  - linux
-  - osx
-
 matrix:
-  exclude:
-    - compiler: gcc
-      os: osx
-    - compiler: clang
-      os: linux
+  include:
+    - os: linux
+      compiler: gcc
+      env:
+        - ENABLE_OPENSSL=yes
+    - os: linux
+      compiler: gcc
+      env:
+        - ENABLE_MBEDTLS=yes
+    - os: osx
+      compiler: clang
+      env:
+        - ENABLE_OPENSSL=yes
+    - os: osx
+      compiler: clang
+      env:
+        - ENABLE_MBEDTLS=yes
 
 before_install:
-  - if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_REPO_SLUG" = "eclipse/paho.mqtt.c" ]; then export DEPLOY=true; fi
+  # - if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_REPO_SLUG" = "eclipse/paho.mqtt.c" ]; then export DEPLOY=true; fi
   - if [ "$DEPLOY" = "true" ]; then ./travis-setup-deploy.sh; fi
   - ./travis-install.sh
 
@@ -48,6 +52,7 @@ addons:
       - cmake-data
       - mosquitto
       - doxygen
+  ssh_known_hosts: build.eclipse.org
 
 after_success:
     - ls -l build.paho/*.tar.gz

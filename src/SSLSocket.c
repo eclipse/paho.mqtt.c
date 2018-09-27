@@ -1207,7 +1207,7 @@ int SSLSocket_putdatas(sslHandler* sslHdl, int socket, char* buf0, size_t buf0le
 	else
 	{
 #if defined(OPENSSL)
-		sslerror = SSLSocket_error("SSL_write", sslHdl->ssl, socket, rc, NULL, NULL);
+		int sslerror = SSLSocket_error("SSL_write", sslHdl->ssl, socket, rc, NULL, NULL);
 
 		if (sslerror == SSL_ERROR_WANT_WRITE)
 #elif defined(MBEDTLS)

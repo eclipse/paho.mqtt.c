@@ -3628,7 +3628,7 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 		rc = m->c->sslopts->struct_version >= 3 ?
 			SSLSocket_connect(&m->c->net.sslHdl, m->c->net.socket, m->serverURI,
 				m->c->sslopts->verify, m->c->sslopts->ssl_error_cb, m->c->sslopts->ssl_error_context) :
-			SSLSocket_connect((&m->c->net.sslHdl, m->c->net.socket, m->serverURI,
+			SSLSocket_connect(&m->c->net.sslHdl, m->c->net.socket, m->serverURI,
 				m->c->sslopts->verify, NULL, NULL);
 		if (rc != 1)
 			goto exit;

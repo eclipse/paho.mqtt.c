@@ -885,7 +885,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 			else if (m->c->connect_state == SSL_IN_PROGRESS)
 			{
 				rc = m->c->sslopts->struct_version >= 3 ?
-					SSLSocket_connect((&m->c->net.sslHdl, m->c->net.socket, m->serverURI, 
+					SSLSocket_connect(&m->c->net.sslHdl, m->c->net.socket, m->serverURI, 
 						m->c->sslopts->verify, m->c->sslopts->ssl_error_cb, m->c->sslopts->ssl_error_context) :
 					SSLSocket_connect(&m->c->net.sslHdl, m->c->net.socket, m->serverURI,
 						m->c->sslopts->verify, NULL, NULL);

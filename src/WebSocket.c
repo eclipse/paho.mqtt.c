@@ -47,10 +47,15 @@
 #  if BYTE_ORDER == LITTLE_ENDIAN
 #    define htobe16(x)   htons(x)
 #    define htobe32(x)   htonl(x)
+#if defined(WIN32)
+#    define htobe64(x)   ((1==htonl(1)) ? (x) : ((uint64_t)htonl((x) & 0xFFFFFFFF) << 32) | htonl((x) >> 32))
+#    define be64toh(x)   ((1==ntohl(1)) ? (x) : ((uint64_t)ntohl((x) & 0xFFFFFFFF) << 32) | ntohl((x) >> 32))
+#else
 #    define htobe64(x)   htonll(x)
+#    define be64toh(x)   ntohll(x)
+#endif
 #    define be16toh(x)   ntohs(x)
 #    define be32toh(x)   ntohl(x)
-#    define be64toh(x)   ntohll(x)
 #  elif BTYE_ORDER == BIG_ENDIAN
 #    define htobe16(x)   (x)
 #    define htobe32(x)   (x)

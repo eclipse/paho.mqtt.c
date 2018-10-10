@@ -101,8 +101,8 @@ void uuid_generate( uuid_t out )
 #endif /* defined (OPENSSL) */
 	{
 		/* very insecure, but generates a random uuid */
-		srand(time(NULL));
 		int i;
+		srand(time(NULL));
 		for ( i = 0; i < 16; ++i )
 			out[i] = (unsigned char)(rand() % UCHAR_MAX);
 		out[6] = (out[6] & 0x0f) | 0x40;

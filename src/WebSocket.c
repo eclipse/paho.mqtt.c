@@ -314,6 +314,11 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 	size_t hostname_len;
 	int port = 80;
 	const char *topic = NULL;
+#if defined(WIN32) || defined(WIN64)
+	UUID uuid;
+#else /* if defined(WIN32) || defined(WIN64) */
+	uuid_t uuid;
+#endif /* else if defined(WIN32) || defined(WIN64) */
 
 	FUNC_ENTRY;
 	/* Generate UUID */
@@ -322,12 +327,10 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 	else
 		net->websocket_key = realloc(net->websocket_key, 25u);
 #if defined(WIN32) || defined(WIN64)
-	UUID uuid;
 	ZeroMemory( &uuid, sizeof(UUID) );
 	UuidCreate( &uuid );
 	Base64_encode( net->websocket_key, 25u, (const b64_data_t*)&uuid, sizeof(UUID) );
 #else /* if defined(WIN32) || defined(WIN64) */
-	uuid_t uuid;
 	uuid_generate( uuid );
 	Base64_encode( net->websocket_key, 25u, uuid, sizeof(uuid_t) );
 #endif /* else if defined(WIN32) || defined(WIN64) */

@@ -853,7 +853,7 @@ int WebSocket_receiveFrame(networkHandles *net,
 				WebSocket_getRawSocketData(net, 0u, &len);
 			}
 
-			if ( opcode == WebSocket_OP_PONG || opcode == WebSocket_OP_PONG )
+			if ( opcode == WebSocket_OP_PING || opcode == WebSocket_OP_PONG )
 			{
 				/* respond to a "ping" with a "pong" */
 				if ( opcode == WebSocket_OP_PING )

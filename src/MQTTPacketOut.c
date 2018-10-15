@@ -277,11 +277,13 @@ int MQTTPacket_send_subscribe(List* topics, List* qoss, MQTTSubscribe_options* o
  */
 void* MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
-	Suback* pack = malloc(sizeof(Suback));
+	Suback* pack = NULL;
 	char* curdata = data;
 	char* enddata = &data[datalen];
 
 	FUNC_ENTRY;
+	if ((pack = malloc(sizeof(Suback))) == NULL)
+		goto exit;
 	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
 	pack->msgId = readInt(&curdata);
@@ -291,9 +293,12 @@ void* MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char* data, size
 		pack->properties = props;
 		if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
 		{
-			free(pack->properties.array);
-			free(pack);
+			if (pack->properties.array)
+				free(pack->properties.array);
+			if (pack)
+				free(pack);
 			pack = NULL; /* signal protocol error */
+			goto exit;
 		}
 	}
 	pack->qoss = ListInitialize();
@@ -304,6 +309,16 @@ void* MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char* data, size
 		*newint = (unsigned int)readChar(&curdata);
 		ListAppend(pack->qoss, newint, sizeof(unsigned int));
 	}
+	if (pack->qoss->count == 0)
+	{
+		if (pack->properties.array)
+			free(pack->properties.array);
+		if (pack)
+			free(pack);
+		ListFree(pack->qoss);
+		pack = NULL;
+	}
+exit:
 	FUNC_EXIT;
 	return pack;
 }
@@ -366,11 +381,13 @@ int MQTTPacket_send_unsubscribe(List* topics, MQTTProperties* props, int msgid, 
  */
 void* MQTTPacket_unsuback(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
-	Unsuback* pack = malloc(sizeof(Unsuback));
+	Unsuback* pack = NULL;
 	char* curdata = data;
 	char* enddata = &data[datalen];
 
 	FUNC_ENTRY;
+	if ((pack = malloc(sizeof(Unsuback))) == NULL)
+		goto exit;
 	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
 	pack->msgId = readInt(&curdata);
@@ -381,9 +398,12 @@ void* MQTTPacket_unsuback(int MQTTVersion, unsigned char aHeader, char* data, si
 		pack->properties = props;
 		if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
 		{
-			free(pack->properties.array);
-			free(pack);
+			if (pack->properties.array)
+				free(pack->properties.array);
+			if (pack)
+				free(pack);
 			pack = NULL; /* signal protocol error */
+			goto exit;
 		}
 		pack->reasonCodes = ListInitialize();
 		while ((size_t)(curdata - data) < datalen)
@@ -393,7 +413,17 @@ void* MQTTPacket_unsuback(int MQTTVersion, unsigned char aHeader, char* data, si
 			*newrc = (enum MQTTReasonCodes)readChar(&curdata);
 			ListAppend(pack->reasonCodes, newrc, sizeof(enum MQTTReasonCodes));
 		}
+		if (pack->reasonCodes->count == 0)
+		{
+			ListFree(pack->reasonCodes);
+			if (pack->properties.array)
+				free(pack->properties.array);
+			if (pack)
+				free(pack);
+			pack = NULL;
+		}
 	}
+exit:
 	FUNC_EXIT;
 	return pack;
 }

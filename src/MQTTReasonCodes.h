@@ -80,6 +80,6 @@ enum MQTTReasonCodes {
  * @return the printable string description of the input reason code.
  * NULL if the code was not found.
  */
-DLLExport const char* MQTTReasonCodeString(enum MQTTReasonCodes value);
+DLLExport const char* MQTTReasonCode_toString(enum MQTTReasonCodes value);
 
 #endif

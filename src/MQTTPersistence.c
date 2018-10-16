@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,7 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs - async client updates
  *    Ian Craggs - fix for bug 432903 - queue persistence
+ *    Ian Craggs - MQTT V5 updates
  *******************************************************************************/
 
 /**
@@ -31,7 +32,7 @@
 #include "Heap.h"
 
 
-static MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t buflen);
+static MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t buflen, int MQTTVersion);
 static void MQTTPersistence_insertInSeqOrder(List* list, MQTTPersistence_qEntry* qEntry, size_t size);
 
 /**
@@ -196,29 +197,70 @@ int MQTTPersistence_restore(Clients *c)
 			}
 			else if ((rc = c->persistence->pget(c->phandle, msgkeys[i], &buffer, &buflen)) == 0)
 			{
-				MQTTPacket* pack = MQTTPersistence_restorePacket(c->MQTTVersion, buffer, buflen);
+				int data_MQTTVersion = MQTTVERSION_3_1_1;
+				char* cur_key = msgkeys[i];
+
+				if (	strncmp(cur_key, PERSISTENCE_V5_PUBLISH_RECEIVED,
+							strlen(PERSISTENCE_V5_PUBLISH_RECEIVED)) == 0)
+				{
+					data_MQTTVersion = MQTTVERSION_5;
+					cur_key = PERSISTENCE_PUBLISH_RECEIVED;
+				}
+				else if (strncmp(cur_key, PERSISTENCE_V5_PUBLISH_SENT,
+							strlen(PERSISTENCE_V5_PUBLISH_SENT)) == 0)
+				{
+					data_MQTTVersion = MQTTVERSION_5;
+					cur_key = PERSISTENCE_PUBLISH_SENT;
+				}
+				else if (strncmp(cur_key, PERSISTENCE_V5_PUBREL,
+							strlen(PERSISTENCE_V5_PUBREL)) == 0)
+				{
+					data_MQTTVersion = MQTTVERSION_5;
+					cur_key = PERSISTENCE_PUBREL;
+				}
+
+				if (data_MQTTVersion == MQTTVERSION_5 && c->MQTTVersion < MQTTVERSION_5)
+				{
+					rc = MQTTCLIENT_PERSISTENCE_ERROR; /* can't restore version 5 data with a version 3 client */
+					goto exit;
+				}
+
+				MQTTPacket* pack = MQTTPersistence_restorePacket(data_MQTTVersion, buffer, buflen);
 				if ( pack != NULL )
 				{
-					if ( strstr(msgkeys[i],PERSISTENCE_PUBLISH_RECEIVED) != NULL )
+					if (strncmp(cur_key, PERSISTENCE_PUBLISH_RECEIVED,
+							      strlen(PERSISTENCE_PUBLISH_RECEIVED)) == 0)
 					{
 						Publish* publish = (Publish*)pack;
 						Messages* msg = NULL;
+						publish->MQTTVersion = c->MQTTVersion;
 						msg = MQTTProtocol_createMessage(publish, &msg, publish->header.bits.qos, publish->header.bits.retain);
 						msg->nextMessageType = PUBREL;
 						/* order does not matter for persisted received messages */
 						ListAppend(c->inboundMsgs, msg, msg->len);
+						if (c->MQTTVersion >= MQTTVERSION_5)
+						{
+							free(msg->publish->payload);
+							free(msg->publish->topic);
+						}
 						publish->topic = NULL;
 						MQTTPacket_freePublish(publish);
 						msgs_rcvd++;
 					}
-					else if ( strstr(msgkeys[i],PERSISTENCE_PUBLISH_SENT) != NULL )
+					else if (strncmp(cur_key, PERSISTENCE_PUBLISH_SENT,
+						               strlen(PERSISTENCE_PUBLISH_SENT)) == 0)
 					{
 						Publish* publish = (Publish*)pack;
 						Messages* msg = NULL;
 						char *key = malloc(MESSAGE_FILENAME_LENGTH + 1);
-						sprintf(key, "%s%d", PERSISTENCE_PUBREL, publish->msgId);
+
+						publish->MQTTVersion = c->MQTTVersion;
+						if (publish->MQTTVersion >= MQTTVERSION_5)
+							sprintf(key, "%s%d", PERSISTENCE_V5_PUBREL, publish->msgId);
+						else
+							sprintf(key, "%s%d", PERSISTENCE_PUBREL, publish->msgId);
 						msg = MQTTProtocol_createMessage(publish, &msg, publish->header.bits.qos, publish->header.bits.retain);
-						if ( c->persistence->pcontainskey(c->phandle, key) == 0 )
+						if (c->persistence->pcontainskey(c->phandle, key) == 0)
 							/* PUBLISH Qo2 and PUBREL sent */
 							msg->nextMessageType = PUBCOMP;
 						/* else: PUBLISH QoS1, or PUBLISH QoS2 and PUBREL not sent */
@@ -230,13 +272,18 @@ int MQTTPersistence_restore(Clients *c)
 						free(key);
 						msgs_sent++;
 					}
-					else if ( strstr(msgkeys[i],PERSISTENCE_PUBREL) != NULL )
+					else if (strncmp(cur_key, PERSISTENCE_PUBREL, strlen(PERSISTENCE_PUBREL)) == 0)
 					{
 						/* orphaned PUBRELs ? */
 						Pubrel* pubrel = (Pubrel*)pack;
 						char *key = malloc(MESSAGE_FILENAME_LENGTH + 1);
-						sprintf(key, "%s%d", PERSISTENCE_PUBLISH_SENT, pubrel->msgId);
-						if ( c->persistence->pcontainskey(c->phandle, key) != 0 )
+
+						pubrel->MQTTVersion = c->MQTTVersion;
+						if (pubrel->MQTTVersion >= MQTTVERSION_5)
+							sprintf(key, "%s%d", PERSISTENCE_V5_PUBLISH_SENT, pubrel->msgId);
+						else
+							sprintf(key, "%s%d", PERSISTENCE_PUBLISH_SENT, pubrel->msgId);
+						if (c->persistence->pcontainskey(c->phandle, key) != 0)
 							rc = c->persistence->premove(c->phandle, msgkeys[i]);
 						free(pubrel);
 						free(key);
@@ -260,7 +307,7 @@ int MQTTPersistence_restore(Clients *c)
 	Log(TRACE_MINIMUM, -1, "%d sent messages and %d received messages restored for client %s\n", 
 		msgs_sent, msgs_rcvd, c->clientID);
 	MQTTPersistence_wrapMsgID(c);
-
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -335,13 +382,15 @@ void MQTTPersistence_insertInOrder(List* list, void* content, size_t size)
  * @param count number of buffers representing the variable header and/or the payload.
  * @param buffers the buffers representing the variable header and/or the payload.
  * @param buflens length of the buffers representing the variable header and/or the payload.
+ * @param htype MQTT packet type - PUBLISH or PUBREL
  * @param msgId the message ID.
  * @param scr 0 indicates message in the sending direction; 1 indicates message in the
  * receiving direction.
+ * @param the MQTT version being used (>= MQTTVERSION_5 means properties included)
  * @return 0 if success, #MQTTCLIENT_PERSISTENCE_ERROR otherwise.
  */
 int MQTTPersistence_put(int socket, char* buf0, size_t buf0len, int count,
-								 char** buffers, size_t* buflens, int htype, int msgId, int scr )
+						char** buffers, size_t* buflens, int htype, int msgId, int scr, int MQTTVersion)
 {
 	int rc = 0;
 	extern ClientStates* bstate;
@@ -368,15 +417,32 @@ int MQTTPersistence_put(int socket, char* buf0, size_t buf0len, int count,
 		}
 
 		/* key */
-		if ( scr == 0 )
+		if (scr == 0)
 		{  /* sending */
-			if (htype == PUBLISH)   /* PUBLISH QoS1 and QoS2*/
-				sprintf(key, "%s%d", PERSISTENCE_PUBLISH_SENT, msgId);
-			if (htype == PUBREL)  /* PUBREL */
-				sprintf(key, "%s%d", PERSISTENCE_PUBREL, msgId);
+			char* key_id = PERSISTENCE_PUBLISH_SENT;
+
+			if (htype == PUBLISH) /* PUBLISH QoS1 and QoS2*/
+			{
+				if (MQTTVersion >= MQTTVERSION_5)
+					key_id = PERSISTENCE_V5_PUBLISH_SENT;
+			}
+			else if (htype == PUBREL) /* PUBREL */
+			{
+				if (MQTTVersion >= MQTTVERSION_5)
+					key_id = PERSISTENCE_V5_PUBREL;
+				else
+					key_id = PERSISTENCE_PUBREL;
+			}
+			sprintf(key, "%s%d", key_id, msgId);
 		}
-		if ( scr == 1 )  /* receiving PUBLISH QoS2 */
-			sprintf(key, "%s%d", PERSISTENCE_PUBLISH_RECEIVED, msgId);
+		else if (scr == 1)  /* receiving PUBLISH QoS2 */
+		{
+			char* key_id = PERSISTENCE_PUBLISH_RECEIVED;
+
+			if (MQTTVersion >= MQTTVERSION_5)
+				key_id = PERSISTENCE_V5_PUBLISH_RECEIVED;
+			sprintf(key, "%s%d", key_id, msgId);
+		}
 
 		rc = client->persistence->pput(client->phandle, key, nbufs, bufs, lens);
 
@@ -407,17 +473,25 @@ int MQTTPersistence_remove(Clients* c, char *type, int qos, int msgId)
 	if (c->persistence != NULL)
 	{
 		char *key = malloc(MESSAGE_FILENAME_LENGTH + 1);
-		if ( (strcmp(type,PERSISTENCE_PUBLISH_SENT) == 0) && qos == 2 )
+		if (strcmp(type, PERSISTENCE_PUBLISH_SENT) == 0 ||
+				strcmp(type, PERSISTENCE_V5_PUBLISH_SENT) == 0)
 		{
+			sprintf(key, "%s%d", PERSISTENCE_V5_PUBLISH_SENT, msgId) ;
+			rc = c->persistence->premove(c->phandle, key);
+			sprintf(key, "%s%d", PERSISTENCE_V5_PUBREL, msgId) ;
+			rc += c->persistence->premove(c->phandle, key);
 			sprintf(key, "%s%d", PERSISTENCE_PUBLISH_SENT, msgId) ;
-			rc = c->persistence->premove(c->phandle, key);
+			rc += c->persistence->premove(c->phandle, key);
 			sprintf(key, "%s%d", PERSISTENCE_PUBREL, msgId) ;
-			rc = c->persistence->premove(c->phandle, key);
+			rc += c->persistence->premove(c->phandle, key);
 		}
 		else /* PERSISTENCE_PUBLISH_SENT && qos == 1 */
 		{    /* or PERSISTENCE_PUBLISH_RECEIVED */
-			sprintf(key, "%s%d", type, msgId) ;
+
+			sprintf(key, "%s%d", PERSISTENCE_V5_PUBLISH_RECEIVED, msgId);
 			rc = c->persistence->premove(c->phandle, key);
+			sprintf(key, "%s%d", PERSISTENCE_PUBLISH_RECEIVED, msgId);
+			rc += c->persistence->premove(c->phandle, key);
 		}
 		free(key);
 	}
@@ -487,19 +561,17 @@ int MQTTPersistence_unpersistQueueEntry(Clients* client, MQTTPersistence_qEntry*
 }
 
 
+#define MAX_NO_OF_BUFFERS 9
 int MQTTPersistence_persistQueueEntry(Clients* aclient, MQTTPersistence_qEntry* qe)
 {
 	int rc = 0;
-	int nbufs = 8;
 	int bufindex = 0;
 	char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
-	int* lens = NULL;
-	void** bufs = NULL;
+	int lens[MAX_NO_OF_BUFFERS];
+	void* bufs[MAX_NO_OF_BUFFERS];
+	int props_allocated = 0;
 		
 	FUNC_ENTRY;
-	lens = (int*)malloc(nbufs * sizeof(int));
-	bufs = malloc(nbufs * sizeof(char *));
-						
 	bufs[bufindex] = &qe->msg->payloadlen;
 	lens[bufindex++] = sizeof(qe->msg->payloadlen);
 				
@@ -522,23 +594,43 @@ int MQTTPersistence_persistQueueEntry(Clients* aclient, MQTTPersistence_qEntry* 
 	lens[bufindex++] = (int)strlen(qe->topicName) + 1;
 				
 	bufs[bufindex] = &qe->topicLen;
-	lens[bufindex++] = sizeof(qe->topicLen);			
-		
-	sprintf(key, "%s%d", PERSISTENCE_QUEUE_KEY, ++aclient->qentry_seqno);	
+	lens[bufindex++] = sizeof(qe->topicLen);
+
+	if (aclient->MQTTVersion >= MQTTVERSION_5)  		/* persist properties */
+	{
+		MQTTProperties no_props = MQTTProperties_initializer;
+		MQTTProperties* props = &no_props;
+		int temp_len = 0;
+		char* ptr = NULL;
+
+		if (qe->msg->struct_version >= 1)
+			props = &qe->msg->properties;
+
+		temp_len = MQTTProperties_len(props);
+		ptr = bufs[bufindex] = malloc(temp_len);
+		props_allocated = bufindex;
+		rc = MQTTProperties_write(&ptr, props);
+		lens[bufindex++] = temp_len;
+
+		sprintf(key, "%s%u", PERSISTENCE_V5_QUEUE_KEY, ++aclient->qentry_seqno);
+	}
+	else
+		sprintf(key, "%s%u", PERSISTENCE_QUEUE_KEY, ++aclient->qentry_seqno);
+
 	qe->seqno = aclient->qentry_seqno;
 
-	if ((rc = aclient->persistence->pput(aclient->phandle, key, nbufs, (char**)bufs, lens)) != 0)
+	if ((rc = aclient->persistence->pput(aclient->phandle, key, bufindex, (char**)bufs, lens)) != 0)
 		Log(LOG_ERROR, 0, "Error persisting queue entry, rc %d", rc);
 
-	free(lens);
-	free(bufs);
+	if (props_allocated != 0)
+		free(bufs[props_allocated]);
 
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
 
-static MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t buflen)
+static MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t buflen, int MQTTVersion)
 {
 	MQTTPersistence_qEntry* qe = NULL;
 	char* ptr = buffer;
@@ -551,6 +643,8 @@ static MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, s
 	qe->msg = malloc(sizeof(MQTTPersistence_message));
 	memset(qe->msg, '\0', sizeof(MQTTPersistence_message));
 	
+	qe->msg->struct_version = 1;
+
 	qe->msg->payloadlen = *(int*)ptr;
 	ptr += sizeof(int);
 	
@@ -578,6 +672,10 @@ static MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, s
 	
 	qe->topicLen = *(int*)ptr;
 	ptr += sizeof(int);
+
+	if (MQTTVersion >= MQTTVERSION_5 &&
+		MQTTProperties_read(&qe->msg->properties, &ptr, buffer + buflen) != 1)
+			Log(LOG_ERROR, -1, "Error restoring properties from persistence");
 
 	FUNC_EXIT;
 	return qe;
@@ -621,17 +719,21 @@ int MQTTPersistence_restoreMessageQueue(Clients* c)
 			char *buffer = NULL;
 			int buflen;
 					
-			if (strncmp(msgkeys[i], PERSISTENCE_QUEUE_KEY, strlen(PERSISTENCE_QUEUE_KEY)) != 0)
+			if (strncmp(msgkeys[i], PERSISTENCE_QUEUE_KEY, strlen(PERSISTENCE_QUEUE_KEY)) != 0 &&
+				strncmp(msgkeys[i], PERSISTENCE_V5_QUEUE_KEY, strlen(PERSISTENCE_V5_QUEUE_KEY)) != 0)
 			{
-				;
+				; /* ignore if not a queue entry key */
 			}
 			else if ((rc = c->persistence->pget(c->phandle, msgkeys[i], &buffer, &buflen)) == 0)
 			{
-				MQTTPersistence_qEntry* qe = MQTTPersistence_restoreQueueEntry(buffer, buflen);
+				int MQTTVersion =
+					(strncmp(msgkeys[i], PERSISTENCE_V5_QUEUE_KEY, strlen(PERSISTENCE_V5_QUEUE_KEY)) == 0)
+					? MQTTVERSION_5 : MQTTVERSION_3_1_1;
+				MQTTPersistence_qEntry* qe = MQTTPersistence_restoreQueueEntry(buffer, buflen, MQTTVersion);
 				
 				if (qe)
 				{	
-					qe->seqno = atoi(msgkeys[i]+2);
+					qe->seqno = atoi(strchr(msgkeys[i], '-')+1); /* key format is tag'-'seqno */
 					MQTTPersistence_insertInSeqOrder(c->messageQueue, qe, sizeof(MQTTPersistence_qEntry));
 					free(buffer);
 					c->qentry_seqno = max(c->qentry_seqno, qe->seqno);

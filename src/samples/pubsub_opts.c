@@ -256,12 +256,7 @@ int getopts(int argc, char** argv, struct pubsub_opts* opts)
 				return 1;
 		}
 		else if (strcmp(argv[count], "--insecure") == 0)
-		{
-			if (++count < argc)
-				opts->insecure = 1;
-			else
-				return 1;
-		}
+			opts->insecure = 1;
 		else if (strcmp(argv[count], "--capath") == 0)
 		{
 			if (++count < argc)
@@ -435,12 +430,15 @@ char* readfile(int* data_len, struct pubsub_opts* opts)
 	if (buffer == NULL)
 	{
 		fprintf(stderr, "Can't allocate buffer to read file %s\n", opts->filename);
+		fclose(infile);
 		return NULL;
 	}
-	*data_len = fread(buffer, 1, filesize, infile);
+	*data_len = (int)fread(buffer, 1, filesize, infile);
 	if (*data_len != filesize)
 	{
 		fprintf(stderr, "%d bytes read of %ld expected for file %s\n", *data_len, filesize, opts->filename);
+		fclose(infile);
+		free(buffer);
 		return NULL;
 	}
 

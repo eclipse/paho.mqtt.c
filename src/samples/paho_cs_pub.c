@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial contribution
+ *    Ian Craggs - add full capability
  *******************************************************************************/
 
 #include "MQTTClient.h"
@@ -113,7 +114,7 @@ int myconnect(MQTTClient* client)
 	if (opts.verbose && rc == MQTTCLIENT_SUCCESS)
 		printf("Connected\n");
 	else if (rc != MQTTCLIENT_SUCCESS && !opts.quiet)
-		fprintf(stderr, "Connect failed with rc %d\n", rc);
+		fprintf(stderr, "Connect failed return code: %s\n", MQTTClient_strerror(rc));
 
 	return rc;
 }
@@ -136,6 +137,7 @@ int main(int argc, char** argv)
 {
 	MQTTClient client;
 	MQTTProperties pub_props = MQTTProperties_initializer;
+	MQTTClient_createOptions createOpts = MQTTClient_createOptions_initializer;
 	char* buffer = NULL;
 	int rc = 0;
 	char* url;
@@ -168,7 +170,16 @@ int main(int argc, char** argv)
 		MQTTClient_setTraceLevel(opts.tracelevel);
 	}
 
-	rc = MQTTClient_create(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+	if (opts.MQTTVersion >= MQTTVERSION_5)
+		createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTClient_createWithOptions(&client, url, opts.clientid, MQTTCLIENT_PERSISTENCE_NONE,
+			NULL, &createOpts);
+	if (rc != MQTTCLIENT_SUCCESS)
+	{
+		if (!opts.quiet)
+			fprintf(stderr, "Failed to create client, return code: %s\n", MQTTClient_strerror(rc));
+		exit(EXIT_FAILURE);
+	}
 
 #if defined(WIN32)
 	signal(SIGINT, cfinish);
@@ -183,6 +194,12 @@ int main(int argc, char** argv)
 #endif
 
 	rc = MQTTClient_setCallbacks(client, NULL, NULL, messageArrived, NULL);
+	if (rc != MQTTCLIENT_SUCCESS)
+	{
+		if (!opts.quiet)
+			fprintf(stderr, "Failed to set callbacks, return code: %s\n", MQTTClient_strerror(rc));
+		exit(EXIT_FAILURE);
+	}
 
 	if (myconnect(client) != MQTTCLIENT_SUCCESS)
 		goto exit;
@@ -201,9 +218,9 @@ int main(int argc, char** argv)
 		{
 			property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 			property.value.data.data = opts.user_property.name;
-			property.value.data.len = strlen(opts.user_property.name);
+			property.value.data.len = (int)strlen(opts.user_property.name);
 			property.value.value.data = opts.user_property.value;
-			property.value.value.len = strlen(opts.user_property.value);
+			property.value.value.len = (int)strlen(opts.user_property.value);
 			MQTTProperties_add(&pub_props, &property);
 		}
 	}
@@ -235,7 +252,7 @@ int main(int argc, char** argv)
 		else if (opts.message)
 		{
 			buffer = opts.message;
-			data_len = strlen(opts.message);
+			data_len = (int)strlen(opts.message);
 		}
 		else if (opts.filename)
 		{

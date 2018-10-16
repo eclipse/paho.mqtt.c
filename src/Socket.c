@@ -704,6 +704,7 @@ int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 #endif
 		if (res->ai_family == AF_INET)
 		{
+			memset(&address.sin_zero, 0, sizeof(address.sin_zero));
 			address.sin_port = htons(port);
 			address.sin_family = family = AF_INET;
 			address.sin_addr = ((struct sockaddr_in*)(res->ai_addr))->sin_addr;

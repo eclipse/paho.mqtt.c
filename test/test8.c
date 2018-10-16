@@ -1,27 +1,24 @@
-/*--------------------------------------------------------------------*/
-/* [Platforms]UNIX NT[/Platforms]                                     */
-/* [Title]MQ Telemetry MQTT Async C client tests - HA and connect     */
-/* failures                                                           */
-/* [/Title]                                                           */
-/* [Testclasses]stcom1 stmqcom1[/Category]                            */
-/* [Category]MQ Telemetry[/Category]                                  */
-/*                                                                    */
-/* Copyright IBM 2013                                                 */
-/* All rights reserved.                                               */
-/*--------------------------------------------------------------------*/
-
+/*******************************************************************************
+ * Copyright (c) 2012, 2018 IBM Corp.
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
+ *
+ * The Eclipse Public License is available at
+ *    http://www.eclipse.org/legal/epl-v10.html
+ * and the Eclipse Distribution License is available at
+ *   http://www.eclipse.org/org/documents/edl-v10.php.
+ *
+ * Contributors:
+ *    Ian Craggs - initial API and implementation and/or initial documentation
+ *******************************************************************************/
 
 /**
  * @file
- * Tests for the MQ Telemetry MQTT Async C client
+ * Tests for the Paho MQTT Async C client
  */
 
-
-/*
-#if !defined(_RTSHEADER)
-	#include <rts.h>
-#endif
-*/
 
 #include "MQTTAsync.h"
 #include <string.h>
@@ -338,7 +335,7 @@ int test1(struct Options options)
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 1 - asynchronous connect");
 
-	rc = MQTTAsync_create(&c, options.connection, "async_test",
+	rc = MQTTAsync_create(&c, options.connection, "async_8_test1",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)

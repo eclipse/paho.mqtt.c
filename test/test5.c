@@ -17,7 +17,7 @@
 
 /**
  * @file
- * SSL tests for the MQ Telemetry Asynchronous MQTT C client
+ * SSL tests for the Eclipse Paho Asynchronous MQTT C client
  */
 
 #include "MQTTAsync.h"
@@ -2160,7 +2160,7 @@ int main(int argc, char** argv)
 			test5b, test5c, */ test6, test7 };
 
 	xml = fopen("TEST-test5.xml", "w");
-	fprintf(xml, "<testsuite name=\"test5\" tests=\"%lu\">\n", ARRAY_SIZE(tests) - 1);
+	fprintf(xml, "<testsuite name=\"test5\" tests=\"%d\">\n", (int)ARRAY_SIZE(tests) - 1);
 
 	MQTTAsync_setTraceCallback(handleTrace);
 	getopts(argc, argv);

@@ -14,6 +14,7 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs - correct some compile warnings
  *    Ian Craggs - add binary will message test
+ *    Ian Craggs - MQTT V5 updates
  *******************************************************************************/
 
 
@@ -239,6 +240,45 @@ void myassert(char* filename, int lineno, char* description, int value,
 }
 
 
+void logProperties(MQTTProperties *props)
+{
+	int i = 0;
+
+	for (i = 0; i < props->count; ++i)
+	{
+		int id = props->array[i].identifier;
+		const char* name = MQTTPropertyName(id);
+		char* intformat = "Property name %s value %d";
+
+		switch (MQTTProperty_getType(id))
+		{
+		case MQTTPROPERTY_TYPE_BYTE:
+		  MyLog(LOGA_DEBUG, intformat, name, props->array[i].value.byte);
+		  break;
+		case MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER:
+		  MyLog(LOGA_DEBUG, intformat, name, props->array[i].value.integer2);
+		  break;
+		case MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER:
+		  MyLog(LOGA_DEBUG, intformat, name, props->array[i].value.integer4);
+		  break;
+		case MQTTPROPERTY_TYPE_VARIABLE_BYTE_INTEGER:
+		  MyLog(LOGA_DEBUG, intformat, name, props->array[i].value.integer4);
+		  break;
+		case MQTTPROPERTY_TYPE_BINARY_DATA:
+		case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
+		  MyLog(LOGA_DEBUG, "Property name %s value len %.*s", name,
+				  props->array[i].value.data.len, props->array[i].value.data.data);
+		  break;
+		case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
+		  MyLog(LOGA_DEBUG, "Property name %s key %.*s value %.*s", name,
+			  props->array[i].value.data.len, props->array[i].value.data.data,
+		  	  props->array[i].value.value.len, props->array[i].value.value.data);
+		  break;
+		}
+	}
+}
+
+
 void waitForNoPendingTokens(MQTTAsync c)
 {
 	int i = 0, rc = 0, count = 0;
@@ -281,6 +321,7 @@ void assert3PendingTokens(MQTTAsync c)
 	assert("Number of getPendingTokens should be 3", i == 3, "i was %d ", i);
 }
 
+
 /*********************************************************************
 
  Tests: offline buffering - sending messages while disconnected
@@ -321,6 +362,13 @@ int test1_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 {
 	MQTTAsync c = (MQTTAsync)context;
 	static int message_count = 0;
+	static int first = 1;
+
+	if (first == 1)
+	{
+		first = 0;
+		return 0; /* to force queue persistence */
+	}
 
 	MyLog(LOGA_DEBUG, "Message received on topic %s, \"%.*s\"", topicName, message->payloadlen, message->payload);
 
@@ -328,6 +376,13 @@ int test1_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 	  test1_will_message_received = 1;
 	else
 	  test1_messages_received++;
+
+	if (message->struct_version == 1)
+	{
+		assert("Properties count should be > 0", message->properties.count > 0,
+			"Properties count was %d\n", message->properties.count);
+		logProperties(&message->properties);
+	}
 
 	MQTTAsync_freeMessage(&message);
 	MQTTAsync_free(topicName);
@@ -339,7 +394,7 @@ int test1Finished = 0;
 
 int test1OnFailureCalled = 0;
 
-void test1cOnFailure(void* context, MQTTAsync_failureData* response)
+void test1cOnFailure(void* context, MQTTAsync_failureData5* response)
 {
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
 
@@ -347,7 +402,7 @@ void test1cOnFailure(void* context, MQTTAsync_failureData* response)
 	test1Finished = 1;
 }
 
-void test1dOnFailure(void* context, MQTTAsync_failureData* response)
+void test1dOnFailure(void* context, MQTTAsync_failureData5* response)
 {
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
 
@@ -355,20 +410,25 @@ void test1dOnFailure(void* context, MQTTAsync_failureData* response)
 	test1Finished = 1;
 }
 
-void test1cOnConnect(void* context, MQTTAsync_successData* response)
+void test1cOnConnect(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client d, context %p\n", context);
 	MQTTAsync c = (MQTTAsync)context;
 	int rc;
+	static int done = 0;
 
-	/* send a message to the proxy to break the connection */
-	pubmsg.payload = "TERMINATE";
-	pubmsg.payloadlen = (int)strlen(pubmsg.payload);
-	pubmsg.qos = 0;
-	pubmsg.retained = 0;
-	rc = MQTTAsync_sendMessage(c, "MQTTSAS topic", &pubmsg, NULL);
-	assert("Good rc from sendMessage", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (done == 0)
+	{
+		/* send a message to the proxy to break the connection */
+		pubmsg.payload = "TERMINATE";
+		pubmsg.payloadlen = (int)strlen(pubmsg.payload);
+		pubmsg.qos = 0;
+		pubmsg.retained = 0;
+		rc = MQTTAsync_sendMessage(c, "MQTTSAS topic", &pubmsg, NULL);
+		assert("Good rc from sendMessage", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+		done = 1; /* only do this once */
+	}
 }
 
 
@@ -376,15 +436,16 @@ int test1dReady = 0;
 char willTopic[100];
 char test_topic[50];
 
-void test1donSubscribe(void* context, MQTTAsync_successData* response)
+void test1donSubscribe(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback for client d, %p granted qos %d", c, response->alt.qos);
+	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback for client d, %p granted qos %d", c,
+			response->reasonCode);
 	test1dReady = 1;
 }
 
 
-void test1dOnConnect(void* context, MQTTAsync_successData* response)
+void test1dOnConnect(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
@@ -393,7 +454,7 @@ void test1dOnConnect(void* context, MQTTAsync_successData* response)
 	char* topics[2] = {willTopic, test_topic};
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client c, context %p\n", context);
-	opts.onSuccess = test1donSubscribe;
+	opts.onSuccess5 = test1donSubscribe;
 	opts.context = c;
 
 	rc = MQTTAsync_subscribeMany(c, 2, topics, qoss, &opts);
@@ -418,7 +479,7 @@ int test1(struct Options options)
 	char* testname = "test1";
 	int subsqos = 2;
 	MQTTAsync c, d;
-	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
 	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
 	int rc = 0;
@@ -426,12 +487,14 @@ int test1(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
+	MQTTProperties props = MQTTProperties_initializer;
+	MQTTProperties willProps = MQTTProperties_initializer;
+	MQTTProperty property;
 
-	sprintf(willTopic, "paho-test9-1-%s", unique);
-	sprintf(clientidc, "paho-test9-1-c-%s", unique);
-	sprintf(clientidd, "paho-test9-1-d-%s", unique);
-	sprintf(test_topic, "paho-test9-1-test topic %s", unique);
+	sprintf(willTopic, "paho-test95-1-%s", unique);
+	sprintf(clientidc, "paho-test95-1-c-%s", unique);
+	sprintf(clientidd, "paho-test95-1-d-%s", unique);
+	sprintf(test_topic, "paho-test95-1-test topic %s", unique);
 
 	test1Finished = 0;
 	failures = 0;
@@ -440,8 +503,9 @@ int test1(struct Options options)
 	global_start_time = start_clock();
 
 	createOptions.sendWhileDisconnected = 1;
-	rc = MQTTAsync_createWithOptions(&c, options.proxy_connection, clientidc, MQTTCLIENT_PERSISTENCE_DEFAULT,
-	      NULL, &createOptions);
+	createOptions.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&c, options.proxy_connection, clientidc,
+		MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOptions);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -449,7 +513,10 @@ int test1(struct Options options)
 		goto exit;
 	}
 
-	rc = MQTTAsync_create(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOptions.sendWhileDisconnected = 0;
+	createOptions.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&d, options.connection, clientidd,
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOptions);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -458,17 +525,15 @@ int test1(struct Options options)
 	}
 
 	opts.keepAliveInterval = 20;
-	opts.cleansession = 1;
-	//opts.username = "testuser";
-	//opts.password = "testpassword";
+	opts.cleanstart = 1;
 
 	rc = MQTTAsync_setCallbacks(d, d, NULL, test1_messageArrived, NULL);
 	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	opts.will = NULL; /* don't need will for this client, as it's going to be connected all the time */
 	opts.context = d;
-	opts.onSuccess = test1dOnConnect;
-	opts.onFailure = test1dOnFailure;
+	opts.onSuccess5 = test1dOnConnect;
+	opts.onFailure5 = test1dOnFailure;
 	MyLog(LOGA_DEBUG, "Connecting client d");
 	rc = MQTTAsync_connect(d, &opts);
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -493,14 +558,31 @@ int test1(struct Options options)
 	opts.will->qos = 1;
 	opts.will->retained = 0;
 	opts.will->topicName = willTopic;
-	opts.onSuccess = test1cOnConnect;
-	opts.onFailure = test1cOnFailure;
+
+	property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
+	property.value.data.data = "test user property";
+	property.value.data.len = (int)strlen(property.value.data.data);
+	property.value.value.data = "test user property value";
+	property.value.value.len = (int)strlen(property.value.value.data);
+	MQTTProperties_add(&willProps, &property);
+	opts.willProperties = &willProps;
+
+	opts.onSuccess5 = test1cOnConnect;
+	opts.onFailure5 = test1cOnFailure;
 	opts.context = c;
-	opts.cleansession = 0;
+
+	opts.cleanstart = 0;
+	property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
+	property.value.integer4 = 30;
+	MQTTProperties_add(&props, &property);
+
+	opts.connectProperties = &props;
 
 	MyLog(LOGA_DEBUG, "Connecting client c");
 	rc = MQTTAsync_connect(c, &opts);
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+	MQTTProperties_free(&props);
+	MQTTProperties_free(&willProps);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
 		failures++;
@@ -517,33 +599,78 @@ int test1(struct Options options)
 	/* send some messages.  Then reconnect (check connected callback), and check that those messages are received */
 	for (i = 0; i < 3; ++i)
 	{
-	  char buf[50];
+		char buf[50];
+		MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+		MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+		MQTTProperty property;
+		MQTTProperties props = MQTTProperties_initializer;
 
-	  MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-	  MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	  sprintf(buf, "QoS %d message", i);
-	  pubmsg.payload = buf;
-	  pubmsg.payloadlen = (int)strlen(pubmsg.payload) + 1;
-	  pubmsg.qos = i;
-	  pubmsg.retained = 0;
-	  rc = MQTTAsync_sendMessage(c, test_topic, &pubmsg, &opts);
-	  assert("Good rc from sendMessage", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+		sprintf(buf, "QoS %d message", i);
+		pubmsg.payload = buf;
+		pubmsg.payloadlen = (int)strlen(pubmsg.payload) + 1;
+		pubmsg.qos = i;
+		pubmsg.retained = 0;
+	 	MyLog(LOGA_DEBUG, "Sending qos %d message", pubmsg.qos);
+
+		property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
+		property.value.data.data = "test user property";
+		property.value.data.len = (int)strlen(property.value.data.data);
+		property.value.value.data = "test user property value";
+		property.value.value.len = (int)strlen(property.value.value.data);
+		MQTTProperties_add(&props, &property);
+		pubmsg.properties = props;
+		rc = MQTTAsync_sendMessage(c, test_topic, &pubmsg, &opts);
+		assert("Good rc from sendMessage", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+		MQTTProperties_free(&props);
+		MyLog(LOGA_DEBUG, "Sent qos %d message, token %d", pubmsg.qos, opts.token);
 	}
 
  	assert3PendingTokens(c);
 
-	rc = MQTTAsync_reconnect(c);
- 	assert("Good rc from reconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+ 	/* destroy and recreate to read from persistence */
+ 	MyLog(LOGA_DEBUG, "Destroy and recreate client c");
+ 	MQTTAsync_destroy(&c);
+
+	createOptions.sendWhileDisconnected = 1;
+	createOptions.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&c, options.proxy_connection, clientidc,
+		MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOptions);
+	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
+
+	assert3PendingTokens(c);
+
+	rc = MQTTAsync_setConnected(c, c, test1cConnected);
+	assert("Good rc from setConnectedCallback", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	opts.will = &wopts;
+	opts.onSuccess5 = test1cOnConnect;
+	opts.onFailure5 = test1cOnFailure;
+	opts.context = c;
+	opts.cleanstart = 0;
+	MyLog(LOGA_DEBUG, "Reconnecting client c");
+	test1c_connected = 0;
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+	MQTTProperties_free(&props);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		failures++;
+		goto exit;
+	}
 
 	/* wait for client to be reconnected */
 	while (!test1c_connected && ++count < 10000)
 		MySleep(100);
 
-	/* wait for success or failure callback */
+	/* wait for messages to be received */
 	while (test1_messages_received < 3 && ++count < 10000)
 		MySleep(100);
 
- 	waitForNoPendingTokens(c);
+	waitForNoPendingTokens(c);
 
 	rc = MQTTAsync_disconnect(c, NULL);
  	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -597,7 +724,7 @@ int test2Finished = 0;
 
 int test2OnFailureCalled = 0;
 
-void test2cOnFailure(void* context, MQTTAsync_failureData* response)
+void test2cOnFailure(void* context, MQTTAsync_failureData5* response)
 {
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
 
@@ -605,7 +732,7 @@ void test2cOnFailure(void* context, MQTTAsync_failureData* response)
 	test2Finished = 1;
 }
 
-void test2dOnFailure(void* context, MQTTAsync_failureData* response)
+void test2dOnFailure(void* context, MQTTAsync_failureData5* response)
 {
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
 
@@ -613,7 +740,7 @@ void test2dOnFailure(void* context, MQTTAsync_failureData* response)
 	test2Finished = 1;
 }
 
-void test2cOnConnect(void* context, MQTTAsync_successData* response)
+void test2cOnConnect(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client d, context %p\n", context);
@@ -634,15 +761,16 @@ int test2dReady = 0;
 char willTopic[100];
 char test_topic[50];
 
-void test2donSubscribe(void* context, MQTTAsync_successData* response)
+void test2donSubscribe(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback for client d, %p granted qos %d", c, response->alt.qos);
+	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback for client d, %p granted qos %d", c,
+			response->reasonCode);
 	test2dReady = 1;
 }
 
 
-void test2dOnConnect(void* context, MQTTAsync_successData* response)
+void test2dOnConnect(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
@@ -651,7 +779,7 @@ void test2dOnConnect(void* context, MQTTAsync_successData* response)
 	char* topics[2] = {willTopic, test_topic};
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client c, context %p\n", context);
-	opts.onSuccess = test2donSubscribe;
+	opts.onSuccess5 = test2donSubscribe;
 	opts.context = c;
 
 	rc = MQTTAsync_subscribeMany(c, 2, topics, qoss, &opts);
@@ -676,7 +804,7 @@ int test2(struct Options options)
 	char* testname = "test2";
 	int subsqos = 2;
 	MQTTAsync c, d;
-	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
 	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
 	int rc = 0;
@@ -684,13 +812,14 @@ int test2(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
 	char *URIs[2] = {"rubbish", options.proxy_connection};
+	MQTTProperties props = MQTTProperties_initializer;
+	MQTTProperty property;
 
-	sprintf(willTopic, "paho-test9-2-%s", unique);
-	sprintf(clientidc, "paho-test9-2-c-%s", unique);
-	sprintf(clientidd, "paho-test9-2-d-%s", unique);
-	sprintf(test_topic, "paho-test9-2-test topic %s", unique);
+	sprintf(willTopic, "paho-test95-2-%s", unique);
+	sprintf(clientidc, "paho-test95-2-c-%s", unique);
+	sprintf(clientidd, "paho-test95-2-d-%s", unique);
+	sprintf(test_topic, "paho-test95-2-test topic %s", unique);
 
 	test2Finished = 0;
 	failures = 0;
@@ -699,6 +828,7 @@ int test2(struct Options options)
 	global_start_time = start_clock();
 
 	createOptions.sendWhileDisconnected = 1;
+	createOptions.MQTTVersion = MQTTVERSION_5;
 	rc = MQTTAsync_createWithOptions(&c, "not used", clientidc, MQTTCLIENT_PERSISTENCE_DEFAULT,
 	      NULL, &createOptions);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
@@ -708,7 +838,10 @@ int test2(struct Options options)
 		goto exit;
 	}
 
-	rc = MQTTAsync_create(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOptions.sendWhileDisconnected = 0;
+	createOptions.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT,
+			NULL, &createOptions);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -717,15 +850,16 @@ int test2(struct Options options)
 	}
 
 	opts.keepAliveInterval = 20;
-	opts.cleansession = 1;
+	opts.cleanstart = 1;
+	opts.MQTTVersion = MQTTVERSION_5;
 
 	rc = MQTTAsync_setCallbacks(d, d, NULL, test2_messageArrived, NULL);
 	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	opts.will = NULL; /* don't need will for this client, as it's going to be connected all the time */
 	opts.context = d;
-	opts.onSuccess = test2dOnConnect;
-	opts.onFailure = test2dOnFailure;
+	opts.onSuccess5 = test2dOnConnect;
+	opts.onFailure5 = test2dOnFailure;
 	MyLog(LOGA_DEBUG, "Connecting client d");
 	rc = MQTTAsync_connect(d, &opts);
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -750,10 +884,15 @@ int test2(struct Options options)
 	opts.will->qos = 1;
 	opts.will->retained = 0;
 	opts.will->topicName = willTopic;
-	opts.onSuccess = test2cOnConnect;
-	opts.onFailure = test2cOnFailure;
+	opts.onSuccess5 = test2cOnConnect;
+	opts.onFailure5 = test2cOnFailure;
 	opts.context = c;
-	opts.cleansession = 0;
+	opts.MQTTVersion = MQTTVERSION_5;
+	opts.cleanstart = 0;
+	property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
+	property.value.integer4 = 30;
+	MQTTProperties_add(&props, &property);
+	opts.connectProperties = &props;
 	opts.serverURIs = URIs;
 	opts.serverURIcount = 2;
 
@@ -765,6 +904,7 @@ int test2(struct Options options)
 		failures++;
 		goto exit;
 	}
+	MQTTProperties_free(&props);
 
 	/* wait for will message */
 	while (!test2_will_message_received && ++count < 10000)
@@ -802,7 +942,7 @@ int test2(struct Options options)
 	while (test2_messages_received < 3 && ++count < 10000)
 		MySleep(100);
 
-	waitForNoPendingTokens(c);
+ 	waitForNoPendingTokens(c);
 
 	rc = MQTTAsync_disconnect(c, NULL);
  	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -856,7 +996,7 @@ int test3Finished = 0;
 
 int test3OnFailureCalled = 0;
 
-void test3cOnFailure(void* context, MQTTAsync_failureData* response)
+void test3cOnFailure(void* context, MQTTAsync_failureData5* response)
 {
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
 
@@ -864,7 +1004,7 @@ void test3cOnFailure(void* context, MQTTAsync_failureData* response)
 	test3Finished = 1;
 }
 
-void test3dOnFailure(void* context, MQTTAsync_failureData* response)
+void test3dOnFailure(void* context, MQTTAsync_failureData5* response)
 {
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
 
@@ -872,7 +1012,7 @@ void test3dOnFailure(void* context, MQTTAsync_failureData* response)
 	test3Finished = 1;
 }
 
-void test3cOnConnect(void* context, MQTTAsync_successData* response)
+void test3cOnConnect(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client d, context %p\n", context);
@@ -893,15 +1033,16 @@ int test3dReady = 0;
 char willTopic[100];
 char test_topic[50];
 
-void test3donSubscribe(void* context, MQTTAsync_successData* response)
+void test3donSubscribe(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback for client d, %p granted qos %d", c, response->alt.qos);
+	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback for client d, %p granted qos %d", c,
+			response->reasonCode);
 	test3dReady = 1;
 }
 
 
-void test3dOnConnect(void* context, MQTTAsync_successData* response)
+void test3dOnConnect(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
@@ -910,7 +1051,7 @@ void test3dOnConnect(void* context, MQTTAsync_successData* response)
 	char* topics[2] = {willTopic, test_topic};
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client c, context %p\n", context);
-	opts.onSuccess = test3donSubscribe;
+	opts.onSuccess5 = test3donSubscribe;
 	opts.context = c;
 
 	rc = MQTTAsync_subscribeMany(c, 2, topics, qoss, &opts);
@@ -935,7 +1076,7 @@ int test3(struct Options options)
 	char* testname = "test3";
 	int subsqos = 2;
 	MQTTAsync c, d;
-	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
 	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
 	int rc = 0;
@@ -943,12 +1084,13 @@ int test3(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
+	MQTTProperties props = MQTTProperties_initializer;
+	MQTTProperty property;
 
-	sprintf(willTopic, "paho-test9-3-%s", unique);
-	sprintf(clientidc, "paho-test9-3-c-%s", unique);
-	sprintf(clientidd, "paho-test9-3-d-%s", unique);
-	sprintf(test_topic, "paho-test9-3-test topic %s", unique);
+	sprintf(willTopic, "paho-test95-3-%s", unique);
+	sprintf(clientidc, "paho-test95-3-c-%s", unique);
+	sprintf(clientidd, "paho-test95-3-d-%s", unique);
+	sprintf(test_topic, "paho-test95-3-test topic %s", unique);
 
 	test3Finished = 0;
 	failures = 0;
@@ -957,6 +1099,7 @@ int test3(struct Options options)
 	global_start_time = start_clock();
 
 	createOptions.sendWhileDisconnected = 1;
+	createOptions.MQTTVersion = MQTTVERSION_5;
 	rc = MQTTAsync_createWithOptions(&c, options.proxy_connection, clientidc, MQTTCLIENT_PERSISTENCE_DEFAULT,
 	      NULL, &createOptions);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
@@ -966,7 +1109,10 @@ int test3(struct Options options)
 		goto exit;
 	}
 
-	rc = MQTTAsync_create(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOptions.sendWhileDisconnected = 0;
+	createOptions.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT,
+			NULL, &createOptions);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -975,17 +1121,16 @@ int test3(struct Options options)
 	}
 
 	opts.keepAliveInterval = 20;
-	opts.cleansession = 1;
-	//opts.username = "testuser";
-	//opts.password = "testpassword";
+	opts.cleanstart = 1;
+	opts.MQTTVersion = MQTTVERSION_5;
 
 	rc = MQTTAsync_setCallbacks(d, d, NULL, test3_messageArrived, NULL);
 	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	opts.will = NULL; /* don't need will for this client, as it's going to be connected all the time */
 	opts.context = d;
-	opts.onSuccess = test3dOnConnect;
-	opts.onFailure = test3dOnFailure;
+	opts.onSuccess5 = test3dOnConnect;
+	opts.onFailure5 = test3dOnFailure;
 	MyLog(LOGA_DEBUG, "Connecting client d");
 	rc = MQTTAsync_connect(d, &opts);
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -1010,15 +1155,21 @@ int test3(struct Options options)
 	opts.will->qos = 1;
 	opts.will->retained = 0;
 	opts.will->topicName = willTopic;
-	opts.onSuccess = test3cOnConnect;
-	opts.onFailure = test3cOnFailure;
+	opts.onSuccess5 = test3cOnConnect;
+	opts.onFailure5 = test3cOnFailure;
 	opts.context = c;
-	opts.cleansession = 0;
+	opts.cleanstart = 0;
+	property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
+	property.value.integer4 = 30;
+	MQTTProperties_add(&props, &property);
+	opts.connectProperties = &props;
+	opts.MQTTVersion = MQTTVERSION_5;
 	opts.automaticReconnect = 1;
 
 	MyLog(LOGA_DEBUG, "Connecting client c");
 	rc = MQTTAsync_connect(c, &opts);
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+	MQTTProperties_free(&props);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
 		failures++;
@@ -1058,7 +1209,7 @@ int test3(struct Options options)
 	while (test3_messages_received < 3 && ++count < 10000)
 		MySleep(100);
 
-	waitForNoPendingTokens(c);
+ 	waitForNoPendingTokens(c);
 
 	rc = MQTTAsync_disconnect(c, NULL);
  	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -1095,7 +1246,8 @@ int test4_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 	MQTTAsync c = (MQTTAsync)context;
 	static int message_count = 0;
 
-	MyLog(LOGA_DEBUG, "Message received on topic %s, \"%.*s\"", topicName, message->payloadlen, message->payload);
+	MyLog(LOGA_DEBUG, "Message received on topic %s, \"%.*s\"", topicName, message->payloadlen,
+			message->payload);
 
 	if (memcmp(message->payload, "will message", message->payloadlen) == 0)
 	  test4_will_message_received = 1;
@@ -1112,7 +1264,7 @@ int test4Finished = 0;
 
 int test4OnFailureCalled = 0;
 
-void test4cOnFailure(void* context, MQTTAsync_failureData* response)
+void test4cOnFailure(void* context, MQTTAsync_failureData5* response)
 {
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
 
@@ -1120,7 +1272,7 @@ void test4cOnFailure(void* context, MQTTAsync_failureData* response)
 	test4Finished = 1;
 }
 
-void test4dOnFailure(void* context, MQTTAsync_failureData* response)
+void test4dOnFailure(void* context, MQTTAsync_failureData5* response)
 {
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
 
@@ -1128,7 +1280,7 @@ void test4dOnFailure(void* context, MQTTAsync_failureData* response)
 	test4Finished = 1;
 }
 
-void test4cOnConnect(void* context, MQTTAsync_successData* response)
+void test4cOnConnect(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client d, context %p\n", context);
@@ -1149,15 +1301,16 @@ int test4dReady = 0;
 char willTopic[100];
 char test_topic[50];
 
-void test4donSubscribe(void* context, MQTTAsync_successData* response)
+void test4donSubscribe(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback for client d, %p granted qos %d", c, response->alt.qos);
+	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback for client d, %p granted qos %d", c,
+			response->reasonCode);
 	test4dReady = 1;
 }
 
 
-void test4dOnConnect(void* context, MQTTAsync_successData* response)
+void test4dOnConnect(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
@@ -1166,7 +1319,7 @@ void test4dOnConnect(void* context, MQTTAsync_successData* response)
 	char* topics[2] = {willTopic, test_topic};
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client c, context %p\n", context);
-	opts.onSuccess = test4donSubscribe;
+	opts.onSuccess5 = test4donSubscribe;
 	opts.context = c;
 
 	rc = MQTTAsync_subscribeMany(c, 2, topics, qoss, &opts);
@@ -1191,7 +1344,7 @@ int test4(struct Options options)
 	char* testname = "test4";
 	int subsqos = 2;
 	MQTTAsync c, d;
-	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
 	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
 	int rc = 0;
@@ -1199,13 +1352,14 @@ int test4(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
 	char *URIs[2] = {"rubbish", options.proxy_connection};
+	MQTTProperties props = MQTTProperties_initializer;
+	MQTTProperty property;
 
-	sprintf(willTopic, "paho-test9-4-%s", unique);
-	sprintf(clientidc, "paho-test9-4-c-%s", unique);
-	sprintf(clientidd, "paho-test9-4-d-%s", unique);
-	sprintf(test_topic, "paho-test9-4-test topic %s", unique);
+	sprintf(willTopic, "paho-test95-4-%s", unique);
+	sprintf(clientidc, "paho-test95-4-c-%s", unique);
+	sprintf(clientidd, "paho-test95-4-d-%s", unique);
+	sprintf(test_topic, "paho-test95-4-test topic %s", unique);
 
 	test4Finished = 0;
 	failures = 0;
@@ -1214,6 +1368,7 @@ int test4(struct Options options)
 	global_start_time = start_clock();
 
 	createOptions.sendWhileDisconnected = 1;
+	createOptions.MQTTVersion = MQTTVERSION_5;
 	rc = MQTTAsync_createWithOptions(&c, "not used", clientidc, MQTTCLIENT_PERSISTENCE_DEFAULT,
 	      NULL, &createOptions);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
@@ -1223,7 +1378,10 @@ int test4(struct Options options)
 		goto exit;
 	}
 
-	rc = MQTTAsync_create(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOptions.sendWhileDisconnected = 0;
+	createOptions.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT,
+			NULL, &createOptions);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -1232,15 +1390,15 @@ int test4(struct Options options)
 	}
 
 	opts.keepAliveInterval = 20;
-	opts.cleansession = 1;
+	opts.cleanstart = 1;
 
 	rc = MQTTAsync_setCallbacks(d, d, NULL, test4_messageArrived, NULL);
 	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	opts.will = NULL; /* don't need will for this client, as it's going to be connected all the time */
 	opts.context = d;
-	opts.onSuccess = test4dOnConnect;
-	opts.onFailure = test4dOnFailure;
+	opts.onSuccess5 = test4dOnConnect;
+	opts.onFailure5 = test4dOnFailure;
 	MyLog(LOGA_DEBUG, "Connecting client d");
 	rc = MQTTAsync_connect(d, &opts);
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -1265,10 +1423,14 @@ int test4(struct Options options)
 	opts.will->qos = 1;
 	opts.will->retained = 0;
 	opts.will->topicName = willTopic;
-	opts.onSuccess = test4cOnConnect;
-	opts.onFailure = test4cOnFailure;
+	opts.onSuccess5 = test4cOnConnect;
+	opts.onFailure5 = test4cOnFailure;
 	opts.context = c;
-	opts.cleansession = 0;
+	opts.cleanstart = 0;
+	property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
+	property.value.integer4 = 30;
+	MQTTProperties_add(&props, &property);
+	opts.connectProperties = &props;
 	opts.serverURIs = URIs;
 	opts.serverURIcount = 2;
 	opts.automaticReconnect = 1;
@@ -1276,6 +1438,7 @@ int test4(struct Options options)
 	MyLog(LOGA_DEBUG, "Connecting client c");
 	rc = MQTTAsync_connect(c, &opts);
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+	MQTTProperties_free(&props);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
 		failures++;
@@ -1315,7 +1478,7 @@ int test4(struct Options options)
 	while (test4_messages_received < 3 && ++count < 10000)
 		MySleep(100);
 
-	waitForNoPendingTokens(c);
+ 	waitForNoPendingTokens(c);
 
 	rc = MQTTAsync_disconnect(c, NULL);
  	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -1369,7 +1532,7 @@ int test5_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 	return 1;
 }
 
-void test5cOnFailure(void* context, MQTTAsync_failureData* response)
+void test5cOnFailure(void* context, MQTTAsync_failureData5* response)
 {
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
 
@@ -1377,7 +1540,7 @@ void test5cOnFailure(void* context, MQTTAsync_failureData* response)
 	test5Finished = 1;
 }
 
-void test5dOnFailure(void* context, MQTTAsync_failureData* response)
+void test5dOnFailure(void* context, MQTTAsync_failureData5* response)
 {
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
 
@@ -1385,7 +1548,7 @@ void test5dOnFailure(void* context, MQTTAsync_failureData* response)
 	test5Finished = 1;
 }
 
-void test5cOnConnect(void* context, MQTTAsync_successData* response)
+void test5cOnConnect(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client d, context %p\n", context);
@@ -1406,15 +1569,16 @@ int test5dReady = 0;
 char willTopic[100];
 char test_topic[50];
 
-void test5donSubscribe(void* context, MQTTAsync_successData* response)
+void test5donSubscribe(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback for client d, %p granted qos %d", c, response->alt.qos);
+	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback for client d, %p granted qos %d", c,
+			response->reasonCode);
 	test5dReady = 1;
 }
 
 
-void test5dOnConnect(void* context, MQTTAsync_successData* response)
+void test5dOnConnect(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
@@ -1423,7 +1587,7 @@ void test5dOnConnect(void* context, MQTTAsync_successData* response)
 	char* topics[2] = {willTopic, test_topic};
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client c, context %p\n", context);
-	opts.onSuccess = test5donSubscribe;
+	opts.onSuccess5 = test5donSubscribe;
 	opts.context = c;
 
 	rc = MQTTAsync_subscribeMany(c, 2, topics, qoss, &opts);
@@ -1446,7 +1610,7 @@ int test5(struct Options options)
 	char* testname = "test5";
 	int subsqos = 2;
 	MQTTAsync c, d;
-	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
 	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
 	int rc = 0;
@@ -1454,12 +1618,13 @@ int test5(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
+	MQTTProperties props = MQTTProperties_initializer;
+	MQTTProperty property;
 
-	sprintf(willTopic, "paho-test9-5-%s", unique);
-	sprintf(clientidc, "paho-test9-5-c-%s", unique);
-	sprintf(clientidd, "paho-test9-5-d-%s", unique);
-	sprintf(test_topic, "paho-test9-5-test topic %s", unique);
+	sprintf(willTopic, "paho-test95-5-%s", unique);
+	sprintf(clientidc, "paho-test95-5-c-%s", unique);
+	sprintf(clientidd, "paho-test95-5-d-%s", unique);
+	sprintf(test_topic, "paho-test95-5-test topic %s", unique);
 
 	test5Finished = 0;
 	failures = 0;
@@ -1469,6 +1634,7 @@ int test5(struct Options options)
 
 	createOptions.sendWhileDisconnected = 1;
 	createOptions.maxBufferedMessages = 3;
+	createOptions.MQTTVersion = MQTTVERSION_5;
 	rc = MQTTAsync_createWithOptions(&c, options.proxy_connection, clientidc, MQTTCLIENT_PERSISTENCE_DEFAULT,
 	      NULL, &createOptions);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
@@ -1478,7 +1644,11 @@ int test5(struct Options options)
 		goto exit;
 	}
 
-	rc = MQTTAsync_create(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOptions.sendWhileDisconnected = 0;
+	createOptions.maxBufferedMessages = 0;
+	createOptions.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT,
+			NULL, &createOptions);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -1487,17 +1657,16 @@ int test5(struct Options options)
 	}
 
 	opts.keepAliveInterval = 20;
-	opts.cleansession = 1;
-	//opts.username = "testuser";
-	//opts.password = "testpassword";
+	opts.cleanstart = 1;
 
 	rc = MQTTAsync_setCallbacks(d, d, NULL, test5_messageArrived, NULL);
 	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	opts.will = NULL; /* don't need will for this client, as it's going to be connected all the time */
 	opts.context = d;
-	opts.onSuccess = test5dOnConnect;
-	opts.onFailure = test5dOnFailure;
+	opts.onSuccess5 = test5dOnConnect;
+	opts.onFailure5 = test5dOnFailure;
+	opts.MQTTVersion = MQTTVERSION_5;
 	MyLog(LOGA_DEBUG, "Connecting client d");
 	rc = MQTTAsync_connect(d, &opts);
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -1522,14 +1691,20 @@ int test5(struct Options options)
 	opts.will->qos = 1;
 	opts.will->retained = 0;
 	opts.will->topicName = willTopic;
-	opts.onSuccess = test5cOnConnect;
-	opts.onFailure = test5cOnFailure;
+	opts.onSuccess5 = test5cOnConnect;
+	opts.onFailure5 = test5cOnFailure;
 	opts.context = c;
-	opts.cleansession = 0;
+	opts.cleanstart = 0;
+	opts.MQTTVersion = MQTTVERSION_5;
+	property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
+	property.value.integer4 = 30;
+	MQTTProperties_add(&props, &property);
+	opts.connectProperties = &props;
 
 	MyLog(LOGA_DEBUG, "Connecting client c");
 	rc = MQTTAsync_connect(c, &opts);
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+	MQTTProperties_free(&props);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
 		failures++;
@@ -1575,7 +1750,7 @@ int test5(struct Options options)
 	while (test5_messages_received < 3 && ++count < 10000)
 		MySleep(100);
 
-	waitForNoPendingTokens(c);
+ 	waitForNoPendingTokens(c);
 
 	rc = MQTTAsync_disconnect(c, NULL);
  	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -1599,7 +1774,7 @@ int test6(struct Options options)
 	char* testname = "test6";
 	int subsqos = 2;
 	MQTTAsync c, d;
-	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
 	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
 	int rc = 0;
@@ -1607,7 +1782,8 @@ int test6(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
+	MQTTProperties props = MQTTProperties_initializer;
+	MQTTProperty property;
 
 	test5_will_message_received = 0;
 	test5_messages_received = 0;
@@ -1615,10 +1791,10 @@ int test6(struct Options options)
 	test5OnFailureCalled = 0;
 	test5c_connected = 0;
 
-	sprintf(willTopic, "paho-test9-6-%s", unique);
-	sprintf(clientidc, "paho-test9-6-c-%s", unique);
-	sprintf(clientidd, "paho-test9-6-d-%s", unique);
-	sprintf(test_topic, "paho-test9-6-test topic %s", unique);
+	sprintf(willTopic, "paho-test95-6-%s", unique);
+	sprintf(clientidc, "paho-test95-6-c-%s", unique);
+	sprintf(clientidd, "paho-test95-6-d-%s", unique);
+	sprintf(test_topic, "paho-test95-6-test topic %s", unique);
 
 	test5Finished = 0;
 	failures = 0;
@@ -1628,6 +1804,7 @@ int test6(struct Options options)
 
 	createOptions.sendWhileDisconnected = 1;
 	createOptions.maxBufferedMessages = 3;
+	createOptions.MQTTVersion = MQTTVERSION_5;
 	rc = MQTTAsync_createWithOptions(&c, options.proxy_connection, clientidc, MQTTCLIENT_PERSISTENCE_DEFAULT,
 	      NULL, &createOptions);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
@@ -1637,7 +1814,11 @@ int test6(struct Options options)
 		goto exit;
 	}
 
-	rc = MQTTAsync_create(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOptions.sendWhileDisconnected = 0;
+	createOptions.maxBufferedMessages = 0;
+	createOptions.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT,
+			NULL, &createOptions);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -1646,17 +1827,16 @@ int test6(struct Options options)
 	}
 
 	opts.keepAliveInterval = 20;
-	opts.cleansession = 1;
-	//opts.username = "testuser";
-	//opts.password = "testpassword";
+	opts.cleanstart = 1;
+	opts.MQTTVersion = MQTTVERSION_5;
 
 	rc = MQTTAsync_setCallbacks(d, d, NULL, test5_messageArrived, NULL);
 	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	opts.will = NULL; /* don't need will for this client, as it's going to be connected all the time */
 	opts.context = d;
-	opts.onSuccess = test5dOnConnect;
-	opts.onFailure = test5dOnFailure;
+	opts.onSuccess5 = test5dOnConnect;
+	opts.onFailure5 = test5dOnFailure;
 	MyLog(LOGA_DEBUG, "Connecting client d");
 	rc = MQTTAsync_connect(d, &opts);
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -1682,14 +1862,20 @@ int test6(struct Options options)
 	opts.will->qos = 1;
 	opts.will->retained = 0;
 	opts.will->topicName = willTopic;
-	opts.onSuccess = test5cOnConnect;
-	opts.onFailure = test5cOnFailure;
+	opts.onSuccess5 = test5cOnConnect;
+	opts.onFailure5 = test5cOnFailure;
 	opts.context = c;
-	opts.cleansession = 0;
+	opts.cleanstart = 0;
+	opts.MQTTVersion = MQTTVERSION_5;
+	property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
+	property.value.integer4 = 30;
+	MQTTProperties_add(&props, &property);
+	opts.connectProperties = &props;
 
 	MyLog(LOGA_DEBUG, "Connecting client c");
 	rc = MQTTAsync_connect(c, &opts);
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+	MQTTProperties_free(&props);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
 		failures++;
@@ -1735,7 +1921,7 @@ int test6(struct Options options)
 	while (test5_messages_received < 3 && ++count < 10000)
 		MySleep(100);
 
-	waitForNoPendingTokens(c);
+ 	waitForNoPendingTokens(c);
 
 	rc = MQTTAsync_disconnect(c, NULL);
  	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -1792,7 +1978,7 @@ void test7cConnected(void* context, char* cause)
 	test7c_connected = 1;
 }
 
-void test7cOnConnectFailure(void* context, MQTTAsync_failureData* response)
+void test7cOnConnectFailure(void* context, MQTTAsync_failureData5* response)
 {
 	MyLog(LOGA_DEBUG, "In c connect onFailure callback, context %p", context);
 
@@ -1800,7 +1986,7 @@ void test7cOnConnectFailure(void* context, MQTTAsync_failureData* response)
 	test7Finished = 1;
 }
 
-void test7cOnConnectSuccess(void* context, MQTTAsync_successData* response)
+void test7cOnConnectSuccess(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
@@ -1816,7 +2002,7 @@ void test7cOnConnectSuccess(void* context, MQTTAsync_successData* response)
 	//assert("Good rc from sendMessage", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 }
 
-void test7dOnConnectFailure(void* context, MQTTAsync_failureData* response)
+void test7dOnConnectFailure(void* context, MQTTAsync_failureData5* response)
 {
 	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
 
@@ -1825,15 +2011,16 @@ void test7dOnConnectFailure(void* context, MQTTAsync_failureData* response)
 }
 
 
-void test7donSubscribe(void* context, MQTTAsync_successData* response)
+void test7donSubscribe(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback for client d, %p granted qos %d", c, response->alt.qos);
+	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback for client d, %p granted qos %d", c,
+			response->reasonCode);
 	test7dReady = 1;
 }
 
 
-void test7dOnConnectSuccess(void* context, MQTTAsync_successData* response)
+void test7dOnConnectSuccess(void* context, MQTTAsync_successData5* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
@@ -1841,7 +2028,7 @@ void test7dOnConnectSuccess(void* context, MQTTAsync_successData* response)
 	char* topics[2] = {willTopic, test_topic};
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client c, context %p\n", context);
-	opts.onSuccess = test7donSubscribe;
+	opts.onSuccess5 = test7donSubscribe;
 	opts.context = c;
 
 	//rc = MQTTAsync_subscribeMany(c, 2, topics, qoss, &opts);
@@ -1857,9 +2044,9 @@ int test7(struct Options options)
 	char* testname = "test7";
 	int subsqos = 2;
 	MQTTAsync c, d;
-	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer5;
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
-	//MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
+	MQTTAsync_createOptions createOpts = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 	int count = 0;
 	char clientidc[50];
@@ -1872,7 +2059,7 @@ int test7(struct Options options)
 	test7OnFailureCalled = 0;
 	test7c_connected = 0;
 
-	sprintf(willTopic, "paho-test9-7-%s", unique);
+	sprintf(willTopic, "paho-test95-7-%s", unique);
 	sprintf(clientidc, "paho-test9-7-c-%s", unique);
 	sprintf(clientidd, "paho-test9-7-d-%s", unique);
 	sprintf(test_topic, "longer paho-test9-7-test topic %s", unique);
@@ -1883,7 +2070,9 @@ int test7(struct Options options)
 	fprintf(xml, "<testcase classname=\"test7\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	rc = MQTTAsync_create(&c, options.proxy_connection, clientidc, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&c, options.proxy_connection, clientidc, MQTTCLIENT_PERSISTENCE_DEFAULT,
+			NULL, &createOpts);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -1891,7 +2080,9 @@ int test7(struct Options options)
 		goto exit;
 	}
 
-	rc = MQTTAsync_create(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	createOpts.MQTTVersion = MQTTVERSION_5;
+	rc = MQTTAsync_createWithOptions(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT,
+			NULL, &createOpts);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 	{
@@ -1907,8 +2098,8 @@ int test7(struct Options options)
 
 	opts.will = NULL; /* don't need will for this client, as it's going to be connected all the time */
 	opts.context = d;
-	opts.onSuccess = test7dOnConnectSuccess;
-	opts.onFailure = test7dOnConnectFailure;
+	opts.onSuccess5 = test7dOnConnectSuccess;
+	opts.onFailure5 = test7dOnConnectFailure;
 	MyLog(LOGA_DEBUG, "Connecting client d");
 	rc = MQTTAsync_connect(d, &opts);
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -1938,8 +2129,8 @@ int test7(struct Options options)
 	opts.will->qos = 1;
 	opts.will->retained = 0;
 	opts.will->topicName = willTopic;
-	opts.onSuccess = test7cOnConnectSuccess;
-	opts.onFailure = test7cOnConnectFailure;
+	opts.onSuccess5 = test7cOnConnectSuccess;
+	opts.onFailure5 = test7cOnConnectFailure;
 	opts.context = c;
 	opts.cleansession = 0;
 	/*opts.automaticReconnect = 1;
@@ -2003,7 +2194,7 @@ int test7(struct Options options)
 	while (test5_messages_received < 3 && ++count < 10000)
 		MySleep(100);
 
-	waitForNoPendingTokens(c);
+ 	waitForNoPendingTokens(c);
 #endif
 
 exit:

@@ -36,7 +36,7 @@ int SHA1_Init(SHA_CTX *c)
 int SHA1_Update(SHA_CTX *c, const void *data, size_t len)
 {
 	int rv = 1;
-	if (!CryptHashData(c->hHash, data, len, 0))
+	if (!CryptHashData(c->hHash, data, (DWORD)len, 0))
 		rv = 0;
 	return rv;
 }

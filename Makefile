@@ -24,7 +24,7 @@ SHELL = /bin/sh
 .PHONY: clean, mkdir, install, uninstall, html
 
 ifndef release.version
-  release.version = 1.2.1
+  release.version = 1.3.0
 endif
 
 # determine current platform
@@ -107,7 +107,7 @@ SYNC_TESTS = ${addprefix ${blddir}/test/,${TEST_FILES_C}}
 TEST_FILES_CS = test3
 SYNC_SSL_TESTS = ${addprefix ${blddir}/test/,${TEST_FILES_CS}}
 
-TEST_FILES_A = test4 test45 test6 test9 test_mqtt4async test11
+TEST_FILES_A = test4 test45 test6 test9 test95 test_mqtt4async test11
 ASYNC_TESTS = ${addprefix ${blddir}/test/,${TEST_FILES_A}}
 
 TEST_FILES_AS = test5
@@ -152,7 +152,7 @@ PAHO_C_SUB_TARGET = ${blddir}/samples/${PAHO_C_SUB_NAME}
 PAHO_CS_PUB_TARGET = ${blddir}/samples/${PAHO_CS_PUB_NAME}
 PAHO_CS_SUB_TARGET = ${blddir}/samples/${PAHO_CS_SUB_NAME}
 
-CCFLAGS_SO = -g -fPIC $(CFLAGS) -Os -Wall -fvisibility=hidden -I$(blddir_work) -fpermissive
+CCFLAGS_SO = -g -fPIC $(CFLAGS) -Os -Wall -fvisibility=hidden -I$(blddir_work) 
 FLAGS_EXE = $(LDFLAGS) -I ${srcdir} -lpthread -L ${blddir}
 FLAGS_EXES = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread -lssl -lcrypto ${END_GROUP} -L ${blddir}
 
@@ -215,7 +215,7 @@ mkdir:
 	echo OSTYPE is $(OSTYPE)
 
 ${SYNC_TESTS}: ${blddir}/test/%: ${srcdir}/../test/%.c $(MQTTLIB_C_TARGET)
-	${CC} -DNOSTACKTRACE $(srcdir)/Thread.c -g -o $@ $< -l${MQTTLIB_C} ${FLAGS_EXE}
+	${CC} -DNOSTACKTRACE -DNOLOG_MESSAGES $(srcdir)/Thread.c -g -o $@ $< -l${MQTTLIB_C} ${FLAGS_EXE}
 
 ${SYNC_SSL_TESTS}: ${blddir}/test/%: ${srcdir}/../test/%.c $(MQTTLIB_CS_TARGET)
 	${CC} -g -o $@ $< -l${MQTTLIB_CS} ${FLAGS_EXES}

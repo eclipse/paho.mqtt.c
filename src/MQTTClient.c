@@ -1449,6 +1449,12 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 			m->c->sslopts->ssl_error_cb = options->ssl->ssl_error_cb;
 			m->c->sslopts->ssl_error_context = options->ssl->ssl_error_context;
 		}
+		if (m->c->sslopts->struct_version >= 4)
+		{
+			m->c->sslopts->ssl_psk_cb = options->ssl->ssl_psk_cb;
+			m->c->sslopts->ssl_psk_context = options->ssl->ssl_psk_context;
+			m->c->sslopts->disableDefaultTrustStore = options->ssl->disableDefaultTrustStore;
+		}
 	}
 #endif
 
@@ -1569,7 +1575,7 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions*
 #if defined(OPENSSL)
 	if (options->struct_version != 0 && options->ssl) /* check validity of SSL options structure */
 	{
-		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version < 0 || options->ssl->struct_version > 3)
+		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version < 0 || options->ssl->struct_version > 4)
 		{
 			rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
 			goto exit;

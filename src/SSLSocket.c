@@ -76,6 +76,9 @@ static int handle_openssl_init = 1;
 static ssl_mutex_type* sslLocks = NULL;
 static ssl_mutex_type sslCoreMutex;
 
+/* Used to store MQTTClient_SSLOptions for TLS-PSK callback */
+static int tls_ex_index_ssl_opts;
+
 #if defined(WIN32) || defined(WIN64)
 #define iov_len len
 #define iov_base buf
@@ -483,6 +486,8 @@ int SSLSocket_initialize(void)
 
 	SSL_create_mutex(&sslCoreMutex);
 
+	tls_ex_index_ssl_opts = SSL_get_ex_new_index(0, "paho ssl options", NULL, NULL, NULL);
+
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -512,6 +517,25 @@ void SSLSocket_terminate(void)
 	SSL_destroy_mutex(&sslCoreMutex);
 
 	FUNC_EXIT;
+}
+
+static unsigned int call_ssl_psk_cb(SSL *ssl, const char *hint, char *identity, unsigned int max_identity_len, unsigned char *psk, unsigned int max_psk_len)
+{
+	int rc = 0;
+
+	FUNC_ENTRY;
+
+	SSL_CTX *ctx = SSL_get_SSL_CTX(ssl);
+	MQTTClient_SSLOptions* opts = SSL_CTX_get_ex_data(ctx, tls_ex_index_ssl_opts);
+
+	if (opts == NULL)
+		goto exit;
+
+	if (opts->ssl_psk_cb != NULL)
+		rc = opts->ssl_psk_cb(hint, identity, max_identity_len, psk, max_psk_len, opts->ssl_psk_context);
+exit:
+	FUNC_EXIT_RC(rc);
+	return rc;
 }
 
 int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
@@ -605,13 +629,16 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 			goto free_ctx;
 		}
 	}
-	else if ((rc = SSL_CTX_set_default_verify_paths(net->ctx)) != 1)
+	else if (!opts->disableDefaultTrustStore)
 	{
-		if (opts->struct_version >= 3)
-			SSLSocket_error("SSL_CTX_set_default_verify_paths", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
-		else
-			SSLSocket_error("SSL_CTX_set_default_verify_paths", NULL, net->socket, rc, NULL, NULL);
-		goto free_ctx;
+		if ((rc = SSL_CTX_set_default_verify_paths(net->ctx)) != 1)
+		{
+			if (opts->struct_version >= 3)
+				SSLSocket_error("SSL_CTX_set_default_verify_paths", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
+			else
+				SSLSocket_error("SSL_CTX_set_default_verify_paths", NULL, net->socket, rc, NULL, NULL);
+			goto free_ctx;
+		}
 	}
 
 	if (opts->enabledCipherSuites)
@@ -625,6 +652,14 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 			goto free_ctx;
 		}
 	}
+
+#ifndef OPENSSL_NO_PSK
+	if (opts->ssl_psk_cb != NULL)
+	{
+		SSL_CTX_set_ex_data(net->ctx, tls_ex_index_ssl_opts, opts);
+		SSL_CTX_set_psk_client_callback(net->ctx, call_ssl_psk_cb);
+	}
+#endif
 
 	SSL_CTX_set_mode(net->ctx, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 

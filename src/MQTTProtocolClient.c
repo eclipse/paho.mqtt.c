@@ -611,30 +611,33 @@ void MQTTProtocol_keepalive(time_t now)
 	{
 		Clients* client =	(Clients*)(current->content);
 		ListNextElement(bstate->clients, &current);
-		if (client->connected && client->keepAliveInterval > 0 &&
-			(difftime(now, client->net.lastSent) >= client->keepAliveInterval ||
-					difftime(now, client->net.lastReceived) >= client->keepAliveInterval))
+
+		if (client->connected == 0 || client->keepAliveInterval == 0)
+			continue;
+
+		if (client->ping_outstanding == 1)
 		{
-			if (client->ping_outstanding == 0)
-			{
-				if (Socket_noPendingWrites(client->net.socket))
-				{
-					if (MQTTPacket_send_pingreq(&client->net, client->clientID) != TCPSOCKET_COMPLETE)
-					{
-						Log(TRACE_PROTOCOL, -1, "Error sending PINGREQ for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
-						MQTTProtocol_closeSession(client, 1);
-					}
-					else
-					{
-						client->net.lastSent = now;
-						client->ping_outstanding = 1;
-					}
-				}
-			}
-			else
+			if (difftime(now, client->net.lastPing) >= client->keepAliveInterval)
 			{
 				Log(TRACE_PROTOCOL, -1, "PINGRESP not received in keepalive interval for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
 				MQTTProtocol_closeSession(client, 1);
+			}
+		}
+		else if (difftime(now, client->net.lastSent) >= client->keepAliveInterval ||
+					difftime(now, client->net.lastReceived) >= client->keepAliveInterval)
+		{
+			if (Socket_noPendingWrites(client->net.socket))
+			{
+				if (MQTTPacket_send_pingreq(&client->net, client->clientID) != TCPSOCKET_COMPLETE)
+				{
+					Log(TRACE_PROTOCOL, -1, "Error sending PINGREQ for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
+					MQTTProtocol_closeSession(client, 1);
+				}
+				else
+				{
+					client->net.lastPing = now;
+					client->ping_outstanding = 1;
+				}
 			}
 		}
 	}

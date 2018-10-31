@@ -59,6 +59,7 @@ struct Options
 	char nocert_mutual_auth_connection[100];
 	char server_auth_connection[100];
 	char anon_connection[100];
+	char psk_connection[100];
 	char* client_key_file;
 	char* client_key_pass;
 	char* server_key_file;
@@ -74,6 +75,7 @@ struct Options
 	"ssl://m2m.eclipse.org:18887",
 	"ssl://m2m.eclipse.org:18885",
 	"ssl://m2m.eclipse.org:18886",
+	"ssl://m2m.eclipse.org:18888",
 	"../../../test/ssl/client.pem",
 	NULL,
 	"../../../test/ssl/test-root-ca.crt",
@@ -158,6 +160,8 @@ void getopts(int argc, char** argv)
 				printf("Setting server_auth_connection to %s\n", options.server_auth_connection);
 				sprintf(options.anon_connection, "%s://%s:18886", prefix, argv[count]);
 				printf("Setting anon_connection to %s\n", options.anon_connection);
+				sprintf(options.psk_connection, "%s://%s:18888", prefix, argv[count]);
+				printf("Setting psk_connection to %s\n", options.psk_connection);
 			}
 			else
 				usage();
@@ -2146,6 +2150,111 @@ int test7(struct Options options)
 	return failures;
 }
 
+/*********************************************************************
+
+Test8: TLS-PSK - client and server has a common pre-shared key
+
+*********************************************************************/
+
+static unsigned int onPSKAuth(const char* hint,
+                              char* identity,
+                              unsigned int max_identity_len,
+                              unsigned char* psk,
+                              unsigned int max_psk_len,
+                              void* context)
+{
+	unsigned char test_psk[] = {0x50, 0x53, 0x4B, 0x00}; /* {'P', 'S', 'K', '\0' } */
+	MyLog(LOGA_DEBUG, "PSK auth callback");
+
+	assert("Good application context in onPSKAuth", context == (void *) 42, "context was %d\n", context);
+
+	strncpy(identity, "id", max_identity_len);
+	memcpy(psk, test_psk, sizeof(test_psk));
+	return sizeof(test_psk);
+}
+
+
+int test8(struct Options options)
+{
+	char* testname = "test8";
+
+	AsyncTestClient tc =
+	AsyncTestClient_initializer;
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
+	int rc = 0;
+
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 8 - TLS-PSK - client and server has a common pre-shared key");
+	fprintf(xml, "<testcase classname=\"test8\" name=\"%s\"", testname);
+	global_start_time = start_clock();
+
+	MQTTAsync_create(&c, options.psk_connection, "test8", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	tc.client = c;
+	sprintf(tc.clientid, "%s", testname);
+	sprintf(tc.topic, "C client SSL test8");
+	tc.maxmsgs = MAXMSGS;
+	tc.subscribed = 0;
+	tc.testFinished = 0;
+
+	opts.keepAliveInterval = 20;
+	opts.cleansession = 1;
+	opts.username = "testuser";
+	opts.password = "testpassword";
+
+	opts.onSuccess = asyncTestOnConnect;
+	opts.onFailure = asyncTestOnSubscribeFailure;
+	opts.context = &tc;
+
+	opts.ssl = &sslopts;
+	opts.ssl->ssl_psk_cb = onPSKAuth;
+	opts.ssl->ssl_psk_context = (void *) 42;
+	opts.ssl->enabledCipherSuites = "PSK-AES128-CBC-SHA";
+
+	rc = MQTTAsync_setCallbacks(c, &tc, NULL, asyncTestMessageArrived,
+			asyncTestOnDeliveryComplete);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (!tc.subscribed && !tc.testFinished)
+#if defined(WIN32)
+		Sleep(100);
+#else
+		usleep(10000L);
+#endif
+
+	if (tc.testFinished)
+		goto exit;
+
+	while (!tc.testFinished)
+#if defined(WIN32)
+		Sleep(100);
+#else
+		usleep(10000L);
+#endif
+
+	MyLog(LOGA_DEBUG, "Stopping");
+
+exit:
+	MQTTAsync_destroy(&c);
+	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", testname, tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
 void handleTrace(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 {
 	printf("%s\n", message);
@@ -2157,7 +2266,7 @@ int main(int argc, char** argv)
 	int rc = 0;
 	int (*tests[])() =
             { NULL, test1, test2a, test2b, test2c, test2d, test3a, test3b, test4, /* test5a,
-			test5b, test5c, */ test6, test7 };
+			test5b, test5c, */ test6, test7, test8 };
 
 	xml = fopen("TEST-test5.xml", "w");
 	fprintf(xml, "<testsuite name=\"test5\" tests=\"%d\">\n", (int)ARRAY_SIZE(tests) - 1);

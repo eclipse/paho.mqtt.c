@@ -83,8 +83,10 @@ typedef struct
 	SSL* ssl;
 	SSL_CTX* ctx;
 	char *https_proxy;
+	char *https_proxy_auth;
 #endif
 	char *http_proxy;
+	char *http_proxy_auth;
 	int websocket; /**< socket has been upgraded to use web sockets */
 	char *websocket_key;
 } networkHandles;

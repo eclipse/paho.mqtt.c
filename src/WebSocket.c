@@ -1083,13 +1083,14 @@ exit:
  * Notify the IP address and port of the endpoint to proxy, and wait connection to endpoint.
  *
  * @param[in]  net               network connection to proxy.
+ * @param[in]  ssl               enable ssl.
  * @param[in]  hostname          hostname of endpoint.
  *
  * @retval SOCKET_ERROR          failed to network connection
  * @retval 0                     connection to endpoint
  * 
  */
-int WebSocket_proxy_connect( networkHandles *net, const char *hostname)
+int WebSocket_proxy_connect( networkHandles *net, int ssl, const char *hostname)
 {
 	int port, i, rc = 0, buf_len=0;
 	char *buf = NULL;
@@ -1099,8 +1100,44 @@ int WebSocket_proxy_connect( networkHandles *net, const char *hostname)
  
 	hostname_len = MQTTProtocol_addressPort(hostname, &port, NULL);
 	for ( i = 0; i < 2; ++i ) {
-		buf_len = snprintf( buf, (size_t)buf_len, "CONNECT %.*s:%d HTTP/1.1\r\n\r\n",
-			(int)hostname_len, hostname, port);  
+#if defined(OPENSSL)
+		if(ssl) {
+			if (net->https_proxy_auth) {
+				buf_len = snprintf( buf, (size_t)buf_len, "CONNECT %.*s:%d HTTP/1.1\r\n"
+					"Host: %.*s\r\n"
+					"Proxy-authorization: Basic %s\r\n"
+					"\r\n",
+					(int)hostname_len, hostname, port,
+					(int)hostname_len, hostname, net->https_proxy_auth);
+			}
+			else {
+				buf_len = snprintf( buf, (size_t)buf_len, "CONNECT %.*s:%d HTTP/1.1\r\n"
+					"Host: %.*s\r\n"
+					"\r\n",
+					(int)hostname_len, hostname, port,
+					(int)hostname_len, hostname);
+			}
+		}
+		else {
+#endif
+			if (net->http_proxy_auth) {
+				buf_len = snprintf( buf, (size_t)buf_len, "CONNECT %.*s:%d HTTP/1.1\r\n"
+					"Host: %.*s\r\n"
+					"Proxy-authorization: Basic %s\r\n"
+					"\r\n",
+					(int)hostname_len, hostname, port,
+					(int)hostname_len, hostname, net->http_proxy_auth);
+			}
+			else {
+				buf_len = snprintf( buf, (size_t)buf_len, "CONNECT %.*s:%d HTTP/1.1\r\n"
+					"Host: %.*s\r\n"
+					"\r\n",
+					(int)hostname_len, hostname, port,
+					(int)hostname_len, hostname);
+			}
+#if defined(OPENSSL)
+		}
+#endif
 		if ( i==0 && buf_len > 0 ) {
 			++buf_len;
 			buf = malloc( buf_len );

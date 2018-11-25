@@ -201,7 +201,9 @@ int main(int argc, char** argv)
 		 
 		for (i = 0; i < ARRAY_SIZE(libraries); ++i)
 		{
-#if defined(WIN32) || defined(WIN64)
+#if defined(__CYGWIN__)
+			sprintf(namebuf, "cyg%s-1.dll", libraries[i]);
+#elif defined(WIN32) || defined(WIN64)
 			sprintf(namebuf, "%s.dll", libraries[i]);
 #elif defined(OSX)
 			sprintf(namebuf, "lib%s.1.dylib", libraries[i]);

@@ -138,9 +138,8 @@ int loadandcall(const char* libname)
 	int rc = 0;
 	MQTTAsync_nameValue* (*func_address)(void) = NULL;
 #if defined(WIN32) || defined(WIN64)
-	HMODULE APILibrary;
-
-	if ((APILibrary = LoadLibraryA(libname)) == NULL)
+	HMODULE APILibrary = LoadLibraryA(libname);
+	if (APILibrary == NULL)
 		printf("Error loading library %s, error code %d\n", libname, GetLastError());
 	else
 	{
@@ -153,11 +152,10 @@ int loadandcall(const char* libname)
 	}
 #else
 	void* APILibrary = dlopen(libname, RTLD_LAZY); /* Open the Library in question */
-	char* ErrorOutput = dlerror(); 	               /* Check it opened properly */
-	if (ErrorOutput != NULL)
-		printf("Error loading library %s, error %s\n", libname, ErrorOutput);
+	if (APILibrary == NULL)
+		printf("Error loading library %s, error %s\n", libname, dlerror());
 	else
-	{	
+	{
 		*(void **) (&func_address) = dlsym(APILibrary, "MQTTAsync_getVersionInfo");
 		if (func_address == NULL)
 			func_address = dlsym(APILibrary, "MQTTClient_getVersionInfo");

@@ -175,9 +175,11 @@
  * Return code: Attempting SSL connection using non-SSL version of library
  */
 #define MQTTASYNC_SSL_NOT_SUPPORTED -13
-/**
- * Return code: protocol prefix in serverURI should be tcp:// or ssl://
- */
+ /**
+  * Return code: protocol prefix in serverURI should be tcp://, ssl://, ws:// or wss://
+  * The TLS enabled prefixes (ssl, wss) are only valid if the TLS version of the library
+  * is linked with.
+  */
 #define MQTTASYNC_BAD_PROTOCOL -14
  /**
   * Return code: don't use options for another version of MQTT

@@ -184,7 +184,9 @@
   */
  #define MQTTCLIENT_BAD_MQTT_VERSION -11
 /**
- * Return code: protocol prefix in serverURI should be tcp:// or ssl://
+ * Return code: protocol prefix in serverURI should be tcp://, ssl://, ws:// or wss://
+ * The TLS enabled prefixes (ssl, wss) are only valid if the TLS version of the library
+ * is linked with.
  */
 #define MQTTCLIENT_BAD_PROTOCOL -14
  /**

@@ -2742,7 +2742,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		goto exit;
 	}
 
-	if (strncmp(options->struct_id, "MQTC", 4) != 0 || options->struct_version < 0 || options->struct_version > 6)
+	if (strncmp(options->struct_id, "MQTC", 4) != 0 || options->struct_version < 0 || options->struct_version > 7)
 	{
 		rc = MQTTASYNC_BAD_STRUCTURE;
 		goto exit;
@@ -2847,6 +2847,10 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		m->automaticReconnect = options->automaticReconnect;
 		m->minRetryInterval = options->minRetryInterval;
 		m->maxRetryInterval = options->maxRetryInterval;
+	}
+	if (options->struct_version >= 7)
+	{
+		m->c->net.httpHeaders = (const MQTTClient_nameValue *) options->httpHeaders;
 	}
 
 	if (m->c->will)

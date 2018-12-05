@@ -1360,6 +1360,11 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 			m->c->maxInflightMessages = options->maxInflightMessages;
 	}
 
+	if (options->struct_version >= 7)
+	{
+		m->c->net.httpHeaders = options->httpHeaders;
+	}
+
 	if (m->c->will)
 	{
 		free(m->c->will->payload);
@@ -1542,7 +1547,7 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions*
 		goto exit;
 	}
 
-	if (strncmp(options->struct_id, "MQTC", 4) != 0 || options->struct_version < 0 || options->struct_version > 6)
+	if (strncmp(options->struct_id, "MQTC", 4) != 0 || options->struct_version < 0 || options->struct_version > 7)
 	{
 		rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
 		goto exit;

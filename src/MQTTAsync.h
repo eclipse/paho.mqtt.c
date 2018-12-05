@@ -972,6 +972,12 @@ typedef struct
 
 #define MQTTAsync_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 3, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL }
 
+typedef struct
+{
+	const char* name;
+	const char* value;
+} MQTTAsync_nameValue;
+
 /**
  * MQTTAsync_connectOptions defines several settings that control the way the
  * client connects to an MQTT server.  Default values are set in
@@ -988,6 +994,7 @@ typedef struct
     * 3 signifies no automatic reconnect options
     * 4 signifies no binary password option (just string)
     * 5 signifies no MQTTV5 properties
+    * 6 signifies no HTTP headers option
 	  */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -1119,6 +1126,10 @@ typedef struct
 		int len;            /**< binary password length */
 		const void* data;  /**< binary password data */
 	} binarypwd;
+	/**
+	 * httpHeaders
+	 */
+	const MQTTAsync_nameValue* httpHeaders;
 	/*
 	 * MQTT V5 clean start flag.  Only clears state at the beginning of the session.
 	 */
@@ -1146,11 +1157,11 @@ typedef struct
 } MQTTAsync_connectOptions;
 
 
-#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 6, 60, 1, 65535, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL}
+#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 7, 60, 1, 65535, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, NULL, 0, NULL, NULL, NULL, NULL}
 
-#define MQTTAsync_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 6, 60, 0, 65535, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL}
+#define MQTTAsync_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 7, 60, 0, 65535, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, NULL, 1, NULL, NULL, NULL, NULL}
 
 
 /**
@@ -1481,13 +1492,6 @@ typedef void MQTTAsync_traceCallback(enum MQTTASYNC_TRACE_LEVELS level, char* me
   * @param callback a pointer to the function which will handle the trace information
   */
 DLLExport void MQTTAsync_setTraceCallback(MQTTAsync_traceCallback* callback);
-
-
-typedef struct
-{
-	const char* name;
-	const char* value;
-} MQTTAsync_nameValue;
 
 /**
   * This function returns version information about the library.

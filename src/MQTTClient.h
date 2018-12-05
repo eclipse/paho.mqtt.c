@@ -719,6 +719,26 @@ typedef struct
 #define MQTTClient_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 3, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL }
 
 /**
+  * MQTTClient_libraryInfo is used to store details relating to the currently used
+  * library such as the version in use, the time it was built and relevant openSSL
+  * options.
+  * There is one static instance of this struct in MQTTClient.c
+  */
+
+typedef struct
+{
+	const char* name;
+	const char* value;
+} MQTTClient_nameValue;
+
+/**
+  * This function returns version information about the library.
+  * no trace information will be returned.
+  * @return an array of strings describing the library.  The last entry is a NULL pointer.
+  */
+DLLExport MQTTClient_nameValue* MQTTClient_getVersionInfo(void);
+
+/**
  * MQTTClient_connectOptions defines several settings that control the way the
  * client connects to an MQTT server.
  *
@@ -743,6 +763,7 @@ typedef struct
 	 * 3 signifies no returned values
 	 * 4 signifies no binary password option
 	 * 5 signifies no maxInflightMessages and cleanstart
+	 * 6 signifies no HTTP headers option
 	 */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -863,6 +884,10 @@ typedef struct
 		const void* data;  /**< binary password data */
 	} binarypwd;
 	/**
+	 * httpHeaders
+	 */
+	const MQTTClient_nameValue* httpHeaders;
+	/**
 	 * The maximum number of messages in flight
 	 */
 	int maxInflightMessages;
@@ -872,29 +897,9 @@ typedef struct
 	int cleanstart;
 } MQTTClient_connectOptions;
 
-#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 6, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL, 0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0}
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 7, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL, 0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, NULL, -1, 0}
 
-#define MQTTClient_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 6, 60, 0, 1, NULL, NULL, NULL, 30, 0, NULL, 0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1}
-
-/**
-  * MQTTClient_libraryInfo is used to store details relating to the currently used
-  * library such as the version in use, the time it was built and relevant openSSL
-  * options.
-  * There is one static instance of this struct in MQTTClient.c
-  */
-
-typedef struct
-{
-	const char* name;
-	const char* value;
-} MQTTClient_nameValue;
-
-/**
-  * This function returns version information about the library.
-  * no trace information will be returned.
-  * @return an array of strings describing the library.  The last entry is a NULL pointer.
-  */
-DLLExport MQTTClient_nameValue* MQTTClient_getVersionInfo(void);
+#define MQTTClient_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 7, 60, 0, 1, NULL, NULL, NULL, 30, 0, NULL, 0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, NULL, -1, 1}
 
 /**
   * This function attempts to connect a previously-created client (see

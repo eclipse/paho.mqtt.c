@@ -3719,22 +3719,22 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 
 				if (pack->header.bits.type == PUBCOMP)
 				{
-					//ack = *(Pubcomp*)pack;
+					ack = *(Pubcomp*)pack;
 					*rc = MQTTProtocol_handlePubcomps(pack, *sock);
 				}
 				else if (pack->header.bits.type == PUBREC)
 				{
-					//ack = *(Pubrec*)pack;
+					ack = *(Pubrec*)pack;
 					*rc = MQTTProtocol_handlePubrecs(pack, *sock);
 				}
 				else if (pack->header.bits.type == PUBACK)
 				{
-					//ack = *(Puback*)pack;
+					ack = *(Puback*)pack;
 					*rc = MQTTProtocol_handlePubacks(pack, *sock);
 				}
 				if (!m)
 					Log(LOG_ERROR, -1, "PUBCOMP, PUBACK or PUBREC received for no client, msgid %d", msgid);
-				if (m && (pack->header.bits.type != PUBREC || ack.rc >= MQTTREASONCODE_UNSPECIFIED_ERROR))
+				if (m && (ack.header.bits.type != PUBREC || ack.rc >= MQTTREASONCODE_UNSPECIFIED_ERROR))
 				{
 					ListElement* current = NULL;
 

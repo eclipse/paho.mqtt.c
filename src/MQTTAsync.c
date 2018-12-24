@@ -3657,7 +3657,6 @@ exit:
 static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 {
 	struct timeval tp = {0L, 0L};
-	static Ack ack;
 	MQTTPacket* pack = NULL;
 
 	FUNC_ENTRY;
@@ -3712,29 +3711,36 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 			else if (pack->header.bits.type == PUBACK || pack->header.bits.type == PUBCOMP ||
 					pack->header.bits.type == PUBREC)
 			{
-				int msgid;
+				int msgid = 0,
+					msgtype = 0,
+					ackrc = 0,
+					mqttversion = 0;
+				MQTTProperties msgprops = MQTTProperties_initializer;
 
-				ack = *(Ack*)pack;
-				msgid = ack.msgId;
+				/* This block is so that the ack variable is local and isn't accidentally reused */
+				{
+					static Ack ack;
+					ack = *(Ack*)pack;
+					/* these values are stored because the packet structure is freed in the handle functions */
+					msgid = ack.msgId;
+					msgtype = pack->header.bits.type;
+					if (ack.MQTTVersion >= MQTTVERSION_5)
+					{
+						ackrc = ack.rc;
+						msgprops = MQTTProperties_copy(&ack.properties);
+						mqttversion = ack.MQTTVersion;
+					}
+				}
 
 				if (pack->header.bits.type == PUBCOMP)
-				{
-					//ack = *(Pubcomp*)pack;
 					*rc = MQTTProtocol_handlePubcomps(pack, *sock);
-				}
 				else if (pack->header.bits.type == PUBREC)
-				{
-					//ack = *(Pubrec*)pack;
 					*rc = MQTTProtocol_handlePubrecs(pack, *sock);
-				}
 				else if (pack->header.bits.type == PUBACK)
-				{
-					//ack = *(Puback*)pack;
 					*rc = MQTTProtocol_handlePubacks(pack, *sock);
-				}
 				if (!m)
 					Log(LOG_ERROR, -1, "PUBCOMP, PUBACK or PUBREC received for no client, msgid %d", msgid);
-				if (m && (pack->header.bits.type != PUBREC || ack.rc >= MQTTREASONCODE_UNSPECIFIED_ERROR))
+				if (m && (msgtype != PUBREC || ackrc >= MQTTREASONCODE_UNSPECIFIED_ERROR))
 				{
 					ListElement* current = NULL;
 
@@ -3764,7 +3770,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 								Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
 								(*(command->command.onSuccess))(command->command.context, &data);
 							}
-							else if (command->command.onSuccess5 && ack.rc < MQTTREASONCODE_UNSPECIFIED_ERROR)
+							else if (command->command.onSuccess5 && ackrc < MQTTREASONCODE_UNSPECIFIED_ERROR)
 							{
 								MQTTAsync_successData5 data = MQTTAsync_successData5_initializer;
 
@@ -3778,18 +3784,20 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 								Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
 								(*(command->command.onSuccess5))(command->command.context, &data);
 							}
-							else if (command->command.onFailure5 && ack.rc >= MQTTREASONCODE_UNSPECIFIED_ERROR)
+							else if (command->command.onFailure5 && ackrc >= MQTTREASONCODE_UNSPECIFIED_ERROR)
 							{
 								MQTTAsync_failureData5 data = MQTTAsync_failureData5_initializer;
 
 								data.token = command->command.token;
-								data.reasonCode = ack.rc;
-								data.properties = ack.properties;
+								data.reasonCode = ackrc;
+								data.properties = msgprops;
 								data.packet_type = pack->header.bits.type;
 								Log(TRACE_MIN, -1, "Calling publish failure for client %s", m->c->clientID);
 								(*(command->command.onFailure5))(command->command.context, &data);
 							}
 							MQTTAsync_freeCommand(command);
+							if (mqttversion >= MQTTVERSION_5)
+								MQTTProperties_free(&msgprops);
 							break;
 						}
 					}

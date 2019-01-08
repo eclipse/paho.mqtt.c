@@ -540,7 +540,7 @@ typedef struct
 	int MQTTVersion;
 } MQTTClient_createOptions;
 
-#define MQTTClient_createOptions_initializer { {'M', 'Q', 'C', 'O'}, MQTTVERSION_DEFAULT }
+#define MQTTClient_createOptions_initializer { {'M', 'Q', 'C', 'O'}, 0, MQTTVERSION_DEFAULT }
 
 /**
  * A version of :MQTTClient_create() with additional options.

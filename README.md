@@ -123,39 +123,50 @@ If you would like to build with OpenSSL support, it is highly recommended you do
 
 The build process currently supports a number Windows versions. The build process requires the following tools:
   * CMake GUI v3.5 or newer
-  * Visual Studio 2015 or newer
+  * Visual Studio 2013 or newer
 
 > Note: You can probably build MQTT C library using GCC & Bash for Windows but this has not been tested at this point. You are more than welcome to try and contribute those documented steps to this Readme.
 
-### Building using MSVC
+> Note: For the list of Visual studio generators accepted by `cmake`, please see: [Visual Studio Generator for CMake](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html#visual-studio-generators) to select your appropriate Visual studio edition.
 
-This method will use `cmake` to auto-detect your compiler on windows. Try this method first. Typically, it will detect the 32-bit compiler on windows. Type the following on command prompt:
+### Building using MSVC 32-bit
+
+This method will use `cmake` to auto-detect your compiler on windows. Try this method first. Typically, it will detect the 32-bit compiler by default on windows. Type the following on command prompt:
 ```
 > cmake -Bbuild -H. -DPAHO_WITH_SSL=TRUE
 > cmake --build build/ --target install
 ```
-Note that the default installation directory for the library on Windows is: `C:\Program Files (x86)\Paho.Mqtt.c`. If you would like to install to your own installation path, pass the `CMAKE_INSTALL_PREFIX` to `cmake`.
+Note that the default installation directory for the library on Windows is: `C:\Program Files (x86)\Paho.Mqtt.c`. If you would like to install to your own installation path, pass `CMAKE_INSTALL_PREFIX` with your path to `cmake`.
 
 ### Building using MSVC 64-bit
 
 It seems quite odd, but even on a 64-bit system using a 64-bit compiler, MSVC seems to default to a 32-bit build target. The 64-bit target can be selected using the CMake generator switch, *-G*, at configuration time. The full version must be provided.
 
-For Visual Studio 2015 (v14) x64, type the following in command prompt:
+For Visual Studio 2013 (v12) x64, type the following in command prompt:
 ```
-> cmake -G "Visual Studio 14 Win64" -Bbuild -H. -DCMAKE_INSTALL_PREFIX=C:\mqtt\paho-c
+> cmake -G "Visual Studio 12 2013" -A x64 -Bbuild -H. -DCMAKE_INSTALL_PREFIX=C:\mqtt\paho-c
 > cmake --build build/ --target install
 ```
-These commands will build and install the MQTT libraries under `C:\mqtt\paho-c`. To install it to a directory of your choice, change `CMAKE_INSTALL_PREFIX` to the path of your choice.
+
+For Visual Studio 2015 (v14) x64, type the following in command prompt:
+```
+> cmake -G "Visual Studio 14 2015" -A x64 -Bbuild -H. -DCMAKE_INSTALL_PREFIX=C:\mqtt\paho-c
+> cmake --build build/ --target install
+```
 
 For Visual Studio 2017 (v15) x64, type the following in command prompt:
 ```
-> cmake -G "Visual Studio 15 Win64" -Bbuild -H. -DCMAKE_INSTALL_PREFIX=C:\mqtt\paho-c
+> cmake -G "Visual Studio 15 2017" -A x64 -Bbuild -H. -DCMAKE_INSTALL_PREFIX=C:\mqtt\paho-c
 > cmake --build build/ --target install
 ```
 
+These commands will build and install the MQTT libraries under `C:\mqtt\paho-c`. To install it to a directory of your choice, change `CMAKE_INSTALL_PREFIX` to the path of your choice.
+
+#### Building with OpenSSL Support
+
 Building with OpenSSL support requires you to install the OpenSSL binaries on Windows. Make sure they are installed. To use openssl, pass the variable `PAHO_WITH_SSL=TRUE` to `cmake` as follows:
 ```
-> cmake -G "Visual Studio 15 Win64" -Bbuild -H. -DCMAKE_INSTALL_PREFIX=C:\mqtt\paho-c -DPAHO_WITH_SSL=TRUE
+> cmake -G "Visual Studio 15 2017" -A x64 -Bbuild -H. -DCMAKE_INSTALL_PREFIX=C:\mqtt\paho-c -DPAHO_WITH_SSL=TRUE
 > cmake --build build/ --target install
 ```
 

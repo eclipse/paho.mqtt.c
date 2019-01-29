@@ -13,7 +13,10 @@ override_dh_auto_install:
 	install -D -m 644 build/output/libpaho-mqtt3cs.so.1.0 $$(pwd)/debian/libpahomqttc/usr/local/lib
 	install -D -m 644 build/output/libpaho-mqtt3a.so.1.0 $$(pwd)/debian/libpahomqttc/usr/local/lib
 	install -D -m 644 build/output/libpaho-mqtt3as.so.1.0 $$(pwd)/debian/libpahomqttc/usr/local/lib
-	install -D build/output/MQTTVersion $$(pwd)/debian/libpahomqttc/usr/local/bin/MQTTVersion
+	install -D build/output/paho_c_version $$(pwd)/debian/libpahomqttc/usr/local/bin/paho_c_version
 	install -D -m 644 src/MQTTAsync.h $$(pwd)/debian/libpahomqttc/usr/local/include
 	install -D -m 644 src/MQTTClient.h $$(pwd)/debian/libpahomqttc/usr/local/include
 	install -D -m 644 src/MQTTClientPersistence.h $$(pwd)/debian/libpahomqttc/usr/local/include
+	install -D -m 644 src/MQTTProperties.h $$(pwd)/debian/libpahomqttc/usr/local/include
+	install -D -m 644 src/MQTTReasonCodes.h $$(pwd)/debian/libpahomqttc/usr/local/include
+	install -D -m 644 src/MQTTSubscribeOpts.h $$(pwd)/debian/libpahomqttc/usr/local/include

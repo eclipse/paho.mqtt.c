@@ -1,6 +1,6 @@
 Source: libpahomqttc
 Maintainer: Leon Anavi <leon@anavi.org> 
-Build-Depends: debhelper (>= 10.2.5)
+Build-Depends: debhelper (>= 9.2)
 Standards-Version: 3.9.8
 Section: utils
 

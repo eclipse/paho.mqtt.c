@@ -83,6 +83,8 @@ int myconnect(MQTTClient* client)
 	{
 		if (opts.insecure)
 			ssl_opts.verify = 0;
+		else
+			ssl_opts.verify = 1;
 		ssl_opts.CApath = opts.capath;
 		ssl_opts.keyStore = opts.cert;
 		ssl_opts.trustStore = opts.cafile;

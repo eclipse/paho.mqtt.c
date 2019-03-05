@@ -719,13 +719,29 @@ int SSLSocket_connect(SSL* ssl, int sock, const char* hostname, int verify, int 
 		rc = X509_check_host(cert, hostname, hostname_len, 0, &peername);
 		Log(TRACE_MIN, -1, "rc from X509_check_host is %d", rc);
 		Log(TRACE_MIN, -1, "peername from X509_check_host is %s", peername);
-		
+
 		if (peername != NULL)
 			OPENSSL_free(peername);
 
-		// 0 == fail, -1 == SSL internal error
-		if (rc == 0 || rc == -1)
-			rc = SSL_FATAL;
+		// 0 == fail, -1 == SSL internal error, -2 == mailformed input
+		if (rc == 0 || rc == -1 || rc == -2)
+		{
+			char* ip_addr = malloc(hostname_len + 1);
+			// cannot use = strndup(hostname, hostname_len); here because of custom Heap
+			if (ip_addr)
+			{
+				strncpy(ip_addr, hostname, hostname_len);
+				ip_addr[hostname_len] = '\0';
+
+				rc = X509_check_ip_asc(cert, ip_addr, 0);
+				Log(TRACE_MIN, -1, "rc from X509_check_ip_asc is %d", rc);
+
+				free(ip_addr);
+			}
+
+			if (rc == 0 || rc == -1 || rc == -2)
+				rc = SSL_FATAL;
+		}
 
 		if (cert)
 			X509_free(cert);

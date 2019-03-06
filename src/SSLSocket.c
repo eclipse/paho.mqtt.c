@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -717,8 +717,11 @@ int SSLSocket_connect(SSL* ssl, int sock, const char* hostname, int verify, int 
 		hostname_len = MQTTProtocol_addressPort(hostname, &port, NULL);
 
 		rc = X509_check_host(cert, hostname, hostname_len, 0, &peername);
-		Log(TRACE_MIN, -1, "rc from X509_check_host is %d", rc);
-		Log(TRACE_MIN, -1, "peername from X509_check_host is %s", peername);
+		if (rc == 1)
+			Log(TRACE_PROTOCOL, -1, "peername from X509_check_host is %s", peername);
+		else
+			Log(TRACE_PROTOCOL, -1, "X509_check_host for hostname %.*s failed, rc %d",
+					hostname_len, hostname, rc);
 		
 		if (peername != NULL)
 			OPENSSL_free(peername);

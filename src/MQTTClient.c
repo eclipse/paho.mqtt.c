@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -776,11 +776,13 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 				if (m->c->connect_state == SSL_IN_PROGRESS)
 				{
 					Log(TRACE_MIN, -1, "Posting connect semaphore for client %s", m->c->clientID);
+					m->c->connect_state = NOT_IN_PROGRESS;
 					Thread_post_sem(m->connect_sem);
 				}
 				if (m->c->connect_state == WAIT_FOR_CONNACK)
 				{
 					Log(TRACE_MIN, -1, "Posting connack semaphore for client %s", m->c->clientID);
+					m->c->connect_state = NOT_IN_PROGRESS;
 					Thread_post_sem(m->connack_sem);
 				}
 			}
@@ -877,6 +879,8 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 				if ((m->rc = getsockopt(m->c->net.socket, SOL_SOCKET, SO_ERROR, (char*)&error, &len)) == 0)
 					m->rc = error;
 				Log(TRACE_MIN, -1, "Posting connect semaphore for client %s rc %d", m->c->clientID, m->rc);
+				printf("Posting connect semaphore for client %s rc %d", m->c->clientID, m->rc);
+				m->c->connect_state = NOT_IN_PROGRESS;
 				Thread_post_sem(m->connect_sem);
 			}
 #if defined(OPENSSL)
@@ -893,6 +897,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 						m->c->session = SSL_get1_session(m->c->net.ssl);
 					m->rc = rc;
 					Log(TRACE_MIN, -1, "Posting connect semaphore for SSL client %s rc %d", m->c->clientID, m->rc);
+					m->c->connect_state = NOT_IN_PROGRESS;
 					Thread_post_sem(m->connect_sem);
 				}
 			}

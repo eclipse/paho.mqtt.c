@@ -162,7 +162,7 @@ int Log_initialize(Log_nameValue* info)
 			trace_settings.trace_level = TRACE_MAXIMUM;
 		else if (strcmp(envval, "MEDIUM") == 0 || strcmp(envval, "TRACE_MEDIUM") == 0)
 			trace_settings.trace_level = TRACE_MEDIUM;
-		else if (strcmp(envval, "MINIMUM") == 0 || strcmp(envval, "TRACE_MEDIUM") == 0)
+		else if (strcmp(envval, "MINIMUM") == 0 || strcmp(envval, "TRACE_MINIMUM") == 0)
 			trace_settings.trace_level = TRACE_MINIMUM;
 		else if (strcmp(envval, "PROTOCOL") == 0  || strcmp(envval, "TRACE_PROTOCOL") == 0)
 			trace_output_level = TRACE_PROTOCOL;

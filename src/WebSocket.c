@@ -582,8 +582,12 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 			}
 		}
 	}
+#if defined(OPENSSL)
+	else if ( net->ssl )
+		rv = SSLSocket_getdata(net->ssl, net->socket, bytes, actual_len);
+#endif
 	else
-		rv = WebSocket_getRawSocketData(net, bytes, actual_len);
+		rv = Socket_getdata(net->socket, bytes, actual_len);
 
 exit:
 	rc = rv != NULL;

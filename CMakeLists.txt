@@ -17,7 +17,7 @@
 
 # Note: on OS X you should install XCode and the associated command-line tools
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.4)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
 PROJECT("Eclipse Paho C" C)
 MESSAGE(STATUS "CMake version: " ${CMAKE_VERSION})
 MESSAGE(STATUS "CMake system name: " ${CMAKE_SYSTEM_NAME})

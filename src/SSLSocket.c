@@ -521,6 +521,9 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	FUNC_ENTRY;
 	if (net->ctx == NULL)
 	{
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+		net->ctx = SSL_CTX_new(TLS_client_method());
+#else
 		int sslVersion = MQTT_SSL_VERSION_DEFAULT;
 		if (opts->struct_version >= 1) sslVersion = opts->sslVersion;
 /* SSL_OP_NO_TLSv1_1 is defined in ssl.h if the library version supports TLSv1.1.
@@ -550,6 +553,7 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 		default:
 			break;
 		}
+#endif
 		if (net->ctx == NULL)
 		{
 			if (opts->struct_version >= 3)

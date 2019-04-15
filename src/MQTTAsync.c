@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -634,7 +634,10 @@ static int MQTTAsync_unpersistCommand(MQTTAsync_queuedCommand* qcmd)
 	char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
 
 	FUNC_ENTRY;
-	sprintf(key, "%s%u", PERSISTENCE_COMMAND_KEY, qcmd->seqno);
+	if (qcmd->client->c->MQTTVersion >= MQTTVERSION_5)
+		sprintf(key, "%s%u", PERSISTENCE_V5_COMMAND_KEY, qcmd->seqno);
+	else
+		sprintf(key, "%s%u", PERSISTENCE_COMMAND_KEY, qcmd->seqno);
 	if ((rc = qcmd->client->c->persistence->premove(qcmd->client->c->phandle, key)) != 0)
 		Log(LOG_ERROR, 0, "Error %d removing command from persistence", rc);
 	FUNC_EXIT_RC(rc);

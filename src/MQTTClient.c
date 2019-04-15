@@ -1305,7 +1305,7 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 exit:
 	if (rc == MQTTCLIENT_SUCCESS)
 	{
-		if (options->struct_version == 4) /* means we have to fill out return values */
+		if (options->struct_version >= 4) /* means we have to fill out return values */
 		{
 			options->returned.serverURI = serverURI;
 			options->returned.MQTTVersion = MQTTVersion;

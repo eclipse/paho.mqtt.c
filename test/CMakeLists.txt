@@ -792,3 +792,23 @@ TARGET_LINK_LIBRARIES(
 	test_issue373
 	paho-mqtt3a
 )
+
+ADD_EXECUTABLE(
+        test_sync_session_present
+        test_sync_session_present.c
+)
+
+TARGET_LINK_LIBRARIES(
+        test_sync_session_present
+        paho-mqtt3c
+)
+
+ADD_TEST(
+        NAME test_sync_session_present-1-client_session_present_after_reconnect
+        COMMAND "test_sync_session_present" "--test_no" "1" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+)
+
+SET_TESTS_PROPERTIES(
+        test_sync_session_present-1-client_session_present_after_reconnect
+        PROPERTIES TIMEOUT 540
+)

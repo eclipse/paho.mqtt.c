@@ -36,7 +36,7 @@
 
 static const char *protocol_message_list[] =
 {
-	"%d %s -> CONNECT cleansession: %d (%d)", /* 0, was 131, 68 and 69 */
+	"%d %s -> CONNECT version %d clean: %d (%d)", /* 0, was 131, 68 and 69 */
 	"%d %s <- CONNACK rc: %d", /* 1, was 132 */
 	"%d %s -> CONNACK rc: %d (%d)", /* 2, was 138 */
 	"%d %s <- PINGREQ", /* 3, was 35 */

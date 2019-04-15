@@ -118,7 +118,8 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion,
 		writeData(&ptr, client->password, client->passwordlen);
 
 	rc = MQTTPacket_send(&client->net, packet.header, buf, len, 1, MQTTVersion);
-	Log(LOG_PROTOCOL, 0, NULL, client->net.socket, client->clientID, client->cleansession, rc);
+	Log(LOG_PROTOCOL, 0, NULL, client->net.socket, client->clientID,
+			MQTTVersion, client->cleansession, rc);
 exit:
 	if (rc != TCPSOCKET_INTERRUPTED)
 		free(buf);

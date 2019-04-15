@@ -785,6 +785,7 @@ void test4_onSubscribe(void* context, MQTTAsync_successData* response)
 	pubmsg.retained = 0;
 
 	rc = MQTTAsync_send(c, test_topic, pubmsg.payloadlen, pubmsg.payload, pubmsg.qos, pubmsg.retained, NULL);
+	assert("Send successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 }
 
 

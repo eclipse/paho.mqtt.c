@@ -456,6 +456,16 @@ ADD_TEST(
 	COMMAND test5 "--test_no" "8" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
+ADD_TEST(
+	NAME test5-5-server-verify-with-capath
+	COMMAND test5 "--test_no" "9" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+)
+
+ADD_TEST(
+	NAME test5-6-server-verify-with-capath
+	COMMAND test5 "--test_no" "10" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+)
+
 SET_TESTS_PROPERTIES(
 	test5-1-ssl-connection-to-no-SSL-server
 	test5-2a-multual-ssl-auth-certificates-in-place
@@ -465,6 +475,8 @@ SET_TESTS_PROPERTIES(
 	test5-3a-server-auth-server-cert-in-client-store
 	test5-3b-server-auth-client-missing-broker-cert
 	test5-4-accept-invalid-certificates
+	test5-5-server-verify-with-capath
+	test5-6-server-verify-with-capath
 	PROPERTIES TIMEOUT 540
 )
 

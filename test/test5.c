@@ -63,6 +63,7 @@ struct Options
 	char* client_key_pass;
 	char* server_key_file;
 	char* client_private_key_file;
+	char* capath;
 	int verbose;
 	int test_no;
 	int size;
@@ -77,6 +78,7 @@ struct Options
 	"../../../test/ssl/client.pem",
 	NULL,
 	"../../../test/ssl/test-root-ca.crt",
+	"../../../test/ssl/",
 	NULL,
 	0,
 	0,
@@ -1105,8 +1107,6 @@ int test2d(struct Options options)
 	write_test_result();
 	return failures;
 }
-
-
 
 /*********************************************************************
 
@@ -2190,6 +2190,225 @@ int main(int argc, char** argv)
 	fclose(xml);
 
 	return rc;
+}
+
+/*********************************************************************
+
+ Test9: Mutual SSL Authentication - Testing CApath
+
+ *********************************************************************/
+
+void test9OnConnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	AsyncTestClient* client = (AsyncTestClient*) context;
+	MyLog(LOGA_DEBUG, "In test9OnConnectFailure callback, %s",
+			client->clientid);
+
+	assert("There should be no failures in this test. ", 0, "test9OnConnectFailure callback was called\n", 0);
+	client->testFinished = 1;
+}
+
+int test9(struct Options options)
+{
+	char* testname = "test9";
+
+	AsyncTestClient tc =
+	AsyncTestClient_initializer;
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
+	int rc = 0;
+
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 9 - Mutual SSL authentication");
+	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
+	global_start_time = start_clock();
+
+	MQTTAsync_create(&c, options.mutual_auth_connection, "test9", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	tc.client = c;
+	sprintf(tc.clientid, "%s", testname);
+	sprintf(tc.topic, "C client SSL test9");
+	tc.maxmsgs = MAXMSGS;
+	//tc.rcvdmsgs = 0;
+	tc.subscribed = 0;
+	tc.testFinished = 0;
+
+	opts.keepAliveInterval = 20;
+	opts.cleansession = 1;
+	opts.username = "testuser";
+	opts.password = "testpassword";
+
+	opts.will = &wopts;
+	opts.will->message = "will message";
+	opts.will->qos = 1;
+	opts.will->retained = 0;
+	opts.will->topicName = "will topic";
+	opts.will = NULL;
+	opts.onSuccess = asyncTestOnConnect;
+	opts.onFailure = test9OnConnectFailure;
+	opts.context = &tc;
+
+	opts.ssl = &sslopts;
+	if (options.server_key_file != NULL)
+		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
+	opts.ssl->keyStore = options.client_key_file; /*file of certificate for client to present to server*/
+	if (options.client_key_pass != NULL)
+		opts.ssl->privateKeyPassword = options.client_key_pass;
+	opts.ssl->CApath = options.capath;
+	opts.ssl->enableServerCertAuth = 1;
+	opts.ssl->verify = 1;
+	MyLog(LOGA_DEBUG, "enableServerCertAuth %d\n", opts.ssl->enableServerCertAuth);
+	MyLog(LOGA_DEBUG, "verify %d\n", opts.ssl->verify);
+
+	rc = MQTTAsync_setCallbacks(c, &tc, NULL, asyncTestMessageArrived,
+			asyncTestOnDeliveryComplete);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (!tc.subscribed && !tc.testFinished)
+#if defined(WIN32)
+		Sleep(100);
+#else
+		usleep(10000L);
+#endif
+
+	if (tc.testFinished)
+		goto exit;
+
+	while (!tc.testFinished)
+#if defined(WIN32)
+		Sleep(100);
+#else
+		usleep(10000L);
+#endif
+
+	MyLog(LOGA_DEBUG, "Stopping");
+
+	exit: MQTTAsync_destroy(&c);
+	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", testname, tests, failures);
+	write_test_result();
+	return failures;
+}
+
+/*********************************************************************
+
+ Test10: Mutual SSL Authentication - Testing CApath
+
+ *********************************************************************/
+
+int test10Finished;
+
+void test10OnConnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	AsyncTestClient* client = (AsyncTestClient*) context;
+	MyLog(LOGA_DEBUG, "In test10OnConnectFailure callback, %s",
+			client->clientid);
+
+	assert("This test should call test10OnConnectFailure. ", 1, "test10OnConnectFailure callback was called\n", 1);
+	test10Finished = 1;
+}
+
+void test10OnConnect(void* context, MQTTAsync_successData* response)
+{
+	MyLog(LOGA_DEBUG, "In test10OnConnect callback, context %p", context);
+
+	assert("This connect should not succeed. ", 0, "test10OnConnect callback was called\n", 0);
+	test10Finished = 1;
+}
+
+int test10(struct Options options)
+{
+	char* testname = "test10";
+
+	AsyncTestClient tc =
+	AsyncTestClient_initializer;
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
+	int rc = 0;
+
+	failures = 0;
+	test10Finished = 0;
+	MyLog(LOGA_INFO, "Starting test 10 - Mutual SSL authentication");
+	fprintf(xml, "<testcase classname=\"test10\" name=\"%s\"", testname);
+	global_start_time = start_clock();
+
+	MQTTAsync_create(&c, options.mutual_auth_connection, "test10", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+
+	tc.client = c;
+	sprintf(tc.clientid, "%s", testname);
+	sprintf(tc.topic, "C client SSL test10");
+	tc.maxmsgs = MAXMSGS;
+	//tc.rcvdmsgs = 0;
+	tc.subscribed = 0;
+	tc.testFinished = 0;
+
+	opts.keepAliveInterval = 20;
+	opts.cleansession = 1;
+	opts.username = "testuser";
+	opts.password = "testpassword";
+
+	opts.will = &wopts;
+	opts.will->message = "will message";
+	opts.will->qos = 1;
+	opts.will->retained = 0;
+	opts.will->topicName = "will topic";
+	opts.will = NULL;
+	opts.onSuccess = test10OnConnect;
+	opts.onFailure = test10OnConnectFailure;
+	opts.context = &tc;
+
+	opts.ssl = &sslopts;
+	if (options.server_key_file != NULL)
+		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
+	opts.ssl->keyStore = options.client_key_file; /*file of certificate for client to present to server*/
+	if (options.client_key_pass != NULL)
+		opts.ssl->privateKeyPassword = options.client_key_pass;
+	opts.ssl->CApath = "DUMMY";
+	opts.ssl->enableServerCertAuth = 1;
+	opts.ssl->verify = 1;
+	MyLog(LOGA_DEBUG, "enableServerCertAuth %d\n", opts.ssl->enableServerCertAuth);
+	MyLog(LOGA_DEBUG, "verify %d\n", opts.ssl->verify);
+
+	rc = MQTTAsync_setCallbacks(c, &tc, NULL, asyncTestMessageArrived,
+			asyncTestOnDeliveryComplete);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (!test10Finished)
+#if defined(WIN32)
+		Sleep(100);
+#else
+		usleep(10000L);
+#endif
+	MyLog(LOGA_DEBUG, "Stopping");
+
+	exit: MQTTAsync_destroy(&c);
+	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", testname, tests, failures);
+	write_test_result();
+	return failures;
 }
 
 /* Local Variables: */

@@ -1229,8 +1229,11 @@ typedef struct
 	MQTTAsync_onFailure5* onFailure5;
 } MQTTAsync_disconnectOptions;
 
-#define MQTTAsync_disconnectOptions_initializer { {'M', 'Q', 'T', 'D'}, 1, 0, NULL, NULL, NULL, MQTTProperties_initializer, MQTTREASONCODE_SUCCESS }
+#define MQTTAsync_disconnectOptions_initializer { {'M', 'Q', 'T', 'D'}, 0, 0, NULL, NULL, NULL,\
+	MQTTProperties_initializer, MQTTREASONCODE_SUCCESS }
 
+#define MQTTAsync_disconnectOptions_initializer5 { {'M', 'Q', 'T', 'D'}, 1, 0, NULL, NULL, NULL,\
+	MQTTProperties_initializer, MQTTREASONCODE_SUCCESS, NULL, NULL }
 
 /**
   * This function attempts to disconnect the client from the MQTT

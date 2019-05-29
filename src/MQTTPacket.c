@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -489,21 +489,18 @@ int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQT
 	header.byte = 0;
 	header.bits.type = DISCONNECT;
 
-	if (client->MQTTVersion >= 5)
+	if (client->MQTTVersion >= 5 && (props || reason != MQTTREASONCODE_SUCCESS))
 	{
-		if (props || reason != MQTTREASONCODE_SUCCESS)
-		{
-			size_t buflen = 1 + ((props == NULL) ? 0 : MQTTProperties_len(props));
-			char *buf = malloc(buflen), *ptr = NULL;
+		size_t buflen = 1 + ((props == NULL) ? 0 : MQTTProperties_len(props));
+		char *buf = malloc(buflen), *ptr = NULL;
 
-			ptr = buf;
-			writeChar(&ptr, reason);
-			if (props)
-				MQTTProperties_write(&ptr, props);
-			if ((rc = MQTTPacket_send(&client->net, header, buf, buflen, 1,
-					                   client->MQTTVersion)) != TCPSOCKET_INTERRUPTED)
-				free(buf);
-		}
+		ptr = buf;
+		writeChar(&ptr, reason);
+		if (props)
+			MQTTProperties_write(&ptr, props);
+		if ((rc = MQTTPacket_send(&client->net, header, buf, buflen, 1,
+				                   client->MQTTVersion)) != TCPSOCKET_INTERRUPTED)
+			free(buf);
 	}
 	else
 		rc = MQTTPacket_send(&client->net, header, NULL, 0, 0, client->MQTTVersion);

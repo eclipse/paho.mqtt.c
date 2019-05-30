@@ -3688,7 +3688,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 			m = (MQTTAsync)(handles->current->content);
 		if (m != NULL)
 		{
-			Log(TRACE_MINIMUM, -1, "m->c->connect_state = %d",m->c->connect_state);
+			Log(TRACE_MINIMUM, -1, "m->c->connect_state = %d", m->c->connect_state);
 			if (m->c->connect_state == TCP_IN_PROGRESS || m->c->connect_state == SSL_IN_PROGRESS || m->c->connect_state == WEBSOCKET_IN_PROGRESS)
 				*rc = MQTTAsync_connecting(m);
 			else
@@ -3697,11 +3697,6 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 			{
 				Log(TRACE_MINIMUM, -1, "CONNECT sent but MQTTPacket_Factory has returned SOCKET_ERROR");
 				nextOrClose(m, MQTTASYNC_FAILURE, "TCP connect completion failure");
-			}
-			else
-			{
-				Log(TRACE_MINIMUM, -1, "m->c->connect_state = %d",m->c->connect_state);
-				Log(TRACE_MINIMUM, -1, "CONNECT sent, *rc is %d",*rc);
 			}
 		}
 		if (pack)

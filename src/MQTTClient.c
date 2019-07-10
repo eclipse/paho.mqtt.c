@@ -2281,84 +2281,90 @@ static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
 		tp.tv_usec = (timeout % 1000) * 1000; /* this field is microseconds! */
 	}
 
-#if defined(OPENSSL)
-	if ((*sock = SSLSocket_getPendingRead()) == -1)
+	do
 	{
-		/* 0 from getReadySocket indicates no work to do, -1 == error, but can happen normally */
-#endif
-		*sock = Socket_getReadySocket(0, &tp, socket_mutex);
+		Thread_lock_mutex(mqttclient_mutex);
+		if (!library_initialized)
+			break;
 #if defined(OPENSSL)
-	}
-#endif
-	Thread_lock_mutex(mqttclient_mutex);
-	if (*sock > 0)
-	{
-		MQTTClients* m = NULL;
-		if (ListFindItem(handles, sock, clientSockCompare) != NULL)
-			m = (MQTTClient)(handles->current->content);
-		if (m != NULL)
+		if ((*sock = SSLSocket_getPendingRead()) == -1)
 		{
-			if (m->c->connect_state == TCP_IN_PROGRESS || m->c->connect_state == SSL_IN_PROGRESS)
-				*rc = 0;  /* waiting for connect state to clear */
-			else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS)
-				*rc = WebSocket_upgrade(&m->c->net);
-			else
+			/* 0 from getReadySocket indicates no work to do, -1 == error, but can happen normally */
+#endif
+			*sock = Socket_getReadySocket(0, &tp, socket_mutex);
+#if defined(OPENSSL)
+		}
+#endif
+
+		if (*sock > 0)
+		{
+			MQTTClients* m = NULL;
+			if (ListFindItem(handles, sock, clientSockCompare) != NULL)
+				m = (MQTTClient)(handles->current->content);
+			if (m != NULL)
 			{
-				pack = MQTTPacket_Factory(m->c->MQTTVersion, &m->c->net, rc);
-				if (*rc == TCPSOCKET_INTERRUPTED)
-					*rc = 0;
+				if (m->c->connect_state == TCP_IN_PROGRESS || m->c->connect_state == SSL_IN_PROGRESS)
+					*rc = 0;  /* waiting for connect state to clear */
+				else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS)
+					*rc = WebSocket_upgrade(&m->c->net);
+				else
+				{
+					pack = MQTTPacket_Factory(m->c->MQTTVersion, &m->c->net, rc);
+					if (*rc == TCPSOCKET_INTERRUPTED)
+						*rc = 0;
+				}
+			}
+
+			if (pack)
+			{
+				int freed = 1;
+
+				/* Note that these handle... functions free the packet structure that they are dealing with */
+				if (pack->header.bits.type == PUBLISH)
+					*rc = MQTTProtocol_handlePublishes(pack, *sock);
+				else if (pack->header.bits.type == PUBACK || pack->header.bits.type == PUBCOMP)
+				{
+					int msgid;
+
+					ack = (pack->header.bits.type == PUBCOMP) ? *(Pubcomp*)pack : *(Puback*)pack;
+					msgid = ack.msgId;
+					if (m && m->c->MQTTVersion >= MQTTVERSION_5 && m->published)
+					{
+						Log(TRACE_MIN, -1, "Calling published for client %s, msgid %d", m->c->clientID, msgid);
+						(*(m->published))(m->published_context, msgid, pack->header.bits.type, &ack.properties, ack.rc);
+					}
+					*rc = (pack->header.bits.type == PUBCOMP) ?
+						MQTTProtocol_handlePubcomps(pack, *sock) : MQTTProtocol_handlePubacks(pack, *sock);
+					if (m && m->dc)
+					{
+						Log(TRACE_MIN, -1, "Calling deliveryComplete for client %s, msgid %d", m->c->clientID, msgid);
+						(*(m->dc))(m->context, msgid);
+					}
+				}
+				else if (pack->header.bits.type == PUBREC)
+				{
+					Pubrec* pubrec = (Pubrec*)pack;
+
+					if (m && m->c->MQTTVersion >= MQTTVERSION_5 && m->published && pubrec->rc >= MQTTREASONCODE_UNSPECIFIED_ERROR)
+					{
+						Log(TRACE_MIN, -1, "Calling published for client %s, msgid %d", m->c->clientID, ack.msgId);
+						(*(m->published))(m->published_context, pubrec->msgId, pack->header.bits.type,
+								&pubrec->properties, pubrec->rc);
+					}
+					*rc = MQTTProtocol_handlePubrecs(pack, *sock);
+				}
+				else if (pack->header.bits.type == PUBREL)
+					*rc = MQTTProtocol_handlePubrels(pack, *sock);
+				else if (pack->header.bits.type == PINGRESP)
+					*rc = MQTTProtocol_handlePingresps(pack, *sock);
+				else
+					freed = 0;
+				if (freed)
+					pack = NULL;
 			}
 		}
-
-		if (pack)
-		{
-			int freed = 1;
-
-			/* Note that these handle... functions free the packet structure that they are dealing with */
-			if (pack->header.bits.type == PUBLISH)
-				*rc = MQTTProtocol_handlePublishes(pack, *sock);
-			else if (pack->header.bits.type == PUBACK || pack->header.bits.type == PUBCOMP)
-			{
-				int msgid;
-
-				ack = (pack->header.bits.type == PUBCOMP) ? *(Pubcomp*)pack : *(Puback*)pack;
-				msgid = ack.msgId;
-				if (m && m->c->MQTTVersion >= MQTTVERSION_5 && m->published)
-				{
-					Log(TRACE_MIN, -1, "Calling published for client %s, msgid %d", m->c->clientID, msgid);
-					(*(m->published))(m->published_context, msgid, pack->header.bits.type, &ack.properties, ack.rc);
-				}
-				*rc = (pack->header.bits.type == PUBCOMP) ?
-					MQTTProtocol_handlePubcomps(pack, *sock) : MQTTProtocol_handlePubacks(pack, *sock);
-				if (m && m->dc)
-				{
-					Log(TRACE_MIN, -1, "Calling deliveryComplete for client %s, msgid %d", m->c->clientID, msgid);
-					(*(m->dc))(m->context, msgid);
-				}
-			}
-			else if (pack->header.bits.type == PUBREC)
-			{
-				Pubrec* pubrec = (Pubrec*)pack;
-
-				if (m && m->c->MQTTVersion >= MQTTVERSION_5 && m->published && pubrec->rc >= MQTTREASONCODE_UNSPECIFIED_ERROR)
-				{
-					Log(TRACE_MIN, -1, "Calling published for client %s, msgid %d", m->c->clientID, ack.msgId);
-					(*(m->published))(m->published_context, pubrec->msgId, pack->header.bits.type,
-							&pubrec->properties, pubrec->rc);
-				}
-				*rc = MQTTProtocol_handlePubrecs(pack, *sock);
-			}
-			else if (pack->header.bits.type == PUBREL)
-				*rc = MQTTProtocol_handlePubrels(pack, *sock);
-			else if (pack->header.bits.type == PINGRESP)
-				*rc = MQTTProtocol_handlePingresps(pack, *sock);
-			else
-				freed = 0;
-			if (freed)
-				pack = NULL;
-		}
-	}
-	MQTTClient_retry();
+		MQTTClient_retry();
+	}while(0);
 	Thread_unlock_mutex(mqttclient_mutex);
 	FUNC_EXIT_RC(*rc);
 	return pack;

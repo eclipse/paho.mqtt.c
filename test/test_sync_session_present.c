@@ -60,7 +60,7 @@ struct Options
     int reconnect_period;
 } options =
 {
-    "tcp://iot.eclipse.org:1883",
+    "tcp://mqtt.eclipse.org:1883",
     NULL,
     "tcp://localhost:1883",
     "cli/test",

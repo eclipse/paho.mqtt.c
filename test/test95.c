@@ -57,7 +57,7 @@ struct Options
 	int test_no;
 } options =
 {
-	"iot.eclipse.org:1883",
+	"mqtt.eclipse.org:1883",
 	"localhost:1883",
 	0,
 	0,

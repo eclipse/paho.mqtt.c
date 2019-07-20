@@ -838,7 +838,9 @@ typedef struct
 	int MQTTVersion;
 } MQTTAsync_createOptions;
 
-#define MQTTAsync_createOptions_initializer { {'M', 'Q', 'C', 'O'}, 0, 0, 100, MQTTVERSION_DEFAULT }
+#define MQTTAsync_createOptions_initializer  { {'M', 'Q', 'C', 'O'}, 1, 0, 100, MQTTVERSION_DEFAULT }
+
+#define MQTTAsync_createOptions_initializer5 { {'M', 'Q', 'C', 'O'}, 1, 0, 100, MQTTVERSION_5 }
 
 
 DLLExport int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const char* clientId,

@@ -520,11 +520,13 @@ int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQT
  */
 void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
-	Publish* pack = malloc(sizeof(Publish));
+	Publish* pack = NULL;
 	char* curdata = data;
 	char* enddata = &data[datalen];
 
 	FUNC_ENTRY;
+	if ((pack = malloc(sizeof(Publish))) == NULL)
+		goto exit;
 	memset(pack, '\0', sizeof(Publish));
 	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
@@ -544,8 +546,11 @@ void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, siz
 		pack->properties = props;
 		if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
 		{
-			free(pack);
-			pack = NULL;
+			if (pack->properties.array)
+				free(pack->properties.array);
+			if (pack)
+				free(pack);
+			pack = NULL; /* signal protocol error */
 			goto exit;
 		}
 	}
@@ -736,11 +741,13 @@ int MQTTPacket_send_pubcomp(int msgid, networkHandles* net, const char* clientID
  */
 void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
-	Ack* pack = malloc(sizeof(Ack));
+	Ack* pack = NULL;
 	char* curdata = data;
 	char* enddata = &data[datalen];
 
 	FUNC_ENTRY;
+	if ((pack = malloc(sizeof(Ack))) == NULL)
+		goto exit;
 	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
 	if (pack->header.bits.type != DISCONNECT)
@@ -759,11 +766,16 @@ void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t 
 		{
 			if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
 			{
-				free(pack);
+				if (pack->properties.array)
+					free(pack->properties.array);
+				if (pack)
+					free(pack);
 				pack = NULL; /* signal protocol error */
+				goto exit;
 			}
 		}
 	}
+exit:
 	FUNC_EXIT;
 	return pack;
 }

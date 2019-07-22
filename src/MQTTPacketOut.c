@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -138,11 +138,13 @@ exit:
  */
 void* MQTTPacket_connack(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
-	Connack* pack = malloc(sizeof(Connack));
+	Connack* pack = NULL;
 	char* curdata = data;
 	char* enddata = &data[datalen];
 
 	FUNC_ENTRY;
+	if ((pack = malloc(sizeof(Connack))) == NULL)
+		goto exit;
 	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
 	pack->flags.all = readChar(&curdata); /* connect flags */
@@ -161,10 +163,15 @@ void* MQTTPacket_connack(int MQTTVersion, unsigned char aHeader, char* data, siz
 		pack->properties = props;
 		if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
 		{
-			free(pack);
+			if (pack->properties.array)
+				free(pack->properties.array);
+			if (pack)
+				free(pack);
 			pack = NULL; /* signal protocol error */
+			goto exit;
 		}
 	}
+exit:
 	FUNC_EXIT;
 	return pack;
 }

@@ -841,12 +841,12 @@ static int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 			Log(LOG_ERROR, 0, "Error persisting command, rc %d", rc);
 		qcmd->seqno = aclient->command_seqno;
 	}
+	if (props_allocated > 0)
+		free(bufs[props_allocated]);
 	if (lens)
 		free(lens);
 	if (bufs)
 		free(bufs);
-	if (props_allocated > 0)
-		free(bufs[props_allocated]);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

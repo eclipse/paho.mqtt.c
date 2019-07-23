@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2018 IBM Corp.
+ * Copyright (c) 2017, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -273,7 +273,7 @@ int MQTTProperty_read(MQTTProperty* prop, char** pptr, char* enddata)
 int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata)
 {
   int rc = 0;
-  int remlength = 0;
+  unsigned int remlength = 0;
 
   FUNC_ENTRY;
   /* we assume an initialized properties structure */

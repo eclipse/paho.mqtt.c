@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2018 IBM Corp.
+ * Copyright (c) 2017, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -102,9 +102,9 @@ typedef struct
   enum MQTTPropertyCodes identifier; /**<  The MQTT V5 property id. A multi-byte integer. */
   /** The value of the property, as a union of the different possible types. */
   union {
-    char byte;       /**< holds the value of a byte property type */
-    short integer2;  /**< holds the value of a 2 byte integer property type */
-    int integer4;    /**< holds the value of a 4 byte integer property type */
+    unsigned char byte;       /**< holds the value of a byte property type */
+    unsigned short integer2;  /**< holds the value of a 2 byte integer property type */
+    unsigned int integer4;    /**< holds the value of a 4 byte integer property type */
     struct {
       MQTTLenString data;  /**< The value of a string property, or the name of a user property. */
       MQTTLenString value; /**< The value of a user property. */

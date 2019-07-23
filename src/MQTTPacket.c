@@ -957,7 +957,7 @@ int MQTTPacket_VBIlen(int rem_len)
  * @param value the decoded length returned
  * @return the number of bytes read from the socket
  */
-int MQTTPacket_VBIdecode(int (*getcharfn)(char*, int), int* value)
+int MQTTPacket_VBIdecode(int (*getcharfn)(char*, int), unsigned int* value)
 {
 	char c;
 	int multiplier = 1;
@@ -997,7 +997,7 @@ int bufchar(char* c, int count)
 }
 
 
-int MQTTPacket_decodeBuf(char* buf, int* value)
+int MQTTPacket_decodeBuf(char* buf, unsigned int* value)
 {
 	bufptr = buf;
 	return MQTTPacket_VBIdecode(bufchar, value);

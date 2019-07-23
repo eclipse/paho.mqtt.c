@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -263,7 +263,7 @@ int readInt4(char** pptr);
 void writeMQTTLenString(char** pptr, MQTTLenString lenstring);
 int MQTTLenStringRead(MQTTLenString* lenstring, char** pptr, char* enddata);
 int MQTTPacket_VBIlen(int rem_len);
-int MQTTPacket_decodeBuf(char* buf, int* value);
+int MQTTPacket_decodeBuf(char* buf, unsigned int* value);
 
 #include "MQTTPacketOut.h"
 

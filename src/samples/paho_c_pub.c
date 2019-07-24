@@ -45,7 +45,7 @@ struct pubsub_opts opts =
 	NULL, NULL, 1, 0, 0, /* message options */
 	MQTTVERSION_DEFAULT, NULL, "paho-c-pub", 0, 0, NULL, NULL, "localhost", "1883", NULL, 10, /* MQTT options */
 	NULL, NULL, 0, 0, /* will options */
-	0, NULL, NULL, NULL, NULL, NULL, NULL, /* TLS options */
+	0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, /* TLS options */
 	0, {NULL, NULL}, /* MQTT V5 options */
 };
 
@@ -222,6 +222,54 @@ static int onSSLError(const char *str, size_t len, void *context)
 	return fprintf(stderr, "SSL error: %s\n", str);
 }
 
+static unsigned int onPSKAuth(const char* hint,
+                              char* identity,
+                              unsigned int max_identity_len,
+                              unsigned char* psk,
+                              unsigned int max_psk_len,
+                              void* context)
+{
+	int psk_len;
+	int k, n;
+
+	int rc = 0;
+	struct pubsub_opts* opts = context;
+
+	printf("Trying TLS-PSK auth with hint: %s\n", hint);
+
+	if (opts->psk == NULL || opts->psk_identity == NULL)
+	{
+		printf("No PSK entered\n");
+		goto exit;
+	}
+
+	/* psk should be array of bytes. This is a quick and dirty way to
+	 * convert hex to bytes without input validation */
+	psk_len = strlen(opts->psk) / 2;
+	if (psk_len > max_psk_len)
+	{
+		printf("PSK too long\n");
+		goto exit;
+	}
+	for (k=0, n=0; k < psk_len; k++, n += 2)
+	{
+		sscanf(&opts->psk[n], "%2hhx", &psk[k]);
+	}
+
+	/* identity should be NULL terminated string */
+	strncpy(identity, opts->psk_identity, max_identity_len);
+	if (identity[max_identity_len - 1] != '\0')
+	{
+		printf("Identity too long\n");
+		goto exit;
+	}
+
+	/* Function should return length of psk on success. */
+	rc = psk_len;
+
+exit:
+	return rc;
+}
 
 void myconnect(MQTTAsync client)
 {
@@ -277,6 +325,8 @@ void myconnect(MQTTAsync client)
 		ssl_opts.enabledCipherSuites = opts.ciphers;
 		ssl_opts.ssl_error_cb = onSSLError;
 		ssl_opts.ssl_error_context = client;
+		ssl_opts.ssl_psk_cb = onPSKAuth;
+		ssl_opts.ssl_psk_context = &opts;
 		conn_opts.ssl = &ssl_opts;
 	}
 

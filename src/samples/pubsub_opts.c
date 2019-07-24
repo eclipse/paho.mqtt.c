@@ -115,6 +115,8 @@ void usage(struct pubsub_opts* opts, pubsub_opts_nameValue* name_values, const c
 	"  --ciphers           : the list of cipher suites that the client will present to the server during\n"
 	"                        the TLS handshake.\n"
 	"  --insecure          : don't check that the server certificate common name matches the hostname.\n"
+	"  --psk               : pre-shared-key in hexadecimal (no leading 0x) \n"
+	"  --psk-identity      : client identity string for TLS-PSK mode.\n"
 	);
 
 	printf("\nSee http://eclipse.org/paho for more information about the Eclipse Paho project.\n");
@@ -296,6 +298,20 @@ int getopts(int argc, char** argv, struct pubsub_opts* opts)
 		{
 			if (++count < argc)
 				opts->ciphers = argv[count];
+			else
+				return 1;
+		}
+		else if (strcmp(argv[count], "--psk") == 0)
+		{
+			if (++count < argc)
+				opts->psk = argv[count];
+			else
+				return 1;
+		}
+		else if (strcmp(argv[count], "--psk-identity") == 0)
+		{
+			if (++count < argc)
+				opts->psk_identity = argv[count];
 			else
 				return 1;
 		}

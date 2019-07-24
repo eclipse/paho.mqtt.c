@@ -265,6 +265,11 @@ ADD_TEST(
 	COMMAND test3 "--test_no" "10" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
+#ADD_TEST(
+#	NAME test3-6-psk-ssl-auth
+#	COMMAND test3 "--test_no" "11" "--hostname" ${MQTT_SSL_HOSTNAME}
+#)
+
 SET_TESTS_PROPERTIES(
 	test3-1-ssl-conn-to-non-SSL-broker
 	test3-2as-mutual-ssl-auth-single-thread
@@ -276,6 +281,7 @@ SET_TESTS_PROPERTIES(
 	test3-3b-broker-auth-client-missing-broker-cert
 	test3-4s-broker-auth-accept-invalid-certificate-single-thread
 	test3-4m-broker-auth-accept-invalid-certificate-multi-thread
+#	test3-6-psk-ssl-auth
 	PROPERTIES TIMEOUT 540
 )
 
@@ -466,6 +472,11 @@ ADD_TEST(
 	COMMAND test5 "--test_no" "10" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
+#ADD_TEST(
+#	NAME test5-8-psk-ssl-auth
+#	COMMAND test5 "--test_no" "11" "--hostname" ${MQTT_SSL_HOSTNAME}
+#)
+
 SET_TESTS_PROPERTIES(
 	test5-1-ssl-connection-to-no-SSL-server
 	test5-2a-multual-ssl-auth-certificates-in-place
@@ -477,6 +488,7 @@ SET_TESTS_PROPERTIES(
 	test5-4-accept-invalid-certificates
 	test5-5-server-verify-with-capath
 	test5-6-server-verify-with-capath
+#	test5-8-psk-ssl-auth
 	PROPERTIES TIMEOUT 540
 )
 

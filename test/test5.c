@@ -79,8 +79,8 @@ struct Options
 	"ssl://m2m.eclipse.org:18888",
 	"../../../test/ssl/client.pem",
 	NULL,
-	"../../../test/ssl/test-root-ca.crt",
-	"../../../test/ssl/",
+	NULL, // "../../../test/ssl/test-root-ca.crt",
+	NULL, // "../../../test/ssl/capath",
 	NULL,
 	0,
 	0,
@@ -137,6 +137,13 @@ void getopts(int argc, char** argv)
 		{
 			if (++count < argc)
 				options.server_key_file = argv[count];
+			else
+				usage();
+		}
+		else if (strcmp(argv[count], "--capath") == 0)
+		{
+			if (++count < argc)
+				options.capath = argv[count];
 			else
 				usage();
 		}
@@ -2255,52 +2262,6 @@ exit:
 }
 
 
-void handleTrace(enum MQTTASYNC_TRACE_LEVELS level, char* message)
-{
-	printf("%s\n", message);
-}
-
-int main(int argc, char** argv)
-{
-	int* numtests = &tests;
-	int rc = 0;
-	int (*tests[])() =
-            { NULL, test1, test2a, test2b, test2c, test2d, test3a, test3b, test4, /* test5a,
-			test5b, test5c, */ test6, test7, test8 };
-
-	xml = fopen("TEST-test5.xml", "w");
-	fprintf(xml, "<testsuite name=\"test5\" tests=\"%d\">\n", (int)ARRAY_SIZE(tests) - 1);
-
-	MQTTAsync_setTraceCallback(handleTrace);
-	getopts(argc, argv);
-
-	if (options.test_no == 0)
-	{ /* run all the tests */
-		for (options.test_no = 1; options.test_no < ARRAY_SIZE(tests); ++options.test_no)
-		{
-			failures = 0;
-			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
-			rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */
-		}
-	}
-	else
-	{
-		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
-		rc = tests[options.test_no](options); /* run just the selected test */
-	}
-
-	MyLog(LOGA_INFO, "Total tests run: %d", *numtests);
-	if (rc == 0)
-		MyLog(LOGA_INFO, "verdict pass");
-	else
-		MyLog(LOGA_INFO, "verdict fail");
-
-	fprintf(xml, "</testsuite>\n");
-	fclose(xml);
-
-	return rc;
-}
-
 /*********************************************************************
 
  Test9: Mutual SSL Authentication - Testing CApath
@@ -2330,7 +2291,7 @@ int test9(struct Options options)
 	int rc = 0;
 
 	failures = 0;
-	MyLog(LOGA_INFO, "Starting test 9 - Mutual SSL authentication");
+	MyLog(LOGA_INFO, "Starting test 9 - Mutual SSL authentication with CApath");
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
@@ -2450,7 +2411,7 @@ int test10(struct Options options)
 
 	failures = 0;
 	test10Finished = 0;
-	MyLog(LOGA_INFO, "Starting test 10 - Mutual SSL authentication");
+	MyLog(LOGA_INFO, "Starting test 10 - dummy CApath");
 	fprintf(xml, "<testcase classname=\"test10\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
@@ -2518,6 +2479,54 @@ int test10(struct Options options)
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 	write_test_result();
 	return failures;
+}
+
+
+void handleTrace(enum MQTTASYNC_TRACE_LEVELS level, char* message)
+{
+	printf("%s\n", message);
+}
+
+
+int main(int argc, char** argv)
+{
+	int* numtests = &tests;
+	int rc = 0;
+	int (*tests[])() =
+            { NULL, test1, test2a, test2b, test2c, test2d, test3a, test3b, test4, /* test5a,
+			test5b, test5c, */ test6, test7, test8, test9, test10 };
+
+	xml = fopen("TEST-test5.xml", "w");
+	fprintf(xml, "<testsuite name=\"test5\" tests=\"%d\">\n", (int)ARRAY_SIZE(tests) - 1);
+
+	MQTTAsync_setTraceCallback(handleTrace);
+	getopts(argc, argv);
+
+	if (options.test_no == 0)
+	{ /* run all the tests */
+		for (options.test_no = 1; options.test_no < ARRAY_SIZE(tests); ++options.test_no)
+		{
+			failures = 0;
+			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+			rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */
+		}
+	}
+	else
+	{
+		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+		rc = tests[options.test_no](options); /* run just the selected test */
+	}
+
+	MyLog(LOGA_INFO, "Total tests run: %d", *numtests);
+	if (rc == 0)
+		MyLog(LOGA_INFO, "verdict pass");
+	else
+		MyLog(LOGA_INFO, "verdict fail");
+
+	fprintf(xml, "</testsuite>\n");
+	fclose(xml);
+
+	return rc;
 }
 
 /* Local Variables: */

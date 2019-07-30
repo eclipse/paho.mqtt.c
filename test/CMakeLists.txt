@@ -463,12 +463,12 @@ ADD_TEST(
 )
 
 ADD_TEST(
-	NAME test5-5-server-verify-with-capath
+	NAME test5-6-multiple-connections
 	COMMAND test5 "--test_no" "9" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
-	NAME test5-6-server-verify-with-capath
+	NAME test5-7-big-messages
 	COMMAND test5 "--test_no" "10" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
@@ -476,6 +476,17 @@ ADD_TEST(
 #	NAME test5-8-psk-ssl-auth
 #	COMMAND test5 "--test_no" "11" "--hostname" ${MQTT_SSL_HOSTNAME}
 #)
+
+ADD_TEST(
+	NAME test5-5-server-verify-with-capath
+	COMMAND test5 "--test_no" "12" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--capath"	"${CERTDIR}/capath"
+)
+
+ADD_TEST(
+	NAME test5-6-server-verify-with-capath
+	COMMAND test5 "--test_no" "13" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--capath"	"${CERTDIR}/notexist"
+)
+
 
 SET_TESTS_PROPERTIES(
 	test5-1-ssl-connection-to-no-SSL-server
@@ -486,6 +497,8 @@ SET_TESTS_PROPERTIES(
 	test5-3a-server-auth-server-cert-in-client-store
 	test5-3b-server-auth-client-missing-broker-cert
 	test5-4-accept-invalid-certificates
+	test5-6-multiple-connections
+	test5-7-big-messages
 	test5-5-server-verify-with-capath
 	test5-6-server-verify-with-capath
 #	test5-8-psk-ssl-auth

@@ -1,5 +1,5 @@
 #*******************************************************************************
-#  Copyright (c) 2015, 2018 logi.cals GmbH and others
+#  Copyright (c) 2015, 2019 logi.cals GmbH and others
 #
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
@@ -28,7 +28,7 @@ SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 ## build settings
 SET(PAHO_VERSION_MAJOR 1)
 SET(PAHO_VERSION_MINOR 3)
-SET(PAHO_VERSION_PATCH 0)
+SET(PAHO_VERSION_PATCH 1)
 SET(CLIENT_VERSION ${PAHO_VERSION_MAJOR}.${PAHO_VERSION_MINOR}.${PAHO_VERSION_PATCH})
 
 INCLUDE(GNUInstallDirs)

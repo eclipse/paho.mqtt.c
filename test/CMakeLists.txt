@@ -824,3 +824,23 @@ SET_TESTS_PROPERTIES(
         test_sync_session_present-1-client_session_present_after_reconnect
         PROPERTIES TIMEOUT 540
 )
+
+ADD_EXECUTABLE(
+	test_connect_destroy
+	test_connect_destroy.c
+)
+
+TARGET_LINK_LIBRARIES(
+	test_connect_destroy
+	paho-mqtt3c
+)
+
+ADD_TEST(
+        NAME test_connect_destroy-1-execute-destroy-during-connect
+        COMMAND "test_connect_destroy" "--test_no" "100" "--connection" ${MQTT_TEST_BROKER}
+)
+
+SET_TESTS_PROPERTIES(
+        test_connect_destroy-1-execute-destroy-during-connect
+        PROPERTIES TIMEOUT 540
+)

@@ -84,7 +84,7 @@ struct Options
 	NULL,
 	0,
 	0,
-	1000000,
+	5000000,
 	0,
 };
 
@@ -1958,10 +1958,32 @@ void test7OnConnectFailure(void* context, MQTTAsync_failureData* response)
 	client->testFinished = 1;
 }
 
+int test7OnPublishSuccessCount = 0;
+int test7OnUnsubscribed = 0;
+
+void test7OnPublishSuccess(void* context, MQTTAsync_successData* response)
+{
+	AsyncTestClient* tc = (AsyncTestClient*) context;
+	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
+	int rc;
+
+	MyLog(LOGA_DEBUG, "In test7OnPublishSuccess callback, %s, qos %d", tc->clientid,
+				response->alt.pub.message.qos);
+
+	MyLog(LOGA_DEBUG, "In asyncTestOnUnsubscribe callback, %s", tc->clientid);
+	opts.onSuccess = asyncTestOnDisconnect;
+	opts.context = tc;
+
+	test7OnPublishSuccessCount++;
+
+	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount == 2)
+		rc = MQTTAsync_disconnect(tc->client, &opts);
+}
+
 void test7OnPublishFailure(void* context, MQTTAsync_failureData* response)
 {
 	AsyncTestClient* client = (AsyncTestClient*) context;
-	MyLog(LOGA_DEBUG, "In test7OnPublishFailure callback, %s", client->clientid);
+	MyLog(LOGA_DEBUG, "In test7OnPublishFailure callback, %s %d", client->clientid);
 
 	assert("There should be no failures in this test. ", 0, "test7OnPublishFailure callback was called\n", 0);
 	client->testFinished = 1;
@@ -1998,7 +2020,7 @@ int test7MessageArrived(void* context, char* topicName, int topicLen,
 		pubmsg.payloadlen = test7_payloadlen;
 		pubmsg.qos = 1;
 		pubmsg.retained = 0;
-		opts.onSuccess = NULL;
+		opts.onSuccess = test7OnPublishSuccess;
 		opts.onFailure = test7OnPublishFailure;
 		opts.context = tc;
 
@@ -2013,7 +2035,7 @@ int test7MessageArrived(void* context, char* topicName, int topicLen,
 		pubmsg.payloadlen = test7_payloadlen;
 		pubmsg.qos = 0;
 		pubmsg.retained = 0;
-		opts.onSuccess = NULL;
+		opts.onSuccess = test7OnPublishSuccess;
 		opts.onFailure = test7OnPublishFailure;
 		opts.context = tc;
 		rc = MQTTAsync_sendMessage(tc->client, tc->topic, &pubmsg, &opts);
@@ -2032,6 +2054,22 @@ int test7MessageArrived(void* context, char* topicName, int topicLen,
 	MQTTAsync_free(topicName);
 
 	return 1;
+}
+
+void test7OnUnsubscribe(void* context, MQTTAsync_successData* response)
+{
+	AsyncTestClient* tc = (AsyncTestClient*) context;
+	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
+	int rc;
+
+	MyLog(LOGA_DEBUG, "In test7OnUnsubscribe callback, %s", tc->clientid);
+	opts.onSuccess = asyncTestOnDisconnect;
+	opts.context = tc;
+
+	test7OnUnsubscribed++;
+
+	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount == 2)
+		rc = MQTTAsync_disconnect(tc->client, &opts);
 }
 
 void test7OnSubscribe(void* context, MQTTAsync_successData* response)
@@ -2513,9 +2551,9 @@ int main(int argc, char** argv)
 	}
 	else
 	{
-		if (options.test_no == 10)
+		/*if (options.test_no == 10)
 			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_MINIMUM);
-		else
+		else*/
 			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
 		rc = tests[options.test_no](options); /* run just the selected test */
 	}

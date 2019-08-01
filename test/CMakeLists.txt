@@ -469,7 +469,7 @@ ADD_TEST(
 
 ADD_TEST(
 	NAME test5-7-big-messages
-	COMMAND test5 "--test_no" "10" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "10" --verbose "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 #ADD_TEST(

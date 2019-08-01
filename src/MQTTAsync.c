@@ -3811,6 +3811,8 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 					*rc = MQTTProtocol_handlePubacks(pack, *sock);
 				if (!m)
 					Log(LOG_ERROR, -1, "PUBCOMP, PUBACK or PUBREC received for no client, msgid %d", msgid);
+				if (pack->header.bits.type == PUBACK)
+					Log(TRACE_PROTOCOL, -1, "PUBACK m %p ackrc %d", m, ackrc);
 				if (m && (msgtype != PUBREC || ackrc >= MQTTREASONCODE_UNSPECIFIED_ERROR))
 				{
 					ListElement* current = NULL;
@@ -3820,12 +3822,16 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 						Log(TRACE_MIN, -1, "Calling deliveryComplete for client %s, msgid %d", m->c->clientID, msgid);
 						(*(m->dc))(m->dcContext, msgid);
 					}
+					if (pack->header.bits.type == PUBACK)
+						Log(TRACE_PROTOCOL, -1, "PUBACK finding msgid %d", msgid);
 					/* use the msgid to find the callback to be called */
 					while (ListNextElement(m->responses, &current))
 					{
 						MQTTAsync_queuedCommand* command = (MQTTAsync_queuedCommand*)(current->content);
 						if (command->command.token == msgid)
 						{
+							if (pack->header.bits.type == PUBACK)
+								Log(TRACE_PROTOCOL, -1, "PUBACK found msgid %d %p", msgid, command->command.onSuccess);
 							if (!ListDetach(m->responses, command)) /* then remove the response from the list */
 								Log(LOG_ERROR, -1, "Publish command not removed from command list");
 							if (command->command.onSuccess)

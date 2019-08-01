@@ -1964,20 +1964,21 @@ int test7OnUnsubscribed = 0;
 void test7OnPublishSuccess(void* context, MQTTAsync_successData* response)
 {
 	AsyncTestClient* tc = (AsyncTestClient*) context;
-	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
-	int rc;
 
 	MyLog(LOGA_DEBUG, "In test7OnPublishSuccess callback, %s, qos %d", tc->clientid,
 				response->alt.pub.message.qos);
 
-	MyLog(LOGA_DEBUG, "In asyncTestOnUnsubscribe callback, %s", tc->clientid);
-	opts.onSuccess = asyncTestOnDisconnect;
-	opts.context = tc;
-
 	test7OnPublishSuccessCount++;
 
-	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount == 2)
+	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount == 3)
+	{
+		MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
+		int rc;
+
+		opts.onSuccess = asyncTestOnDisconnect;
+		opts.context = tc;
 		rc = MQTTAsync_disconnect(tc->client, &opts);
+	}
 }
 
 void test7OnPublishFailure(void* context, MQTTAsync_failureData* response)
@@ -1995,13 +1996,14 @@ void test7OnUnsubscribe(void* context, MQTTAsync_successData* response)
 	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
 	int rc;
 
-	MyLog(LOGA_DEBUG, "In test7OnUnsubscribe callback, %s", tc->clientid);
+	MyLog(LOGA_DEBUG, "In test7OnUnsubscribe callback, %s %d %d", tc->clientid,
+			test7OnUnsubscribed, test7OnPublishSuccessCount);
 	opts.onSuccess = asyncTestOnDisconnect;
 	opts.context = tc;
 
 	test7OnUnsubscribed++;
 
-	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount == 2)
+	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount == 3)
 		rc = MQTTAsync_disconnect(tc->client, &opts);
 }
 
@@ -2077,6 +2079,7 @@ void test7OnSubscribe(void* context, MQTTAsync_successData* response)
 {
 	AsyncTestClient* tc = (AsyncTestClient*) context;
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	int rc, i;
 
 	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback %p", tc);
@@ -2091,8 +2094,14 @@ void test7OnSubscribe(void* context, MQTTAsync_successData* response)
 	pubmsg.qos = 2;
 	pubmsg.retained = 0;
 
+	pubmsg.payload = test7_payload;
+	pubmsg.payloadlen = test7_payloadlen;
+	opts.onSuccess = test7OnPublishSuccess;
+	opts.onFailure = test7OnPublishFailure;
+	opts.context = tc;
+
 	rc = MQTTAsync_send(tc->client, tc->topic, pubmsg.payloadlen, pubmsg.payload,
-			pubmsg.qos, pubmsg.retained, NULL);
+			pubmsg.qos, pubmsg.retained, &opts);
 }
 
 void test7OnConnect(void* context, MQTTAsync_successData* response)

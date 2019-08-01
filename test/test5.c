@@ -1989,6 +1989,22 @@ void test7OnPublishFailure(void* context, MQTTAsync_failureData* response)
 	client->testFinished = 1;
 }
 
+void test7OnUnsubscribe(void* context, MQTTAsync_successData* response)
+{
+	AsyncTestClient* tc = (AsyncTestClient*) context;
+	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
+	int rc;
+
+	MyLog(LOGA_DEBUG, "In test7OnUnsubscribe callback, %s", tc->clientid);
+	opts.onSuccess = asyncTestOnDisconnect;
+	opts.context = tc;
+
+	test7OnUnsubscribed++;
+
+	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount == 2)
+		rc = MQTTAsync_disconnect(tc->client, &opts);
+}
+
 int test7MessageArrived(void* context, char* topicName, int topicLen,
 		MQTTAsync_message* message)
 {
@@ -2044,7 +2060,7 @@ int test7MessageArrived(void* context, char* topicName, int topicLen,
 	{
 		MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 
-		opts.onSuccess = asyncTestOnUnsubscribe;
+		opts.onSuccess = test7OnUnsubscribe;
 		opts.context = tc;
 		rc = MQTTAsync_unsubscribe(tc->client, tc->topic, &opts);
 		assert("Unsubscribe successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -2056,21 +2072,6 @@ int test7MessageArrived(void* context, char* topicName, int topicLen,
 	return 1;
 }
 
-void test7OnUnsubscribe(void* context, MQTTAsync_successData* response)
-{
-	AsyncTestClient* tc = (AsyncTestClient*) context;
-	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
-	int rc;
-
-	MyLog(LOGA_DEBUG, "In test7OnUnsubscribe callback, %s", tc->clientid);
-	opts.onSuccess = asyncTestOnDisconnect;
-	opts.context = tc;
-
-	test7OnUnsubscribed++;
-
-	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount == 2)
-		rc = MQTTAsync_disconnect(tc->client, &opts);
-}
 
 void test7OnSubscribe(void* context, MQTTAsync_successData* response)
 {

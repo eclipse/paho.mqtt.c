@@ -1373,6 +1373,7 @@ static void MQTTAsync_writeComplete(int socket, int rc)
 				}
 				if (com)
 				{
+				  Log(TRACE_PROTOCOL, -1, "writeComplete: Removing response for msgid %d", command->token);
 				  ListDetach(m->responses, com);
 				  MQTTAsync_freeCommand(com);
 			  }

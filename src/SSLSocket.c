@@ -318,7 +318,7 @@ The user-defined argument optionally defined by SSL_CTX_set_msg_callback_arg() o
 
 */
 
-	Log(TRACE_PROTOCOL, -1, "%s %s %d buflen %d", (write_p ? "sent" : "received"),
+	Log(TRACE_MINIMUM, -1, "%s %s %d buflen %d", (write_p ? "sent" : "received"),
 		SSLSocket_get_version_string(version),
 		content_type, (int)len);
 }

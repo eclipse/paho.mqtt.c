@@ -1313,6 +1313,7 @@ static void MQTTAsync_writeComplete(int socket, int rc)
 			}
 			Log(TRACE_PROTOCOL, -1, "Response list end");
 
+			cur_response = NULL;
 			while (ListNextElement(m->responses, &cur_response))
 			{
 				com = (MQTTAsync_queuedCommand*)(cur_response->content);
@@ -1383,11 +1384,12 @@ static void MQTTAsync_writeComplete(int socket, int rc)
 				}
 				if (com)
 				{
-				  Log(TRACE_PROTOCOL, -1, "writeComplete: Removing response for msgid %d", command->token);
+				  Log(TRACE_PROTOCOL, -1, "writeComplete: Removing response for msgid %d", com->command.token);
 				  ListDetach(m->responses, com);
 				  MQTTAsync_freeCommand(com);
 				}
 				Log(TRACE_PROTOCOL, -1, "Response list start - after delete");
+				cur_response = NULL;
 				while (ListNextElement(m->responses, &cur_response))
 				{
 					com = (MQTTAsync_queuedCommand*)(cur_response->content);

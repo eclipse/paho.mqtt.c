@@ -391,7 +391,7 @@ ADD_TEST(
 
 ADD_TEST(
 	NAME test45-7-pending-tokens
-	COMMAND test45 "--test_no" "7" "--connection" ${MQTT_TEST_BROKER}
+	COMMAND test45 "--test_no" "7" "--connection" ${MQTT_TEST_BROKER} --verbose
 )
 
 ADD_TEST(
@@ -469,7 +469,7 @@ ADD_TEST(
 
 ADD_TEST(
 	NAME test5-7-big-messages
-	COMMAND test5 "--test_no" "10" --verbose "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "10" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 #ADD_TEST(

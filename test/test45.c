@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -1484,7 +1484,7 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 	test_finished = 0;
 
 	createOpts.MQTTVersion = start_mqtt_version;
-	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_PROTOCOL);
 	rc = MQTTAsync_createWithOptions(&c, options.connection, "async_test7",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
@@ -1614,7 +1614,7 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 
 	MQTTAsync_destroy(&c); /* force re-reading persistence on create */
 
-	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_PROTOCOL);
 	createOpts.MQTTVersion = restore_mqtt_version;
 	rc = MQTTAsync_createWithOptions(&c, options.connection, "async_test7",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);

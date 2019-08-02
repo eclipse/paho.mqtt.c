@@ -1305,14 +1305,6 @@ static void MQTTAsync_writeComplete(int socket, int rc)
 			MQTTAsync_command* command = m->pending_write;
 			MQTTAsync_queuedCommand* com = NULL;
 
-			Log(TRACE_PROTOCOL, -1, "Response list start - before delete");
-			while (ListNextElement(m->responses, &cur_response))
-			{
-				com = (MQTTAsync_queuedCommand*)(cur_response->content);
-				Log(TRACE_PROTOCOL, -1, "Response for token: %d", com->command.token);
-			}
-			Log(TRACE_PROTOCOL, -1, "Response list end");
-
 			cur_response = NULL;
 			while (ListNextElement(m->responses, &cur_response))
 			{
@@ -1384,21 +1376,13 @@ static void MQTTAsync_writeComplete(int socket, int rc)
 				}
 				if (com)
 				{
-				  Log(TRACE_PROTOCOL, -1, "writeComplete: Removing response for msgid %d", com->command.token);
-				  ListDetach(m->responses, com);
-				  MQTTAsync_freeCommand(com);
+					Log(TRACE_PROTOCOL, -1, "writeComplete: Removing response for msgid %d", com->command.token);
+					ListDetach(m->responses, com);
+					MQTTAsync_freeCommand(com);
 				}
-				Log(TRACE_PROTOCOL, -1, "Response list start - after delete");
-				cur_response = NULL;
-				while (ListNextElement(m->responses, &cur_response))
-				{
-					com = (MQTTAsync_queuedCommand*)(cur_response->content);
-					Log(TRACE_PROTOCOL, -1, "Response for token: %d", com->command.token);
-				}
-				Log(TRACE_PROTOCOL, -1, "Response list end");
-			}
+			} /* if cur_response */
 			m->pending_write = NULL;
-		}
+		} /* if pending_write */
 	}
 	FUNC_EXIT;
 }
@@ -3831,8 +3815,6 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 					*rc = MQTTProtocol_handlePubacks(pack, *sock);
 				if (!m)
 					Log(LOG_ERROR, -1, "PUBCOMP, PUBACK or PUBREC received for no client, msgid %d", msgid);
-				if (pack->header.bits.type == PUBACK)
-					Log(TRACE_PROTOCOL, -1, "PUBACK m %p ackrc %d", m, ackrc);
 				if (m && (msgtype != PUBREC || ackrc >= MQTTREASONCODE_UNSPECIFIED_ERROR))
 				{
 					ListElement* current = NULL;
@@ -3842,16 +3824,12 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 						Log(TRACE_MIN, -1, "Calling deliveryComplete for client %s, msgid %d", m->c->clientID, msgid);
 						(*(m->dc))(m->dcContext, msgid);
 					}
-					if (pack->header.bits.type == PUBACK)
-						Log(TRACE_PROTOCOL, -1, "PUBACK finding msgid %d", msgid);
 					/* use the msgid to find the callback to be called */
 					while (ListNextElement(m->responses, &current))
 					{
 						MQTTAsync_queuedCommand* command = (MQTTAsync_queuedCommand*)(current->content);
 						if (command->command.token == msgid)
 						{
-							if (pack->header.bits.type == PUBACK)
-								Log(TRACE_PROTOCOL, -1, "PUBACK found msgid %d %p", msgid, command->command.onSuccess);
 							if (!ListDetach(m->responses, command)) /* then remove the response from the list */
 								Log(LOG_ERROR, -1, "Publish command not removed from command list");
 							if (command->command.onSuccess)

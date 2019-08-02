@@ -1317,7 +1317,7 @@ static void MQTTAsync_writeComplete(int socket, int rc)
 			while (ListNextElement(m->responses, &cur_response))
 			{
 				com = (MQTTAsync_queuedCommand*)(cur_response->content);
-				if (com->client->pending_write == m->pending_write)
+				if (&com->command == m->pending_write)
 					break;
 			}
 

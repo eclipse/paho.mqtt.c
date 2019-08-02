@@ -1305,6 +1305,14 @@ static void MQTTAsync_writeComplete(int socket, int rc)
 			MQTTAsync_command* command = m->pending_write;
 			MQTTAsync_queuedCommand* com = NULL;
 
+			Log(TRACE_PROTOCOL, -1, "Response list start - before delete");
+			while (ListNextElement(m->responses, &cur_response))
+			{
+				com = (MQTTAsync_queuedCommand*)(cur_response->content);
+				Log(TRACE_PROTOCOL, -1, "Response for token: %d", com->command.token);
+			}
+			Log(TRACE_PROTOCOL, -1, "Response list end");
+
 			while (ListNextElement(m->responses, &cur_response))
 			{
 				com = (MQTTAsync_queuedCommand*)(cur_response->content);
@@ -1370,13 +1378,22 @@ static void MQTTAsync_writeComplete(int socket, int rc)
 							(*(command->onFailure5))(command->context, &data);
 						}
 					}
+					else
+						com = NULL; /* Don't delete response we haven't acknowledged */
 				}
 				if (com)
 				{
 				  Log(TRACE_PROTOCOL, -1, "writeComplete: Removing response for msgid %d", command->token);
 				  ListDetach(m->responses, com);
 				  MQTTAsync_freeCommand(com);
-			  }
+				}
+				Log(TRACE_PROTOCOL, -1, "Response list start - after delete");
+				while (ListNextElement(m->responses, &cur_response))
+				{
+					com = (MQTTAsync_queuedCommand*)(cur_response->content);
+					Log(TRACE_PROTOCOL, -1, "Response for token: %d", com->command.token);
+				}
+				Log(TRACE_PROTOCOL, -1, "Response list end");
 			}
 			m->pending_write = NULL;
 		}

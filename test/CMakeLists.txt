@@ -477,6 +477,8 @@ ADD_TEST(
 #	COMMAND test5 "--test_no" "11" "--hostname" ${MQTT_SSL_HOSTNAME}
 #)
 
+IF (NOT WIN32)
+# OpenSSL CApath tests rely on Unix-type filesystem - can it work on Windows?
 ADD_TEST(
 	NAME test5-5-server-verify-with-capath
 	COMMAND test5 "--test_no" "12" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--capath"	"${CERTDIR}/capath"
@@ -486,6 +488,13 @@ ADD_TEST(
 	NAME test5-6-server-verify-with-capath
 	COMMAND test5 "--test_no" "13" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--capath"	"${CERTDIR}/notexist"
 )
+
+SET_TESTS_PROPERTIES(
+	test5-5-server-verify-with-capath
+	test5-6-server-verify-with-capath
+	PROPERTIES TIMEOUT 540
+)
+ENDIF ()
 
 
 SET_TESTS_PROPERTIES(
@@ -499,8 +508,6 @@ SET_TESTS_PROPERTIES(
 	test5-4-accept-invalid-certificates
 	test5-6-multiple-connections
 	test5-7-big-messages
-	test5-5-server-verify-with-capath
-	test5-6-server-verify-with-capath
 #	test5-8-psk-ssl-auth
 	PROPERTIES TIMEOUT 540
 )

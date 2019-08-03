@@ -44,7 +44,7 @@
 /** Stem of the key for an async client command */
 #define PERSISTENCE_COMMAND_KEY "c-"
 /** Stem of the key for an MQTT V5 async client command */
-#define PERSISTENCE_V5_COMMAND_KEY "c-"
+#define PERSISTENCE_V5_COMMAND_KEY "c5-"
 /** Stem of the key for an async client message queue */
 #define PERSISTENCE_QUEUE_KEY "q-"
 /** Stem of the key for an MQTT V5 message queue */

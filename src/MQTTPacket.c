@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -489,21 +489,18 @@ int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQT
 	header.byte = 0;
 	header.bits.type = DISCONNECT;
 
-	if (client->MQTTVersion >= 5)
+	if (client->MQTTVersion >= 5 && (props || reason != MQTTREASONCODE_SUCCESS))
 	{
-		if (props || reason != MQTTREASONCODE_SUCCESS)
-		{
-			size_t buflen = 1 + ((props == NULL) ? 0 : MQTTProperties_len(props));
-			char *buf = malloc(buflen), *ptr = NULL;
+		size_t buflen = 1 + ((props == NULL) ? 0 : MQTTProperties_len(props));
+		char *buf = malloc(buflen), *ptr = NULL;
 
-			ptr = buf;
-			writeChar(&ptr, reason);
-			if (props)
-				MQTTProperties_write(&ptr, props);
-			if ((rc = MQTTPacket_send(&client->net, header, buf, buflen, 1,
-					                   client->MQTTVersion)) != TCPSOCKET_INTERRUPTED)
-				free(buf);
-		}
+		ptr = buf;
+		writeChar(&ptr, reason);
+		if (props)
+			MQTTProperties_write(&ptr, props);
+		if ((rc = MQTTPacket_send(&client->net, header, buf, buflen, 1,
+				                   client->MQTTVersion)) != TCPSOCKET_INTERRUPTED)
+			free(buf);
 	}
 	else
 		rc = MQTTPacket_send(&client->net, header, NULL, 0, 0, client->MQTTVersion);
@@ -523,11 +520,13 @@ int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQT
  */
 void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
-	Publish* pack = malloc(sizeof(Publish));
+	Publish* pack = NULL;
 	char* curdata = data;
 	char* enddata = &data[datalen];
 
 	FUNC_ENTRY;
+	if ((pack = malloc(sizeof(Publish))) == NULL)
+		goto exit;
 	memset(pack, '\0', sizeof(Publish));
 	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
@@ -547,8 +546,11 @@ void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, siz
 		pack->properties = props;
 		if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
 		{
-			free(pack);
-			pack = NULL;
+			if (pack->properties.array)
+				free(pack->properties.array);
+			if (pack)
+				free(pack);
+			pack = NULL; /* signal protocol error */
 			goto exit;
 		}
 	}
@@ -739,11 +741,13 @@ int MQTTPacket_send_pubcomp(int msgid, networkHandles* net, const char* clientID
  */
 void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
-	Ack* pack = malloc(sizeof(Ack));
+	Ack* pack = NULL;
 	char* curdata = data;
 	char* enddata = &data[datalen];
 
 	FUNC_ENTRY;
+	if ((pack = malloc(sizeof(Ack))) == NULL)
+		goto exit;
 	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
 	if (pack->header.bits.type != DISCONNECT)
@@ -762,11 +766,16 @@ void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t 
 		{
 			if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
 			{
-				free(pack);
+				if (pack->properties.array)
+					free(pack->properties.array);
+				if (pack)
+					free(pack);
 				pack = NULL; /* signal protocol error */
+				goto exit;
 			}
 		}
 	}
+exit:
 	FUNC_EXIT;
 	return pack;
 }
@@ -948,7 +957,7 @@ int MQTTPacket_VBIlen(int rem_len)
  * @param value the decoded length returned
  * @return the number of bytes read from the socket
  */
-int MQTTPacket_VBIdecode(int (*getcharfn)(char*, int), int* value)
+int MQTTPacket_VBIdecode(int (*getcharfn)(char*, int), unsigned int* value)
 {
 	char c;
 	int multiplier = 1;
@@ -988,7 +997,7 @@ int bufchar(char* c, int count)
 }
 
 
-int MQTTPacket_decodeBuf(char* buf, int* value)
+int MQTTPacket_decodeBuf(char* buf, unsigned int* value)
 {
 	bufptr = buf;
 	return MQTTPacket_VBIdecode(bufchar, value);

@@ -20,8 +20,8 @@
 ## compilation/linkage settings
 INCLUDE_DIRECTORIES(
     .
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_BINARY_DIR}
+    ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_BINARY_DIR}
     )
 
 IF (WIN32)

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -219,6 +219,26 @@ START_TIME_TYPE MQTTAsync_start_clock(void)
 }
 #endif
 
+#if defined(WIN32) || defined(WIN64)
+void MQTTAsync_init_rand(void)
+{
+	START_TIME_TYPE now = MQTTAsync_start_clock();
+	srand(now);
+}
+#elif defined(AIX)
+void MQTTAsync_init_rand(void)
+{
+	START_TIME_TYPE now = MQTTAsync_start_clock();
+	srand(now.tv_nsec);
+}
+#else
+void MQTTAsync_init_rand(void)
+{
+	START_TIME_TYPE now = MQTTAsync_start_clock();
+	srand(now.tv_usec);
+}
+#endif
+
 
 #if defined(WIN32) || defined(WIN64)
 long MQTTAsync_elapsed(DWORD milliseconds)
@@ -248,7 +268,6 @@ long MQTTAsync_elapsed(struct timeval start)
 	return (res.tv_sec)*1000 + (res.tv_usec)/1000;
 }
 #endif
-
 
 typedef struct
 {
@@ -352,6 +371,7 @@ typedef struct MQTTAsync_struct
 	int connectTimeout;
 
 	int currentInterval;
+	int currentIntervalBase;
 	START_TIME_TYPE lastConnectionFailedTime;
 	int retrying;
 	int reconnectNow;
@@ -424,6 +444,45 @@ void MQTTAsync_sleep(long milliseconds)
 	usleep(milliseconds*1000);
 #endif
 	FUNC_EXIT;
+}
+
+
+// Add random amount of jitter for exponential backoff on retry
+// Jitter value will be +/- 20% of "base" interval, including max interval
+// https://www.awsarchitectureblog.com/2015/03/backoff.html
+// http://ee.lbl.gov/papers/sync_94.pdf
+int MQTTAsync_randomJitter(int currentIntervalBase, int minInterval, int maxInterval)
+{
+	int max_sleep = min(maxInterval, currentIntervalBase) * 1.2; // (e.g. 72 if base > 60)
+	int min_sleep = max(minInterval, currentIntervalBase) / 1.2; // (e.g. 48 if base > 60)
+
+	if (min_sleep >= max_sleep) // shouldn't happen, but just incase
+	{
+		return min_sleep;
+	}
+
+	// random_between(min_sleep, max_sleep)
+	// http://stackoverflow.com/questions/2509679/how-to-generate-a-random-number-from-within-a-range
+	int r;
+	int range = max_sleep - min_sleep + 1;
+	if (range > RAND_MAX)
+	{
+		range = RAND_MAX;
+	}
+
+	int buckets = RAND_MAX / range;
+	int limit = buckets * range;
+
+	/* Create equal size buckets all in a row, then fire randomly towards
+	 * the buckets until you land in one of them. All buckets are equally
+	 * likely. If you land off the end of the line of buckets, try again. */
+	do
+	{
+		r = rand();
+	} while (r >= limit);
+
+	int randResult = r / buckets;
+	return min_sleep + randResult;
 }
 
 
@@ -508,7 +567,8 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 		}
 	}
 
-	if (options && (strncmp(options->struct_id, "MQCO", 4) != 0 || options->struct_version != 0))
+	if (options && (strncmp(options->struct_id, "MQCO", 4) != 0 ||
+					options->struct_version < 0 || options->struct_version > 1))
 	{
 		rc = MQTTASYNC_BAD_STRUCTURE;
 		goto exit;
@@ -571,7 +631,8 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 	{
 		m->createOptions = malloc(sizeof(MQTTAsync_createOptions));
 		memcpy(m->createOptions, options, sizeof(MQTTAsync_createOptions));
-		m->c->MQTTVersion = options->MQTTVersion;
+		if (options->struct_version > 0)
+			m->c->MQTTVersion = options->MQTTVersion;
 	}
 
 #if !defined(NO_PERSISTENCE)
@@ -598,6 +659,8 @@ exit:
 int MQTTAsync_create(MQTTAsync* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context)
 {
+	MQTTAsync_init_rand();
+
 	return MQTTAsync_createWithOptions(handle, serverURI, clientId, persistence_type,
 		persistence_context, NULL);
 }
@@ -634,7 +697,10 @@ static int MQTTAsync_unpersistCommand(MQTTAsync_queuedCommand* qcmd)
 	char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
 
 	FUNC_ENTRY;
-	sprintf(key, "%s%u", PERSISTENCE_COMMAND_KEY, qcmd->seqno);
+	if (qcmd->client->c->MQTTVersion >= MQTTVERSION_5)
+		sprintf(key, "%s%u", PERSISTENCE_V5_COMMAND_KEY, qcmd->seqno);
+	else
+		sprintf(key, "%s%u", PERSISTENCE_COMMAND_KEY, qcmd->seqno);
 	if ((rc = qcmd->client->c->persistence->premove(qcmd->client->c->phandle, key)) != 0)
 		Log(LOG_ERROR, 0, "Error %d removing command from persistence", rc);
 	FUNC_EXIT_RC(rc);
@@ -775,12 +841,12 @@ static int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 			Log(LOG_ERROR, 0, "Error persisting command, rc %d", rc);
 		qcmd->seqno = aclient->command_seqno;
 	}
+	if (props_allocated > 0)
+		free(bufs[props_allocated]);
 	if (lens)
 		free(lens);
 	if (bufs)
 		free(bufs);
-	if (props_allocated > 0)
-		free(bufs[props_allocated]);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -1026,12 +1092,15 @@ static void MQTTAsync_startConnectRetry(MQTTAsyncs* m)
 	{
 		m->lastConnectionFailedTime = MQTTAsync_start_clock();
 		if (m->retrying)
-			m->currentInterval = min(m->currentInterval * 2, m->maxRetryInterval);
+		{
+			m->currentIntervalBase = min(m->currentIntervalBase * 2, m->maxRetryInterval);
+		}
 		else
 		{
-			m->currentInterval = m->minRetryInterval;
+			m->currentIntervalBase = m->minRetryInterval;
 			m->retrying = 1;
 		}
+		m->currentInterval = MQTTAsync_randomJitter(m->currentIntervalBase, m->minRetryInterval, m->maxRetryInterval);
 	}
 }
 
@@ -1049,12 +1118,13 @@ int MQTTAsync_reconnect(MQTTAsync handle)
 		if (m->shouldBeConnected)
 		{
 			m->reconnectNow = 1;
-	  		if (m->retrying == 0)
-	  		{
-	  			m->currentInterval = m->minRetryInterval;
-	  			m->retrying = 1;
-	  		}
-	  		rc = MQTTASYNC_SUCCESS;
+			if (m->retrying == 0)
+			{
+				m->currentIntervalBase = m->minRetryInterval;
+				m->currentInterval = m->minRetryInterval;
+				m->retrying = 1;
+			}
+			rc = MQTTASYNC_SUCCESS;
 		}
 	}
 	else
@@ -1066,9 +1136,9 @@ int MQTTAsync_reconnect(MQTTAsync handle)
 		conn->command = m->connect;
 		/* make sure that the version attempts are restarted */
 		if (m->c->MQTTVersion == MQTTVERSION_DEFAULT)
-	  		conn->command.details.conn.MQTTVersion = 0;
+			conn->command.details.conn.MQTTVersion = 0;
 		MQTTAsync_addCommand(conn, sizeof(m->connect));
-	  	rc = MQTTASYNC_SUCCESS;
+		rc = MQTTASYNC_SUCCESS;
 	}
 
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
@@ -1235,10 +1305,11 @@ static void MQTTAsync_writeComplete(int socket, int rc)
 			MQTTAsync_command* command = m->pending_write;
 			MQTTAsync_queuedCommand* com = NULL;
 
+			cur_response = NULL;
 			while (ListNextElement(m->responses, &cur_response))
 			{
 				com = (MQTTAsync_queuedCommand*)(cur_response->content);
-				if (com->client->pending_write == m->pending_write)
+				if (&com->command == m->pending_write)
 					break;
 			}
 
@@ -1300,15 +1371,18 @@ static void MQTTAsync_writeComplete(int socket, int rc)
 							(*(command->onFailure5))(command->context, &data);
 						}
 					}
+					else
+						com = NULL; /* Don't delete response we haven't acknowledged */
 				}
 				if (com)
 				{
-				  ListDetach(m->responses, com);
-				  MQTTAsync_freeCommand(com);
-			  }
-			}
+					Log(TRACE_PROTOCOL, -1, "writeComplete: Removing response for msgid %d", com->command.token);
+					ListDetach(m->responses, com);
+					MQTTAsync_freeCommand(com);
+				}
+			} /* if cur_response */
 			m->pending_write = NULL;
-		}
+		} /* if pending_write */
 	}
 	FUNC_EXIT;
 }
@@ -2771,7 +2845,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	}
 	if (options->struct_version != 0 && options->ssl) /* check validity of SSL options structure */
 	{
-		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version < 0 || options->ssl->struct_version > 3)
+		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version < 0 || options->ssl->struct_version > 4)
 		{
 			rc = MQTTASYNC_BAD_STRUCTURE;
 			goto exit;
@@ -2937,6 +3011,12 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		{
 			m->c->sslopts->ssl_error_cb = options->ssl->ssl_error_cb;
 			m->c->sslopts->ssl_error_context = options->ssl->ssl_error_context;
+		}
+		if (m->c->sslopts->struct_version >= 4)
+		{
+			m->c->sslopts->ssl_psk_cb = options->ssl->ssl_psk_cb;
+			m->c->sslopts->ssl_psk_context = options->ssl->ssl_psk_context;
+			m->c->sslopts->disableDefaultTrustStore = options->ssl->disableDefaultTrustStore;
 		}
 	}
 #else
@@ -3657,7 +3737,6 @@ exit:
 static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 {
 	struct timeval tp = {0L, 0L};
-	static Ack ack;
 	MQTTPacket* pack = NULL;
 
 	FUNC_ENTRY;
@@ -3686,7 +3765,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 			m = (MQTTAsync)(handles->current->content);
 		if (m != NULL)
 		{
-			Log(TRACE_MINIMUM, -1, "m->c->connect_state = %d",m->c->connect_state);
+			Log(TRACE_MINIMUM, -1, "m->c->connect_state = %d", m->c->connect_state);
 			if (m->c->connect_state == TCP_IN_PROGRESS || m->c->connect_state == SSL_IN_PROGRESS || m->c->connect_state == WEBSOCKET_IN_PROGRESS)
 				*rc = MQTTAsync_connecting(m);
 			else
@@ -3695,11 +3774,6 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 			{
 				Log(TRACE_MINIMUM, -1, "CONNECT sent but MQTTPacket_Factory has returned SOCKET_ERROR");
 				nextOrClose(m, MQTTASYNC_FAILURE, "TCP connect completion failure");
-			}
-			else
-			{
-				Log(TRACE_MINIMUM, -1, "m->c->connect_state = %d",m->c->connect_state);
-				Log(TRACE_MINIMUM, -1, "CONNECT sent, *rc is %d",*rc);
 			}
 		}
 		if (pack)
@@ -3712,29 +3786,36 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 			else if (pack->header.bits.type == PUBACK || pack->header.bits.type == PUBCOMP ||
 					pack->header.bits.type == PUBREC)
 			{
-				int msgid;
+				int msgid = 0,
+					msgtype = 0,
+					ackrc = 0,
+					mqttversion = 0;
+				MQTTProperties msgprops = MQTTProperties_initializer;
 
-				ack = *(Ack*)pack;
-				msgid = ack.msgId;
+				/* This block is so that the ack variable is local and isn't accidentally reused */
+				{
+					static Ack ack;
+					ack = *(Ack*)pack;
+					/* these values are stored because the packet structure is freed in the handle functions */
+					msgid = ack.msgId;
+					msgtype = pack->header.bits.type;
+					if (ack.MQTTVersion >= MQTTVERSION_5)
+					{
+						ackrc = ack.rc;
+						msgprops = MQTTProperties_copy(&ack.properties);
+						mqttversion = ack.MQTTVersion;
+					}
+				}
 
 				if (pack->header.bits.type == PUBCOMP)
-				{
-					//ack = *(Pubcomp*)pack;
 					*rc = MQTTProtocol_handlePubcomps(pack, *sock);
-				}
 				else if (pack->header.bits.type == PUBREC)
-				{
-					//ack = *(Pubrec*)pack;
 					*rc = MQTTProtocol_handlePubrecs(pack, *sock);
-				}
 				else if (pack->header.bits.type == PUBACK)
-				{
-					//ack = *(Puback*)pack;
 					*rc = MQTTProtocol_handlePubacks(pack, *sock);
-				}
 				if (!m)
 					Log(LOG_ERROR, -1, "PUBCOMP, PUBACK or PUBREC received for no client, msgid %d", msgid);
-				if (m && (pack->header.bits.type != PUBREC || ack.rc >= MQTTREASONCODE_UNSPECIFIED_ERROR))
+				if (m && (msgtype != PUBREC || ackrc >= MQTTREASONCODE_UNSPECIFIED_ERROR))
 				{
 					ListElement* current = NULL;
 
@@ -3764,7 +3845,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 								Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
 								(*(command->command.onSuccess))(command->command.context, &data);
 							}
-							else if (command->command.onSuccess5 && ack.rc < MQTTREASONCODE_UNSPECIFIED_ERROR)
+							else if (command->command.onSuccess5 && ackrc < MQTTREASONCODE_UNSPECIFIED_ERROR)
 							{
 								MQTTAsync_successData5 data = MQTTAsync_successData5_initializer;
 
@@ -3778,18 +3859,20 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 								Log(TRACE_MIN, -1, "Calling publish success for client %s", m->c->clientID);
 								(*(command->command.onSuccess5))(command->command.context, &data);
 							}
-							else if (command->command.onFailure5 && ack.rc >= MQTTREASONCODE_UNSPECIFIED_ERROR)
+							else if (command->command.onFailure5 && ackrc >= MQTTREASONCODE_UNSPECIFIED_ERROR)
 							{
 								MQTTAsync_failureData5 data = MQTTAsync_failureData5_initializer;
 
 								data.token = command->command.token;
-								data.reasonCode = ack.rc;
-								data.properties = ack.properties;
+								data.reasonCode = ackrc;
+								data.properties = msgprops;
 								data.packet_type = pack->header.bits.type;
 								Log(TRACE_MIN, -1, "Calling publish failure for client %s", m->c->clientID);
 								(*(command->command.onFailure5))(command->command.context, &data);
 							}
 							MQTTAsync_freeCommand(command);
+							if (mqttversion >= MQTTVERSION_5)
+								MQTTProperties_free(&msgprops);
 							break;
 						}
 					}

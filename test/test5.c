@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2018 IBM Corp.
+ * Copyright (c) 2012, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -59,10 +59,12 @@ struct Options
 	char nocert_mutual_auth_connection[100];
 	char server_auth_connection[100];
 	char anon_connection[100];
+	char psk_connection[100];
 	char* client_key_file;
 	char* client_key_pass;
 	char* server_key_file;
 	char* client_private_key_file;
+	char* capath;
 	int verbose;
 	int test_no;
 	int size;
@@ -74,9 +76,11 @@ struct Options
 	"ssl://m2m.eclipse.org:18887",
 	"ssl://m2m.eclipse.org:18885",
 	"ssl://m2m.eclipse.org:18886",
+	"ssl://m2m.eclipse.org:18888",
 	"../../../test/ssl/client.pem",
 	NULL,
-	"../../../test/ssl/test-root-ca.crt",
+	NULL, // "../../../test/ssl/test-root-ca.crt",
+	NULL, // "../../../test/ssl/capath",
 	NULL,
 	0,
 	0,
@@ -136,6 +140,13 @@ void getopts(int argc, char** argv)
 			else
 				usage();
 		}
+		else if (strcmp(argv[count], "--capath") == 0)
+		{
+			if (++count < argc)
+				options.capath = argv[count];
+			else
+				usage();
+		}
 		else if (strcmp(argv[count], "--verbose") == 0)
 		{
 			options.verbose = 1;
@@ -158,6 +169,8 @@ void getopts(int argc, char** argv)
 				printf("Setting server_auth_connection to %s\n", options.server_auth_connection);
 				sprintf(options.anon_connection, "%s://%s:18886", prefix, argv[count]);
 				printf("Setting anon_connection to %s\n", options.anon_connection);
+				sprintf(options.psk_connection, "%s://%s:18888", prefix, argv[count]);
+				printf("Setting psk_connection to %s\n", options.psk_connection);
 			}
 			else
 				usage();
@@ -1106,8 +1119,6 @@ int test2d(struct Options options)
 	return failures;
 }
 
-
-
 /*********************************************************************
 
  Test3a: Server Authentication - server certificate in client trust store
@@ -1947,13 +1958,53 @@ void test7OnConnectFailure(void* context, MQTTAsync_failureData* response)
 	client->testFinished = 1;
 }
 
+int test7OnPublishSuccessCount = 0;
+int test7OnUnsubscribed = 0;
+
+void test7OnPublishSuccess(void* context, MQTTAsync_successData* response)
+{
+	AsyncTestClient* tc = (AsyncTestClient*) context;
+
+	MyLog(LOGA_DEBUG, "In test7OnPublishSuccess callback, %s, qos %d", tc->clientid,
+				response->alt.pub.message.qos);
+
+	test7OnPublishSuccessCount++;
+
+	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount == 3)
+	{
+		MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
+		int rc;
+
+		opts.onSuccess = asyncTestOnDisconnect;
+		opts.context = tc;
+		rc = MQTTAsync_disconnect(tc->client, &opts);
+	}
+}
+
 void test7OnPublishFailure(void* context, MQTTAsync_failureData* response)
 {
 	AsyncTestClient* client = (AsyncTestClient*) context;
-	MyLog(LOGA_DEBUG, "In test7OnPublishFailure callback, %s", client->clientid);
+	MyLog(LOGA_DEBUG, "In test7OnPublishFailure callback, %s %d", client->clientid);
 
 	assert("There should be no failures in this test. ", 0, "test7OnPublishFailure callback was called\n", 0);
 	client->testFinished = 1;
+}
+
+void test7OnUnsubscribe(void* context, MQTTAsync_successData* response)
+{
+	AsyncTestClient* tc = (AsyncTestClient*) context;
+	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
+	int rc;
+
+	MyLog(LOGA_DEBUG, "In test7OnUnsubscribe callback, %s %d %d", tc->clientid,
+			test7OnUnsubscribed, test7OnPublishSuccessCount);
+	opts.onSuccess = asyncTestOnDisconnect;
+	opts.context = tc;
+
+	test7OnUnsubscribed++;
+
+	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount == 3)
+		rc = MQTTAsync_disconnect(tc->client, &opts);
 }
 
 int test7MessageArrived(void* context, char* topicName, int topicLen,
@@ -1987,7 +2038,7 @@ int test7MessageArrived(void* context, char* topicName, int topicLen,
 		pubmsg.payloadlen = test7_payloadlen;
 		pubmsg.qos = 1;
 		pubmsg.retained = 0;
-		opts.onSuccess = NULL;
+		opts.onSuccess = test7OnPublishSuccess;
 		opts.onFailure = test7OnPublishFailure;
 		opts.context = tc;
 
@@ -2002,7 +2053,7 @@ int test7MessageArrived(void* context, char* topicName, int topicLen,
 		pubmsg.payloadlen = test7_payloadlen;
 		pubmsg.qos = 0;
 		pubmsg.retained = 0;
-		opts.onSuccess = NULL;
+		opts.onSuccess = test7OnPublishSuccess;
 		opts.onFailure = test7OnPublishFailure;
 		opts.context = tc;
 		rc = MQTTAsync_sendMessage(tc->client, tc->topic, &pubmsg, &opts);
@@ -2011,7 +2062,7 @@ int test7MessageArrived(void* context, char* topicName, int topicLen,
 	{
 		MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 
-		opts.onSuccess = asyncTestOnUnsubscribe;
+		opts.onSuccess = test7OnUnsubscribe;
 		opts.context = tc;
 		rc = MQTTAsync_unsubscribe(tc->client, tc->topic, &opts);
 		assert("Unsubscribe successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -2023,10 +2074,12 @@ int test7MessageArrived(void* context, char* topicName, int topicLen,
 	return 1;
 }
 
+
 void test7OnSubscribe(void* context, MQTTAsync_successData* response)
 {
 	AsyncTestClient* tc = (AsyncTestClient*) context;
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	int rc, i;
 
 	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback %p", tc);
@@ -2041,8 +2094,14 @@ void test7OnSubscribe(void* context, MQTTAsync_successData* response)
 	pubmsg.qos = 2;
 	pubmsg.retained = 0;
 
+	pubmsg.payload = test7_payload;
+	pubmsg.payloadlen = test7_payloadlen;
+	opts.onSuccess = test7OnPublishSuccess;
+	opts.onFailure = test7OnPublishFailure;
+	opts.context = tc;
+
 	rc = MQTTAsync_send(tc->client, tc->topic, pubmsg.payloadlen, pubmsg.payload,
-			pubmsg.qos, pubmsg.retained, NULL);
+			pubmsg.qos, pubmsg.retained, &opts);
 }
 
 void test7OnConnect(void* context, MQTTAsync_successData* response)
@@ -2146,10 +2205,336 @@ int test7(struct Options options)
 	return failures;
 }
 
+/*********************************************************************
+
+Test8: TLS-PSK - client and server has a common pre-shared key
+
+*********************************************************************/
+
+static unsigned int onPSKAuth(const char* hint,
+                              char* identity,
+                              unsigned int max_identity_len,
+                              unsigned char* psk,
+                              unsigned int max_psk_len,
+                              void* context)
+{
+	unsigned char test_psk[] = {0x50, 0x53, 0x4B, 0x00}; /* {'P', 'S', 'K', '\0' } */
+	MyLog(LOGA_DEBUG, "PSK auth callback");
+
+	assert("Good application context in onPSKAuth", context == (void *) 42, "context was %d\n", context);
+
+	strncpy(identity, "id", max_identity_len);
+	memcpy(psk, test_psk, sizeof(test_psk));
+	return sizeof(test_psk);
+}
+
+
+int test8(struct Options options)
+{
+	char* testname = "test8";
+
+	AsyncTestClient tc =
+	AsyncTestClient_initializer;
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
+	int rc = 0;
+
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 8 - TLS-PSK - client and server has a common pre-shared key");
+	fprintf(xml, "<testcase classname=\"test8\" name=\"%s\"", testname);
+	global_start_time = start_clock();
+
+	MQTTAsync_create(&c, options.psk_connection, "test8", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	tc.client = c;
+	sprintf(tc.clientid, "%s", testname);
+	sprintf(tc.topic, "C client SSL test8");
+	tc.maxmsgs = MAXMSGS;
+	tc.subscribed = 0;
+	tc.testFinished = 0;
+
+	opts.keepAliveInterval = 20;
+	opts.cleansession = 1;
+	opts.username = "testuser";
+	opts.password = "testpassword";
+
+	opts.onSuccess = asyncTestOnConnect;
+	opts.onFailure = asyncTestOnSubscribeFailure;
+	opts.context = &tc;
+
+	opts.ssl = &sslopts;
+	opts.ssl->ssl_psk_cb = onPSKAuth;
+	opts.ssl->ssl_psk_context = (void *) 42;
+	opts.ssl->enabledCipherSuites = "PSK-AES128-CBC-SHA";
+
+	rc = MQTTAsync_setCallbacks(c, &tc, NULL, asyncTestMessageArrived,
+			asyncTestOnDeliveryComplete);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (!tc.subscribed && !tc.testFinished)
+#if defined(WIN32)
+		Sleep(100);
+#else
+		usleep(10000L);
+#endif
+
+	if (tc.testFinished)
+		goto exit;
+
+	while (!tc.testFinished)
+#if defined(WIN32)
+		Sleep(100);
+#else
+		usleep(10000L);
+#endif
+
+	MyLog(LOGA_DEBUG, "Stopping");
+
+exit:
+	MQTTAsync_destroy(&c);
+	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", testname, tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
+/*********************************************************************
+
+ Test9: Mutual SSL Authentication - Testing CApath
+
+ *********************************************************************/
+
+void test9OnConnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	AsyncTestClient* client = (AsyncTestClient*) context;
+	MyLog(LOGA_DEBUG, "In test9OnConnectFailure callback, %s",
+			client->clientid);
+
+	assert("There should be no failures in this test. ", 0, "test9OnConnectFailure callback was called\n", 0);
+	client->testFinished = 1;
+}
+
+int test9(struct Options options)
+{
+	char* testname = "test9";
+
+	AsyncTestClient tc =
+	AsyncTestClient_initializer;
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
+	int rc = 0;
+
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 9 - Mutual SSL authentication with CApath");
+	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
+	global_start_time = start_clock();
+
+	MQTTAsync_create(&c, options.mutual_auth_connection, "test9", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	tc.client = c;
+	sprintf(tc.clientid, "%s", testname);
+	sprintf(tc.topic, "C client SSL test9");
+	tc.maxmsgs = MAXMSGS;
+	//tc.rcvdmsgs = 0;
+	tc.subscribed = 0;
+	tc.testFinished = 0;
+
+	opts.keepAliveInterval = 20;
+	opts.cleansession = 1;
+	opts.username = "testuser";
+	opts.password = "testpassword";
+
+	opts.will = &wopts;
+	opts.will->message = "will message";
+	opts.will->qos = 1;
+	opts.will->retained = 0;
+	opts.will->topicName = "will topic";
+	opts.will = NULL;
+	opts.onSuccess = asyncTestOnConnect;
+	opts.onFailure = test9OnConnectFailure;
+	opts.context = &tc;
+
+	opts.ssl = &sslopts;
+	if (options.server_key_file != NULL)
+		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
+	opts.ssl->keyStore = options.client_key_file; /*file of certificate for client to present to server*/
+	if (options.client_key_pass != NULL)
+		opts.ssl->privateKeyPassword = options.client_key_pass;
+	opts.ssl->CApath = options.capath;
+	opts.ssl->enableServerCertAuth = 1;
+	opts.ssl->verify = 1;
+	MyLog(LOGA_DEBUG, "enableServerCertAuth %d\n", opts.ssl->enableServerCertAuth);
+	MyLog(LOGA_DEBUG, "verify %d\n", opts.ssl->verify);
+
+	rc = MQTTAsync_setCallbacks(c, &tc, NULL, asyncTestMessageArrived,
+			asyncTestOnDeliveryComplete);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (!tc.subscribed && !tc.testFinished)
+#if defined(WIN32)
+		Sleep(100);
+#else
+		usleep(10000L);
+#endif
+
+	if (tc.testFinished)
+		goto exit;
+
+	while (!tc.testFinished)
+#if defined(WIN32)
+		Sleep(100);
+#else
+		usleep(10000L);
+#endif
+
+	MyLog(LOGA_DEBUG, "Stopping");
+
+	exit: MQTTAsync_destroy(&c);
+	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", testname, tests, failures);
+	write_test_result();
+	return failures;
+}
+
+/*********************************************************************
+
+ Test10: Mutual SSL Authentication - Testing CApath
+
+ *********************************************************************/
+
+int test10Finished;
+
+void test10OnConnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	AsyncTestClient* client = (AsyncTestClient*) context;
+	MyLog(LOGA_DEBUG, "In test10OnConnectFailure callback, %s",
+			client->clientid);
+
+	assert("This test should call test10OnConnectFailure. ", 1, "test10OnConnectFailure callback was called\n", 1);
+	test10Finished = 1;
+}
+
+void test10OnConnect(void* context, MQTTAsync_successData* response)
+{
+	MyLog(LOGA_DEBUG, "In test10OnConnect callback, context %p", context);
+
+	assert("This connect should not succeed. ", 0, "test10OnConnect callback was called\n", 0);
+	test10Finished = 1;
+}
+
+int test10(struct Options options)
+{
+	char* testname = "test10";
+
+	AsyncTestClient tc =
+	AsyncTestClient_initializer;
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
+	int rc = 0;
+
+	failures = 0;
+	test10Finished = 0;
+	MyLog(LOGA_INFO, "Starting test 10 - dummy CApath");
+	fprintf(xml, "<testcase classname=\"test10\" name=\"%s\"", testname);
+	global_start_time = start_clock();
+
+	MQTTAsync_create(&c, options.mutual_auth_connection, "test10", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+
+	tc.client = c;
+	sprintf(tc.clientid, "%s", testname);
+	sprintf(tc.topic, "C client SSL test10");
+	tc.maxmsgs = MAXMSGS;
+	//tc.rcvdmsgs = 0;
+	tc.subscribed = 0;
+	tc.testFinished = 0;
+
+	opts.keepAliveInterval = 20;
+	opts.cleansession = 1;
+	opts.username = "testuser";
+	opts.password = "testpassword";
+
+	opts.will = &wopts;
+	opts.will->message = "will message";
+	opts.will->qos = 1;
+	opts.will->retained = 0;
+	opts.will->topicName = "will topic";
+	opts.will = NULL;
+	opts.onSuccess = test10OnConnect;
+	opts.onFailure = test10OnConnectFailure;
+	opts.context = &tc;
+
+	opts.ssl = &sslopts;
+	if (options.server_key_file != NULL)
+		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
+	opts.ssl->keyStore = options.client_key_file; /*file of certificate for client to present to server*/
+	if (options.client_key_pass != NULL)
+		opts.ssl->privateKeyPassword = options.client_key_pass;
+	opts.ssl->CApath = "DUMMY";
+	opts.ssl->enableServerCertAuth = 1;
+	opts.ssl->verify = 1;
+	MyLog(LOGA_DEBUG, "enableServerCertAuth %d\n", opts.ssl->enableServerCertAuth);
+	MyLog(LOGA_DEBUG, "verify %d\n", opts.ssl->verify);
+
+	rc = MQTTAsync_setCallbacks(c, &tc, NULL, asyncTestMessageArrived,
+			asyncTestOnDeliveryComplete);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (!test10Finished)
+#if defined(WIN32)
+		Sleep(100);
+#else
+		usleep(10000L);
+#endif
+	MyLog(LOGA_DEBUG, "Stopping");
+
+	exit: MQTTAsync_destroy(&c);
+	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", testname, tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
 void handleTrace(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 {
 	printf("%s\n", message);
 }
+
 
 int main(int argc, char** argv)
 {
@@ -2157,7 +2542,7 @@ int main(int argc, char** argv)
 	int rc = 0;
 	int (*tests[])() =
             { NULL, test1, test2a, test2b, test2c, test2d, test3a, test3b, test4, /* test5a,
-			test5b, test5c, */ test6, test7 };
+			test5b, test5c, */ test6, test7, test8, test9, test10 };
 
 	xml = fopen("TEST-test5.xml", "w");
 	fprintf(xml, "<testsuite name=\"test5\" tests=\"%d\">\n", (int)ARRAY_SIZE(tests) - 1);

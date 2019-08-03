@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -75,6 +75,9 @@ void SSLSocket_addPendingRead(int sock);
 static int handle_openssl_init = 1;
 static ssl_mutex_type* sslLocks = NULL;
 static ssl_mutex_type sslCoreMutex;
+
+/* Used to store MQTTClient_SSLOptions for TLS-PSK callback */
+static int tls_ex_index_ssl_opts;
 
 #if defined(WIN32) || defined(WIN64)
 #define iov_len len
@@ -315,7 +318,7 @@ The user-defined argument optionally defined by SSL_CTX_set_msg_callback_arg() o
 
 */
 
-	Log(TRACE_PROTOCOL, -1, "%s %s %d buflen %d", (write_p ? "sent" : "received"),
+	Log(TRACE_MINIMUM, -1, "%s %s %d buflen %d", (write_p ? "sent" : "received"),
 		SSLSocket_get_version_string(version),
 		content_type, (int)len);
 }
@@ -483,6 +486,8 @@ int SSLSocket_initialize(void)
 
 	SSL_create_mutex(&sslCoreMutex);
 
+	tls_ex_index_ssl_opts = SSL_get_ex_new_index(0, "paho ssl options", NULL, NULL, NULL);
+
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -514,6 +519,25 @@ void SSLSocket_terminate(void)
 	FUNC_EXIT;
 }
 
+static unsigned int call_ssl_psk_cb(SSL *ssl, const char *hint, char *identity, unsigned int max_identity_len, unsigned char *psk, unsigned int max_psk_len)
+{
+	int rc = 0;
+
+	FUNC_ENTRY;
+
+	SSL_CTX *ctx = SSL_get_SSL_CTX(ssl);
+	MQTTClient_SSLOptions* opts = SSL_CTX_get_ex_data(ctx, tls_ex_index_ssl_opts);
+
+	if (opts == NULL)
+		goto exit;
+
+	if (opts->ssl_psk_cb != NULL)
+		rc = opts->ssl_psk_cb(hint, identity, max_identity_len, psk, max_psk_len, opts->ssl_psk_context);
+exit:
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
 int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 {
 	int rc = 1;
@@ -521,6 +545,9 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	FUNC_ENTRY;
 	if (net->ctx == NULL)
 	{
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+		net->ctx = SSL_CTX_new(TLS_client_method());
+#else
 		int sslVersion = MQTT_SSL_VERSION_DEFAULT;
 		if (opts->struct_version >= 1) sslVersion = opts->sslVersion;
 /* SSL_OP_NO_TLSv1_1 is defined in ssl.h if the library version supports TLSv1.1.
@@ -550,6 +577,7 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 		default:
 			break;
 		}
+#endif
 		if (net->ctx == NULL)
 		{
 			if (opts->struct_version >= 3)
@@ -594,9 +622,9 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 		}
 	}
 
-	if (opts->trustStore)
+	if (opts->trustStore || opts->CApath)
 	{
-		if ((rc = SSL_CTX_load_verify_locations(net->ctx, opts->trustStore, NULL)) != 1)
+		if ((rc = SSL_CTX_load_verify_locations(net->ctx, opts->trustStore, opts->CApath)) != 1)
 		{
 			if (opts->struct_version >= 3)
 				SSLSocket_error("SSL_CTX_load_verify_locations", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
@@ -605,13 +633,16 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 			goto free_ctx;
 		}
 	}
-	else if ((rc = SSL_CTX_set_default_verify_paths(net->ctx)) != 1)
+	else if (!opts->disableDefaultTrustStore)
 	{
-		if (opts->struct_version >= 3)
-			SSLSocket_error("SSL_CTX_set_default_verify_paths", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
-		else
-			SSLSocket_error("SSL_CTX_set_default_verify_paths", NULL, net->socket, rc, NULL, NULL);
-		goto free_ctx;
+		if ((rc = SSL_CTX_set_default_verify_paths(net->ctx)) != 1)
+		{
+			if (opts->struct_version >= 3)
+				SSLSocket_error("SSL_CTX_set_default_verify_paths", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
+			else
+				SSLSocket_error("SSL_CTX_set_default_verify_paths", NULL, net->socket, rc, NULL, NULL);
+			goto free_ctx;
+		}
 	}
 
 	if (opts->enabledCipherSuites)
@@ -625,6 +656,14 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 			goto free_ctx;
 		}
 	}
+
+#ifndef OPENSSL_NO_PSK
+	if (opts->ssl_psk_cb != NULL)
+	{
+		SSL_CTX_set_ex_data(net->ctx, tls_ex_index_ssl_opts, opts);
+		SSL_CTX_set_psk_client_callback(net->ctx, call_ssl_psk_cb);
+	}
+#endif
 
 	SSL_CTX_set_mode(net->ctx, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 
@@ -717,15 +756,34 @@ int SSLSocket_connect(SSL* ssl, int sock, const char* hostname, int verify, int 
 		hostname_len = MQTTProtocol_addressPort(hostname, &port, NULL);
 
 		rc = X509_check_host(cert, hostname, hostname_len, 0, &peername);
-		Log(TRACE_MIN, -1, "rc from X509_check_host is %d", rc);
-		Log(TRACE_MIN, -1, "peername from X509_check_host is %s", peername);
-		
+		if (rc == 1)
+			Log(TRACE_PROTOCOL, -1, "peername from X509_check_host is %s", peername);
+		else
+			Log(TRACE_PROTOCOL, -1, "X509_check_host for hostname %.*s failed, rc %d",
+					hostname_len, hostname, rc);
+
 		if (peername != NULL)
 			OPENSSL_free(peername);
 
-		// 0 == fail, -1 == SSL internal error
-		if (rc == 0 || rc == -1)
-			rc = SSL_FATAL;
+		// 0 == fail, -1 == SSL internal error, -2 == mailformed input
+		if (rc == 0 || rc == -1 || rc == -2)
+		{
+			char* ip_addr = malloc(hostname_len + 1);
+			// cannot use = strndup(hostname, hostname_len); here because of custom Heap
+			if (ip_addr)
+			{
+				strncpy(ip_addr, hostname, hostname_len);
+				ip_addr[hostname_len] = '\0';
+
+				rc = X509_check_ip_asc(cert, ip_addr, 0);
+				Log(TRACE_MIN, -1, "rc from X509_check_ip_asc is %d", rc);
+
+				free(ip_addr);
+			}
+
+			if (rc == 0 || rc == -1 || rc == -2)
+				rc = SSL_FATAL;
+		}
 
 		if (cert)
 			X509_free(cert);

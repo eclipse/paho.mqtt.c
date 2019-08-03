@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -493,6 +493,7 @@ static void MQTTClient_emptyMessageQueue(Clients* client)
 		{
 			qEntry* qe = (qEntry*)(current->content);
 			free(qe->topicName);
+			MQTTProperties_free(&qe->msg->properties);
 			free(qe->msg->payload);
 			free(qe->msg);
 		}
@@ -776,11 +777,13 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 				if (m->c->connect_state == SSL_IN_PROGRESS)
 				{
 					Log(TRACE_MIN, -1, "Posting connect semaphore for client %s", m->c->clientID);
+					m->c->connect_state = NOT_IN_PROGRESS;
 					Thread_post_sem(m->connect_sem);
 				}
 				if (m->c->connect_state == WAIT_FOR_CONNACK)
 				{
 					Log(TRACE_MIN, -1, "Posting connack semaphore for client %s", m->c->clientID);
+					m->c->connect_state = NOT_IN_PROGRESS;
 					Thread_post_sem(m->connack_sem);
 				}
 			}
@@ -877,6 +880,8 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 				if ((m->rc = getsockopt(m->c->net.socket, SOL_SOCKET, SO_ERROR, (char*)&error, &len)) == 0)
 					m->rc = error;
 				Log(TRACE_MIN, -1, "Posting connect semaphore for client %s rc %d", m->c->clientID, m->rc);
+				printf("Posting connect semaphore for client %s rc %d", m->c->clientID, m->rc);
+				m->c->connect_state = NOT_IN_PROGRESS;
 				Thread_post_sem(m->connect_sem);
 			}
 #if defined(OPENSSL)
@@ -893,6 +898,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 						m->c->session = SSL_get1_session(m->c->net.ssl);
 					m->rc = rc;
 					Log(TRACE_MIN, -1, "Posting connect semaphore for SSL client %s rc %d", m->c->clientID, m->rc);
+					m->c->connect_state = NOT_IN_PROGRESS;
 					Thread_post_sem(m->connect_sem);
 				}
 			}
@@ -1300,7 +1306,7 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 exit:
 	if (rc == MQTTCLIENT_SUCCESS)
 	{
-		if (options->struct_version == 4) /* means we have to fill out return values */
+		if (options->struct_version >= 4) /* means we have to fill out return values */
 		{
 			options->returned.serverURI = serverURI;
 			options->returned.MQTTVersion = MQTTVersion;
@@ -1449,6 +1455,12 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 			m->c->sslopts->ssl_error_cb = options->ssl->ssl_error_cb;
 			m->c->sslopts->ssl_error_context = options->ssl->ssl_error_context;
 		}
+		if (m->c->sslopts->struct_version >= 4)
+		{
+			m->c->sslopts->ssl_psk_cb = options->ssl->ssl_psk_cb;
+			m->c->sslopts->ssl_psk_context = options->ssl->ssl_psk_context;
+			m->c->sslopts->disableDefaultTrustStore = options->ssl->disableDefaultTrustStore;
+		}
 	}
 #endif
 
@@ -1569,7 +1581,7 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions*
 #if defined(OPENSSL)
 	if (options->struct_version != 0 && options->ssl) /* check validity of SSL options structure */
 	{
-		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version < 0 || options->ssl->struct_version > 3)
+		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version < 0 || options->ssl->struct_version > 4)
 		{
 			rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
 			goto exit;

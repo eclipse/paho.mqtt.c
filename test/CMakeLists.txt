@@ -391,7 +391,7 @@ ADD_TEST(
 
 ADD_TEST(
 	NAME test45-7-pending-tokens
-	COMMAND test45 "--test_no" "7" "--connection" ${MQTT_TEST_BROKER} --verbose
+	COMMAND test45 "--test_no" "7" --verbose "--connection" ${MQTT_TEST_BROKER} 
 )
 
 ADD_TEST(

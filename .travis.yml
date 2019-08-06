@@ -45,6 +45,7 @@ deploy:
   provider: releases
   api_key:
     secure: L5fp5Q+ZQvLt7jsQ6RUWbK6sm29ZNmfLmEXKZCg4g6+kaqxXmt3ijJT6VgNoZh209bP8TyfxDbbmdvfN542O4rM69WcyrBEIfsvkjs2thnyYpMz7PtDXUfiLdv/Wws4f8QCFOwy4xKmk4VFcrxPRoQRBGcQ23P3l1bcW56m4qB3JzupqHsj7/caMQmyk3gGKx/uSj9Vtvjl7z0pM1NuH2sxkdeUZ1FLDdb6HmY/Wo3v0ldO8gBUfrcjoi9zgjdV5AztxTafVhNu0LIbbAie1y6tMVGUqnXm2W4PqgfhtYAhM8VOfEykzh5sH0+DqA4G82X512aHHegdkK3/wt+DXZX6n/XK4tWBQR87vN8n8Lexj+uKC1Mmh7VTrO6f5QS/eXR1RvG5w+XBKIfHuOC6t6PS3NrRrGxUzY3DzgyBpUSaw+bNbL+auvN0bPz6lBjykiawdCZhjlqytNBOTsgNOyJaWJGE4fMTXQjVDcdZ8Cr/BOXHImXsm5cQ2clBwMg8RGwxBeX4nOcGaCfeYogI84z4uIRwTc5REnW4MCHeZgnZNvf3dG/hUCQpUPB2CIooqj84o36chjTp3at6mZxzKc1aATexmhu9UWRzqT3Ezs8KuaU4LxdlPI0UYO5bWf+BexRCmUwSkHlcqUwoZeRE/Fd4KXkm2r6anisyEJmywfD8=
+  file_glob: true
   file: build.paho/*.tar.gz
   on:
     repo: eclipse/paho.mqtt.c

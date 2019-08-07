@@ -49,5 +49,6 @@ deploy:
   file: build.paho/*.tar.gz
   on:
     repo: eclipse/paho.mqtt.c
+    tags: true
   skip_cleanup: true
   draft: false

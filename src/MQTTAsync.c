@@ -2212,7 +2212,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 				{
 					Connack* connack = (Connack*)pack;
 					int sessionPresent = connack->flags.bits.sessionPresent;
-          
+
 					rc = MQTTAsync_completeConnection(m, connack);
 					if (rc == MQTTASYNC_SUCCESS)
 					{
@@ -2515,7 +2515,7 @@ int MQTTAsync_setCallbacks(MQTTAsync handle, void* context,
 	return rc;
 }
 
-int MQTTAsync_setConnectionLostCallback(MQTTAsync handle, void* context, 
+int MQTTAsync_setConnectionLostCallback(MQTTAsync handle, void* context,
 										MQTTAsync_connectionLost* cl)
 {
 	int rc = MQTTASYNC_SUCCESS;
@@ -2538,7 +2538,7 @@ int MQTTAsync_setConnectionLostCallback(MQTTAsync handle, void* context,
 }
 
 
-int MQTTAsync_setMessageArrivedCallback(MQTTAsync handle, void* context, 
+int MQTTAsync_setMessageArrivedCallback(MQTTAsync handle, void* context,
 										MQTTAsync_messageArrived* ma)
 {
 	int rc = MQTTASYNC_SUCCESS;
@@ -2560,7 +2560,7 @@ int MQTTAsync_setMessageArrivedCallback(MQTTAsync handle, void* context,
 	return rc;
 }
 
-int MQTTAsync_setDeliveryCompleteCallback(MQTTAsync handle, void* context, 
+int MQTTAsync_setDeliveryCompleteCallback(MQTTAsync handle, void* context,
 										  MQTTAsync_deliveryComplete* dc)
 {
 	int rc = MQTTASYNC_SUCCESS;
@@ -3361,9 +3361,8 @@ exit:
 int MQTTAsync_subscribe(MQTTAsync handle, const char* topic, int qos, MQTTAsync_responseOptions* response)
 {
 	int rc = 0;
-	char *const topics[] = {(char*)topic};
 	FUNC_ENTRY;
-	rc = MQTTAsync_subscribeMany(handle, 1, topics, &qos, response);
+	rc = MQTTAsync_subscribeMany(handle, 1, (char * const *)(&topic), &qos, response);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -3442,9 +3441,8 @@ exit:
 int MQTTAsync_unsubscribe(MQTTAsync handle, const char* topic, MQTTAsync_responseOptions* response)
 {
 	int rc = 0;
-	char *const topics[] = {(char*)topic};
 	FUNC_ENTRY;
-	rc = MQTTAsync_unsubscribeMany(handle, 1, topics, response);
+	rc = MQTTAsync_unsubscribeMany(handle, 1, (char * const *)(&topic), response);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

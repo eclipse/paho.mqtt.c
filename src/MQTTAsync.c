@@ -431,7 +431,7 @@ static int MQTTAsync_assignMsgId(MQTTAsyncs* m);
 static int MQTTAsync_countBufferedMessages(MQTTAsyncs* m);
 static void MQTTAsync_retry(void);
 static int MQTTAsync_connecting(MQTTAsyncs* m);
-static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc);
+static MQTTPacket* MQTTAsync_cycle(int* sock, MQTTAsyncs** _m, unsigned long timeout, int* rc);
 /*static int pubCompare(void* a, void* b);*/
 
 
@@ -2147,7 +2147,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 		MQTTPacket* pack = NULL;
 
 		MQTTAsync_unlock_mutex(mqttasync_mutex);
-		pack = MQTTAsync_cycle(&sock, timeout, &rc);
+		pack = MQTTAsync_cycle(&sock, &m, timeout, &rc);
 		MQTTAsync_lock_mutex(mqttasync_mutex);
 		if (tostop)
 			break;
@@ -2162,7 +2162,6 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 			/* Socket_close(sock); - removing socket in this case is not necessary (Bug 442400) */
 			continue;
 		}
-		m = (MQTTAsyncs*)(handles->current->content);
 		if (m == NULL)
 		{
 			Log(LOG_ERROR, -1, "Client structure was NULL for socket %d - removing socket", sock);
@@ -3734,7 +3733,7 @@ exit:
 }
 
 
-static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
+static MQTTPacket* MQTTAsync_cycle(int* sock, MQTTAsyncs** _m, unsigned long timeout, int* rc)
 {
 	struct timeval tp = {0L, 0L};
 	MQTTPacket* pack = NULL;
@@ -3763,6 +3762,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 		MQTTAsyncs* m = NULL;
 		if (ListFindItem(handles, sock, clientSockCompare) != NULL)
 			m = (MQTTAsync)(handles->current->content);
+		*_m = m;
 		if (m != NULL)
 		{
 			Log(TRACE_MINIMUM, -1, "m->c->connect_state = %d", m->c->connect_state);

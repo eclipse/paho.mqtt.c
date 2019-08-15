@@ -926,7 +926,7 @@ int Socket_continueWrites(fd_set* pwset)
 	ListElement* curpending = s.write_pending->first;
 
 	FUNC_ENTRY;
-	while (curpending)
+	while (curpending && curpending->content)
 	{
 		int socket = *(int*)(curpending->content);
 		int rc = 0;

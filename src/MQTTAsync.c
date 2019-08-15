@@ -2266,10 +2266,12 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 									m->c->maxInflightMessages = recv_max;
 							}
 						}
-						MQTTPacket_freeConnack(connack);
 					}
 					else
-						nextOrClose(m, rc, "CONNACK return code");
+					{
+					    nextOrClose(m, rc, "CONNACK return code");
+					}
+					MQTTPacket_freeConnack(connack);
 				}
 				else if (pack->header.bits.type == SUBACK)
 				{

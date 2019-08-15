@@ -777,21 +777,21 @@ void WebSocket_pong(networkHandles *net, char *app_data,
 int WebSocket_putdatas(networkHandles* net, char* buf0, size_t buf0len,
 	int count, char** buffers, size_t* buflens, int* freeData)
 {
-	int rc;
+	int rc, i;
+    size_t data_len = buf0len + 4u;
+    size_t header_len;
+    const int mask_data = 1;
 
-	FUNC_ENTRY;
+    FUNC_ENTRY;
+    for (rc = 0; rc < count; ++rc)
+        data_len += buflens[rc];
+
+    header_len = WebSocket_calculateFrameHeaderSize(
+        net, mask_data, data_len);
+
 	/* prepend WebSocket frame */
 	if ( net->websocket )
 	{
-		size_t data_len = buf0len + 4u;
-		size_t header_len;
-		const int mask_data = 1;
-
-		for (rc = 0; rc < count; ++rc)
-			data_len += buflens[rc];
-
-		header_len = WebSocket_calculateFrameHeaderSize(
-			net, mask_data, data_len);
 		rc = WebSocket_buildFrame(
 			net, WebSocket_OP_BINARY, mask_data, buf0, buf0len,
 			count, buffers, buflens );
@@ -802,7 +802,19 @@ int WebSocket_putdatas(networkHandles* net, char* buf0, size_t buf0len,
 			buf0 -= header_len;
 			buf0len += header_len;
 		}
+		else
+		{
+		    rc = -1;
+		    goto exit;
+		}
 	}
+	else
+	{
+        buf0 -= header_len;
+        for (i = 0; i < buf0len; i++) {
+            buf0[i] = buf0[i + header_len];
+        }
+    }
 
 #if defined(OPENSSL)
 	if (net->ssl)
@@ -810,7 +822,7 @@ int WebSocket_putdatas(networkHandles* net, char* buf0, size_t buf0len,
 	else
 #endif
 		rc = Socket_putdatas(net->socket, buf0, buf0len, count, buffers, buflens, freeData);
-
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

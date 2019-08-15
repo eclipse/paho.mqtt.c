@@ -47,14 +47,18 @@
 #define _GNU_SOURCE /* for pthread_mutexattr_settype */
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
 #if !defined(WIN32) && !defined(WIN64)
 	#include <sys/time.h>
+#else
+	#include <io.h>
 #endif
 
 #if !defined(NO_PERSISTENCE)
 #include "MQTTPersistence.h"
 #endif
 #include "MQTTAsync.h"
+#include "Socket.h"
 #include "utf-8.h"
 #include "MQTTProtocol.h"
 #include "MQTTProtocolOut.h"
@@ -100,10 +104,9 @@ enum MQTTAsync_threadStates
 	STOPPED, STARTING, RUNNING, STOPPING
 };
 
-enum MQTTAsync_threadStates sendThread_state = STOPPED;
-enum MQTTAsync_threadStates receiveThread_state = STOPPED;
-static thread_id_type sendThread_id = 0,
-					receiveThread_id = 0;
+
+enum MQTTAsync_threadStates thread_state = STOPPED;
+static thread_id_type thread_id = 0;
 
 #if defined(WIN32) || defined(WIN64)
 static mutex_type mqttasync_mutex = NULL;
@@ -155,8 +158,6 @@ static mutex_type socket_mutex = &socket_mutex_store;
 static pthread_mutex_t mqttcommand_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 static mutex_type mqttcommand_mutex = &mqttcommand_mutex_store;
 
-static cond_type_struct send_cond_store = { PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER };
-static cond_type send_cond = &send_cond_store;
 
 void MQTTAsync_init(void)
 {
@@ -175,11 +176,6 @@ void MQTTAsync_init(void)
 		printf("MQTTAsync: error %d initializing command_mutex\n", rc);
 	if ((rc = pthread_mutex_init(socket_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing socket_mutex\n", rc);
-
-	if ((rc = pthread_cond_init(&send_cond->cond, NULL)) != 0)
-		printf("MQTTAsync: error %d initializing send_cond cond\n", rc);
-	if ((rc = pthread_mutex_init(&send_cond->mutex, &attr)) != 0)
-		printf("MQTTAsync: error %d initializing send_cond mutex\n", rc);
 }
 
 #define WINAPI
@@ -189,6 +185,7 @@ static volatile int global_initialized = 0;
 static List* handles = NULL;
 static int tostop = 0;
 static List* commands = NULL;
+static int send_notify[2];
 
 
 #if defined(WIN32) || defined(WIN64)
@@ -413,11 +410,10 @@ static void MQTTAsync_freeCommand(MQTTAsync_queuedCommand *command);
 static void MQTTAsync_writeComplete(int socket, int rc);
 static int MQTTAsync_processCommand(void);
 static void MQTTAsync_checkTimeouts(void);
-static thread_return_type WINAPI MQTTAsync_sendThread(void* n);
 static void MQTTAsync_emptyMessageQueue(Clients* client);
 static void MQTTAsync_removeResponsesAndCommands(MQTTAsyncs* m);
 static int MQTTAsync_completeConnection(MQTTAsyncs* m, Connack* connack);
-static thread_return_type WINAPI MQTTAsync_receiveThread(void* n);
+static thread_return_type WINAPI MQTTAsync_thread(void* n);
 static void MQTTAsync_stop(void);
 static void MQTTAsync_closeOnly(Clients* client, enum MQTTReasonCodes reasonCode, MQTTProperties* props);
 static void MQTTAsync_closeSession(Clients* client, enum MQTTReasonCodes reasonCode, MQTTProperties* props);
@@ -432,7 +428,24 @@ static int MQTTAsync_countBufferedMessages(MQTTAsyncs* m);
 static void MQTTAsync_retry(void);
 static int MQTTAsync_connecting(MQTTAsyncs* m);
 static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc);
+static void MQTTAsync_sendNotify(void);
 /*static int pubCompare(void* a, void* b);*/
+
+
+static void MQTTAsync_sendNotify()
+{
+	FUNC_ENTRY;
+	if (send_notify[SOCKET_NOTIFY_IN] != 0)
+	{
+#if defined(WIN32) || defined(WIN64)
+	(void) _write(send_notify[SOCKET_NOTIFY_IN], SOCKET_NOTIFY_CODE, 1);
+#else
+	(void) write(send_notify[SOCKET_NOTIFY_IN], SOCKET_NOTIFY_CODE, 1);
+#endif
+		
+	}
+	FUNC_EXIT;
+}
 
 
 void MQTTAsync_sleep(long milliseconds)
@@ -580,6 +593,24 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 			Heap_initialize();
 		#endif
 		Log_initialize((Log_nameValue*)MQTTAsync_getVersionInfo());
+
+		/* initial pipe and set O_NONBLOCK flag for the read end (send_notify) of the pipe. */
+#if defined(WIN32) || defined(WIN64)
+		u_long flag = 1L;
+		if ((rc = _pipe(send_notify, 256, O_TEXT)) != 0
+			|| (rc = ioctl(send_notify[SOCKET_NOTIFY_OUT], FIONBIO, &flag)) != 0
+			|| (rc = ioctl(send_notify[SOCKET_NOTIFY_IN], FIONBIO, &flag)) != 0) {
+			Log(LOG_ERROR, -1, "Error %d create pipe for thread notify", rc);
+			goto exit;
+		}
+#else
+		if ((rc = pipe(send_notify)) != 0
+			|| (rc = fcntl(send_notify[SOCKET_NOTIFY_OUT], F_SETFL, O_NONBLOCK)) != 0
+			|| (rc = fcntl(send_notify[SOCKET_NOTIFY_IN], F_SETFL, O_NONBLOCK)) != 0) {
+			Log(LOG_ERROR, -1, "Error %d create pipe for thread notify", rc);
+			goto exit;
+		}
+#endif
 		bstate->clients = ListInitialize();
 		Socket_outInitialize();
 		Socket_setWriteCompleteCallback(MQTTAsync_writeComplete);
@@ -1074,13 +1105,7 @@ static int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_si
 #endif
 	}
 	MQTTAsync_unlock_mutex(mqttcommand_mutex);
-#if !defined(WIN32) && !defined(WIN64)
-	rc = Thread_signal_cond(send_cond);
-	if (rc != 0)
-		Log(LOG_ERROR, 0, "Error %d from signal cond", rc);
-#else
-	rc = Thread_post_sem(send_sem);
-#endif
+	MQTTAsync_sendNotify();
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -1396,7 +1421,6 @@ static int MQTTAsync_processCommand(void)
 	List* ignored_clients = NULL;
 
 	FUNC_ENTRY;
-	MQTTAsync_lock_mutex(mqttasync_mutex);
 	MQTTAsync_lock_mutex(mqttcommand_mutex);
 
 	/* only the first command in the list must be processed for any particular client, so if we skip
@@ -1729,7 +1753,6 @@ static int MQTTAsync_processCommand(void)
 		ListAppend(command->client->responses, command, sizeof(command));
 
 exit:
-	MQTTAsync_unlock_mutex(mqttasync_mutex);
 	rc = (command != NULL);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -1806,7 +1829,6 @@ static void MQTTAsync_checkTimeouts(void)
 	if (difftime(now, last) < 3)
 		goto exit;
 
-	MQTTAsync_lock_mutex(mqttasync_mutex);
 	last = now;
 	while (ListNextElement(handles, &current))		/* for each client */
 	{
@@ -1847,46 +1869,11 @@ static void MQTTAsync_checkTimeouts(void)
 			}
 		}
 	}
-	MQTTAsync_unlock_mutex(mqttasync_mutex);
 exit:
 	FUNC_EXIT;
 }
 
 
-static thread_return_type WINAPI MQTTAsync_sendThread(void* n)
-{
-	FUNC_ENTRY;
-	MQTTAsync_lock_mutex(mqttasync_mutex);
-	sendThread_state = RUNNING;
-	sendThread_id = Thread_getid();
-	MQTTAsync_unlock_mutex(mqttasync_mutex);
-	while (!tostop)
-	{
-		int rc;
-
-		while (commands->count > 0)
-		{
-			if (MQTTAsync_processCommand() == 0)
-				break;  /* no commands were processed, so go into a wait */
-		}
-#if !defined(WIN32) && !defined(WIN64)
-		if ((rc = Thread_wait_cond(send_cond, 1)) != 0 && rc != ETIMEDOUT)
-			Log(LOG_ERROR, -1, "Error %d waiting for condition variable", rc);
-#else
-		if ((rc = Thread_wait_sem(send_sem, 1000)) != 0 && rc != ETIMEDOUT)
-			Log(LOG_ERROR, -1, "Error %d waiting for semaphore", rc);
-#endif
-
-		MQTTAsync_checkTimeouts();
-	}
-	sendThread_state = STOPPING;
-	MQTTAsync_lock_mutex(mqttasync_mutex);
-	sendThread_state = STOPPED;
-	sendThread_id = 0;
-	MQTTAsync_unlock_mutex(mqttasync_mutex);
-	FUNC_EXIT;
-	return 0;
-}
 
 
 static void MQTTAsync_emptyMessageQueue(Clients* client)
@@ -2119,11 +2106,7 @@ static int MQTTAsync_completeConnection(MQTTAsyncs* m, Connack* connack)
 			}
 		}
 		m->pack = NULL;
-#if !defined(WIN32) && !defined(WIN64)
-		Thread_signal_cond(send_cond);
-#else
-		Thread_post_sem(send_sem);
-#endif
+		MQTTAsync_sendNotify();
 	}
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -2131,14 +2114,14 @@ static int MQTTAsync_completeConnection(MQTTAsyncs* m, Connack* connack)
 
 
 /* This is the thread function that handles the calling of callback functions if set */
-static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
+static thread_return_type WINAPI MQTTAsync_thread(void* n)
 {
 	long timeout = 10L; /* first time in we have a small timeout.  Gets things started more quickly */
 
 	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttasync_mutex);
-	receiveThread_state = RUNNING;
-	receiveThread_id = Thread_getid();
+	thread_state = RUNNING;
+	thread_id = Thread_getid();
 	while (!tostop)
 	{
 		int rc = SOCKET_ERROR;
@@ -2152,6 +2135,15 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 		if (tostop)
 			break;
 		timeout = 1000L;
+
+        /* Process commands */
+        while (commands->count > 0) {
+            if (MQTTAsync_processCommand() == 0)
+            break; /* no commands were processed */
+        }
+
+        /* Check timeout */
+        MQTTAsync_checkTimeouts();
 
 		if (sock == 0)
 			continue;
@@ -2433,16 +2425,9 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 			}
 		}
 	}
-	receiveThread_state = STOPPED;
-	receiveThread_id = 0;
+	thread_state = STOPPED;
+	thread_id = 0;
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
-#if !defined(WIN32) && !defined(WIN64)
-	if (sendThread_state != STOPPED)
-		Thread_signal_cond(send_cond);
-#else
-	if (sendThread_state != STOPPED)
-		Thread_post_sem(send_sem);
-#endif
 	FUNC_EXIT;
 	return 0;
 }
@@ -2453,7 +2438,7 @@ static void MQTTAsync_stop(void)
 	int rc = 0;
 
 	FUNC_ENTRY;
-	if (sendThread_state != STOPPED || receiveThread_state != STOPPED)
+	if (thread_state != STOPPED)
 	{
 		int conn_count = 0;
 		ListElement* current = NULL;
@@ -2474,7 +2459,7 @@ static void MQTTAsync_stop(void)
 		{
 			int count = 0;
 			tostop = 1;
-			while ((sendThread_state != STOPPED || receiveThread_state != STOPPED) && ++count < 100)
+			while ((thread_state != STOPPED) && ++count < 100)
 			{
 				MQTTAsync_unlock_mutex(mqttasync_mutex);
 				Log(TRACE_MIN, -1, "sleeping");
@@ -2893,18 +2878,11 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	m->connectTimeout = options->connectTimeout;
 
 	tostop = 0;
-	if (sendThread_state != STARTING && sendThread_state != RUNNING)
+	if (thread_state != STARTING && thread_state != RUNNING)
 	{
 		MQTTAsync_lock_mutex(mqttasync_mutex);
-		sendThread_state = STARTING;
-		Thread_start(MQTTAsync_sendThread, NULL);
-		MQTTAsync_unlock_mutex(mqttasync_mutex);
-	}
-	if (receiveThread_state != STARTING && receiveThread_state != RUNNING)
-	{
-		MQTTAsync_lock_mutex(mqttasync_mutex);
-		receiveThread_state = STARTING;
-		Thread_start(MQTTAsync_receiveThread, handle);
+		thread_state = STARTING;
+		Thread_start(MQTTAsync_thread, handle);
 		MQTTAsync_unlock_mutex(mqttasync_mutex);
 	}
 
@@ -3232,7 +3210,7 @@ static int MQTTAsync_assignMsgId(MQTTAsyncs* m)
 	FUNC_ENTRY;
 	/* We might be called in a callback. In which case, this mutex will be already locked. */
 	thread_id = Thread_getid();
-	if (thread_id != sendThread_id && thread_id != receiveThread_id)
+	if (thread_id != thread_id)
 	{
 		MQTTAsync_lock_mutex(mqttasync_mutex);
 		locked = 1;
@@ -3749,7 +3727,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 	{
 #endif
 		/* 0 from getReadySocket indicates no work to do, -1 == error, but can happen normally */
-		*sock = Socket_getReadySocket(0, &tp,socket_mutex);
+		*sock = Socket_getReadySocket(0, &tp,socket_mutex, send_notify);
 		if (!tostop && *sock == 0 && (tp.tv_sec > 0L || tp.tv_usec > 0L))
 			MQTTAsync_sleep(100L);
 #if defined(OPENSSL)

@@ -81,6 +81,9 @@
 #define INET6_ADDRSTRLEN 46 /** only needed for gcc/cygwin on windows */
 #endif
 
+#define SOCKET_NOTIFY_IN  1
+#define SOCKET_NOTIFY_OUT 0
+#define SOCKET_NOTIFY_CODE "z"
 
 #if !defined(max)
 #define max(A,B) ( (A) > (B) ? (A):(B))
@@ -126,7 +129,7 @@ typedef struct
 
 void Socket_outInitialize(void);
 void Socket_outTerminate(void);
-int Socket_getReadySocket(int more_work, struct timeval *tp, mutex_type mutex);
+int Socket_getReadySocket(int more_work, struct timeval *tp, mutex_type mutex, int* notify);
 int Socket_getch(int socket, char* c);
 char *Socket_getdata(int socket, size_t bytes, size_t* actual_len);
 int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens, int* frees);

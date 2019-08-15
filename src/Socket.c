@@ -37,6 +37,10 @@
 #include "SSLSocket.h"
 #endif
 
+#if defined(WIN32) || defined(WIN64)
+	#include <io.h>
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
@@ -227,9 +231,11 @@ int isReady(int socket, fd_set* read_set, fd_set* write_set)
  *  @param tp the timeout to be used for the select, unless overridden
  *  @return the socket next ready, or 0 if none is ready
  */
-int Socket_getReadySocket(int more_work, struct timeval *tp, mutex_type mutex)
+int Socket_getReadySocket(int more_work, struct timeval *tp, mutex_type mutex, int* notify)
 {
 	int rc = 0;
+	int maxfdp1_saved;
+	char notify_code;
 	static struct timeval zero = {0L, 0L}; /* 0 seconds */
 	static struct timeval one = {1L, 0L}; /* 1 second */
 	struct timeval timeout = one;
@@ -258,6 +264,14 @@ int Socket_getReadySocket(int more_work, struct timeval *tp, mutex_type mutex)
 
 		memcpy((void*)&(s.rset), (void*)&(s.rset_saved), sizeof(s.rset));
 		memcpy((void*)&(pwset), (void*)&(s.pending_wset), sizeof(pwset));
+
+		/* Add socket notify*/
+		if (notify) {
+			FD_SET(notify[SOCKET_NOTIFY_OUT], &(s.rset));
+			maxfdp1_saved = s.maxfdp1;
+			s.maxfdp1 = max(s.maxfdp1, notify[SOCKET_NOTIFY_OUT] + 1);
+		}
+
 		/* Prevent performance issue by unlocking the socket_mutex while waiting for a ready socket. */
 		Thread_unlock_mutex(mutex);
 		rc = select(s.maxfdp1, &(s.rset), &pwset, NULL, &timeout);
@@ -267,6 +281,22 @@ int Socket_getReadySocket(int more_work, struct timeval *tp, mutex_type mutex)
 			Socket_error("read select", 0);
 			goto exit;
 		}
+
+		if (notify) {
+			/* Read socket notify */
+			if (FD_ISSET(notify[SOCKET_NOTIFY_OUT], &(s.rset))) {
+#if defined(WIN32) || defined(WIN64)
+				if (_read(notify[SOCKET_NOTIFY_OUT], &notify_code, 1) != 1) {
+#else
+				if (read(notify[SOCKET_NOTIFY_OUT], &notify_code, 1) != 1) {
+#endif
+					Log(TRACE_MAX, -1, "Socket notify read error.");
+				}
+			}
+			FD_CLR(notify[SOCKET_NOTIFY_OUT], &(s.rset));
+			s.maxfdp1 = maxfdp1_saved;
+		}
+
 		Log(TRACE_MAX, -1, "Return code %d from read select", rc);
 
 		if (Socket_continueWrites(&pwset) == SOCKET_ERROR)

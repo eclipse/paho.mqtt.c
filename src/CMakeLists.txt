@@ -92,13 +92,13 @@ INSTALL(TARGETS MQTTVersion
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 IF (PAHO_BUILD_STATIC)
-    ADD_LIBRARY(paho-mqtt3c-static STATIC $<TARGET_OBJECTS:common_obj> MQTTClient.c)
-    ADD_LIBRARY(paho-mqtt3a-static STATIC $<TARGET_OBJECTS:common_obj> MQTTAsync.c)
+    ADD_LIBRARY(paho-mqtt3c STATIC $<TARGET_OBJECTS:common_obj> MQTTClient.c)
+    ADD_LIBRARY(paho-mqtt3a STATIC $<TARGET_OBJECTS:common_obj> MQTTAsync.c)
 
-    TARGET_LINK_LIBRARIES(paho-mqtt3c-static ${LIBS_SYSTEM})
-    TARGET_LINK_LIBRARIES(paho-mqtt3a-static ${LIBS_SYSTEM})
+    TARGET_LINK_LIBRARIES(paho-mqtt3c ${LIBS_SYSTEM})
+    TARGET_LINK_LIBRARIES(paho-mqtt3a ${LIBS_SYSTEM})
 
-    INSTALL(TARGETS paho-mqtt3c-static paho-mqtt3a-static
+    INSTALL(TARGETS paho-mqtt3c paho-mqtt3a
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 ENDIF()
 
@@ -162,18 +162,18 @@ IF (PAHO_WITH_SSL)
         RUNTIME DESTINATION  ${CMAKE_INSTALL_BINDIR})
 
     IF (PAHO_BUILD_STATIC)
-        ADD_LIBRARY(paho-mqtt3cs-static STATIC $<TARGET_OBJECTS:common_ssl_obj> MQTTClient.c SSLSocket.c)
-        ADD_LIBRARY(paho-mqtt3as-static STATIC $<TARGET_OBJECTS:common_ssl_obj> MQTTAsync.c SSLSocket.c)
+        ADD_LIBRARY(paho-mqtt3cs STATIC $<TARGET_OBJECTS:common_ssl_obj> MQTTClient.c SSLSocket.c)
+        ADD_LIBRARY(paho-mqtt3as STATIC $<TARGET_OBJECTS:common_ssl_obj> MQTTAsync.c SSLSocket.c)
 
-        TARGET_LINK_LIBRARIES(paho-mqtt3cs-static ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
-        TARGET_LINK_LIBRARIES(paho-mqtt3as-static ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
+        TARGET_LINK_LIBRARIES(paho-mqtt3cs ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
+        TARGET_LINK_LIBRARIES(paho-mqtt3as ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
         SET_TARGET_PROPERTIES(
-        paho-mqtt3cs-static paho-mqtt3as-static PROPERTIES
+        paho-mqtt3cs paho-mqtt3as PROPERTIES
         VERSION ${CLIENT_VERSION}
         SOVERSION ${PAHO_VERSION_MAJOR}
         COMPILE_DEFINITIONS "OPENSSL=1")
 
-        INSTALL(TARGETS paho-mqtt3cs-static paho-mqtt3as-static
+        INSTALL(TARGETS paho-mqtt3cs paho-mqtt3as
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
     ENDIF()
 ENDIF()

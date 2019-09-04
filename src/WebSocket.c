@@ -52,7 +52,7 @@
 #    define be16toh(x)   ntohs(x)
 #    define be32toh(x)   ntohl(x)
 #    define be64toh(x)   ntohll(x)
-#  elif BTYE_ORDER == BIG_ENDIAN
+#  elif BYTE_ORDER == BIG_ENDIAN
 #    define htobe16(x)   (x)
 #    define htobe32(x)   (x)
 #    define htobe64(x)   (x)

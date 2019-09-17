@@ -428,23 +428,48 @@ ADD_TEST(
 )
 
 ADD_TEST(
-	NAME test5-2a-multual-ssl-auth-certificates-in-place
+	NAME test5-1-ws-ssl-connection-to-no-SSL-server
+	COMMAND test5 "--test_no" "1" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+)
+
+ADD_TEST(
+	NAME test5-2a-mutual-ssl-auth-certificates-in-place
 	COMMAND test5 "--test_no" "2" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
-	NAME test5-2b-multual-ssl-auth-broker-missing-client-cert
+	NAME test5-2a-ws-mutual-ssl-auth-certificates-in-place
+	COMMAND test5 "--test_no" "2" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+)
+
+ADD_TEST(
+	NAME test5-2b-mutual-ssl-auth-broker-missing-client-cert
 	COMMAND test5 "--test_no" "3" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
-	NAME test5-2c-multual-ssl-auth-client-missing-broker-cert
+	NAME test5-2b-ws-mutual-ssl-auth-broker-missing-client-cert
+	COMMAND test5 "--test_no" "3" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+)
+
+ADD_TEST(
+	NAME test5-2c-mutual-ssl-auth-client-missing-broker-cert
 	COMMAND test5 "--test_no" "4" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
-	NAME test5-2d-multual-ssl-auth-client-missing-client-cert
+	NAME test5-2c-ws-mutual-ssl-auth-client-missing-broker-cert
+	COMMAND test5 "--test_no" "4" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+)
+
+ADD_TEST(
+	NAME test5-2d-mutual-ssl-auth-client-missing-client-cert
 	COMMAND test5 "--test_no" "5" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+)
+
+ADD_TEST(
+	NAME test5-2d-ws-mutual-ssl-auth-client-missing-client-cert
+	COMMAND test5 "--test_no" "5" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
@@ -453,8 +478,18 @@ ADD_TEST(
 )
 
 ADD_TEST(
+	NAME test5-3a-ws-server-auth-server-cert-in-client-store
+	COMMAND test5 "--test_no" "6" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+)
+
+ADD_TEST(
 	NAME test5-3b-server-auth-client-missing-broker-cert
 	COMMAND test5 "--test_no" "7" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+)
+
+ADD_TEST(
+	NAME test5-3b-ws-server-auth-client-missing-broker-cert
+	COMMAND test5 "--test_no" "7" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
@@ -463,13 +498,28 @@ ADD_TEST(
 )
 
 ADD_TEST(
+	NAME test5-4-ws-accept-invalid-certificates
+	COMMAND test5 "--test_no" "8" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+)
+
+ADD_TEST(
 	NAME test5-6-multiple-connections
 	COMMAND test5 "--test_no" "9" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
+	NAME test5-6-ws-multiple-connections
+	COMMAND test5 "--test_no" "9" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+)
+
+ADD_TEST(
 	NAME test5-7-big-messages
 	COMMAND test5 "--test_no" "10" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+)
+
+ADD_TEST(
+	NAME test5-7-ws-big-messages
+	COMMAND test5 "--test_no" "10" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 #ADD_TEST(
@@ -485,13 +535,25 @@ ADD_TEST(
 )
 
 ADD_TEST(
+	NAME test5-5-ws-server-verify-with-capath
+	COMMAND test5 "--test_no" "12" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--capath"	"${CERTDIR}/capath"
+)
+
+ADD_TEST(
 	NAME test5-6-server-verify-with-capath
 	COMMAND test5 "--test_no" "13" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--capath"	"${CERTDIR}/notexist"
 )
 
+ADD_TEST(
+	NAME test5-6-ws-server-verify-with-capath
+	COMMAND test5 "--test_no" "13" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--capath"	"${CERTDIR}/notexist"
+)
+
 SET_TESTS_PROPERTIES(
 	test5-5-server-verify-with-capath
+	test5-5-ws-server-verify-with-capath
 	test5-6-server-verify-with-capath
+	test5-6-ws-server-verify-with-capath
 	PROPERTIES TIMEOUT 540
 )
 ENDIF ()
@@ -499,15 +561,25 @@ ENDIF ()
 
 SET_TESTS_PROPERTIES(
 	test5-1-ssl-connection-to-no-SSL-server
-	test5-2a-multual-ssl-auth-certificates-in-place
-	test5-2b-multual-ssl-auth-broker-missing-client-cert
-	test5-2c-multual-ssl-auth-client-missing-broker-cert
-	test5-2d-multual-ssl-auth-client-missing-client-cert
+	test5-1-ws-ssl-connection-to-no-SSL-server
+	test5-2a-mutual-ssl-auth-certificates-in-place
+	test5-2a-ws-mutual-ssl-auth-certificates-in-place
+	test5-2b-mutual-ssl-auth-broker-missing-client-cert
+	test5-2b-ws-mutual-ssl-auth-broker-missing-client-cert
+	test5-2c-mutual-ssl-auth-client-missing-broker-cert
+	test5-2c-ws-mutual-ssl-auth-client-missing-broker-cert
+	test5-2d-mutual-ssl-auth-client-missing-client-cert
+	test5-2d-ws-mutual-ssl-auth-client-missing-client-cert
 	test5-3a-server-auth-server-cert-in-client-store
+	test5-3a-ws-server-auth-server-cert-in-client-store
 	test5-3b-server-auth-client-missing-broker-cert
+	test5-3b-ws-server-auth-client-missing-broker-cert
 	test5-4-accept-invalid-certificates
+	test5-4-ws-accept-invalid-certificates
 	test5-6-multiple-connections
+	test5-6-ws-multiple-connections
 	test5-7-big-messages
+	test5-7-ws-big-messages
 #	test5-8-psk-ssl-auth
 	PROPERTIES TIMEOUT 540
 )

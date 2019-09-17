@@ -69,6 +69,7 @@ struct Options
 	int test_no;
 	int size;
 	int websockets;
+	int message_count;
 } options =
 {
 	"ssl://m2m.eclipse.org:18883",
@@ -86,6 +87,7 @@ struct Options
 	0,
 	5000000,
 	0,
+	3,
 };
 
 typedef struct
@@ -180,6 +182,26 @@ void getopts(int argc, char** argv)
 			options.websockets = 1;
 			printf("\nSetting websockets on\n");
 		}
+		else if (strcmp(argv[count], "--size") == 0)
+		{
+			if (++count < argc)
+			{
+				options.size = atoi(argv[count]);
+				printf("\nSetting size to %d\n", options.size);
+			}else
+				usage();
+		}
+		else if (strcmp(argv[count], "--count") == 0)
+		{
+			if (++count < argc)
+			{
+				options.message_count = atoi(argv[count]);
+				printf("\nSetting message count to %d\n", options.message_count);
+			}else
+				usage();
+		}
+		else
+			printf("Unrecognized option %s\n", argv[count]);
 		count++;
 	}
 }
@@ -2003,7 +2025,7 @@ void test7OnUnsubscribe(void* context, MQTTAsync_successData* response)
 
 	test7OnUnsubscribed++;
 
-	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount == 3)
+	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount == options.message_count)
 		rc = MQTTAsync_disconnect(tc->client, &opts);
 }
 
@@ -2044,7 +2066,7 @@ int test7MessageArrived(void* context, char* topicName, int topicLen,
 
 		rc = MQTTAsync_sendMessage(tc->client, tc->topic, &pubmsg, &opts);
 	}
-	else if (message_count == 2)
+	else if (message_count < options.message_count)
 	{
 		MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 		MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;

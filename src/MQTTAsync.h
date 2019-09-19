@@ -243,8 +243,8 @@ typedef void* MQTTAsync;
  * A value representing an MQTT message. A token is returned to the
  * client application when a message is published. The token can then be used to
  * check that the message was successfully delivered to its destination (see
- * MQTTAsync_publish(),
- * MQTTAsync_publishMessage(),
+ * MQTTAsync_send(),
+ * MQTTAsync_sendMessage(),
  * MQTTAsync_deliveryComplete(), and
  * MQTTAsync_getPendingTokens()).
  */
@@ -252,8 +252,8 @@ typedef int MQTTAsync_token;
 
 /**
  * A structure representing the payload and attributes of an MQTT message. The
- * message topic is not part of this structure (see MQTTAsync_publishMessage(),
- * MQTTAsync_publish(), MQTTAsync_receive(), MQTTAsync_freeMessage()
+ * message topic is not part of this structure (see MQTTAsync_sendMessage(),
+ * MQTTAsync_send(), MQTTAsync_receive(), MQTTAsync_freeMessage()
  * and MQTTAsync_messageArrived()).
  */
 typedef struct
@@ -1378,7 +1378,7 @@ DLLExport int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int 
 
 /**
   * This function attempts to publish a message to a given topic (see also
-  * MQTTAsync_publish()). An ::MQTTAsync_token is issued when
+  * MQTTAsync_send()). An ::MQTTAsync_token is issued when
   * this function returns successfully. If the client application needs to
   * test for successful delivery of messages, a callback should be set
   * (see ::MQTTAsync_onSuccess() and ::MQTTAsync_deliveryComplete()).

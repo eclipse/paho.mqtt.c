@@ -357,6 +357,8 @@ typedef struct MQTTAsync_struct
 	MQTTAsync_command disconnect;		/* Disconnect operation properties */
 	MQTTAsync_command* pending_write;	/* Is there a socket write pending? */
 
+	/* List for current connection's commands that have sent and needing a response.
+	   The command element come from global variable list "commands". */
 	List* responses;
 	unsigned int command_seqno;
 
@@ -1447,6 +1449,8 @@ static int MQTTAsync_processCommand(void)
 		ListAppend(ignored_clients, cmd->client, sizeof(cmd->client));
 	}
 	ListFreeNoContent(ignored_clients);
+
+    /* Detach the current node from command list. */
 	if (command)
 	{
 		ListDetach(commands, command);
@@ -1460,6 +1464,7 @@ static int MQTTAsync_processCommand(void)
 	if (!command)
 		goto exit; /* nothing to do */
 
+	/* Handle command base on command type. */
 	if (command->command.type == CONNECT)
 	{
 		if (command->client->c->connect_state != NOT_IN_PROGRESS || command->client->c->connected)
@@ -1531,6 +1536,7 @@ static int MQTTAsync_processCommand(void)
 		MQTTSubscribe_options* subopts = NULL;
 		int i;
 
+		/* List all the topics objects and qoss objects for subscribe routine. caution: will not allocate new room for these contents. */
 		for (i = 0; i < command->command.details.sub.count; i++)
 		{
 			ListAppend(topics, command->command.details.sub.topics[i], strlen(command->command.details.sub.topics[i]));
@@ -1545,6 +1551,8 @@ static int MQTTAsync_processCommand(void)
 				subopts = &command->command.details.sub.opts;
 		}
 		rc = MQTTProtocol_subscribe(command->client->c, topics, qoss, command->command.token, subopts, props);
+
+		/* Only free the list node and do not affect the contents of the original data block. */
 		ListFreeNoContent(topics);
 		ListFreeNoContent(qoss);
 		if (command->client->c->MQTTVersion >= MQTTVERSION_5 && command->command.details.sub.count > 1)
@@ -1659,6 +1667,7 @@ static int MQTTAsync_processCommand(void)
 		}
 	}
 
+	/* According to the command type and rc value, choose to free the command or put it into the client's response list. */
 	if (command->command.type == CONNECT && rc != SOCKET_ERROR && rc != MQTTASYNC_PERSISTENCE_ERROR)
 	{
 		command->client->connect = command->command;
@@ -1734,8 +1743,11 @@ static int MQTTAsync_processCommand(void)
 			MQTTAsync_freeCommand(command);  /* free up the command if necessary */
 		}
 	}
-	else /* put the command into a waiting for response queue for each client, indexed by msgid */
+	else 
+	{
+		/* put the command into a waiting for response queue for each client, indexed by msgid */
 		ListAppend(command->client->responses, command, sizeof(command));
+	}
 
 exit:
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
@@ -2152,6 +2164,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 	MQTTAsync_lock_mutex(mqttasync_mutex);
 	receiveThread_state = RUNNING;
 	receiveThread_id = Thread_getid();
+
 	while (!tostop)
 	{
 		int rc = SOCKET_ERROR;
@@ -2182,6 +2195,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 			Socket_close(sock);
 			continue;
 		}
+		
 		if (rc == SOCKET_ERROR)
 		{
 			Log(TRACE_MINIMUM, -1, "Error from MQTTAsync_cycle() - removing socket %d", sock);
@@ -2199,6 +2213,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 				qEntry* qe = (qEntry*)(m->c->messageQueue->first->content);
 				int topicLen = qe->topicLen;
 
+				/* ??? why set topiclen to 0? when ma is null, rc = 1, and remove list node but no free topicName and msg room ??? */
 				if (strlen(qe->topicName) == topicLen)
 					topicLen = 0;
 
@@ -2219,6 +2234,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 					Log(TRACE_MIN, -1, "False returned from messageArrived for client %s, message remains on queue",
 						m->c->clientID);
 			}
+			
 			if (pack)
 			{
 				if (pack->header.bits.type == CONNACK)
@@ -2771,6 +2787,7 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 	if (publish->MQTTVersion >= MQTTVERSION_5)
 		mm->properties = MQTTProperties_copy(&publish->properties);
 
+	/* Deliver the PUBLISH message directly when current client's received PUBLISH queue empty and connection valid.*/
 	if (client->messageQueue->count == 0 && client->connected)
 	{
 		ListElement* found = NULL;
@@ -2786,7 +2803,8 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 		}
 	}
 
-	if (rc == 0) /* if message was not delivered, queue it up */
+	/* if message was not delivered(PUBLISH message queue not empty or deliver failed), queue it up */
+	if (rc == 0) 
 	{
 		qEntry* qe = malloc(sizeof(qEntry));
 		qe->msg = mm;
@@ -3278,7 +3296,7 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int
 	MQTTAsyncs* m = handle;
 	int i = 0;
 	int rc = MQTTASYNC_SUCCESS;
-	MQTTAsync_queuedCommand* sub;
+	MQTTAsync_queuedCommand* sub = NULL;
 	int msgid = 0;
 
 	FUNC_ENTRY;
@@ -3303,14 +3321,13 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int
 		; /* don't overwrite a previous error code */
 	else if ((msgid = MQTTAsync_assignMsgId(m)) == 0)
 		rc = MQTTASYNC_NO_MORE_MSGIDS;
-	else if (m->c->MQTTVersion >= MQTTVERSION_5 && count > 1 && (count != response->subscribeOptionsCount
-			&& response->subscribeOptionsCount != 0))
-		rc = MQTTASYNC_BAD_MQTT_OPTION;
 	else if (response)
 	{
 		if (m->c->MQTTVersion >= MQTTVERSION_5)
 		{
 			if (response->struct_version == 0 || response->onFailure || response->onSuccess)
+				rc = MQTTASYNC_BAD_MQTT_OPTION;
+			else if (count > 1 && (count != response->subscribeOptionsCount && response->subscribeOptionsCount != 0))
 				rc = MQTTASYNC_BAD_MQTT_OPTION;
 		}
 		else if (m->c->MQTTVersion < MQTTVERSION_5)
@@ -3809,6 +3826,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 				nextOrClose(m, MQTTASYNC_FAILURE, "TCP connect completion failure");
 			}
 		}
+		
 		if (pack)
 		{
 			int freed = 1;
@@ -4142,7 +4160,7 @@ const char* MQTTAsync_strerror(int code)
   static char buf[30];
 
   switch (code) {
-    case MQTTASYNC_SUCCESS:
+	case MQTTASYNC_SUCCESS:
       return "Success";
     case MQTTASYNC_FAILURE:
       return "Failure";

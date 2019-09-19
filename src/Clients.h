@@ -126,7 +126,8 @@ typedef struct
 	willMessages* will;
 	List* inboundMsgs;
 	List* outboundMsgs;				/**< in flight */
-	List* messageQueue;
+	List* messageQueue; /* List queue for PUBLISH message from server that RecevieThread can't deliver immediately when
+	                       connected flag is 0 or deliver failed or other PUBLISH message waiting in queue. */
 	unsigned int qentry_seqno;
 	void* phandle;  /* the persistence handle */
 	MQTTClient_persistence* persistence; /* a persistence implementation */

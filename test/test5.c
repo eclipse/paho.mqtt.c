@@ -70,6 +70,7 @@ struct Options
 	int size;
 	int websockets;
 	int message_count;
+	int start_port;
 } options =
 {
 	"ssl://m2m.eclipse.org:18883",
@@ -78,7 +79,7 @@ struct Options
 	"ssl://m2m.eclipse.org:18885",
 	"ssl://m2m.eclipse.org:18886",
 	"ssl://m2m.eclipse.org:18888",
-	"../../../test/ssl/client.pem",
+	NULL, // "../../../test/ssl/client.pem",
 	NULL,
 	NULL, // "../../../test/ssl/test-root-ca.crt",
 	NULL, // "../../../test/ssl/capath",
@@ -88,6 +89,7 @@ struct Options
 	5000000,
 	0,
 	3,
+	18883,
 };
 
 typedef struct
@@ -160,18 +162,24 @@ void getopts(int argc, char** argv)
 			{
 				char* prefix = (options.websockets) ? "wss" : "ssl";
 
-				sprintf(options.connection, "%s://%s:18883", prefix, argv[count]);
+				sprintf(options.connection, "%s://%s:%d", prefix, argv[count],
+						options.start_port);
 				printf("Setting connection to %s\n", options.connection);
-				sprintf(options.mutual_auth_connection, "%s://%s:18884", prefix, argv[count]);
+				sprintf(options.mutual_auth_connection, "%s://%s:%d", prefix, argv[count],
+						options.start_port+1);
 				printf("Setting mutual_auth_connection to %s\n", options.mutual_auth_connection);
-				sprintf(options.nocert_mutual_auth_connection, "%s://%s:18887", prefix, argv[count]);
+				sprintf(options.nocert_mutual_auth_connection, "%s://%s:%d", prefix,
+						argv[count], options.start_port+4);
 				printf("Setting nocert_mutual_auth_connection to %s\n",
 					options.nocert_mutual_auth_connection);
-				sprintf(options.server_auth_connection, "%s://%s:18885", prefix, argv[count]);
+				sprintf(options.server_auth_connection, "%s://%s:%d", prefix, argv[count],
+						options.start_port+2);
 				printf("Setting server_auth_connection to %s\n", options.server_auth_connection);
-				sprintf(options.anon_connection, "%s://%s:18886", prefix, argv[count]);
+				sprintf(options.anon_connection, "%s://%s:%d", prefix, argv[count],
+						options.start_port+3);
 				printf("Setting anon_connection to %s\n", options.anon_connection);
-				sprintf(options.psk_connection, "%s://%s:18888", prefix, argv[count]);
+				sprintf(options.psk_connection, "%s://%s:%d", prefix, argv[count],
+						options.start_port+5);
 				printf("Setting psk_connection to %s\n", options.psk_connection);
 			}
 			else
@@ -188,6 +196,15 @@ void getopts(int argc, char** argv)
 			{
 				options.size = atoi(argv[count]);
 				printf("\nSetting size to %d\n", options.size);
+			}else
+				usage();
+		}
+		else if (strcmp(argv[count], "--port") == 0)
+		{
+			if (++count < argc)
+			{
+				options.start_port = atoi(argv[count]);
+				printf("\nSetting start_port to %d\n", options.start_port);
 			}else
 				usage();
 		}
@@ -2025,7 +2042,7 @@ void test7OnUnsubscribe(void* context, MQTTAsync_successData* response)
 
 	test7OnUnsubscribed++;
 
-	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount == options.message_count)
+	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount >= options.message_count)
 		rc = MQTTAsync_disconnect(tc->client, &opts);
 }
 
@@ -2183,8 +2200,8 @@ int test7(struct Options options)
 
 	opts.keepAliveInterval = 20;
 	opts.cleansession = 1;
-	opts.username = "testuser";
-	opts.password = "testpassword";
+	//opts.username = "testuser";
+	//opts.password = "testpassword";
 
 	opts.will = &wopts;
 	opts.will->message = "will message";
@@ -2199,7 +2216,8 @@ int test7(struct Options options)
 	opts.ssl = &sslopts;
 	if (options.server_key_file != NULL)
 		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
-	opts.ssl->keyStore = options.client_key_file; /*file of certificate for client to present to server*/
+	if (options.client_key_file != NULL)
+		opts.ssl->keyStore = options.client_key_file; /*file of certificate for client to present to server*/
 	if (options.client_key_pass != NULL)
 		opts.ssl->privateKeyPassword = options.client_key_pass;
 	//opts.ssl->enabledCipherSuites = "DEFAULT";

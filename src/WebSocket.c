@@ -421,7 +421,8 @@ void WebSocket_close(networkHandles *net, int status_code, const char *reason)
 		header_len = WebSocket_calculateFrameHeaderSize(net,
 			mask_data, buf0len);
 		buf0 = malloc(header_len + buf0len);
-		if ( !buf0 ) return;
+		if ( !buf0 )
+			goto exit;
 
 		/* encode status code */
 		status_code_be = htobe16((uint16_t)status_code);
@@ -453,7 +454,7 @@ void WebSocket_close(networkHandles *net, int status_code, const char *reason)
 		free( net->websocket_key );
 		net->websocket_key = NULL;
 	}
-
+exit:
 	FUNC_EXIT;
 }
 
@@ -615,6 +616,7 @@ char *WebSocket_getRawSocketData(
 {
 	char *rv;
 
+	FUNC_ENTRY;
 	if (bytes > 0)
 	{
 		if (frame_buffer_data_len - frame_buffer_index >= bytes)
@@ -683,9 +685,7 @@ char *WebSocket_getRawSocketData(
 		SocketBuffer_complete(net->socket);
 	}
 	else 
-	{
-		return rv;
-	}
+		goto exit;
 
 	// if possible, return data from the buffer
 	if (bytes > 0)
@@ -705,6 +705,7 @@ char *WebSocket_getRawSocketData(
 	}
 
 exit:
+	FUNC_EXIT;
 	return rv;
 }
 
@@ -729,7 +730,8 @@ void WebSocket_pong(networkHandles *net, char *app_data,
 		header_len = WebSocket_calculateFrameHeaderSize(net, mask_data,
 			app_data_len);
 		buf0 = malloc(header_len);
-		if ( !buf0 ) return;
+		if ( !buf0 )
+			goto exit;
 
 		WebSocket_buildFrame( net, WebSocket_OP_PONG, 1,
 			&buf0[header_len], header_len, mask_data, &app_data,
@@ -751,6 +753,7 @@ void WebSocket_pong(networkHandles *net, char *app_data,
 		/* clean up memory */
 		free( buf0 );
 	}
+exit:
 	FUNC_EXIT;
 }
 
@@ -1092,6 +1095,7 @@ void WebSocket_terminate( void )
  * @param[in,out]  net                 network connection to upgrade
  *
  * @retval SOCKET_ERROR                failed to upgrade network connection
+ * @retval TCPSOCKET_INTERRUPTED       upgrade not complete, but not failed.  Try again
  * @retval 1                           socket upgraded to use websockets
  *
  * @see WebSocket_connect
@@ -1121,6 +1125,11 @@ int WebSocket_upgrade( networkHandles *net )
 		rc = TCPSOCKET_INTERRUPTED;
 		read_buf = WebSocket_getRawSocketData( net, 12u, &rcv );
 
+		if (read_buf && rcv < 12u) {
+			Log(TRACE_PROTOCOL, 1, "WebSocket upgrade read not complete %lu", rcv );
+			goto exit;
+		}
+
 		if ( rcv > 0 && strncmp( read_buf, "HTTP/1.1", 8u ) == 0 )
 		{
 			if (strncmp( &read_buf[9], "101", 3u ) != 0)
@@ -1134,6 +1143,7 @@ int WebSocket_upgrade( networkHandles *net )
 		if ( rcv > 0 && strncmp( read_buf, "HTTP/1.1 101", 12u ) == 0 )
 		{
 			const char *p;
+
 			read_buf = WebSocket_getRawSocketData( net, 500u, &rcv );
 
 			/* check for upgrade */

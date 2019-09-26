@@ -3717,7 +3717,7 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 	{
 		if ((rc = WebSocket_upgrade( &m->c->net ) ) == SOCKET_ERROR )
 			goto exit;
-		else
+		else if (rc != TCPSOCKET_INTERRUPTED)
 		{
 			m->c->connect_state = WAIT_FOR_CONNACK; /* Websocket upgrade completed, in which case send the MQTT connect packet */
 			if ((rc = MQTTPacket_send_connect(m->c, m->connect.details.conn.MQTTVersion, m->connectProps, m->willProps)) == SOCKET_ERROR)

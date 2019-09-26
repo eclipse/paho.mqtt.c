@@ -880,7 +880,6 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 				if ((m->rc = getsockopt(m->c->net.socket, SOL_SOCKET, SO_ERROR, (char*)&error, &len)) == 0)
 					m->rc = error;
 				Log(TRACE_MIN, -1, "Posting connect semaphore for client %s rc %d", m->c->clientID, m->rc);
-				printf("Posting connect semaphore for client %s rc %d", m->c->clientID, m->rc);
 				m->c->connect_state = NOT_IN_PROGRESS;
 				Thread_post_sem(m->connect_sem);
 			}
@@ -905,9 +904,11 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 #endif
 			else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS)
 			{
+				if (rc != TCPSOCKET_INTERRUPTED) {
 				Log(TRACE_MIN, -1, "Posting websocket handshake for client %s rc %d", m->c->clientID, m->rc);
 				m->c->connect_state = WAIT_FOR_CONNACK;
 				Thread_post_sem(m->connect_sem);
+				}
 			}
 		}
 	}

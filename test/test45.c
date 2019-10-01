@@ -320,7 +320,7 @@ void waitForNoPendingTokens(MQTTAsync c)
 		if (i > 0)
 			MySleep(100);
 	}
-	while (i > 0 && ++count < 10);
+	while (i > 0 && ++count < 100);
 	assert("Number of getPendingTokens should be 0", i == 0, "i was %d ", i);
 }
 
@@ -1443,6 +1443,13 @@ void test7_onConnect5(void* context, MQTTAsync_successData5* response)
 	int rc;
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess5 callback, context %p", context);
+
+	if (test7_just_connect == 1)
+	{ /* we don't need to subscribe if we reconnected */
+		test7_subscribed = 1;
+		return;
+	}
+
 	opts.onSuccess5 = test7_onSubscribe5;
 	opts.context = c;
 
@@ -1474,6 +1481,7 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 	MQTTProperties props = MQTTProperties_initializer;
 	MQTTAsync_createOptions createOpts = MQTTAsync_createOptions_initializer;
 	int i = 0;
+	int count = 0;
 
 	MyLog(LOGA_INFO, "Starting test 7 - persistence, qos %d, MQTT versions: %s then %s", qos,
 			(start_mqtt_version == MQTTVERSION_5) ? "5" : "3.1.1",
@@ -1518,6 +1526,7 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 	if (start_mqtt_version == MQTTVERSION_5)
 	{
 		opts.cleanstart = 1;
+		test7_just_connect = 0;
 		opts.connectProperties = &props;
 		property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 		property.value.integer4 = 999999;
@@ -1651,6 +1660,7 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 	if (restore_mqtt_version == MQTTVERSION_5)
 	{
 		opts.cleanstart = opts.cleansession = 0;
+		test7_just_connect = 1;
 		opts.connectProperties = &props;
 		property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 		property.value.integer4 = 999999;
@@ -1668,6 +1678,7 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 	else
 	{	/* MQTT 3 version */
 		opts.cleanstart = opts.cleansession = 0;
+		test7_just_connect = 1;
 		opts.onSuccess5 = NULL;
 		opts.onFailure5 = NULL;
 		opts.onSuccess = test7_onConnect;
@@ -1701,7 +1712,8 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 	rc = MQTTAsync_disconnect(c, &dopts);
 	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
-	while (!test_finished)
+	count = 0;
+	while (!test_finished && ++count < 100)
 		MySleep(100);
 
 	MQTTAsync_destroy(&c);

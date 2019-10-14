@@ -117,7 +117,7 @@ typedef struct
 	unsigned int connected : 1;		/**< whether it is currently connected */
 	unsigned int good : 1; 			  /**< if we have an error on the socket we turn this off */
 	unsigned int ping_outstanding : 1;
-	signed int connect_state : 4;
+	signed int connect_state : 4;   /**< Connect state only for creating connection process. Caution: System set 'connect_state = NOT_IN_PROCESS; connected = 1' when receiving CONNACK in 'connect_state = WAIT_FOR_CONNACK' state */
 	networkHandles net;
 	int msgID;
 	int keepAliveInterval;

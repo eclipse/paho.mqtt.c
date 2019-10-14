@@ -393,32 +393,33 @@ typedef void MQTTAsync_connectionLost(void* context, char* cause);
  * is enabled, so that when a reconnection attempt succeeds in the background,
  * the application is notified and can take any required actions.
  * @param context A pointer to the <i>context</i> value originally passed to
- * MQTTAsync_setCallbacks(), which contains any application-specific context.
- * @param cause The reason for the disconnection.
+ * MQTTAsync_setConnected(), which contains any application-specific context.
+ * @param cause The reason for the connection.
  * Currently, <i>cause</i> is always set to NULL.
  */
 typedef void MQTTAsync_connected(void* context, char* cause);
 
 /**
- * This is a callback function, which will be called when the client
- * library receives a disconnect packet.
+ * This is a callback function, which only will be called when the client
+ * library receives a disconnect packet from server, otherwise will not.
  * @param context A pointer to the <i>context</i> value originally passed to
- * MQTTAsync_setCallbacks(), which contains any application-specific context.
+ * MQTTAsync_setDisconnected(), which contains any application-specific context.
  * @param properties the properties in the disconnect packet.
- * @param properties the reason code from the disconnect packet
- * Currently, <i>cause</i> is always set to NULL.
+ * @param reasonCode the reason code from the disconnect packet.
  */
 typedef void MQTTAsync_disconnected(void* context, MQTTProperties* properties,
 		enum MQTTReasonCodes reasonCode);
 
 /**
  * Sets the MQTTAsync_disconnected() callback function for a client.
+ * Caution: This callback only will be called when the client library 
+ * receives a disconnect packet from server, otherwise will not.
  * @param handle A valid client handle from a successful call to
  * MQTTAsync_create().
  * @param context A pointer to any application-specific context. The
  * the <i>context</i> pointer is passed to each of the callback functions to
  * provide access to the context information in the callback.
- * @param co A pointer to an MQTTAsync_connected() callback
+ * @param co A pointer to an MQTTAsync_disconnected() callback
  * function.  NULL removes the callback setting.
  * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
  * ::MQTTASYNC_FAILURE if an error occurred.
@@ -882,7 +883,7 @@ typedef struct
 	/** The LWT payload in binary form. This is only checked and used if the message option is NULL */
 	struct
 	{
-  	int len;            /**< binary payload length */
+		int len;           /**< binary payload length */
 		const void* data;  /**< binary payload data */
 	} payload;
 } MQTTAsync_willOptions;
@@ -895,7 +896,7 @@ typedef struct
 #define MQTT_SSL_VERSION_TLS_1_2 3
 
 /**
-* MQTTAsync_sslProperties defines the settings to establish an SSL/TLS connection using the
+* MQTTAsync_SSLOptions defines the settings to establish an SSL/TLS connection using the
 * OpenSSL library. It covers the following scenarios:
 * - Server authentication: The client needs the digital certificate of the server. It is included
 *   in a store containting trusted material (also known as "trust store").
@@ -1046,6 +1047,9 @@ typedef struct
       * information at the client and server is cleared. If cleansession=false,
       * the previous session is resumed. If no previous session exists, a new
       * session is started.
+      *
+      * Caution: This must be 0 when 'MQTTVersion >= MQTTVERSION_5' (variable in this structure below).
+      * otherwise the MQTTAsync_connect routine will return failure.         
 	  */
 	int cleansession;
 	/**
@@ -1160,12 +1164,16 @@ typedef struct
       * A pointer to a callback function to be called if the connect successfully
       * completes.  Can be set to NULL, in which case no indication of successful
       * completion will be received.
+      * Caution: Only will be called once after user call MQTTAsync_connect() and connection 
+      * create success. Would not be called everytime when inner auto reconnect success.
       */
 	MQTTAsync_onSuccess5* onSuccess5;
 	/**
       * A pointer to a callback function to be called if the connect fails.
       * Can be set to NULL, in which case no indication of unsuccessful
       * completion will be received.
+      * Caution: Will be called everytime when attempt to connect and get failure, no
+      * matter user call MQTTAsync_connect() or inner auto reconnect.
       */
 	MQTTAsync_onFailure5* onFailure5;
 } MQTTAsync_connectOptions;

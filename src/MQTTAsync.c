@@ -335,7 +335,7 @@ typedef struct MQTTAsync_struct
 	char* serverURI;
 	int ssl;
 	int websocket;
-	Clients* c;
+	Clients* c;	/* Pointer to one client. */
 
 	/* "Global", to the client, callback definitions */
 	MQTTAsync_connectionLost* cl;
@@ -345,9 +345,11 @@ typedef struct MQTTAsync_struct
 	void* maContext; /* the context to be associated with the msg arrived callback*/
 	void* dcContext; /* the context to be associated with the deliv complete callback*/
 
-	MQTTAsync_connected* connected;
-	void* connected_context; /* the context to be associated with the connected callback*/
+	MQTTAsync_connected* connected;/* Connected callback for each successful connection. no matter user connect call or inner reconnect. */
+	void* connected_context;       /* the context to be associated with the connected callback*/
 
+    /* Disconnect callback function, which only will be called when the client
+       library receives a disconnect packet from server, otherwise will not. */
 	MQTTAsync_disconnected* disconnected;
 	void* disconnected_context; /* the context to be associated with the disconnected callback*/
 
@@ -372,9 +374,11 @@ typedef struct MQTTAsync_struct
 	int automaticReconnect;
 	int minRetryInterval;
 	int maxRetryInterval;
+
+    /* User can provide multiple serverURIs for system to choose from. */
 	int serverURIcount;
 	char** serverURIs;
-	int connectTimeout;
+	int connectTimeout;  	/* The time interval in seconds to allow a connect to complete. */
 
 	int currentInterval;
 	int currentIntervalBase;
@@ -2213,14 +2217,26 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 				qEntry* qe = (qEntry*)(m->c->messageQueue->first->content);
 				int topicLen = qe->topicLen;
 
-				/* ??? why set topiclen to 0? when ma is null, rc = 1, and remove list node but no free topicName and msg room ??? */
+				/* Set 'topicLen' to 0 to indicate that user can get topic length from 'strlen(topicName)'.
+					'topicLen' not 0 means there are one more NULL characters embedded in 'topicName' and the
+					full topic name can be retrieved by accessing 'topicName' as a byte array of length 'topicLen'. */
 				if (strlen(qe->topicName) == topicLen)
 					topicLen = 0;
 
 				if (m->ma)
+				{
+					/* We assume that user must have freed the msg room and topicName room when 'rc = 1'. */
 					rc = MQTTAsync_deliverMessage(m, qe->topicName, topicLen, qe->msg);
+				}
 				else
+				{
+					/* Free each queue node inner pointer's room when no user deliver handler. */
+					MQTTAsync_freeMessage(&(qe->msg));
+					MQTTAsync_free(qe->topicName);
+					qe->topicName = NULL;
+
 					rc = 1;
+				}
 
 				if (rc)
 				{
@@ -2228,6 +2244,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 					if (m->c->persistence)
 						MQTTPersistence_unpersistQueueEntry(m->c, (MQTTPersistence_qEntry*)qe);
 #endif
+					/* Remove list node from queue. caution: node inner pointer's room have been freed above. */
 					ListRemove(m->c->messageQueue, qe); /* qe is freed here */
 				}
 				else
@@ -2249,8 +2266,12 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 						if (m->serverURIcount > 0)
 							Log(TRACE_MIN, -1, "Connect succeeded to %s",
 								m->serverURIs[m->connect.details.conn.currentURI]);
+
+						/* Indicate wether user's connect call or auto reconnect call. */
 						onSuccess = (m->connect.onSuccess != NULL ||
 								m->connect.onSuccess5 != NULL); /* save setting of onSuccess callback */
+
+						/* Providing indication after successful connection, only once for user's connect called. */
 						if (m->connect.onSuccess)
 						{
 							MQTTAsync_successData data;
@@ -2280,12 +2301,15 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 							(*(m->connect.onSuccess5))(m->connect.context, &data);
 							m->connect.onSuccess5 = NULL; /* don't accidentally call it again */
 						}
+
+						/* Providing indication after each successful connection, either the first connection by the user or an automatic reconnection. */
 						if (m->connected)
 						{
 							char* reason = (onSuccess) ? "connect onSuccess called" : "automatic reconnect";
 							Log(TRACE_MIN, -1, "Calling connected for client %s", m->c->clientID);
 							(*(m->connected))(m->connected_context, reason);
 						}
+
 						if (m->c->MQTTVersion >= MQTTVERSION_5)
 						{
 							if (MQTTProperties_hasProperty(&connack->properties, MQTTPROPERTY_CODE_RECEIVE_MAXIMUM))
@@ -2797,9 +2821,13 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 		else
 		{
 			MQTTAsyncs* m = (MQTTAsyncs*)(found->content);
+			int topicLen = publish->topiclen;
+
+			if (strlen(publish->topic) == topicLen)
+				topicLen = 0;
 
 			if (m->ma)
-				rc = MQTTAsync_deliverMessage(m, publish->topic, publish->topiclen, mm);
+				rc = MQTTAsync_deliverMessage(m, publish->topic, topicLen, mm);
 		}
 	}
 
@@ -3866,10 +3894,12 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 					*rc = MQTTProtocol_handlePubacks(pack, *sock);
 				if (!m)
 					Log(LOG_ERROR, -1, "PUBCOMP, PUBACK or PUBREC received for no client, msgid %d", msgid);
+
 				if (m && (msgtype != PUBREC || ackrc >= MQTTREASONCODE_UNSPECIFIED_ERROR))
 				{
 					ListElement* current = NULL;
 
+					/* Call the global delivery complete routine. */
 					if (m->dc)
 					{
 						Log(TRACE_MIN, -1, "Calling deliveryComplete for client %s, msgid %d", m->c->clientID, msgid);
@@ -3922,12 +3952,14 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 								(*(command->command.onFailure5))(command->command.context, &data);
 							}
 							MQTTAsync_freeCommand(command);
-							if (mqttversion >= MQTTVERSION_5)
-								MQTTProperties_free(&msgprops);
+
 							break;
 						}
 					}
 				}
+
+				if (mqttversion >= MQTTVERSION_5)
+					MQTTProperties_free(&msgprops);
 			}
 			else if (pack->header.bits.type == PUBREL)
 				*rc = MQTTProtocol_handlePubrels(pack, *sock);

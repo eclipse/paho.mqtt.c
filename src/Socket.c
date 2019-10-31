@@ -100,19 +100,19 @@ int Socket_setnonblocking(int sock)
  */
 int Socket_error(char* aString, int sock)
 {
-#if defined(WIN32) || defined(WIN64)
-	int errno;
-#endif
+	int err;
 
 #if defined(WIN32) || defined(WIN64)
-	errno = WSAGetLastError();
+	err = WSAGetLastError();
+#else
+	err = errno;
 #endif
-	if (errno != EINTR && errno != EAGAIN && errno != EINPROGRESS && errno != EWOULDBLOCK)
+	if (err != EINTR && err != EAGAIN && err != EINPROGRESS && err != EWOULDBLOCK)
 	{
-		if (strcmp(aString, "shutdown") != 0 || (errno != ENOTCONN && errno != ECONNRESET))
-			Log(TRACE_MINIMUM, -1, "Socket error %s(%d) in %s for socket %d", strerror(errno), errno, aString, sock);
+		if (strcmp(aString, "shutdown") != 0 || (err != ENOTCONN && err != ECONNRESET))
+			Log(TRACE_MINIMUM, -1, "Socket error %s(%d) in %s for socket %d", strerror(err), err, aString, sock);
 	}
-	return errno;
+	return err;
 }
 
 

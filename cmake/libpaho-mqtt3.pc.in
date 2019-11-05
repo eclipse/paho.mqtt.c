@@ -1,0 +1,12 @@
+prefix="@CMAKE_INSTALL_PREFIX@"
+exec_prefix="${prefix}"
+includedir="${prefix}/include"
+libdir="${exec_prefix}/@CMAKE_INSTALL_LIBDIR@"
+
+Name: @PAHO_LIB@
+Description: The Paho MQTT C Library is a fully fledged MQTT client library written in C.
+URL: http://eclipse.org/paho
+Version: 1.3.1
+Requires: @PAHO_REQUIRED_LIBS@
+Cflags: -I"${includedir}"
+Libs: -L"${libdir}" -l@PAHO_LIB@

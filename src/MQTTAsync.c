@@ -1653,7 +1653,7 @@ static int MQTTAsync_processCommand(void)
 					data.token = 0;
 					data.code = MQTTASYNC_OPERATION_INCOMPLETE;
 					data.message = NULL;
-					Log(TRACE_MIN, -1, "Calling connect failure for client %s", command->client->c->clientID);
+					Log(TRACE_MIN, -1, "Calling disconnect failure for client %s", command->client->c->clientID);
 					(*(command->client->connect.onFailure))(command->client->connect.context, &data);
 				}
 				else if (command->client->connect.onFailure5)
@@ -1663,7 +1663,7 @@ static int MQTTAsync_processCommand(void)
 					data.token = 0;
 					data.code = MQTTASYNC_OPERATION_INCOMPLETE;
 					data.message = NULL;
-					Log(TRACE_MIN, -1, "Calling connect failure for client %s", command->client->c->clientID);
+					Log(TRACE_MIN, -1, "Calling disconnect failure for client %s", command->client->c->clientID);
 					(*(command->client->connect.onFailure5))(command->client->connect.context, &data);
 				}
 			}
@@ -3564,7 +3564,7 @@ int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen
 		rc = MQTTASYNC_BAD_QOS;
 	else if (qos > 0 && (msgid = MQTTAsync_assignMsgId(m)) == 0)
 		rc = MQTTASYNC_NO_MORE_MSGIDS;
-	else if (m->createOptions && (MQTTAsync_countBufferedMessages(m) >= m->createOptions->maxBufferedMessages))
+	else if (m->createOptions && (m->createOptions->sendWhileDisconnected != 0) && (MQTTAsync_countBufferedMessages(m) >= m->createOptions->maxBufferedMessages))
 		rc = MQTTASYNC_MAX_BUFFERED_MESSAGES;
 	else if (response)
 	{

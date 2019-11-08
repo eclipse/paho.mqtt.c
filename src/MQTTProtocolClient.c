@@ -617,7 +617,8 @@ void MQTTProtocol_keepalive(time_t now)
 
 		if (client->ping_outstanding == 1)
 		{
-			if (difftime(now, client->net.lastPing) >= client->keepAliveInterval)
+			if ((difftime(now, client->net.lastPing) >= client->keepAliveInterval) 
+			 && (difftime(now, client->net.lastReceived) >= client->keepAliveInterval))
 			{
 				Log(TRACE_PROTOCOL, -1, "PINGRESP not received in keepalive interval for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
 				MQTTProtocol_closeSession(client, 1);

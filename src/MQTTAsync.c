@@ -2809,6 +2809,24 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	int rc = MQTTASYNC_SUCCESS;
 	MQTTAsync_queuedCommand* conn;
 
+#if defined(WIN32) || defined(WIN64)
+	if (mqttasync_mutex == NULL)
+	{
+		mqttasync_mutex = CreateMutex(NULL, 0, NULL);
+		mqttcommand_mutex = CreateMutex(NULL, 0, NULL);
+		send_sem = CreateEvent(
+		NULL,               /* default security attributes */
+		FALSE,              /* manual-reset event? */
+		FALSE,              /* initial state is nonsignaled */
+		NULL                /* object name */
+		);
+		stack_mutex = CreateMutex(NULL, 0, NULL);
+		heap_mutex = CreateMutex(NULL, 0, NULL);
+		log_mutex = CreateMutex(NULL, 0, NULL);
+		socket_mutex = CreateMutex(NULL, 0, NULL);
+	}
+#endif
+
 	FUNC_ENTRY;
 	if (options == NULL)
 	{

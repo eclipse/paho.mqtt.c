@@ -320,7 +320,9 @@ int Thread_post_sem(sem_type sem)
 	#else
 		int val;
 		int rc1 = sem_getvalue(sem, &val);
-		if (val == 0 && sem_post(sem) == -1)
+		if (rc1 != 0)
+			rc = errno;
+		else if (val == 0 && sem_post(sem) == -1)
 			rc = errno;
 	#endif
 

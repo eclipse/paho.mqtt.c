@@ -300,8 +300,12 @@ install: build
 	- $(INSTALL_DATA) doc/man/man1/paho_cs_pub.1 $(DESTDIR)${man1dir}
 	- $(INSTALL_DATA) doc/man/man1/paho_cs_sub.1 $(DESTDIR)${man1dir}
 	
+ifneq ("$(wildcard ${blddir}/doc/MQTTClient/man/man3/MQTTClient.h.3)","")
 	- $(INSTALL_DATA) ${blddir}/doc/MQTTClient/man/man3/MQTTClient.h.3 $(DESTDIR)${man3dir}
+endif
+ifneq ("$(wildcard ${blddir}/doc/MQTTAsync/man/man3/MQTTAsync.h.3)","")
 	- $(INSTALL_DATA) ${blddir}/doc/MQTTAsync/man/man3/MQTTAsync.h.3 $(DESTDIR)${man3dir}
+endif
 	
 uninstall:
 	- rm $(DESTDIR)${libdir}/${MQTTLIB_C_NAME} 
@@ -334,8 +338,12 @@ uninstall:
 	- rm $(DESTDIR)${man1dir}/paho_cs_pub.1
 	- rm $(DESTDIR)${man1dir}/paho_cs_sub.1
 	
+ifneq ("$(wildcard $(DESTDIR)${man3dir}/MQTTClient.h.3)","")
 	- rm $(DESTDIR)${man3dir}/MQTTClient.h.3
+endif
+ifneq ("$(wildcard $(DESTDIR)${man3dir}/MQTTAsync.h.3)","")
 	- rm $(DESTDIR)${man3dir}/MQTTAsync.h.3
+endif
 
 REGEX_DOXYGEN := \
     's;@PROJECT_SOURCE_DIR@/src/\?;;' \

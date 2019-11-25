@@ -164,6 +164,8 @@ void* mymalloc(char* file, int line, size_t size)
 		Log(LOG_ERROR, 13, errmsg);
 		return NULL;
 	}
+	memset(s, 0, sizeof(storageElement));
+
 	s->size = size; /* size without eyecatchers */
 	if ((s->file = malloc(filenamelen)) == NULL)
 	{
@@ -171,6 +173,8 @@ void* mymalloc(char* file, int line, size_t size)
 		free(s);
 		return NULL;
 	}
+	memset(s->file, 0, sizeof(filenamelen));
+
 	space += filenamelen;
 	strcpy(s->file, file);
 #if defined(HEAP_STACK)
@@ -182,6 +186,7 @@ void* mymalloc(char* file, int line, size_t size)
 		free(s);
 		return NULL;
 	}
+	memset(s->stack, 0, sizeof(filenamelen));
 	StackTrace_get(Thread_getid(), s->stack, STACK_LEN);
 #endif
 	s->line = line;
@@ -193,6 +198,7 @@ void* mymalloc(char* file, int line, size_t size)
 		free(s);
 		return NULL;
 	}
+	memset(s->ptr, 0, size + 2*sizeof(int));
 	space += size + 2*sizeof(int);
 	*(int*)(s->ptr) = eyecatcher; /* start eyecatcher */
 	*(int*)(((char*)(s->ptr)) + (sizeof(int) + size)) = eyecatcher; /* end eyecatcher */

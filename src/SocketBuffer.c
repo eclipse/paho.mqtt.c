@@ -276,8 +276,8 @@ char* SocketBuffer_complete(int socket)
 
 
 /**
- * A socket operation had now completed so we can get rid of the queue
- * @param socket the socket for which the operation is now complete
+ * Queued a Charactor to a specific socket
+ * @param socket the socket for which to queue char for
  * @param c the character to queue
  */
 void SocketBuffer_queueChar(int socket, char c)

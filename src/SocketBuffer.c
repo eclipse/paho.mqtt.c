@@ -82,7 +82,7 @@ void SocketBuffer_newDefQ(void)
 	def_queue->buflen = 1000;
 	def_queue->buf = malloc(def_queue->buflen);
 	def_queue->socket = def_queue->index = 0;
-	def_queue->buflen = def_queue->datalen = 0;
+	def_queue->buflen = def_queue->datalen = def_queue->headerlen = 0;
 }
 
 

@@ -246,15 +246,15 @@ int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQT
 void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen);
 void MQTTPacket_freePublish(Publish* pack);
 int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, networkHandles* net, const char* clientID);
-int MQTTPacket_send_puback(int msgid, networkHandles* net, const char* clientID);
+int MQTTPacket_send_puback(int MQTTVersion, int msgid, networkHandles* net, const char* clientID);
 void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen);
 
 void MQTTPacket_freeAck(Ack* pack);
 void MQTTPacket_freeSuback(Suback* pack);
 void MQTTPacket_freeUnsuback(Unsuback* pack);
-int MQTTPacket_send_pubrec(int msgid, networkHandles* net, const char* clientID);
-int MQTTPacket_send_pubrel(int msgid, int dup, networkHandles* net, const char* clientID);
-int MQTTPacket_send_pubcomp(int msgid, networkHandles* net, const char* clientID);
+int MQTTPacket_send_pubrec(int MQTTVersion, int msgid, networkHandles* net, const char* clientID);
+int MQTTPacket_send_pubrel(int MQTTVersion, int msgid, int dup, networkHandles* net, const char* clientID);
+int MQTTPacket_send_pubcomp(int MQTTVersion, int msgid, networkHandles* net, const char* clientID);
 
 void MQTTPacket_free_packet(MQTTPacket* pack);
 

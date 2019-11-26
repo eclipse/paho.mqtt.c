@@ -3869,11 +3869,11 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 								(*(command->command.onFailure5))(command->command.context, &data);
 							}
 							MQTTAsync_freeCommand(command);
-							if (mqttversion >= MQTTVERSION_5)
-								MQTTProperties_free(&msgprops);
 							break;
 						}
 					}
+					if (mqttversion >= MQTTVERSION_5)
+						MQTTProperties_free(&msgprops);
 				}
 			}
 			else if (pack->header.bits.type == PUBREL)

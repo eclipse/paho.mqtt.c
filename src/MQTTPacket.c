@@ -91,7 +91,7 @@ pf new_packets[] =
 
 
 static char* readUTFlen(char** pptr, char* enddata, int* len);
-static int MQTTPacket_send_ack(int type, int msgid, int dup, networkHandles *net);
+static int MQTTPacket_send_ack(int MQTTVersion, int type, int msgid, int dup, networkHandles *net);
 
 /**
  * Reads one MQTT packet from a socket.
@@ -594,13 +594,14 @@ void MQTTPacket_freeAck(Ack* pack)
 
 /**
  * Send an MQTT acknowledgement packet down a socket.
+ * @param MQTTVersion the version of MQTT being used
  * @param type the MQTT packet type e.g. SUBACK
  * @param msgid the MQTT message id to use
  * @param dup boolean - whether to set the MQTT DUP flag
  * @param net the network handle to send the data to
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-static int MQTTPacket_send_ack(int type, int msgid, int dup, networkHandles *net)
+static int MQTTPacket_send_ack(int MQTTVersion, int type, int msgid, int dup, networkHandles *net)
 {
 	Header header;
 	int rc;
@@ -614,7 +615,7 @@ static int MQTTPacket_send_ack(int type, int msgid, int dup, networkHandles *net
 	if (type == PUBREL)
 	    header.bits.qos = 1;
 	writeInt(&ptr, msgid);
-	if ((rc = MQTTPacket_send(net, header, buf, 2, 1, MQTTVERSION_3_1_1)) != TCPSOCKET_INTERRUPTED)
+	if ((rc = MQTTPacket_send(net, header, buf, 2, 1, MQTTVersion)) != TCPSOCKET_INTERRUPTED)
 		free(buf);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -623,17 +624,18 @@ static int MQTTPacket_send_ack(int type, int msgid, int dup, networkHandles *net
 
 /**
  * Send an MQTT PUBACK packet down a socket.
+ * @param MQTTVersion the version of MQTT being used
  * @param msgid the MQTT message id to use
  * @param socket the open socket to send the data to
  * @param clientID the string client identifier, only used for tracing
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-int MQTTPacket_send_puback(int msgid, networkHandles* net, const char* clientID)
+int MQTTPacket_send_puback(int MQTTVersion, int msgid, networkHandles* net, const char* clientID)
 {
 	int rc = 0;
 
 	FUNC_ENTRY;
-	rc =  MQTTPacket_send_ack(PUBACK, msgid, 0, net);
+	rc =  MQTTPacket_send_ack(MQTTVersion, PUBACK, msgid, 0, net);
 	Log(LOG_PROTOCOL, 12, NULL, net->socket, clientID, msgid, rc);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -676,17 +678,18 @@ void MQTTPacket_freeUnsuback(Unsuback* pack)
 
 /**
  * Send an MQTT PUBREC packet down a socket.
+ * @param MQTTVersion the version of MQTT being used
  * @param msgid the MQTT message id to use
  * @param socket the open socket to send the data to
  * @param clientID the string client identifier, only used for tracing
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-int MQTTPacket_send_pubrec(int msgid, networkHandles* net, const char* clientID)
+int MQTTPacket_send_pubrec(int MQTTVersion, int msgid, networkHandles* net, const char* clientID)
 {
 	int rc = 0;
 
 	FUNC_ENTRY;
-	rc =  MQTTPacket_send_ack(PUBREC, msgid, 0, net);
+	rc =  MQTTPacket_send_ack(MQTTVersion, PUBREC, msgid, 0, net);
 	Log(LOG_PROTOCOL, 13, NULL, net->socket, clientID, msgid, rc);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -695,18 +698,19 @@ int MQTTPacket_send_pubrec(int msgid, networkHandles* net, const char* clientID)
 
 /**
  * Send an MQTT PUBREL packet down a socket.
+ * @param MQTTVersion the version of MQTT being used
  * @param msgid the MQTT message id to use
  * @param dup boolean - whether to set the MQTT DUP flag
  * @param socket the open socket to send the data to
  * @param clientID the string client identifier, only used for tracing
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-int MQTTPacket_send_pubrel(int msgid, int dup, networkHandles* net, const char* clientID)
+int MQTTPacket_send_pubrel(int MQTTVersion, int msgid, int dup, networkHandles* net, const char* clientID)
 {
 	int rc = 0;
 
 	FUNC_ENTRY;
-	rc = MQTTPacket_send_ack(PUBREL, msgid, dup, net);
+	rc = MQTTPacket_send_ack(MQTTVersion, PUBREL, msgid, dup, net);
 	Log(LOG_PROTOCOL, 16, NULL, net->socket, clientID, msgid, rc);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -715,17 +719,18 @@ int MQTTPacket_send_pubrel(int msgid, int dup, networkHandles* net, const char* 
 
 /**
  * Send an MQTT PUBCOMP packet down a socket.
+ * @param MQTTVersion the version of MQTT being used
  * @param msgid the MQTT message id to use
  * @param socket the open socket to send the data to
  * @param clientID the string client identifier, only used for tracing
  * @return the completion code (e.g. TCPSOCKET_COMPLETE)
  */
-int MQTTPacket_send_pubcomp(int msgid, networkHandles* net, const char* clientID)
+int MQTTPacket_send_pubcomp(int MQTTVersion, int msgid, networkHandles* net, const char* clientID)
 {
 	int rc = 0;
 
 	FUNC_ENTRY;
-	rc = MQTTPacket_send_ack(PUBCOMP, msgid, 0, net);
+	rc = MQTTPacket_send_ack(MQTTVersion, PUBCOMP, msgid, 0, net);
 	Log(LOG_PROTOCOL, 18, NULL, net->socket, clientID, msgid, rc);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -734,6 +739,7 @@ int MQTTPacket_send_pubcomp(int msgid, networkHandles* net, const char* clientID
 
 /**
  * Function used in the new packets table to create acknowledgement packets.
+ * @param MQTTVersion the version of MQTT being used
  * @param aHeader the MQTT header byte
  * @param data the rest of the packet
  * @param datalen the length of the rest of the packet

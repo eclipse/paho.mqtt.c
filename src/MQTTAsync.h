@@ -327,6 +327,9 @@ typedef struct
  * called by the client library when a new message that matches a client
  * subscription has been received from the server. This function is executed on
  * a separate thread to the one on which the client application is running.
+ *
+ * <b>Note:</b> Neither MQTTAsync_create() nor MQTTAsync_destroy() should be
+ * called within this callback.
  * @param context A pointer to the <i>context</i> value originally passed to
  * MQTTAsync_setCallbacks(), which contains any application-specific context.
  * @param topicName The topic associated with the received message.
@@ -357,6 +360,9 @@ typedef int MQTTAsync_messageArrived(void* context, char* topicName, int topicLe
  * handshaking and acknowledgements for the requested quality of service (see
  * MQTTAsync_message.qos) have been completed. This function is executed on a
  * separate thread to the one on which the client application is running.
+ *
+ * <b>Note:</b> Neither MQTTAsync_create() nor MQTTAsync_destroy() should be
+ * called within this callback.
  * @param context A pointer to the <i>context</i> value originally passed to
  * MQTTAsync_setCallbacks(), which contains any application-specific context.
  * @param token The ::MQTTAsync_token associated with
@@ -377,6 +383,9 @@ typedef void MQTTAsync_deliveryComplete(void* context, MQTTAsync_token token);
  * appropriate action, such as trying to reconnect or reporting the problem.
  * This function is executed on a separate thread to the one on which the
  * client application is running.
+ *
+ * <b>Note:</b> Neither MQTTAsync_create() nor MQTTAsync_destroy() should be
+ * called within this callback.
  * @param context A pointer to the <i>context</i> value originally passed to
  * MQTTAsync_setCallbacks(), which contains any application-specific context.
  * @param cause The reason for the disconnection.
@@ -392,6 +401,9 @@ typedef void MQTTAsync_connectionLost(void* context, char* cause);
  * callback can be used.  It is intended for use when automatic reconnect
  * is enabled, so that when a reconnection attempt succeeds in the background,
  * the application is notified and can take any required actions.
+ *
+ * <b>Note:</b> Neither MQTTAsync_create() nor MQTTAsync_destroy() should be
+ * called within this callback.
  * @param context A pointer to the <i>context</i> value originally passed to
  * MQTTAsync_setCallbacks(), which contains any application-specific context.
  * @param cause The reason for the disconnection.
@@ -402,6 +414,9 @@ typedef void MQTTAsync_connected(void* context, char* cause);
 /**
  * This is a callback function, which will be called when the client
  * library receives a disconnect packet.
+ *
+ * <b>Note:</b> Neither MQTTAsync_create() nor MQTTAsync_destroy() should be
+ * called within this callback.
  * @param context A pointer to the <i>context</i> value originally passed to
  * MQTTAsync_setCallbacks(), which contains any application-specific context.
  * @param properties the properties in the disconnect packet.
@@ -415,6 +430,9 @@ typedef void MQTTAsync_disconnected(void* context, MQTTProperties* properties,
  * Sets the MQTTAsync_disconnected() callback function for a client.
  * @param handle A valid client handle from a successful call to
  * MQTTAsync_create().
+ *
+ * <b>Note:</b> Neither MQTTAsync_create() nor MQTTAsync_destroy() should be
+ * called within this callback.
  * @param context A pointer to any application-specific context. The
  * the <i>context</i> pointer is passed to each of the callback functions to
  * provide access to the context information in the callback.
@@ -538,6 +556,9 @@ typedef struct
  * notification of the successful completion of an API call. The function is
  * registered with the client library by passing it as an argument in
  * ::MQTTAsync_responseOptions.
+ *
+ * <b>Note:</b> Neither MQTTAsync_create() nor MQTTAsync_destroy() should be
+ * called within this callback.
  * @param context A pointer to the <i>context</i> value originally passed to
  * ::MQTTAsync_responseOptions, which contains any application-specific context.
  * @param response Any success data associated with the API completion.
@@ -551,6 +572,9 @@ typedef void MQTTAsync_onSuccess(void* context, MQTTAsync_successData* response)
  * notification of the successful completion of an API call. The function is
  * registered with the client library by passing it as an argument in
  * ::MQTTAsync_responseOptions.
+ *
+ * <b>Note:</b> Neither MQTTAsync_create() nor MQTTAsync_destroy() should be
+ * called within this callback.
  * @param context A pointer to the <i>context</i> value originally passed to
  * ::MQTTAsync_responseOptions, which contains any application-specific context.
  * @param response Any success data associated with the API completion.
@@ -563,6 +587,9 @@ typedef void MQTTAsync_onSuccess5(void* context, MQTTAsync_successData5* respons
  * notification of the unsuccessful completion of an API call. The function is
  * registered with the client library by passing it as an argument in
  * ::MQTTAsync_responseOptions.
+ *
+ * <b>Note:</b> Neither MQTTAsync_create() nor MQTTAsync_destroy() should be
+ * called within this callback.
  * @param context A pointer to the <i>context</i> value originally passed to
  * ::MQTTAsync_responseOptions, which contains any application-specific context.
  * @param response Failure data associated with the API completion.
@@ -575,6 +602,9 @@ typedef void MQTTAsync_onFailure(void* context,  MQTTAsync_failureData* response
  * notification of the unsuccessful completion of an API call. The function is
  * registered with the client library by passing it as an argument in
  * ::MQTTAsync_responseOptions.
+ *
+ * <b>Note:</b> Neither MQTTAsync_create() nor MQTTAsync_destroy() should be
+ * called within this callback.
  * @param context A pointer to the <i>context</i> value originally passed to
  * ::MQTTAsync_responseOptions, which contains any application-specific context.
  * @param response Failure data associated with the API completion.

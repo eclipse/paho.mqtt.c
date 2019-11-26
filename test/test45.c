@@ -1492,7 +1492,7 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 	test_finished = 0;
 
 	createOpts.MQTTVersion = start_mqtt_version;
-	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_PROTOCOL);
+	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
 	rc = MQTTAsync_createWithOptions(&c, options.connection, "async_test7",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
@@ -1623,7 +1623,7 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 
 	MQTTAsync_destroy(&c); /* force re-reading persistence on create */
 
-	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_PROTOCOL);
+	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
 	createOpts.MQTTVersion = restore_mqtt_version;
 	rc = MQTTAsync_createWithOptions(&c, options.connection, "async_test7",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
@@ -1732,6 +1732,7 @@ int test7(struct Options options)
 	fprintf(xml, "<testcase classname=\"test7\" name=\"persistence\"");
 	global_start_time = start_clock();
 	rc = test7_run(1, MQTTVERSION_5, MQTTVERSION_5) +
+		 test7_run(2, MQTTVERSION_3_1_1, MQTTVERSION_3_1_1) +
 		 test7_run(2, MQTTVERSION_5, MQTTVERSION_5) +
 		 test7_run(2, MQTTVERSION_3_1_1, MQTTVERSION_5) +
 		 test7_run(2, MQTTVERSION_5, MQTTVERSION_3_1_1);

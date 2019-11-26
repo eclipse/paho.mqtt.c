@@ -887,7 +887,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 			else if (m->c->connect_state == SSL_IN_PROGRESS)
 			{
 				rc = m->c->sslopts->struct_version >= 3 ?
-					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI, 
+					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI,
 						m->c->sslopts->verify, m->c->sslopts->ssl_error_cb, m->c->sslopts->ssl_error_context) :
 					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI,
 						m->c->sslopts->verify, NULL, NULL);
@@ -1935,10 +1935,9 @@ MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char* topic, int qos
 		MQTTSubscribe_options* opts, MQTTProperties* props)
 {
 	MQTTResponse rc;
-	char *const topics[] = {(char*)topic};
 
 	FUNC_ENTRY;
-	rc = MQTTClient_subscribeMany5(handle, 1, topics, &qos, opts, props);
+	rc = MQTTClient_subscribeMany5(handle, 1, (char * const *)(&topic), &qos, opts, props);
 	if (qos == MQTT_BAD_SUBSCRIBE) /* addition for MQTT 3.1.1 - error code from subscribe */
 		rc.reasonCode = MQTT_BAD_SUBSCRIBE;
 	FUNC_EXIT_RC(rc.reasonCode);
@@ -2067,9 +2066,8 @@ int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic)
 MQTTResponse MQTTClient_unsubscribe5(MQTTClient handle, const char* topic, MQTTProperties* props)
 {
 	MQTTResponse rc;
-	char *const topics[] = {(char*)topic};
 
-	rc = MQTTClient_unsubscribeMany5(handle, 1, topics, props);
+	rc = MQTTClient_unsubscribeMany5(handle, 1, (char * const *)(&topic), props);
 	return rc;
 }
 

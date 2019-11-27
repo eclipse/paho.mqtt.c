@@ -1704,11 +1704,6 @@ static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int call_conne
 		rc = MQTTCLIENT_FAILURE;
 		goto exit;
 	}
-	if (m->c->connected == 0 && m->c->connect_state == NOT_IN_PROGRESS)
-	{
-		rc = MQTTCLIENT_DISCONNECTED;
-		goto exit;
-	}
 	was_connected = m->c->connected; /* should be 1 */
 	if (m->c->connected != 0)
 	{

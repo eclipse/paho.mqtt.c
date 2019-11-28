@@ -1481,7 +1481,6 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 	MQTTProperties props = MQTTProperties_initializer;
 	MQTTAsync_createOptions createOpts = MQTTAsync_createOptions_initializer;
 	int i = 0;
-	int count = 0;
 
 	MyLog(LOGA_INFO, "Starting test 7 - persistence, qos %d, MQTT versions: %s then %s", qos,
 			(start_mqtt_version == MQTTVERSION_5) ? "5" : "3.1.1",
@@ -1661,7 +1660,7 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 		test7_just_connect = 1;
 		opts.connectProperties = &props;
 		property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
-		property.value.integer4 = 999999;
+		property.value.integer4 = 0; /* clean up at end of test */
 		MQTTProperties_add(opts.connectProperties, &property);
 		opts.onSuccess = NULL;
 		opts.onFailure = NULL;
@@ -1710,9 +1709,11 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 	rc = MQTTAsync_disconnect(c, &dopts);
 	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
-	count = 0;
-	while (!test_finished && ++count < 100)
+	i = 0;
+	while (!test_finished && ++i < 20)
 		MySleep(100);
+	assert("Test finished should be true", test_finished,
+		   "test_finished was %d", test_finished);
 
 	MQTTAsync_destroy(&c);
 
@@ -1730,10 +1731,11 @@ int test7(struct Options options)
 	fprintf(xml, "<testcase classname=\"test7\" name=\"persistence\"");
 	global_start_time = start_clock();
 	rc = test7_run(1, MQTTVERSION_5, MQTTVERSION_5) +
-		 test7_run(2, MQTTVERSION_3_1_1, MQTTVERSION_3_1_1) +
 		 test7_run(2, MQTTVERSION_5, MQTTVERSION_5) +
+		 test7_run(1, MQTTVERSION_3_1_1, MQTTVERSION_3_1_1) +
+		 test7_run(2, MQTTVERSION_3_1_1, MQTTVERSION_3_1_1) /*+
 		 test7_run(2, MQTTVERSION_3_1_1, MQTTVERSION_5) +
-		 test7_run(2, MQTTVERSION_5, MQTTVERSION_3_1_1);
+		 test7_run(2, MQTTVERSION_5, MQTTVERSION_3_1_1)*/;
 	fprintf(xml, " time=\"%ld\" >\n", elapsed(global_start_time) / 1000);
 	if (cur_output != output)
 	{

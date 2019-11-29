@@ -53,7 +53,7 @@ int SHA1_Final(unsigned char *md, SHA_CTX *c)
 }
 
 #else /* if defined(WIN32) || defined(WIN64) */
-#if defined(__linux__)
+#if defined(__linux__) || defined(__CYGWIN__)
 #  include <endian.h>
 #elif defined(__APPLE__)
 #  include <libkern/OSByteOrder.h>

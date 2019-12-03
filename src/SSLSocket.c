@@ -525,14 +525,16 @@ static unsigned int call_ssl_psk_cb(SSL *ssl, const char *hint, char *identity, 
 
 	FUNC_ENTRY;
 
-	SSL_CTX *ctx = SSL_get_SSL_CTX(ssl);
-	MQTTClient_SSLOptions* opts = SSL_CTX_get_ex_data(ctx, tls_ex_index_ssl_opts);
+	{
+		SSL_CTX *ctx = SSL_get_SSL_CTX(ssl);
+		MQTTClient_SSLOptions* opts = SSL_CTX_get_ex_data(ctx, tls_ex_index_ssl_opts);
 
-	if (opts == NULL)
-		goto exit;
+		if (opts == NULL)
+			goto exit;
 
-	if (opts->ssl_psk_cb != NULL)
-		rc = opts->ssl_psk_cb(hint, identity, max_identity_len, psk, max_psk_len, opts->ssl_psk_context);
+		if (opts->ssl_psk_cb != NULL)
+			rc = opts->ssl_psk_cb(hint, identity, max_identity_len, psk, max_psk_len, opts->ssl_psk_context);
+	}
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;

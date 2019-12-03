@@ -45,6 +45,9 @@
 #  pragma comment(lib, "rpcrt4.lib")
 #  include <Rpc.h>
 #  define strncasecmp(s1,s2,c) _strnicmp(s1,s2,c)
+#  define htonll(x) _byteswap_uint64(x)
+#  define ntohll(x) _byteswap_uint64(x)
+
 #  if BYTE_ORDER == LITTLE_ENDIAN
 #    define htobe16(x)   htons(x)
 #    define htobe32(x)   htonl(x)
@@ -62,14 +65,15 @@
 #  else
 #    error "unknown endian"
 #  endif
-   /* For Microsoft Visual Studio 2013 */
-#  if !defined( snprintf )
+   /* For Microsoft Visual Studio < 2015 */
+#  if defined(_MSC_VER) && _MSC_VER < 1900
 #    define snprintf _snprintf
-#  endif /* if !defined( snprintf ) */
+#  endif
 #endif
 
 #if defined(OPENSSL)
 #include "SSLSocket.h"
+#include <openssl/rand.h>
 #endif /* defined(OPENSSL) */
 #include "Socket.h"
 
@@ -80,10 +84,6 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <time.h>
-
-#if defined(OPENSSL)
-#include <openssl/rand.h>
-#endif /* if defined(OPENSSL) */
 
 #include "Heap.h"
 

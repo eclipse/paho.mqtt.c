@@ -201,7 +201,7 @@ int MQTTPersistence_restore(Clients *c)
 			{
 				int data_MQTTVersion = MQTTVERSION_3_1_1;
 				char* cur_key = msgkeys[i];
-                                MQTTPacket* pack = NULL;
+				MQTTPacket* pack = NULL;
 
 				if (	strncmp(cur_key, PERSISTENCE_V5_PUBLISH_RECEIVED,
 							strlen(PERSISTENCE_V5_PUBLISH_RECEIVED)) == 0)

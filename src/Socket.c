@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -926,7 +926,7 @@ int Socket_continueWrites(fd_set* pwset)
 	ListElement* curpending = s.write_pending->first;
 
 	FUNC_ENTRY;
-	while (curpending)
+	while (curpending && curpending->content)
 	{
 		int socket = *(int*)(curpending->content);
 		int rc = 0;

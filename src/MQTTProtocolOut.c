@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -98,14 +98,25 @@ size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic)
  * @param aClient a structure with all MQTT data needed
  * @param int ssl
  * @param int MQTTVersion the MQTT version to connect with (3 or 4)
+ * @param long timeout how long to wait for a new socket to be created
  * @return return code
  */
 #if defined(OPENSSL)
+#if defined(__GNUC__) && defined(__linux__)
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int websocket, int MQTTVersion,
+		MQTTProperties* connectProperties, MQTTProperties* willProperties, long timeout)
+#else
 int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties)
+#endif
+#else
+#if defined(__GNUC__) && defined(__linux__)
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket, int MQTTVersion,
+		MQTTProperties* connectProperties, MQTTProperties* willProperties, long timeout)
 #else
 int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties)
+#endif
 #endif
 {
 	int rc, port;
@@ -115,7 +126,16 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 	aClient->good = 1;
 
 	addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL);
+
+#if defined(__GNUC__) && defined(__linux__)
+	if (timeout < 0)
+		rc = -1;
+	else
+		rc = Socket_new(ip_address, addr_len, port, &(aClient->net.socket), timeout);
+#else
 	rc = Socket_new(ip_address, addr_len, port, &(aClient->net.socket));
+#endif
+
 	if (rc == EINPROGRESS || rc == EWOULDBLOCK)
 		aClient->connect_state = TCP_IN_PROGRESS; /* TCP connect called - wait for connect completion */
 	else if (rc == 0)

@@ -44,7 +44,6 @@
  *
  */
 
-#define _GNU_SOURCE /* for pthread_mutexattr_settype */
 #include <stdlib.h>
 #include <string.h>
 #if !defined(WIN32) && !defined(WIN64)
@@ -1500,12 +1499,23 @@ static int MQTTAsync_processCommand(void)
 
 			Log(TRACE_PROTOCOL, -1, "Connecting to serverURI %s with MQTT version %d", serverURI, command->command.details.conn.MQTTVersion);
 #if defined(OPENSSL)
+#if defined(__GNUC__) && defined(__linux__)
+			rc = MQTTProtocol_connect(serverURI, command->client->c, command->client->ssl, command->client->websocket,
+					command->command.details.conn.MQTTVersion, command->client->connectProps, command->client->willProps, 100);
+#else
 			rc = MQTTProtocol_connect(serverURI, command->client->c, command->client->ssl, command->client->websocket,
 					command->command.details.conn.MQTTVersion, command->client->connectProps, command->client->willProps);
+#endif
+#else
+#if defined(__GNUC__) && defined(__linux__)
+			rc = MQTTProtocol_connect(serverURI, command->client->c, command->client->websocket,
+					command->command.details.conn.MQTTVersion, command->client->connectProps, command->client->willProps, 100);
 #else
 			rc = MQTTProtocol_connect(serverURI, command->client->c, command->client->websocket,
 					command->command.details.conn.MQTTVersion, command->client->connectProps, command->client->willProps);
 #endif
+#endif
+
 			if (command->client->c->connect_state == NOT_IN_PROGRESS)
 				rc = SOCKET_ERROR;
 

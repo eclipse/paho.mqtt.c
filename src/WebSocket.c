@@ -657,7 +657,7 @@ char *WebSocket_getRawSocketData(
 		frame_buffer = NULL;
 	}
 	// append data to the buffer
-	else if (rv != NULL)
+	else if (rv != NULL && *actual_len != 0U)
 	{
 		// no buffer allocated
 		if (!frame_buffer)

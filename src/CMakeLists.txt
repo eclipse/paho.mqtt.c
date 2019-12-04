@@ -55,7 +55,7 @@ SET(common_src
     )
 
 IF (WIN32)
-    SET(LIBS_SYSTEM ws2_32)
+    SET(LIBS_SYSTEM ws2_32 crypt32 RpcRT4)
 ELSEIF (UNIX)
     IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
         SET(LIBS_SYSTEM c dl pthread anl)

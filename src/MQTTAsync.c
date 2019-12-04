@@ -452,36 +452,42 @@ void MQTTAsync_sleep(long milliseconds)
 // http://ee.lbl.gov/papers/sync_94.pdf
 int MQTTAsync_randomJitter(int currentIntervalBase, int minInterval, int maxInterval)
 {
-	int max_sleep = (int)min(maxInterval, currentIntervalBase) * 1.2; // (e.g. 72 if base > 60)
-	int min_sleep = (int)max(minInterval, currentIntervalBase) / 1.2; // (e.g. 48 if base > 60)
+	const int max_sleep = (int)(min(maxInterval, currentIntervalBase) * 1.2); // (e.g. 72 if base > 60)
+	const int min_sleep = (int)(max(minInterval, currentIntervalBase) / 1.2); // (e.g. 48 if base > 60)
 
 	if (min_sleep >= max_sleep) // shouldn't happen, but just incase
 	{
 		return min_sleep;
 	}
 
-	// random_between(min_sleep, max_sleep)
-	// http://stackoverflow.com/questions/2509679/how-to-generate-a-random-number-from-within-a-range
-	int r;
-	int range = max_sleep - min_sleep + 1;
-	if (range > RAND_MAX)
 	{
-		range = RAND_MAX;
+		// random_between(min_sleep, max_sleep)
+		// http://stackoverflow.com/questions/2509679/how-to-generate-a-random-number-from-within-a-range
+		int r;
+		int range = max_sleep - min_sleep + 1;
+		if (range > RAND_MAX)
+		{
+			range = RAND_MAX;
+		}
+
+		{
+			const int buckets = RAND_MAX / range;
+			const int limit = buckets * range;
+
+			/* Create equal size buckets all in a row, then fire randomly towards
+			 * the buckets until you land in one of them. All buckets are equally
+			 * likely. If you land off the end of the line of buckets, try again. */
+			do
+			{
+				r = rand();
+			} while (r >= limit);
+
+			{
+				const int randResult = r / buckets;
+				return min_sleep + randResult;
+			}
+		}
 	}
-
-	int buckets = RAND_MAX / range;
-	int limit = buckets * range;
-
-	/* Create equal size buckets all in a row, then fire randomly towards
-	 * the buckets until you land in one of them. All buckets are equally
-	 * likely. If you land off the end of the line of buckets, try again. */
-	do
-	{
-		r = rand();
-	} while (r >= limit);
-
-	int randResult = r / buckets;
-	return min_sleep + randResult;
 }
 
 

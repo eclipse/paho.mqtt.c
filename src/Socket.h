@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -131,7 +131,12 @@ int Socket_getch(int socket, char* c);
 char *Socket_getdata(int socket, size_t bytes, size_t* actual_len);
 int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens, int* frees);
 void Socket_close(int socket);
+#if defined(__GNUC__) && defined(__linux__)
+/* able to use GNU's getaddrinfo_a to make timeouts possible */
+int Socket_new(const char* addr, size_t addr_len, int port, int* socket, long timeout);
+#else
 int Socket_new(const char* addr, size_t addr_len, int port, int* socket);
+#endif
 
 int Socket_noPendingWrites(int socket);
 char* Socket_getpeer(int sock);

@@ -646,9 +646,14 @@ void Socket_close(int socket)
  *  @param addr the address string
  *  @param port the TCP port
  *  @param sock returns the new socket
+ *  @param timeout the timeout in milliseconds
  *  @return completion code
  */
+#if defined(__GNUC__) && defined(__linux__)
+int Socket_new(const char* addr, size_t addr_len, int port, int* sock, long timeout)
+#else
 int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
+#endif
 {
 	int type = SOCK_STREAM;
 	char *addr_mem;
@@ -679,7 +684,29 @@ int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 	memcpy( addr_mem, addr, addr_len );
 	addr_mem[addr_len] = '\0';
 
-	if ((rc = getaddrinfo(addr_mem, NULL, &hints, &result)) == 0)
+//#if defined(__GNUC__) && defined(__linux__)
+#if 0
+	struct gaicb ar = {addr_mem, NULL, &hints, NULL};
+	struct gaicb *reqs[] = {&ar};
+
+	unsigned long int seconds = timeout / 1000L;
+	unsigned long int nanos = (timeout - (seconds * 1000L)) * 1000000L;
+	struct timespec timeoutspec = {seconds, nanos};
+
+	rc = getaddrinfo_a(GAI_NOWAIT, reqs, 1, NULL);
+	if (rc == 0)
+		rc = gai_suspend((const struct gaicb* const *) reqs, 1, &timeoutspec);
+
+	if (rc == 0)
+	{
+		rc = gai_error(reqs[0]);
+		result = ar.ar_result;
+	}
+#else
+	rc = getaddrinfo(addr_mem, NULL, &hints, &result);
+#endif
+
+	if (rc == 0)
 	{
 		struct addrinfo* res = result;
 

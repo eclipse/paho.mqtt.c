@@ -51,6 +51,9 @@ SET(PAHO_BUILD_DEB_PACKAGE FALSE CACHE BOOL "Build debian package")
 SET(PAHO_ENABLE_TESTING TRUE CACHE BOOL "Build tests and run")
 SET(PAHO_ENABLE_CPACK TRUE CACHE BOOL "Enable CPack")
 
+IF(PAHO_BUILD_DEB_PACKAGE)
+    set(CMAKE_INSTALL_DOCDIR share/doc/libpaho-mqtt)
+ENDIF()
 
 ADD_SUBDIRECTORY(src)
 IF(PAHO_BUILD_SAMPLES)
@@ -64,16 +67,16 @@ ENDIF()
 IF (PAHO_ENABLE_CPACK)
        ### packaging settings
        FILE(GLOB samples "src/samples/*.c")
-       INSTALL(FILES ${samples} DESTINATION samples)
+       INSTALL(FILES ${samples} DESTINATION ${CMAKE_INSTALL_DOCDIR}/samples)
 
        SET(CPACK_PACKAGE_VENDOR "Eclipse Paho")
        SET(CPACK_PACKAGE_NAME "Eclipse-Paho-MQTT-C")
-       INSTALL(FILES CONTRIBUTING.md epl-v10 edl-v10 README.md notice.html DESTINATION .)
+       INSTALL(FILES CONTRIBUTING.md epl-v10 edl-v10 README.md notice.html DESTINATION ${CMAKE_INSTALL_DOCDIR})
 
        IF (WIN32)
                SET(CPACK_GENERATOR "ZIP")
        ELSEIF(PAHO_BUILD_DEB_PACKAGE)
-               INSTALL(FILES CONTRIBUTING.md epl-v10 edl-v10 README.md notice.html DESTINATION .)
+               INSTALL(FILES CONTRIBUTING.md epl-v10 edl-v10 README.md notice.html DESTINATION ${CMAKE_INSTALL_DOCDIR})
 
                SET(CPACK_GENERATOR "DEB")
                CONFIGURE_FILE(${CMAKE_SCRIPTS}/CPackDebConfig.cmake.in
@@ -86,7 +89,6 @@ IF (PAHO_ENABLE_CPACK)
 ELSE()
        FILE(GLOB samples "src/samples/*.c")
        INSTALL(FILES ${samples} DESTINATION ${CMAKE_INSTALL_DOCDIR})
-
 ENDIF()
 
 SET(CPACK_PACKAGE_VERSION_MAJOR ${PAHO_VERSION_MAJOR})

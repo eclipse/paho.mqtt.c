@@ -86,6 +86,7 @@ typedef struct
 #endif
 	int websocket; /**< socket has been upgraded to use web sockets */
 	char *websocket_key;
+	const MQTTClient_nameValue* httpHeaders;
 } networkHandles;
 
 

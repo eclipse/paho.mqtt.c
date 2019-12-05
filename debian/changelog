@@ -1,0 +1,11 @@
+libpahomqttc (1.3.0) unstable; urgency=medium
+
+  * Update to newer version and add libssl-dev as a dependency
+
+ --  <leon@anavi.org>  Tue, 29 Jan 2018 23:47:20 +0200
+
+libpahomqttc (1.0.0) unstable; urgency=medium
+
+  * Initial release.
+
+ --  <leon@anavi.org>  Tue, 23 Jan 2018 23:12:56 +0200

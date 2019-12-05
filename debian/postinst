@@ -1,0 +1,7 @@
+#!/bin/sh
+# postinst script for libpahomqttc
+
+ln -sf /usr/local/lib/libpaho-mqtt3c.so.1 /usr/local/lib/libpaho-mqtt3c.so
+ln -sf /usr/local/lib/libpaho-mqtt3cs.so.1 /usr/local/lib/libpaho-mqtt3cs.so
+ln -sf /usr/local/lib/libpaho-mqtt3a.so.1 /usr/local/lib/libpaho-mqtt3a.so
+ln -sf /usr/local/lib/libpaho-mqtt3as.so.1 /usr/local/lib/libpaho-mqtt3as.so

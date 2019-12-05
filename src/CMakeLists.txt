@@ -1,5 +1,5 @@
 #*******************************************************************************
-#  Copyright (c) 2015, 2018 logi.cals GmbH and others
+#  Copyright (c) 2015, 2019 logi.cals GmbH and others
 #
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
@@ -67,7 +67,9 @@ ENDIF()
 
 ## common compilation for libpaho-mqtt3c and libpaho-mqtt3a
 ADD_LIBRARY(common_obj OBJECT ${common_src})
-SET_PROPERTY(TARGET common_obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+SET_TARGET_PROPERTIES(common_obj PROPERTIES
+    POSITION_INDEPENDENT_CODE ON
+    COMPILE_DEFINITIONS "MQTT_EXPORTS=1")
 
 ADD_EXECUTABLE(MQTTVersion MQTTVersion.c)
 
@@ -81,7 +83,8 @@ TARGET_LINK_LIBRARIES(MQTTVersion paho-mqtt3a paho-mqtt3c ${LIBS_SYSTEM})
 SET_TARGET_PROPERTIES(
     paho-mqtt3c paho-mqtt3a PROPERTIES
     VERSION ${CLIENT_VERSION}
-    SOVERSION ${PAHO_VERSION_MAJOR})
+    SOVERSION ${PAHO_VERSION_MAJOR}
+    DEFINE_SYMBOL "MQTT_EXPORTS")
 FOREACH(TARGET paho-mqtt3c paho-mqtt3a)
     TARGET_INCLUDE_DIRECTORIES(${TARGET}
         PUBLIC
@@ -90,7 +93,6 @@ FOREACH(TARGET paho-mqtt3c paho-mqtt3a)
         PRIVATE
             ${CMAKE_BINARY_DIR})
 ENDFOREACH()
-
 
 INSTALL(TARGETS paho-mqtt3c paho-mqtt3a
     EXPORT eclipse-paho-mqtt-cTargets

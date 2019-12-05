@@ -73,8 +73,12 @@
 const char *client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
 const char *client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
 
+// global objects init declaration
+void MQTTAsync_init();
+
 void MQTTAsync_global_init(MQTTAsync_init_options* inits)
 {
+	MQTTAsync_init();
 #if defined(OPENSSL)
 	SSLSocket_handleOpensslInit(inits->do_openssl_init);
 #endif
@@ -120,30 +124,45 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 	{
 		case DLL_PROCESS_ATTACH:
 			Log(TRACE_MAX, -1, "DLL process attach");
-			if (mqttasync_mutex == NULL)
-			{
-				mqttasync_mutex = CreateMutex(NULL, 0, NULL);
-				mqttcommand_mutex = CreateMutex(NULL, 0, NULL);
-				send_sem = CreateEvent(
-		        NULL,               /* default security attributes */
-		        FALSE,              /* manual-reset event? */
-		        FALSE,              /* initial state is nonsignaled */
-		        NULL                /* object name */
-		        );
-				stack_mutex = CreateMutex(NULL, 0, NULL);
-				heap_mutex = CreateMutex(NULL, 0, NULL);
-				log_mutex = CreateMutex(NULL, 0, NULL);
-				socket_mutex = CreateMutex(NULL, 0, NULL);
-			}
+			MQTTAsync_init();
+			break;
 		case DLL_THREAD_ATTACH:
 			Log(TRACE_MAX, -1, "DLL thread attach");
+			break;
 		case DLL_THREAD_DETACH:
 			Log(TRACE_MAX, -1, "DLL thread detach");
+			break;
 		case DLL_PROCESS_DETACH:
 			Log(TRACE_MAX, -1, "DLL process detach");
+		break;
 	}
 	return TRUE;
 }
+
+void MQTTAsync_init(void)
+{
+	if (mqttasync_mutex == NULL)
+	{
+		mqttasync_mutex = CreateMutex(NULL, 0, NULL);
+		mqttcommand_mutex = CreateMutex(NULL, 0, NULL);
+		send_sem = CreateEvent(
+				NULL,               /* default security attributes */
+				FALSE,              /* manual-reset event? */
+				FALSE,              /* initial state is nonsignaled */
+				NULL                /* object name */
+				);
+		stack_mutex = CreateMutex(NULL, 0, NULL);
+		heap_mutex = CreateMutex(NULL, 0, NULL);
+		log_mutex = CreateMutex(NULL, 0, NULL);
+		socket_mutex = CreateMutex(NULL, 0, NULL);
+	}
+	else
+	{
+		Log(TRACE_MAX, -1, "Library already initialized");
+	}
+}
+
+
 #else
 static pthread_mutex_t mqttasync_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 static mutex_type mqttasync_mutex = &mqttasync_mutex_store;

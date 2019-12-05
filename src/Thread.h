@@ -56,14 +56,14 @@
 	int Thread_destroy_cond(cond_type);
 #endif
 
-DLLExport thread_type Thread_start(thread_fn, void*);
+LIBMQTT_API thread_type Thread_start(thread_fn, void*);
 
-DLLExport mutex_type Thread_create_mutex();
-DLLExport int Thread_lock_mutex(mutex_type);
-DLLExport int Thread_unlock_mutex(mutex_type);
+LIBMQTT_API mutex_type Thread_create_mutex();
+LIBMQTT_API int Thread_lock_mutex(mutex_type);
+LIBMQTT_API int Thread_unlock_mutex(mutex_type);
 void Thread_destroy_mutex(mutex_type);
 
-DLLExport thread_id_type Thread_getid();
+LIBMQTT_API thread_id_type Thread_getid();
 
 sem_type Thread_create_sem(void);
 int Thread_wait_sem(sem_type sem, int timeout);

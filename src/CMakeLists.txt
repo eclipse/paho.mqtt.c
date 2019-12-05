@@ -19,10 +19,6 @@
 # Note: on OS X you should install XCode and the associated command-line tools
 
 ## compilation/linkage settings
-INCLUDE_DIRECTORIES(
-    .
-    ${CMAKE_BINARY_DIR}
-    )
 
 CONFIGURE_FILE(VersionInfo.h.in
     ${CMAKE_BINARY_DIR}/VersionInfo.h
@@ -86,8 +82,18 @@ SET_TARGET_PROPERTIES(
     paho-mqtt3c paho-mqtt3a PROPERTIES
     VERSION ${CLIENT_VERSION}
     SOVERSION ${PAHO_VERSION_MAJOR})
+FOREACH(TARGET paho-mqtt3c paho-mqtt3a)
+    TARGET_INCLUDE_DIRECTORIES(${TARGET}
+        PUBLIC
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        PRIVATE
+            ${CMAKE_BINARY_DIR})
+ENDFOREACH()
+
 
 INSTALL(TARGETS paho-mqtt3c paho-mqtt3a
+    EXPORT eclipse-paho-mqtt-cTargets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
@@ -102,6 +108,15 @@ IF (PAHO_BUILD_STATIC)
     TARGET_LINK_LIBRARIES(paho-mqtt3a-static ${LIBS_SYSTEM})
     SET_TARGET_PROPERTIES(paho-mqtt3c-static PROPERTIES OUTPUT_NAME paho-mqtt3c)
     SET_TARGET_PROPERTIES(paho-mqtt3a-static PROPERTIES OUTPUT_NAME paho-mqtt3a)
+
+    FOREACH(TARGET paho-mqtt3c paho-mqtt3a)
+        TARGET_INCLUDE_DIRECTORIES(${TARGET}
+            PUBLIC
+                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+            PRIVATE
+                ${CMAKE_BINARY_DIR})
+    ENDFOREACH()
 
     INSTALL(TARGETS paho-mqtt3c-static paho-mqtt3a-static
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -161,7 +176,16 @@ IF (PAHO_WITH_SSL)
         VERSION ${CLIENT_VERSION}
         SOVERSION ${PAHO_VERSION_MAJOR}
         COMPILE_DEFINITIONS "OPENSSL=1")
+    FOREACH(TARGET paho-mqtt3cs paho-mqtt3as)
+        TARGET_INCLUDE_DIRECTORIES(${TARGET}
+            PUBLIC
+                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+            PRIVATE
+                ${CMAKE_BINARY_DIR})
+    ENDFOREACH()
     INSTALL(TARGETS paho-mqtt3cs paho-mqtt3as
+        EXPORT eclipse-paho-mqtt-cTargets
         ARCHIVE DESTINATION  ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION  ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION  ${CMAKE_INSTALL_BINDIR})
@@ -182,8 +206,29 @@ IF (PAHO_WITH_SSL)
 
         INSTALL(TARGETS paho-mqtt3cs-static paho-mqtt3as-static
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        FOREACH(TARGET paho-mqtt3cs-static paho-mqtt3as-static)
+            TARGET_INCLUDE_DIRECTORIES(${TARGET}
+                PUBLIC
+                    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                PRIVATE
+                    ${CMAKE_BINARY_DIR})
+        ENDFOREACH()
     ENDIF()
 ENDIF()
+
+INSTALL(EXPORT eclipse-paho-mqtt-cTargets
+    FILE eclipse-paho-mqtt-cConfig.cmake
+    NAMESPACE eclipse-paho-mqtt-c::
+    DESTINATION lib/cmake/eclipse-paho-mqtt-c)
+
+INCLUDE(CMakePackageConfigHelpers)
+WRITE_BASIC_PACKAGE_VERSION_FILE("eclipse-paho-mqtt-cConfigVersion.cmake"
+    VERSION ${CLIENT_VERSION}
+    COMPATIBILITY SameMajorVersion)
+INSTALL(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/eclipse-paho-mqtt-cConfigVersion.cmake"
+    DESTINATION lib/cmake/eclipse-paho-mqtt-c)
 
 # Base64 test
 ADD_EXECUTABLE( Base64Test EXCLUDE_FROM_ALL Base64.c Base64.h )

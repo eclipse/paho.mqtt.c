@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -187,11 +187,13 @@ int MQTTPersistence_restore(Clients *c)
 	{
 		while (rc == 0 && i < nkeys)
 		{
-			if (strncmp(msgkeys[i], PERSISTENCE_COMMAND_KEY, strlen(PERSISTENCE_COMMAND_KEY)) == 0)
+			if (strncmp(msgkeys[i], PERSISTENCE_COMMAND_KEY, strlen(PERSISTENCE_COMMAND_KEY)) == 0 ||
+				strncmp(msgkeys[i], PERSISTENCE_V5_COMMAND_KEY, strlen(PERSISTENCE_V5_COMMAND_KEY)) == 0)
 			{
 				;
 			}
-			else if (strncmp(msgkeys[i], PERSISTENCE_QUEUE_KEY, strlen(PERSISTENCE_QUEUE_KEY)) == 0)
+			else if (strncmp(msgkeys[i], PERSISTENCE_QUEUE_KEY, strlen(PERSISTENCE_QUEUE_KEY)) == 0 ||
+					 strncmp(msgkeys[i], PERSISTENCE_V5_QUEUE_KEY, strlen(PERSISTENCE_V5_QUEUE_KEY)) == 0)
 			{
 				;
 			}
@@ -199,6 +201,7 @@ int MQTTPersistence_restore(Clients *c)
 			{
 				int data_MQTTVersion = MQTTVERSION_3_1_1;
 				char* cur_key = msgkeys[i];
+                                MQTTPacket* pack = NULL;
 
 				if (	strncmp(cur_key, PERSISTENCE_V5_PUBLISH_RECEIVED,
 							strlen(PERSISTENCE_V5_PUBLISH_RECEIVED)) == 0)
@@ -225,7 +228,7 @@ int MQTTPersistence_restore(Clients *c)
 					goto exit;
 				}
 
-				MQTTPacket* pack = MQTTPersistence_restorePacket(data_MQTTVersion, buffer, buflen);
+				pack = MQTTPersistence_restorePacket(data_MQTTVersion, buffer, buflen);
 				if ( pack != NULL )
 				{
 					if (strncmp(cur_key, PERSISTENCE_PUBLISH_RECEIVED,
@@ -553,7 +556,10 @@ int MQTTPersistence_unpersistQueueEntry(Clients* client, MQTTPersistence_qEntry*
 	char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
 	
 	FUNC_ENTRY;
-	sprintf(key, "%s%u", PERSISTENCE_QUEUE_KEY, qe->seqno);
+	if (client->MQTTVersion >= MQTTVERSION_5)
+		sprintf(key, "%s%u", PERSISTENCE_V5_QUEUE_KEY, qe->seqno);
+	else
+		sprintf(key, "%s%u", PERSISTENCE_QUEUE_KEY, qe->seqno);
 	if ((rc = client->persistence->premove(client->phandle, key)) != 0)
 		Log(LOG_ERROR, 0, "Error %d removing qEntry from persistence", rc);
 	FUNC_EXIT_RC(rc);

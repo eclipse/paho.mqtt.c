@@ -1,5 +1,5 @@
 #*******************************************************************************
-#  Copyright (c) 2009, 2018 IBM Corp.
+#  Copyright (c) 2009, 2019 IBM Corp.
 #
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,7 @@ SHELL = /bin/sh
 .PHONY: clean, mkdir, install, uninstall, html
 
 ifndef release.version
-  release.version = 1.3.0
+  release.version = 1.3.1
 endif
 
 # determine current platform
@@ -285,7 +285,7 @@ install: build
 	ln -s lib$(MQTTLIB_CS).so.${MAJOR_VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_CS).so
 	ln -s lib$(MQTTLIB_A).so.${MAJOR_VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so
 	ln -s lib$(MQTTLIB_AS).so.${MAJOR_VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_AS).so
-	@if test ! -f $(DESTDIR)${blddir}/lib$(MQTTLIB_C).so.${MAJOR_VERSION}; then ln -s lib$(MQTTLIB_C).so.${VERSION} $(DESTDIR)${blddir}/lib$(MQTTLIB_C).so.${MAJOR_VERSION}; fi
+	@if test ! -f $(DESTDIR)${libdir}/lib$(MQTTLIB_C).so.${MAJOR_VERSION}; then ln -s lib$(MQTTLIB_C).so.${VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_C).so.${MAJOR_VERSION}; fi
 	@if test ! -f $(DESTDIR)${libdir}/lib$(MQTTLIB_CS).so.${MAJOR_VERSION}; then ln -s lib$(MQTTLIB_CS).so.${VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_CS).so.${MAJOR_VERSION}; fi
 	@if test ! -f $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so.${MAJOR_VERSION}; then ln -s lib$(MQTTLIB_A).so.${VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so.${MAJOR_VERSION}; fi
 	@if test ! -f $(DESTDIR)${libdir}/lib$(MQTTLIB_AS).so.${MAJOR_VERSION}; then ln -s lib$(MQTTLIB_AS).so.${VERSION} $(DESTDIR)${libdir}/lib$(MQTTLIB_AS).so.${MAJOR_VERSION}; fi
@@ -318,7 +318,7 @@ uninstall:
 	- rm $(DESTDIR)${libdir}/lib$(MQTTLIB_CS).so
 	- rm $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so
 	- rm $(DESTDIR)${libdir}/lib$(MQTTLIB_AS).so
-	- rm $(DESTDIR)${blddir}/lib$(MQTTLIB_C).so.${MAJOR_VERSION}
+	- rm $(DESTDIR)${libdir}/lib$(MQTTLIB_C).so.${MAJOR_VERSION}
 	- rm $(DESTDIR)${libdir}/lib$(MQTTLIB_CS).so.${MAJOR_VERSION}
 	- rm $(DESTDIR)${libdir}/lib$(MQTTLIB_A).so.${MAJOR_VERSION}
 	- rm $(DESTDIR)${libdir}/lib$(MQTTLIB_AS).so.${MAJOR_VERSION}

@@ -61,6 +61,8 @@ struct pubsub_opts
 	char* key;
 	char* keypass;
 	char* ciphers;
+	char* psk_identity;
+	char* psk;
 	/* MQTT V5 options */
 	int message_expiry;
 	struct {

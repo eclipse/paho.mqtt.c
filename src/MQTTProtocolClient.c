@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -288,7 +288,7 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 	else if (publish->header.bits.qos == 1)
 	{
 	  /* send puback before processing the publications because a lot of return publications could fill up the socket buffer */
-	  rc = MQTTPacket_send_puback(publish->msgId, &client->net, client->clientID);
+	  rc = MQTTPacket_send_puback(publish->MQTTVersion, publish->msgId, &client->net, client->clientID);
 	  /* if we get a socket error from sending the puback, should we ignore the publication? */
 	  Protocol_processPublication(publish, client);
 	}
@@ -320,7 +320,7 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 			already_received = 1;
 		} else
 			ListAppend(client->inboundMsgs, m, sizeof(Messages) + len);
-		rc = MQTTPacket_send_pubrec(publish->msgId, &client->net, client->clientID);
+		rc = MQTTPacket_send_pubrec(publish->MQTTVersion, publish->msgId, &client->net, client->clientID);
 		if (m->MQTTVersion >= MQTTVERSION_5 && already_received == 0)
 		{
 			Publish publish1;
@@ -447,7 +447,7 @@ int MQTTProtocol_handlePubrecs(void* pack, int sock)
 			}
 			else
 			{
-				rc = MQTTPacket_send_pubrel(pubrec->msgId, 0, &client->net, client->clientID);
+				rc = MQTTPacket_send_pubrel(pubrec->MQTTVersion, pubrec->msgId, 0, &client->net, client->clientID);
 				m->nextMessageType = PUBCOMP;
 				time(&(m->lastTouch));
 			}
@@ -486,7 +486,7 @@ int MQTTProtocol_handlePubrels(void* pack, int sock)
 			rc = SOCKET_ERROR; /* queue acks? */
 		else
 			/* Apparently this is "normal" behaviour, so we don't need to issue a warning */
-			rc = MQTTPacket_send_pubcomp(pubrel->msgId, &client->net, client->clientID);
+			rc = MQTTPacket_send_pubcomp(pubrel->MQTTVersion, pubrel->msgId, &client->net, client->clientID);
 	}
 	else
 	{
@@ -503,7 +503,7 @@ int MQTTProtocol_handlePubrels(void* pack, int sock)
 
 			memset(&publish, '\0', sizeof(publish));
 			/* send pubcomp before processing the publications because a lot of return publications could fill up the socket buffer */
-			rc = MQTTPacket_send_pubcomp(pubrel->msgId, &client->net, client->clientID);
+			rc = MQTTPacket_send_pubcomp(pubrel->MQTTVersion, pubrel->msgId, &client->net, client->clientID);
 			publish.header.bits.qos = m->qos;
 			publish.header.bits.retain = m->retain;
 			publish.msgId = m->msgid;
@@ -611,30 +611,33 @@ void MQTTProtocol_keepalive(time_t now)
 	{
 		Clients* client =	(Clients*)(current->content);
 		ListNextElement(bstate->clients, &current);
-		if (client->connected && client->keepAliveInterval > 0 &&
-			(difftime(now, client->net.lastSent) >= client->keepAliveInterval ||
-					difftime(now, client->net.lastReceived) >= client->keepAliveInterval))
+
+		if (client->connected == 0 || client->keepAliveInterval == 0)
+			continue;
+
+		if (client->ping_outstanding == 1)
 		{
-			if (client->ping_outstanding == 0)
-			{
-				if (Socket_noPendingWrites(client->net.socket))
-				{
-					if (MQTTPacket_send_pingreq(&client->net, client->clientID) != TCPSOCKET_COMPLETE)
-					{
-						Log(TRACE_PROTOCOL, -1, "Error sending PINGREQ for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
-						MQTTProtocol_closeSession(client, 1);
-					}
-					else
-					{
-						client->net.lastSent = now;
-						client->ping_outstanding = 1;
-					}
-				}
-			}
-			else
+			if (difftime(now, client->net.lastPing) >= client->keepAliveInterval)
 			{
 				Log(TRACE_PROTOCOL, -1, "PINGRESP not received in keepalive interval for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
 				MQTTProtocol_closeSession(client, 1);
+			}
+		}
+		else if (difftime(now, client->net.lastSent) >= client->keepAliveInterval ||
+					difftime(now, client->net.lastReceived) >= client->keepAliveInterval)
+		{
+			if (Socket_noPendingWrites(client->net.socket))
+			{
+				if (MQTTPacket_send_pingreq(&client->net, client->clientID) != TCPSOCKET_COMPLETE)
+				{
+					Log(TRACE_PROTOCOL, -1, "Error sending PINGREQ for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
+					MQTTProtocol_closeSession(client, 1);
+				}
+				else
+				{
+					client->net.lastPing = now;
+					client->ping_outstanding = 1;
+				}
 			}
 		}
 	}
@@ -695,7 +698,7 @@ static void MQTTProtocol_retries(time_t now, Clients* client, int regardless)
 			else if (m->qos && m->nextMessageType == PUBCOMP)
 			{
 				Log(TRACE_MIN, 7, NULL, "PUBREL", client->clientID, client->net.socket, m->msgid);
-				if (MQTTPacket_send_pubrel(m->msgid, 0, &client->net, client->clientID) != TCPSOCKET_COMPLETE)
+				if (MQTTPacket_send_pubrel(m->MQTTVersion, m->msgid, 0, &client->net, client->clientID) != TCPSOCKET_COMPLETE)
 				{
 					client->good = 0;
 					Log(TRACE_PROTOCOL, 29, NULL, client->clientID, client->net.socket,

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018 Wind River Systems, Inc. and others. All Rights Reserved.
+ * Copyright (c) 2018, 2019 Wind River Systems, Inc. and others. All Rights Reserved.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -33,6 +33,7 @@
 #include "SHA1.h"
 #include "LinkedList.h"
 #include "MQTTProtocolOut.h"
+#include "SocketBuffer.h"
 #include "StackTrace.h"
 
 #if defined(__linux__)
@@ -110,8 +111,8 @@ void uuid_generate( uuid_t out )
 #endif /* defined (OPENSSL) */
 	{
 		/* very insecure, but generates a random uuid */
-		srand(time(NULL));
 		int i;
+		srand(time(NULL));
 		for ( i = 0; i < 16; ++i )
 			out[i] = (unsigned char)(rand() % UCHAR_MAX);
 		out[6] = (out[6] & 0x0f) | 0x40;
@@ -150,6 +151,10 @@ struct ws_frame *last_frame = NULL;
 /** Holds any received websocket frames, to be process */
 static List* in_frames = NULL;
 
+static char * frame_buffer = NULL;
+static size_t frame_buffer_len = 0;
+static size_t frame_buffer_index = 0;
+static size_t frame_buffer_data_len = 0;
 
 /* static function declarations */
 static const char *WebSocket_strcasefind(
@@ -157,6 +162,8 @@ static const char *WebSocket_strcasefind(
 
 static char *WebSocket_getRawSocketData(
 	networkHandles *net, size_t bytes, size_t* actual_len);
+
+static void WebSocket_rewindData( void );
 
 static void WebSocket_pong(
 	networkHandles *net, char *app_data, size_t app_data_len);
@@ -323,6 +330,11 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 	size_t hostname_len;
 	int port = 80;
 	const char *topic = NULL;
+#if defined(WIN32) || defined(WIN64)
+	UUID uuid;
+#else /* if defined(WIN32) || defined(WIN64) */
+	uuid_t uuid;
+#endif /* else if defined(WIN32) || defined(WIN64) */
 
 	FUNC_ENTRY;
 	/* Generate UUID */
@@ -331,12 +343,10 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 	else
 		net->websocket_key = realloc(net->websocket_key, 25u);
 #if defined(WIN32) || defined(WIN64)
-	UUID uuid;
 	ZeroMemory( &uuid, sizeof(UUID) );
 	UuidCreate( &uuid );
 	Base64_encode( net->websocket_key, 25u, (const b64_data_t*)&uuid, sizeof(UUID) );
 #else /* if defined(WIN32) || defined(WIN64) */
-	uuid_t uuid;
 	uuid_generate( uuid );
 	Base64_encode( net->websocket_key, 25u, uuid, sizeof(uuid_t) );
 #endif /* else if defined(WIN32) || defined(WIN64) */
@@ -591,13 +601,22 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 			}
 		}
 	}
+#if defined(OPENSSL)
+	else if ( net->ssl )
+		rv = SSLSocket_getdata(net->ssl, net->socket, bytes, actual_len);
+#endif
 	else
-		rv = WebSocket_getRawSocketData(net, bytes, actual_len);
+		rv = Socket_getdata(net->socket, bytes, actual_len);
 
 exit:
 	rc = rv != NULL;
 	FUNC_EXIT_RC(rc);
 	return rv;
+}
+
+void WebSocket_rewindData( void )
+{
+	frame_buffer_index = 0;
 }
 
 /**
@@ -613,12 +632,97 @@ char *WebSocket_getRawSocketData(
 	networkHandles *net, size_t bytes, size_t* actual_len)
 {
 	char *rv;
+
+	if (bytes > 0)
+	{
+		if (frame_buffer_data_len - frame_buffer_index >= bytes)
+		{
+			*actual_len = bytes;
+			rv = frame_buffer + frame_buffer_index;
+			frame_buffer_index += bytes;
+
+			goto exit;
+		}
+		else
+		{
+			bytes = bytes - (frame_buffer_data_len - frame_buffer_index);
+		}
+	}
+
+	*actual_len = 0;
+	
+	// not enough data in the buffer, get data from socket
 #if defined(OPENSSL)
 	if ( net->ssl )
 		rv = SSLSocket_getdata(net->ssl, net->socket, bytes, actual_len);
 	else
 #endif
 		rv = Socket_getdata(net->socket, bytes, actual_len);
+
+	// clear buffer
+	if (bytes == 0)
+	{
+		frame_buffer_index = 0;
+		frame_buffer_data_len = 0;
+		frame_buffer_len = 0;
+		
+		free (frame_buffer);
+		frame_buffer = NULL;
+	}
+	// append data to the buffer
+	else if (rv != NULL)
+	{
+		// no buffer allocated
+		if (!frame_buffer)
+		{
+			frame_buffer = (char *)malloc(*actual_len);
+			memcpy(frame_buffer, rv, *actual_len);
+
+			frame_buffer_index = 0;
+			frame_buffer_data_len = *actual_len;
+			frame_buffer_len = *actual_len;
+		}
+		// buffer size is big enough
+		else if (frame_buffer_data_len + *actual_len < frame_buffer_len)
+		{
+			memcpy(frame_buffer + frame_buffer_data_len, rv, *actual_len);
+			frame_buffer_data_len += *actual_len;
+		}
+		// resize buffer
+		else
+		{
+			frame_buffer = realloc(frame_buffer, frame_buffer_data_len + *actual_len);
+			frame_buffer_len = frame_buffer_data_len + *actual_len;
+
+			memcpy(frame_buffer + frame_buffer_data_len, rv, *actual_len);
+			frame_buffer_data_len += *actual_len;
+		}
+
+		SocketBuffer_complete(net->socket);
+	}
+	else 
+	{
+		return rv;
+	}
+
+	// if possible, return data from the buffer
+	if (bytes > 0)
+	{
+		if (frame_buffer_data_len - frame_buffer_index >= bytes)
+		{
+			*actual_len = bytes;
+			rv = frame_buffer + frame_buffer_index;
+			frame_buffer_index += bytes;
+		}
+		else
+		{
+			*actual_len = frame_buffer_data_len - frame_buffer_index;
+			rv = frame_buffer + frame_buffer_index;
+			frame_buffer_index += *actual_len;
+		}
+	}
+
+exit:
 	return rv;
 }
 
@@ -772,7 +876,12 @@ int WebSocket_receiveFrame(networkHandles *net,
 				size_t payload_len;
 
 				b = WebSocket_getRawSocketData(net, 2u, &len);
-				if ( !b || len == 0u )
+				if ( !b )
+				{
+					rc = SOCKET_ERROR;
+					goto exit;
+				} 
+				else if (len < 2u )
 				{
 					rc = TCPSOCKET_INTERRUPTED;
 					goto exit;
@@ -804,7 +913,12 @@ int WebSocket_receiveFrame(networkHandles *net,
 				{
 					b = WebSocket_getRawSocketData( net,
 						2u, &len);
-					if ( !b || len == 0u )
+					if ( !b )
+					{
+						rc = SOCKET_ERROR;
+						goto exit;
+					} 
+					else if (len < 2u )
 					{
 						rc = TCPSOCKET_INTERRUPTED;
 						goto exit;
@@ -816,7 +930,12 @@ int WebSocket_receiveFrame(networkHandles *net,
 				{
 					b = WebSocket_getRawSocketData( net,
 						8u, &len);
-					if ( !b || len == 0u )
+					if ( !b )
+					{
+						rc = SOCKET_ERROR;
+						goto exit;
+					} 
+					else if (len < 8u )
 					{
 						rc = TCPSOCKET_INTERRUPTED;
 						goto exit;
@@ -829,7 +948,12 @@ int WebSocket_receiveFrame(networkHandles *net,
 				{
 					uint8_t mask[4];
 					b = WebSocket_getRawSocketData(net, 4u, &len);
-					if ( !b || len == 0u )
+					if ( !b )
+					{
+						rc = SOCKET_ERROR;
+						goto exit;
+					} 
+					else if (len < 4u )
 					{
 						rc = TCPSOCKET_INTERRUPTED;
 						goto exit;
@@ -840,7 +964,12 @@ int WebSocket_receiveFrame(networkHandles *net,
 				b = WebSocket_getRawSocketData(net,
 					payload_len, &len);
 
-				if ( !b || len == 0u )
+				if ( !b )
+				{
+					rc = SOCKET_ERROR;
+					goto exit;
+				} 
+				else if (len < payload_len )
 				{
 					rc = TCPSOCKET_INTERRUPTED;
 					goto exit;
@@ -868,7 +997,7 @@ int WebSocket_receiveFrame(networkHandles *net,
 				WebSocket_getRawSocketData(net, 0u, &len);
 			}
 
-			if ( opcode == WebSocket_OP_PONG || opcode == WebSocket_OP_PONG )
+			if ( opcode == WebSocket_OP_PING || opcode == WebSocket_OP_PONG )
 			{
 				/* respond to a "ping" with a "pong" */
 				if ( opcode == WebSocket_OP_PING )
@@ -896,6 +1025,11 @@ int WebSocket_receiveFrame(networkHandles *net,
 	*actual_len = res->len - res->pos;
 
 exit:
+	if (rc == TCPSOCKET_INTERRUPTED)
+	{
+		WebSocket_rewindData();
+	}
+
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -952,6 +1086,17 @@ void WebSocket_terminate( void )
 		free( last_frame );
 		last_frame = NULL;
 	}
+	
+	if ( frame_buffer )
+	{
+		free( frame_buffer );
+		frame_buffer = NULL;
+	}
+	
+	frame_buffer_len = 0;
+	frame_buffer_index = 0;
+	frame_buffer_data_len = 0;
+
 	Socket_outTerminate();
 #if defined(OPENSSL)
 	SSLSocket_terminate();

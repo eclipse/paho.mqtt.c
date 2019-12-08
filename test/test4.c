@@ -54,7 +54,7 @@ struct Options
 	int iterations;
 } options =
 {
-	"iot.eclipse.org:1883",
+	"mqtt.eclipse.org:1883",
 	0,
 	-1,
 	10000,

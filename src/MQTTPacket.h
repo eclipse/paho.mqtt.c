@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -246,15 +246,15 @@ int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQT
 void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen);
 void MQTTPacket_freePublish(Publish* pack);
 int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, networkHandles* net, const char* clientID);
-int MQTTPacket_send_puback(int msgid, networkHandles* net, const char* clientID);
+int MQTTPacket_send_puback(int MQTTVersion, int msgid, networkHandles* net, const char* clientID);
 void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen);
 
 void MQTTPacket_freeAck(Ack* pack);
 void MQTTPacket_freeSuback(Suback* pack);
 void MQTTPacket_freeUnsuback(Unsuback* pack);
-int MQTTPacket_send_pubrec(int msgid, networkHandles* net, const char* clientID);
-int MQTTPacket_send_pubrel(int msgid, int dup, networkHandles* net, const char* clientID);
-int MQTTPacket_send_pubcomp(int msgid, networkHandles* net, const char* clientID);
+int MQTTPacket_send_pubrec(int MQTTVersion, int msgid, networkHandles* net, const char* clientID);
+int MQTTPacket_send_pubrel(int MQTTVersion, int msgid, int dup, networkHandles* net, const char* clientID);
+int MQTTPacket_send_pubcomp(int MQTTVersion, int msgid, networkHandles* net, const char* clientID);
 
 void MQTTPacket_free_packet(MQTTPacket* pack);
 
@@ -263,7 +263,7 @@ int readInt4(char** pptr);
 void writeMQTTLenString(char** pptr, MQTTLenString lenstring);
 int MQTTLenStringRead(MQTTLenString* lenstring, char** pptr, char* enddata);
 int MQTTPacket_VBIlen(int rem_len);
-int MQTTPacket_decodeBuf(char* buf, int* value);
+int MQTTPacket_decodeBuf(char* buf, unsigned int* value);
 
 #include "MQTTPacketOut.h"
 

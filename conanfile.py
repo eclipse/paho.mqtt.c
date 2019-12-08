@@ -3,7 +3,7 @@ from conans import ConanFile, CMake, tools
 
 class PahocConan(ConanFile):
     name = "paho.mqtt.c"
-    version = "1.3.0"
+    version = "1.3.1"
     license = "Eclipse Public License - v 1.0"
     url = "https://github.com/eclipse/paho.mqtt.c"
     description = """The Eclipse Paho project provides open-source client implementations of MQTT
@@ -62,14 +62,14 @@ conan_basic_setup()''')
         else:
             if self.options.asynchronous:
                 if self.options.SSL:
-                    self.cpp_info.libs.append("paho-mqtt3as-static")
+                    self.cpp_info.libs.append("paho-mqtt3as")
                 else:
-                    self.cpp_info.libs.append("paho-mqtt3a-static")
+                    self.cpp_info.libs.append("paho-mqtt3a")
             else:
                 if self.options.SSL:
-                    self.cpp_info.libs.append("paho-mqtt3cs-static")
+                    self.cpp_info.libs.append("paho-mqtt3cs")
                 else:
-                    self.cpp_info.libs.append("paho-mqtt3c-static")
+                    self.cpp_info.libs.append("paho-mqtt3c")
 
         if self.settings.os == "Windows":
             if not self.options.shared:

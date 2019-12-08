@@ -184,7 +184,9 @@
   */
  #define MQTTCLIENT_BAD_MQTT_VERSION -11
 /**
- * Return code: protocol prefix in serverURI should be tcp:// or ssl://
+ * Return code: protocol prefix in serverURI should be tcp://, ssl://, ws:// or wss://
+ * The TLS enabled prefixes (ssl, wss) are only valid if the TLS version of the library
+ * is linked with.
  */
 #define MQTTCLIENT_BAD_PROTOCOL -14
  /**
@@ -538,7 +540,7 @@ typedef struct
 	int MQTTVersion;
 } MQTTClient_createOptions;
 
-#define MQTTClient_createOptions_initializer { {'M', 'Q', 'C', 'O'}, MQTTVERSION_DEFAULT }
+#define MQTTClient_createOptions_initializer { {'M', 'Q', 'C', 'O'}, 0, MQTTVERSION_DEFAULT }
 
 /**
  * A version of :MQTTClient_create() with additional options.
@@ -714,9 +716,29 @@ typedef struct
      */
     void* ssl_error_context;
 
+	/**
+	 * Callback function for setting TLS-PSK options. Parameters correspond to that of
+	 * SSL_CTX_set_psk_client_callback, except for u which is the pointer ssl_psk_context.
+	 * Exists only if struct_version >= 4
+	 */
+	unsigned int (*ssl_psk_cb) (const char *hint, char *identity, unsigned int max_identity_len, unsigned char *psk, unsigned int max_psk_len, void *u);
+
+	/**
+	 * Application-specific contex for ssl_psk_cb
+	 * Exists only if struct_version >= 4
+	 */
+	void* ssl_psk_context;
+
+	/**
+	 * Don't load default SSL CA. Should be used together with PSK to make sure
+	 * regular servers with certificate in place is not accepted.
+	 * Exists only if struct_version >= 4
+	 */
+	int disableDefaultTrustStore;
+
 } MQTTClient_SSLOptions;
 
-#define MQTTClient_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 3, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL }
+#define MQTTClient_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 4, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL, NULL, NULL, 0 }
 
 /**
  * MQTTClient_connectOptions defines several settings that control the way the
@@ -1227,7 +1249,7 @@ DLLExport void MQTTClient_setTraceLevel(enum MQTTCLIENT_TRACE_LEVELS level);
   * This is a callback function prototype which must be implemented if you want
   * to receive trace information.
   * @param level the trace level of the message returned
-  * @param meesage the trace message.  This is a pointer to a static buffer which
+  * @param message the trace message.  This is a pointer to a static buffer which
   * will be overwritten on each call.  You must copy the data if you want to keep
   * it for later.
   */

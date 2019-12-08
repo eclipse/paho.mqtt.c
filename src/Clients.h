@@ -79,6 +79,7 @@ typedef struct
 	int socket;
 	time_t lastSent;
 	time_t lastReceived;
+	time_t lastPing;
 #if defined(OPENSSL)
 	SSL* ssl;
 	SSL_CTX* ctx;

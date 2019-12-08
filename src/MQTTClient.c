@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -493,6 +493,7 @@ static void MQTTClient_emptyMessageQueue(Clients* client)
 		{
 			qEntry* qe = (qEntry*)(current->content);
 			free(qe->topicName);
+			MQTTProperties_free(&qe->msg->properties);
 			free(qe->msg->payload);
 			free(qe->msg);
 		}
@@ -776,11 +777,13 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 				if (m->c->connect_state == SSL_IN_PROGRESS)
 				{
 					Log(TRACE_MIN, -1, "Posting connect semaphore for client %s", m->c->clientID);
+					m->c->connect_state = NOT_IN_PROGRESS;
 					Thread_post_sem(m->connect_sem);
 				}
 				if (m->c->connect_state == WAIT_FOR_CONNACK)
 				{
 					Log(TRACE_MIN, -1, "Posting connack semaphore for client %s", m->c->clientID);
+					m->c->connect_state = NOT_IN_PROGRESS;
 					Thread_post_sem(m->connack_sem);
 				}
 			}
@@ -877,13 +880,14 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 				if ((m->rc = getsockopt(m->c->net.socket, SOL_SOCKET, SO_ERROR, (char*)&error, &len)) == 0)
 					m->rc = error;
 				Log(TRACE_MIN, -1, "Posting connect semaphore for client %s rc %d", m->c->clientID, m->rc);
+				m->c->connect_state = NOT_IN_PROGRESS;
 				Thread_post_sem(m->connect_sem);
 			}
 #if defined(OPENSSL)
 			else if (m->c->connect_state == SSL_IN_PROGRESS)
 			{
 				rc = m->c->sslopts->struct_version >= 3 ?
-					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI, 
+					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI,
 						m->c->sslopts->verify, m->c->sslopts->ssl_error_cb, m->c->sslopts->ssl_error_context) :
 					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI,
 						m->c->sslopts->verify, NULL, NULL);
@@ -893,6 +897,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 						m->c->session = SSL_get1_session(m->c->net.ssl);
 					m->rc = rc;
 					Log(TRACE_MIN, -1, "Posting connect semaphore for SSL client %s rc %d", m->c->clientID, m->rc);
+					m->c->connect_state = NOT_IN_PROGRESS;
 					Thread_post_sem(m->connect_sem);
 				}
 			}
@@ -1313,7 +1318,7 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 exit:
 	if (rc == MQTTCLIENT_SUCCESS)
 	{
-		if (options->struct_version == 4) /* means we have to fill out return values */
+		if (options->struct_version >= 4) /* means we have to fill out return values */
 		{
 			options->returned.serverURI = serverURI;
 			options->returned.MQTTVersion = MQTTVersion;
@@ -1462,6 +1467,12 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 			m->c->sslopts->ssl_error_cb = options->ssl->ssl_error_cb;
 			m->c->sslopts->ssl_error_context = options->ssl->ssl_error_context;
 		}
+		if (m->c->sslopts->struct_version >= 4)
+		{
+			m->c->sslopts->ssl_psk_cb = options->ssl->ssl_psk_cb;
+			m->c->sslopts->ssl_psk_context = options->ssl->ssl_psk_context;
+			m->c->sslopts->disableDefaultTrustStore = options->ssl->disableDefaultTrustStore;
+		}
 	}
 #endif
 
@@ -1512,11 +1523,12 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions*
 int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 {
 	MQTTClients* m = handle;
+        MQTTResponse response;
 
 	if (m->c->MQTTVersion >= MQTTVERSION_5)
 		return MQTTCLIENT_WRONG_MQTT_VERSION;
 
-	MQTTResponse response = MQTTClient_connectAll(handle, options, NULL, NULL);
+	response = MQTTClient_connectAll(handle, options, NULL, NULL);
 
 	return response.reasonCode;
 }
@@ -1582,7 +1594,7 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions*
 #if defined(OPENSSL)
 	if (options->struct_version != 0 && options->ssl) /* check validity of SSL options structure */
 	{
-		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version < 0 || options->ssl->struct_version > 3)
+		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version < 0 || options->ssl->struct_version > 4)
 		{
 			rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
 			goto exit;
@@ -1935,10 +1947,9 @@ MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char* topic, int qos
 		MQTTSubscribe_options* opts, MQTTProperties* props)
 {
 	MQTTResponse rc;
-	char *const topics[] = {(char*)topic};
 
 	FUNC_ENTRY;
-	rc = MQTTClient_subscribeMany5(handle, 1, topics, &qos, opts, props);
+	rc = MQTTClient_subscribeMany5(handle, 1, (char * const *)(&topic), &qos, opts, props);
 	if (qos == MQTT_BAD_SUBSCRIBE) /* addition for MQTT 3.1.1 - error code from subscribe */
 		rc.reasonCode = MQTT_BAD_SUBSCRIBE;
 	FUNC_EXIT_RC(rc.reasonCode);
@@ -2067,9 +2078,8 @@ int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic)
 MQTTResponse MQTTClient_unsubscribe5(MQTTClient handle, const char* topic, MQTTProperties* props)
 {
 	MQTTResponse rc;
-	char *const topics[] = {(char*)topic};
 
-	rc = MQTTClient_unsubscribeMany5(handle, 1, topics, props);
+	rc = MQTTClient_unsubscribeMany5(handle, 1, (char * const *)(&topic), props);
 	return rc;
 }
 

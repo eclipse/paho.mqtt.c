@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2018 IBM Corp., and others
+ * Copyright (c) 2012, 2019 IBM Corp., and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -66,7 +66,7 @@ struct pubsub_opts opts =
 	NULL, NULL, 1, 0, 0, /* message options */
 	MQTTVERSION_DEFAULT, NULL, "paho-c-sub", 0, 0, NULL, NULL, "localhost", "1883", NULL, 10, /* MQTT options */
 	NULL, NULL, 0, 0, /* will options */
-	0, NULL, NULL, NULL, NULL, NULL, NULL, /* TLS options */
+	0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, /* TLS options */
 	0, {NULL, NULL}, /* MQTT V5 options */
 };
 
@@ -302,8 +302,7 @@ int main(int argc, char** argv)
 	if (opts.connection && (strncmp(opts.connection, "ssl://", 6) == 0 ||
 			strncmp(opts.connection, "wss://", 6) == 0))
 	{
-		if (opts.insecure)
-			ssl_opts.verify = 0;
+		ssl_opts.verify = (opts.insecure) ? 0 : 1;
 		ssl_opts.CApath = opts.capath;
 		ssl_opts.keyStore = opts.cert;
 		ssl_opts.trustStore = opts.cafile;

@@ -59,6 +59,8 @@ IF (WIN32)
 ELSEIF (UNIX)
     IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
         SET(LIBS_SYSTEM c dl pthread)
+    ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Android")
+        SET(LIBS_SYSTEM c dl)
     ELSEIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
         SET(LIBS_SYSTEM compat pthread)
     ELSE()
@@ -97,6 +99,8 @@ IF (PAHO_BUILD_STATIC)
 
     TARGET_LINK_LIBRARIES(paho-mqtt3c-static ${LIBS_SYSTEM})
     TARGET_LINK_LIBRARIES(paho-mqtt3a-static ${LIBS_SYSTEM})
+    SET_TARGET_PROPERTIES(paho-mqtt3c-static PROPERTIES OUTPUT_NAME paho-mqtt3c)
+    SET_TARGET_PROPERTIES(paho-mqtt3a-static PROPERTIES OUTPUT_NAME paho-mqtt3a)
 
     INSTALL(TARGETS paho-mqtt3c-static paho-mqtt3a-static
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -172,6 +176,8 @@ IF (PAHO_WITH_SSL)
         VERSION ${CLIENT_VERSION}
         SOVERSION ${PAHO_VERSION_MAJOR}
         COMPILE_DEFINITIONS "OPENSSL=1")
+        SET_TARGET_PROPERTIES(paho-mqtt3cs-static PROPERTIES OUTPUT_NAME paho-mqtt3cs)
+        SET_TARGET_PROPERTIES(paho-mqtt3as-static PROPERTIES OUTPUT_NAME paho-mqtt3as)
 
         INSTALL(TARGETS paho-mqtt3cs-static paho-mqtt3as-static
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})

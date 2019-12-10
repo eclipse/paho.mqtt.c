@@ -37,6 +37,7 @@
 #include "StackTrace.h"
 #include "Heap.h"
 #include "WebSocket.h"
+#include "Base64.h"
 
 extern ClientStates* bstate;
 
@@ -121,21 +122,99 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 {
 	int rc, port;
 	size_t addr_len;
+	b64_size_t basic_auth_in_len, basic_auth_out_len;
+	char *p0, *p1;
+	b64_data_t *basic_auth;
 
 	FUNC_ENTRY;
 	aClient->good = 1;
 
-	addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL);
+	aClient->net.http_proxy = NULL;
+	aClient->net.http_proxy_auth = NULL;
+	if ((p0 = getenv("http_proxy"))) {
+		p1 = strchr(p0, '@');
+		if(p1) {
+			aClient->net.http_proxy = p1 + 1;
+			p1 = strchr(p0, ':') + 3;
+			basic_auth_in_len = (b64_size_t)(aClient->net.http_proxy - p1);
+			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
+			basic_auth_in_len--;
+			p0 = (char *)basic_auth;
+			while(*p1 != '@')
+				*p0++ = *p1++;
+			*p0 = 0x0;
+			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
+			aClient->net.http_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len);
+			Base64_encode(aClient->net.http_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
+			free(basic_auth);
+		}
+		else {
+			aClient->net.http_proxy = strchr(p0, ':') + 3;
+		}
+	}
+#if defined(OPENSSL)
+	aClient->net.https_proxy = NULL;
+	aClient->net.https_proxy_auth = NULL;
+	if ((p0 = getenv("https_proxy"))) {
+		p1 = strchr(p0, '@');
+		if(p1) {
+			aClient->net.https_proxy = p1 + 1;
+			p1 = strchr(p0, ':') + 3;
+			basic_auth_in_len =  (b64_size_t)(aClient->net.https_proxy - p1);
+			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
+			basic_auth_in_len--;
+			p0 = (char *)basic_auth;
+			while(*p1 != '@')
+				*p0++ = *p1++;
+			*p0 = 0x0;
+			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
+			aClient->net.https_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len);
+			Base64_encode(aClient->net.https_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
+			free(basic_auth);
+		}
+		else {
+			aClient->net.https_proxy = strchr(p0, ':') + 3;
+		}
+	}
 
-#if defined(__GNUC__) && defined(__linux__)
-	if (timeout < 0)
-		rc = -1;
-	else
-		rc = Socket_new(ip_address, addr_len, port, &(aClient->net.socket), timeout);
+	if (!ssl && websocket && aClient->net.http_proxy) {
 #else
-	rc = Socket_new(ip_address, addr_len, port, &(aClient->net.socket));
+	if (websocket && aClient->net.http_proxy) {
 #endif
-
+		addr_len = MQTTProtocol_addressPort(aClient->net.http_proxy, &port, NULL);
+#if defined(__GNUC__) && defined(__linux__)
+		if (timeout < 0)
+			rc = -1;
+		else
+			rc = Socket_new(aClient->net.http_proxy, addr_len, port, &(aClient->net.socket), timeout);
+#else
+		rc = Socket_new(aClient->net.http_proxy, addr_len, port, &(aClient->net.socket));
+#endif
+	}
+#if defined(OPENSSL)
+	else if (ssl && websocket && aClient->net.https_proxy) {
+		addr_len = MQTTProtocol_addressPort(aClient->net.https_proxy, &port, NULL);
+#if defined(__GNUC__) && defined(__linux__)
+		if (timeout < 0)
+			rc = -1;
+		else
+			rc = Socket_new(aClient->net.http_proxy, addr_len, port, &(aClient->net.socket), timeout);
+#else
+		rc = Socket_new(aClient->net.http_proxy, addr_len, port, &(aClient->net.socket));
+#endif
+	}
+#endif
+	else {
+		addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL);
+#if defined(__GNUC__) && defined(__linux__)
+		if (timeout < 0)
+			rc = -1;
+		else
+			rc = Socket_new(ip_address, addr_len, port, &(aClient->net.socket), timeout);
+#else
+		rc = Socket_new(ip_address, port, &(aClient->net.socket));
+#endif
+	}
 	if (rc == EINPROGRESS || rc == EWOULDBLOCK)
 		aClient->connect_state = TCP_IN_PROGRESS; /* TCP connect called - wait for connect completion */
 	else if (rc == 0)
@@ -143,7 +222,11 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 #if defined(OPENSSL)
 		if (ssl)
 		{
-			if (SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts, ip_address, addr_len) == 1)
+			if (websocket && aClient->net.https_proxy) {
+				aClient->connect_state = PROXY_CONNECY_IN_PROGRESS;
+				rc = WebSocket_proxy_connect( &aClient->net, 1, ip_address);
+			}
+			if (rc == 0 && SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts, ip_address, addr_len) == 1)
 			{
 				rc = aClient->sslopts->struct_version >= 3 ?
 					SSLSocket_connect(aClient->net.ssl, aClient->net.socket, ip_address,
@@ -156,7 +239,13 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 			else
 				rc = SOCKET_ERROR;
 		}
+		else if (websocket && aClient->net.http_proxy) {
+#else
+		if (websocket && aClient->net.http_proxy) {
 #endif
+			aClient->connect_state = PROXY_CONNECY_IN_PROGRESS;
+			rc = WebSocket_proxy_connect( &aClient->net, 0, ip_address);
+		}
 		if ( websocket )
 		{
 			rc = WebSocket_connect( &aClient->net, ip_address );

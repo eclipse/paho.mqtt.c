@@ -74,4 +74,7 @@ void WebSocket_terminate(void);
 /* handles websocket upgrade request */
 int WebSocket_upgrade(networkHandles *net);
 
+/* Notify the IP address and port of the endpoint to proxy, and wait connection to endpoint */
+int WebSocket_proxy_connect( networkHandles *net, int ssl, const char *hostname);
+
 #endif /* WEBSOCKET_H */

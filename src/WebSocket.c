@@ -379,7 +379,7 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 			headers_buf_cur += sprintf(headers_buf_cur, "%s: %s\r\n", headers->name, headers->value);
 			headers++;
 		}
-		headers_buf_cur = '\0';
+		*headers_buf_cur = '\0';
 	}
 
 	for ( i = 0; i < 2; ++i )

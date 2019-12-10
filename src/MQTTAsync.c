@@ -3658,7 +3658,7 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 			int setSocketForSSLrc = 0;
 
 			if (m->websocket && m->c->net.https_proxy) {
-				m->c->connect_state = PROXY_CONNECY_IN_PROGRESS;
+				m->c->connect_state = PROXY_CONNECT_IN_PROGRESS;
 				if ((rc = WebSocket_proxy_connect( &m->c->net, 1, m->serverURI)) == SOCKET_ERROR )
 					goto exit;
 			}
@@ -3722,7 +3722,7 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 			if ( m->websocket )
 			{
 				if (m->c->net.http_proxy) {
-					m->c->connect_state = PROXY_CONNECY_IN_PROGRESS;
+					m->c->connect_state = PROXY_CONNECT_IN_PROGRESS;
 					if ((rc = WebSocket_proxy_connect( &m->c->net, 0, m->serverURI)) == SOCKET_ERROR )
 						goto exit;
 				}

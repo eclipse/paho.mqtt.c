@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -106,7 +106,7 @@ typedef struct
 /** TCP completed, waiting for MQTT ACK */
 #define WAIT_FOR_CONNACK 0x4
 /** Proxy connection in progress */
-#define PROXY_CONNECY_IN_PROGRESS 0x5
+#define PROXY_CONNECT_IN_PROGRESS 0x5
 /** Disconnecting */
 #define DISCONNECTING    -2
 

@@ -212,7 +212,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 		else
 			rc = Socket_new(ip_address, addr_len, port, &(aClient->net.socket), timeout);
 #else
-		rc = Socket_new(ip_address, port, &(aClient->net.socket));
+		rc = Socket_new(ip_address, addr_len, port, &(aClient->net.socket));
 #endif
 	}
 	if (rc == EINPROGRESS || rc == EWOULDBLOCK)
@@ -223,7 +223,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 		if (ssl)
 		{
 			if (websocket && aClient->net.https_proxy) {
-				aClient->connect_state = PROXY_CONNECY_IN_PROGRESS;
+				aClient->connect_state = PROXY_CONNECT_IN_PROGRESS;
 				rc = WebSocket_proxy_connect( &aClient->net, 1, ip_address);
 			}
 			if (rc == 0 && SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts, ip_address, addr_len) == 1)
@@ -243,7 +243,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 #else
 		if (websocket && aClient->net.http_proxy) {
 #endif
-			aClient->connect_state = PROXY_CONNECY_IN_PROGRESS;
+			aClient->connect_state = PROXY_CONNECT_IN_PROGRESS;
 			rc = WebSocket_proxy_connect( &aClient->net, 0, ip_address);
 		}
 		if ( websocket )

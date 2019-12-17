@@ -61,6 +61,25 @@ IF(PAHO_BUILD_DOCUMENTATION)
     ADD_SUBDIRECTORY(doc)
 ENDIF()
 
+## generate package config
+IF (UNIX)
+  MESSAGE(STATUS "Generating package config files")
+  IF(PAHO_WITH_SSL)
+    SET(PAHO_REQUIRED_LIBS ${PAHO_REQUIRED_LIBS} openssl)
+  ENDIF()
+
+  FOREACH(PAHO_LIB IN LISTS PAHO_LIBS)
+    SET(PAHO_PKGCONFIG_FILENAME lib${PAHO_LIB}.pc)
+    CONFIGURE_FILE(
+      ${PROJECT_SOURCE_DIR}/cmake/libpaho-mqtt3.pc.in
+      ${PROJECT_BINARY_DIR}/${PAHO_PKGCONFIG_FILENAME}
+      @ONLY)
+
+    INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PAHO_PKGCONFIG_FILENAME}
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+  ENDFOREACH()
+ENDIF()
+
 IF (PAHO_ENABLE_CPACK)
        ### packaging settings
        FILE(GLOB samples "src/samples/*.c")

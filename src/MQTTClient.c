@@ -2198,8 +2198,17 @@ MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int p
 	 */
 	if (rc == TCPSOCKET_INTERRUPTED)
 	{
-		while (m->c->connected == 1 && SocketBuffer_getWrite(m->c->net.socket))
+		while (m->c->connected == 1)
 		{
+			pending_writes* writing = NULL;
+
+			Thread_lock_mutex(socket_mutex);
+			writing = SocketBuffer_getWrite(m->c->net.socket);
+			Thread_unlock_mutex(socket_mutex);
+
+			if (writing == NULL)
+				break;
+
 			Thread_unlock_mutex(mqttclient_mutex);
 			MQTTClient_yield();
 			Thread_lock_mutex(mqttclient_mutex);

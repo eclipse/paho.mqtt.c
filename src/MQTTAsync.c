@@ -3501,6 +3501,7 @@ static int MQTTAsync_countBufferedMessages(MQTTAsyncs* m)
 	ListElement* current = NULL;
 	int count = 0;
 
+	MQTTAsync_lock_mutex(mqttcommand_mutex);
 	while (ListNextElement(commands, &current))
 	{
 		MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)(current->content);
@@ -3508,6 +3509,7 @@ static int MQTTAsync_countBufferedMessages(MQTTAsyncs* m)
 		if (cmd->client == m && cmd->command.type == PUBLISH)
 			count++;
 	}
+	MQTTAsync_unlock_mutex(mqttcommand_mutex);
 	return count;
 }
 

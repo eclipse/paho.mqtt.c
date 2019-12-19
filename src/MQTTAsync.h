@@ -195,6 +195,10 @@
   * Return code: call not applicable to the client's version of MQTT
   */
  #define MQTTASYNC_WRONG_MQTT_VERSION -16
+ /**
+  *  Return code: 0 length will topic
+  */
+ #define MQTTASYNC_0_LEN_WILL_TOPIC -17
 
 
 /**

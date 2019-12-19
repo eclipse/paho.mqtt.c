@@ -2869,13 +2869,14 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 #if defined(OPENSSL)
 	if (m->ssl && options->ssl == NULL)
 	{
-		rc = MQTTCLIENT_NULL_PARAMETER;
+		rc = MQTTASYNC_NULL_PARAMETER;
 		goto exit;
 	}
 #endif
 
 	if (options->will) /* check validity of will options structure */
 	{
+		printf("will set\n");
 		if (strncmp(options->will->struct_id, "MQTW", 4) != 0 || (options->will->struct_version != 0 && options->will->struct_version != 1))
 		{
 			rc = MQTTASYNC_BAD_STRUCTURE;
@@ -2884,6 +2885,17 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		if (options->will->qos < 0 || options->will->qos > 2)
 		{
 			rc = MQTTASYNC_BAD_QOS;
+			goto exit;
+		}
+		if (options->will->topicName == NULL)
+		{
+			printf("null topic\n");
+			rc = MQTTASYNC_NULL_PARAMETER;
+			goto exit;
+		} else if (strlen(options->will->topicName) == 0)
+		{
+			printf("0 len topic name\n");
+			rc = MQTTASYNC_0_LEN_WILL_TOPIC;
 			goto exit;
 		}
 	}
@@ -4201,7 +4213,9 @@ const char* MQTTAsync_strerror(int code)
     case MQTTASYNC_BAD_MQTT_OPTION:
       return "Options for wrong MQTT version";
     case MQTTASYNC_WRONG_MQTT_VERSION:
-    	  return "Client created for another version of MQTT";
+      return "Client created for another version of MQTT";
+    case MQTTASYNC_0_LEN_WILL_TOPIC:
+      return "Zero length will topic on connect";
   }
 
   sprintf(buf, "Unknown error code %d", code);

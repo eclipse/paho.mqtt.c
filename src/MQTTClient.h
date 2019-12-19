@@ -204,6 +204,10 @@
   * Return code: call not applicable to the requested version of MQTT
   */
  #define MQTTCLIENT_WRONG_MQTT_VERSION -16
+ /**
+  * Return code: 0 length will topic on connect
+  */
+ #define MQTTCLIENT_0_LEN_WILL_TOPIC -17
 
 
 /**

@@ -1617,6 +1617,20 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions*
 			rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
 			goto exit;
 		}
+		if (options->will->qos < 0 || options->will->qos > 2)
+		{
+			rc.reasonCode = MQTTCLIENT_BAD_QOS;
+			goto exit;
+		}
+		if (options->will->topicName == NULL)
+		{
+			rc.reasonCode = MQTTCLIENT_NULL_PARAMETER;
+			goto exit;
+		} else if (strlen(options->will->topicName) == 0)
+		{
+			rc.reasonCode = MQTTCLIENT_0_LEN_WILL_TOPIC;
+			goto exit;
+		}
 	}
 
 
@@ -2778,7 +2792,9 @@ const char* MQTTClient_strerror(int code)
     case MQTTCLIENT_BAD_MQTT_OPTION:
       return "Options for wrong MQTT version";
     case MQTTCLIENT_WRONG_MQTT_VERSION:
-    	  return "Client created for another version of MQTT";
+      return "Client created for another version of MQTT";
+    case MQTTCLIENT_0_LEN_WILL_TOPIC:
+      return "Zero length will topic on connect";
   }
 
   sprintf(buf, "Unknown error code %d", code);

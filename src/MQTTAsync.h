@@ -1300,7 +1300,7 @@ typedef struct
 } MQTTAsync_disconnectOptions;
 
 #define MQTTAsync_disconnectOptions_initializer { {'M', 'Q', 'T', 'D'}, 0, 0, NULL, NULL, NULL,\
-	MQTTProperties_initializer, MQTTREASONCODE_SUCCESS }
+	MQTTProperties_initializer, MQTTREASONCODE_SUCCESS, NULL, NULL }
 
 #define MQTTAsync_disconnectOptions_initializer5 { {'M', 'Q', 'T', 'D'}, 1, 0, NULL, NULL, NULL,\
 	MQTTProperties_initializer, MQTTREASONCODE_SUCCESS, NULL, NULL }

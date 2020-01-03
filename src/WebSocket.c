@@ -664,6 +664,8 @@ char *WebSocket_getRawSocketData(
 {
 	char *rv;
 
+	size_t bytes_requested = bytes;
+
 	FUNC_ENTRY;
 	if (bytes > 0)
 	{
@@ -735,6 +737,8 @@ char *WebSocket_getRawSocketData(
 	else 
 		goto exit;
 
+	bytes = bytes_requested;
+    
 	// if possible, return data from the buffer
 	if (bytes > 0)
 	{
@@ -897,8 +901,8 @@ int WebSocket_receiveFrame(networkHandles *net,
 		do
 		{
 			/* obtain all frames in the sequence */
-			int final = 0;
-			while ( !final )
+			int is_final = 0;
+			while ( is_final == 0 )
 			{
 				char *b;
 				size_t len = 0u;
@@ -911,7 +915,7 @@ int WebSocket_receiveFrame(networkHandles *net,
 				b = WebSocket_getRawSocketData(net, 2u, &len);
 				if ( !b )
 				{
-					rc = SOCKET_ERROR;
+					rc = TCPSOCKET_INTERRUPTED;
 					goto exit;
 				} 
 				else if (len < 2u )
@@ -921,7 +925,7 @@ int WebSocket_receiveFrame(networkHandles *net,
 				}
 
 				/* 1st byte */
-				final = (b[0] & 0xFF) >> 7;
+				is_final = (b[0] & 0xFF) >> 7;
 				tmp_opcode = (b[0] & 0x0F);
 
 				if ( tmp_opcode ) /* not a continuation frame */

@@ -70,7 +70,9 @@
 
 #if defined(OPENSSL)
 #include "SSLSocket.h"
+#include <openssl/rand.h>
 #endif /* defined(OPENSSL) */
+
 #include "Socket.h"
 
 #if !(defined(WIN32) || defined(WIN64))
@@ -80,10 +82,6 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <time.h>
-
-#if defined(OPENSSL)
-#include <openssl/rand.h>
-#endif /* if defined(OPENSSL) */
 
 #include "Heap.h"
 
@@ -615,6 +613,8 @@ char *WebSocket_getRawSocketData(
 {
 	char *rv;
 
+    size_t bytesRequested = bytes;
+
 	if (bytes > 0)
 	{
 		if (frame_buffer_data_len - frame_buffer_index >= bytes)
@@ -687,6 +687,8 @@ char *WebSocket_getRawSocketData(
 		return rv;
 	}
 
+	bytes = bytesRequested;
+    
 	// if possible, return data from the buffer
 	if (bytes > 0)
 	{
@@ -836,7 +838,7 @@ int WebSocket_receiveFrame(networkHandles *net,
 	if ( !in_frames )
 		in_frames = ListInitialize();
 
-	/* see if there is frame acurrently on queue */
+	/* see if there is a frame currently on queue */
 	if ( in_frames->first )
 		res = in_frames->first->content;
 
@@ -846,21 +848,21 @@ int WebSocket_receiveFrame(networkHandles *net,
 		do
 		{
 			/* obtain all frames in the sequence */
-			int final = 0;
-			while ( !final )
+			int is_final = 0;
+			while ( is_final == 0 )
 			{
 				char *b;
 				size_t len = 0u;
-				int tmp_opcode;
-				int has_mask;
+				int tmp_opcode = 0;
+				int has_mask = 0;
 				size_t cur_len = 0u;
 				uint8_t mask[4] = { 0u, 0u, 0u, 0u };
-				size_t payload_len;
+				size_t payload_len = 0u;
 
 				b = WebSocket_getRawSocketData(net, 2u, &len);
 				if ( !b )
 				{
-					rc = SOCKET_ERROR;
+					rc = TCPSOCKET_INTERRUPTED;
 					goto exit;
 				} 
 				else if (len < 2u )
@@ -870,7 +872,7 @@ int WebSocket_receiveFrame(networkHandles *net,
 				}
 
 				/* 1st byte */
-				final = (b[0] & 0xFF) >> 7;
+				is_final = (b[0] & 0xFF) >> 7;
 				tmp_opcode = (b[0] & 0x0F);
 
 				if ( tmp_opcode ) /* not a continuation frame */

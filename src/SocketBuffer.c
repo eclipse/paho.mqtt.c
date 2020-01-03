@@ -164,13 +164,12 @@ char* SocketBuffer_getQueuedData(int socket, size_t bytes, size_t* actual_len)
 	if (ListFindItem(queues, &socket, socketcompare))
 	{  /* if there is queued data for this socket, add any data read to it */
 		queue = (socket_queue*)(queues->current->content);
-		*actual_len = queue->datalen;
 	}
 	else
 	{
-		*actual_len = 0;
 		queue = def_queue;
 	}
+    *actual_len = queue->datalen;
 	if (bytes > queue->buflen)
 	{
 		if (queue->datalen > 0)

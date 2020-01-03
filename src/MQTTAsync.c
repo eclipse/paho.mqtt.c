@@ -453,8 +453,8 @@ void MQTTAsync_sleep(long milliseconds)
 // http://ee.lbl.gov/papers/sync_94.pdf
 int MQTTAsync_randomJitter(int currentIntervalBase, int minInterval, int maxInterval)
 {
-	int max_sleep = min(maxInterval, currentIntervalBase) * 1.2; // (e.g. 72 if base > 60)
-	int min_sleep = max(minInterval, currentIntervalBase) / 1.2; // (e.g. 48 if base > 60)
+	int max_sleep = (int) (min(maxInterval, currentIntervalBase) * 1.2); // (e.g. 72 if base > 60)
+	int min_sleep = (int) (max(minInterval, currentIntervalBase) / 1.2); // (e.g. 48 if base > 60)
 
 	if (min_sleep >= max_sleep) // shouldn't happen, but just incase
 	{

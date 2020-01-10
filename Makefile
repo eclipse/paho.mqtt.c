@@ -23,8 +23,12 @@
 SHELL = /bin/sh
 .PHONY: clean, mkdir, install, uninstall, html
 
+MAJOR_VERSION := $(shell cat version.major)
+MINOR_VERSION := $(shell cat version.minor)
+PATCH_VERSION := $(shell cat version.patch)
+
 ifndef release.version
-  release.version = 1.3.1
+  release.version = $(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)
 endif
 
 # determine current platform
@@ -128,8 +132,6 @@ INSTALL_PROGRAM = $(INSTALL)
 INSTALL_DATA =  $(INSTALL) -m 644
 DOXYGEN_COMMAND = doxygen
 
-MAJOR_VERSION = 1
-MINOR_VERSION = 0
 VERSION = ${MAJOR_VERSION}.${MINOR_VERSION}
 
 MQTTLIB_C_NAME = lib${MQTTLIB_C}.so.${VERSION}

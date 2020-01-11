@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018 Wind River Systems, Inc. All Rights Reserved.
+ * Copyright (c) 2018, 2019 Wind River Systems, Inc. All Rights Reserved.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -26,8 +26,8 @@
 #else /* if defined(OPENSSL) */
 
 #if defined(WIN32) || defined(WIN64)
-#include <Windows.h>
-#include <WinCrypt.h>
+#include <windows.h>
+#include <wincrypt.h>
 typedef struct SHA_CTX_S
 {
 	HCRYPTPROV hProv;

@@ -23,6 +23,8 @@
 #define NO_HEAP_TRACKING 1
 #endif
 
+#include "ExportDeclarations.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -70,7 +72,7 @@ void myfree(char*, int, void* p);
 void Heap_scan(FILE* file);
 int Heap_initialize(void);
 void Heap_terminate(void);
-heap_info* Heap_get_info(void);
+LIBMQTT_API heap_info* Heap_get_info(void);
 int HeapDump(FILE* file);
 int HeapDumpString(FILE* file, char* str);
 void* Heap_findItem(void* p);

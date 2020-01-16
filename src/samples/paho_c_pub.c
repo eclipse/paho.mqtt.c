@@ -235,11 +235,11 @@ static unsigned int onPSKAuth(const char* hint,
 	int rc = 0;
 	struct pubsub_opts* opts = context;
 
-	printf("Trying TLS-PSK auth with hint: %s\n", hint);
+	/* printf("Trying TLS-PSK auth with hint: %s\n", hint);*/
 
 	if (opts->psk == NULL || opts->psk_identity == NULL)
 	{
-		printf("No PSK entered\n");
+		/* printf("No PSK entered\n"); */
 		goto exit;
 	}
 
@@ -248,7 +248,7 @@ static unsigned int onPSKAuth(const char* hint,
 	psk_len = strlen(opts->psk) / 2;
 	if (psk_len > max_psk_len)
 	{
-		printf("PSK too long\n");
+		fprintf(stderr, "PSK too long\n");
 		goto exit;
 	}
 	for (k=0, n=0; k < psk_len; k++, n += 2)
@@ -260,7 +260,7 @@ static unsigned int onPSKAuth(const char* hint,
 	strncpy(identity, opts->psk_identity, max_identity_len);
 	if (identity[max_identity_len - 1] != '\0')
 	{
-		printf("Identity too long\n");
+		fprintf(stderr, "Identity too long\n");
 		goto exit;
 	}
 

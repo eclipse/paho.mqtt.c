@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018, 2019 Wind River Systems, Inc. and others. All Rights Reserved.
+ * Copyright (c) 2018, 2020 Wind River Systems, Inc. and others. All Rights Reserved.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +13,7 @@
  * Contributors:
  *    Keith Holman - initial implementation and documentation
  *    Ian Craggs - use memory tracking
+ *    Ian Craggs - fix for one MQTT packet spread over >1 ws frame
  *******************************************************************************/
 
 #include <stdint.h>
@@ -564,7 +565,9 @@ exit:
 }
 
 /**
- * @brief receives data from a socket
+ * @brief receives data from a socket.
+ * It should receive all data from the socket that is immediately available.
+ * Because it is encapsulated in websocket frames which cannot be
  *
  * @param[in,out]  net                 network connection
  * @param[in]      bytes               amount of data to get (0 if last packet)
@@ -604,7 +607,7 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 			goto exit;
 		}
 
-		/* no current frame, let's see if there's one in the list */
+		/* look at the first websocket frame */
 		if ( in_frames && in_frames->first )
 			frame = in_frames->first->content;
 
@@ -621,11 +624,21 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 		if ( frame )
 		{
 			rv = (char *)frame + sizeof(struct ws_frame) + frame->pos;
-			*actual_len = frame->len - frame->pos;
+			*actual_len = frame->len - frame->pos; /* use the rest of the frame */
 
-			if ( *actual_len == bytes && in_frames)
+
+			while (*actual_len < bytes) {
+				const int rc = WebSocket_receiveFrame(net, bytes, actual_len);
+
+				if (rc != TCPSOCKET_COMPLETE) {
+					frame->pos = 0;
+					break;
+				}
+			} /* end while */
+
+
+			if (*actual_len == bytes && in_frames)
 			{
-				/* set new frame as current frame */
 				if ( last_frame )
 					free( last_frame );
 				last_frame = ListDetachHead(in_frames);
@@ -659,8 +672,7 @@ void WebSocket_rewindData( void )
  *
  * @return a buffer containing raw data
  */
-char *WebSocket_getRawSocketData(
-	networkHandles *net, size_t bytes, size_t* actual_len)
+char *WebSocket_getRawSocketData(networkHandles *net, size_t bytes, size_t* actual_len)
 {
 	char *rv;
 
@@ -872,6 +884,8 @@ int WebSocket_putdatas(networkHandles* net, char* buf0, size_t buf0len,
 
 /**
  * receives incoming socket data and parses websocket frames
+ * Copes with socket reads returning partial websocket frames by using the
+ * SocketBuffer mechanism.
  *
  * @param[in]      net                 network connection
  * @param[in]      bytes               amount of data to receive
@@ -881,8 +895,7 @@ int WebSocket_putdatas(networkHandles* net, char* buf0, size_t buf0len,
  * @retval TCPSOCKET_INTERRUPTED       incomplete packet received
  * @retval SOCKET_ERROR                an error was encountered
  */
-int WebSocket_receiveFrame(networkHandles *net,
-	size_t bytes, size_t *actual_len )
+int WebSocket_receiveFrame(networkHandles *net, size_t bytes, size_t *actual_len)
 {
 	struct ws_frame *res = NULL;
 	int rc = TCPSOCKET_COMPLETE;
@@ -891,12 +904,12 @@ int WebSocket_receiveFrame(networkHandles *net,
 	if ( !in_frames )
 		in_frames = ListInitialize();
 
-	/* see if there is frame acurrently on queue */
+	/* see if there is frame currently on queue */
 	if ( in_frames->first )
 		res = in_frames->first->content;
 
-	while( !res )
-	{
+	//while( !res )
+	//{
 		int opcode = WebSocket_OP_BINARY;
 		do
 		{
@@ -948,8 +961,9 @@ int WebSocket_receiveFrame(networkHandles *net,
 				/* determine payload length */
 				if ( payload_len == 126 )
 				{
-					b = WebSocket_getRawSocketData( net,
-						2u, &len);
+					/* If 126, the following 2 bytes interpreted as a
+					      16-bit unsigned integer are the payload length. */
+					b = WebSocket_getRawSocketData(net, 2u, &len);
 					if ( !b )
 					{
 						rc = SOCKET_ERROR;
@@ -965,8 +979,9 @@ int WebSocket_receiveFrame(networkHandles *net,
 				}
 				else if ( payload_len == 127 )
 				{
-					b = WebSocket_getRawSocketData( net,
-						8u, &len);
+					 /* If 127, the following 8 bytes interpreted as a 64-bit unsigned integer (the
+					      most significant bit MUST be 0) are the payload length */
+					b = WebSocket_getRawSocketData(net, 8u, &len);
 					if ( !b )
 					{
 						rc = SOCKET_ERROR;
@@ -998,8 +1013,8 @@ int WebSocket_receiveFrame(networkHandles *net,
 					memcpy( &mask[0], b, sizeof(uint32_t));
 				}
 
-				b = WebSocket_getRawSocketData(net,
-					payload_len, &len);
+				/* use the socket buffer to read in the whole websocket frame */
+				b = WebSocket_getRawSocketData(net, payload_len, &len);
 
 				if ( !b )
 				{
@@ -1028,7 +1043,7 @@ int WebSocket_receiveFrame(networkHandles *net,
 				else
 					res = realloc( res, sizeof(struct ws_frame) + cur_len + len );
 				memcpy( (unsigned char *)res + sizeof(struct ws_frame) + cur_len, b, len );
-				res->pos = 0u;
+				//res->pos = 0u;
 				res->len = cur_len + len;
 
 				WebSocket_getRawSocketData(net, 0u, &len);
@@ -1055,10 +1070,10 @@ int WebSocket_receiveFrame(networkHandles *net,
 				goto exit;
 			}
 		} while ( opcode == WebSocket_OP_PING || opcode == WebSocket_OP_PONG );
-	}
+	//}
 
-	/* add new frame to end of list */
-	ListAppend( in_frames, res, sizeof(struct ws_frame) + res->len);
+	if (in_frames->count == 0)
+		ListAppend( in_frames, res, sizeof(struct ws_frame) + res->len);
 	*actual_len = res->len - res->pos;
 
 exit:

@@ -621,14 +621,56 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 		if ( frame )
 		{
 			rv = (char *)frame + sizeof(struct ws_frame) + frame->pos;
-			*actual_len = frame->len - frame->pos;
 
-			if ( *actual_len == bytes && in_frames)
+			if (frame->len - frame->pos > bytes)
 			{
+				frame->pos += bytes;
+				*actual_len = bytes;
+			}
+			else
+			{
+				*actual_len = frame->len - frame->pos;
+
 				/* set new frame as current frame */
 				if ( last_frame )
 					free( last_frame );
 				last_frame = ListDetachHead(in_frames);
+
+				if (*actual_len < bytes)
+				{
+					size_t temp = 0;
+					const int rc =
+						WebSocket_receiveFrame(net, bytes - *actual_len, &temp);
+
+					frame = 0;
+					if (rc == TCPSOCKET_COMPLETE && in_frames && in_frames->first)
+						frame = in_frames->first->content;
+
+					if (frame != 0)
+					{
+						frame = (struct ws_frame*)realloc(frame, sizeof(struct ws_frame) + *actual_len + frame->len);
+						in_frames->first->content = frame;
+						memmove((char *)frame + sizeof(struct ws_frame) + *actual_len, (char *)frame + sizeof(struct ws_frame), frame->len);
+						memmove((char *)frame + sizeof(struct ws_frame), (char *)last_frame + sizeof(struct ws_frame) + last_frame->pos, *actual_len);
+						frame->len += *actual_len;
+						free(last_frame);
+						last_frame = NULL;
+
+						rv = (char *)frame + sizeof(struct ws_frame) + frame->pos;
+						if (frame->len - frame->pos > bytes)
+						{
+							frame->pos += bytes;
+							*actual_len = bytes;
+						}
+						else
+						{
+							*actual_len = frame->len - frame->pos;
+
+							/* set new frame as current frame */
+							last_frame = ListDetachHead(in_frames);
+						}
+					}
+				}
 			}
 		}
 	}
@@ -1361,7 +1403,7 @@ int WebSocket_proxy_connect( networkHandles *net, int ssl, const char *hostname)
 		}
 	}
 
-	/* flash the SocketBuffer */
+	/* flush the SocketBuffer */
 	actual_len = 1;
 	while(actual_len)
 		buf = Socket_getdata(net->socket, (size_t)1, &actual_len);

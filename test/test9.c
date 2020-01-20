@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2018 IBM Corp.
+ * Copyright (c) 2012, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -426,7 +426,6 @@ int test1(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
 
 	sprintf(willTopic, "paho-test9-1-%s", unique);
 	sprintf(clientidc, "paho-test9-1-c-%s", unique);
@@ -684,7 +683,6 @@ int test2(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
 	char *URIs[2] = {"rubbish", options.proxy_connection};
 
 	sprintf(willTopic, "paho-test9-2-%s", unique);
@@ -943,7 +941,6 @@ int test3(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
 
 	sprintf(willTopic, "paho-test9-3-%s", unique);
 	sprintf(clientidc, "paho-test9-3-c-%s", unique);
@@ -1199,7 +1196,6 @@ int test4(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
 	char *URIs[2] = {"rubbish", options.proxy_connection};
 
 	sprintf(willTopic, "paho-test9-4-%s", unique);
@@ -1454,7 +1450,6 @@ int test5(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
 
 	sprintf(willTopic, "paho-test9-5-%s", unique);
 	sprintf(clientidc, "paho-test9-5-c-%s", unique);
@@ -1607,7 +1602,6 @@ int test6(struct Options options)
 	char clientidc[50];
 	char clientidd[50];
 	int i = 0;
-	MQTTAsync_token *tokens;
 
 	test5_will_message_received = 0;
 	test5_messages_received = 0;

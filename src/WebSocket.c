@@ -366,7 +366,7 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 		char *headers_buf_cur = NULL;
 		while ( headers->name != NULL && headers->value != NULL )
 		{
-			headers_buf_len += strlen(headers->name) + strlen(headers->value) + 4;
+			headers_buf_len += (int)(strlen(headers->name) + strlen(headers->value) + 4);
 			headers++;
 		}
 		headers_buf_len++;
@@ -1043,7 +1043,7 @@ int WebSocket_receiveFrame(networkHandles *net, size_t bytes, size_t *actual_len
 				else
 					res = realloc( res, sizeof(struct ws_frame) + cur_len + len );
 				memcpy( (unsigned char *)res + sizeof(struct ws_frame) + cur_len, b, len );
-				//res->pos = 0u;
+				res->pos = 0u;
 				res->len = cur_len + len;
 
 				WebSocket_getRawSocketData(net, 0u, &len);

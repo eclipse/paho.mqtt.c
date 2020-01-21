@@ -94,9 +94,16 @@
 
 #if defined(WIN32) || defined(WIN64)
 	#if defined(MQTT_EXPORTS)
-	  #define LIBMQTT_API __declspec(dllexport)
+		#define LIBMQTT_API __declspec(dllexport)
 	#else
-		#define LIBMQTT_API __declspec(dllimport)
+		// NOTE: __declspec(dllimport) would generate more efficient code, according to documentation.
+		// However, this decoration only works if we were only ever linking against a Import Library and DLL.
+		// Since the library supports linking statically, it doesn't work to specify functions as dllimport
+		// and still only have one header for both configurations.
+		// This is a cost of supporting building both the Static and Shared versions simultaneously. If
+		// only one type was built at a time, it would be possible to work around this without breaking
+		// the lagacy API.
+		#define LIBMQTT_API extern
 	#endif
 #else
 	#if defined(MQTT_EXPORTS)

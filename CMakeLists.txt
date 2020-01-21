@@ -44,6 +44,7 @@ ENDIF()
 
 ## build options
 SET(PAHO_WITH_SSL FALSE CACHE BOOL "Flag that defines whether to build ssl-enabled binaries too. ")
+SET(PAHO_BUILD_SHARED TRUE CACHE BOOL "Build shared library")
 SET(PAHO_BUILD_STATIC FALSE CACHE BOOL "Build static library")
 SET(PAHO_BUILD_DOCUMENTATION FALSE CACHE BOOL "Create and install the HTML based API documentation (requires Doxygen)")
 SET(PAHO_BUILD_SAMPLES FALSE CACHE BOOL "Build sample programs")
@@ -54,6 +55,11 @@ SET(PAHO_ENABLE_CPACK TRUE CACHE BOOL "Enable CPack")
 IF(PAHO_BUILD_DEB_PACKAGE)
     set(CMAKE_INSTALL_DOCDIR share/doc/libpaho-mqtt)
 ENDIF()
+
+IF(NOT PAHO_BUILD_SHARED AND NOT PAHO_BUILD_STATIC)
+    MESSAGE(FATAL_ERROR "You must enable either PAHO_BUILD_SHARED, or PAHO_BUILD_STATIC, or both.")
+ENDIF()
+
 
 ADD_SUBDIRECTORY(src)
 IF(PAHO_BUILD_SAMPLES)

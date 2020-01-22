@@ -634,6 +634,12 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 					frame->pos = 0;
 					break;
 				}
+
+				/* refresh pointers */
+				frame = in_frames->first->content;
+				rv = (char *)frame + sizeof(struct ws_frame) + frame->pos;
+				*actual_len = frame->len - frame->pos; /* use the rest of the frame */
+
 			} /* end while */
 
 
@@ -1042,6 +1048,8 @@ int WebSocket_receiveFrame(networkHandles *net, size_t bytes, size_t *actual_len
 					res = malloc( sizeof(struct ws_frame) + cur_len + len );
 				else
 					res = realloc( res, sizeof(struct ws_frame) + cur_len + len );
+				if (in_frames && in_frames->first)
+					in_frames->first->content = res; /* realloc moves the data */
 				memcpy( (unsigned char *)res + sizeof(struct ws_frame) + cur_len, b, len );
 				res->pos = 0u;
 				res->len = cur_len + len;

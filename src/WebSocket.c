@@ -1045,13 +1045,14 @@ int WebSocket_receiveFrame(networkHandles *net, size_t bytes, size_t *actual_len
 					cur_len = res->len;
 
 				if (res == NULL)
+				{
 					res = malloc( sizeof(struct ws_frame) + cur_len + len );
-				else
+					res->pos = 0u;
+				} else
 					res = realloc( res, sizeof(struct ws_frame) + cur_len + len );
 				if (in_frames && in_frames->first)
 					in_frames->first->content = res; /* realloc moves the data */
 				memcpy( (unsigned char *)res + sizeof(struct ws_frame) + cur_len, b, len );
-				res->pos = 0u;
 				res->len = cur_len + len;
 
 				WebSocket_getRawSocketData(net, 0u, &len);

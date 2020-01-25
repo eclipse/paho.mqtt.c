@@ -45,7 +45,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#if !defined(WIN32) && !defined(WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 	#include <sys/time.h>
 #endif
 
@@ -100,7 +100,7 @@ ClientStates* bstate = &ClientState;
 
 MQTTProtocol state;
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 static mutex_type mqttclient_mutex = NULL;
 static mutex_type socket_mutex = NULL;
 static mutex_type subscribe_mutex = NULL;
@@ -247,7 +247,7 @@ struct props_rc_parms
 void MQTTClient_sleep(long milliseconds)
 {
 	FUNC_ENTRY;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	Sleep(milliseconds);
 #else
 	usleep(milliseconds*1000);
@@ -256,7 +256,7 @@ void MQTTClient_sleep(long milliseconds)
 }
 
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #define START_TIME_TYPE DWORD
 START_TIME_TYPE MQTTClient_start_clock(void)
 {
@@ -285,7 +285,7 @@ START_TIME_TYPE MQTTClient_start_clock(void)
 #endif
 
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 long MQTTClient_elapsed(DWORD milliseconds)
 {
 	return GetTickCount() - milliseconds;

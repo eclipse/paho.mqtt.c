@@ -21,7 +21,7 @@
 #include <string.h>
 // for timeout process in WebSocket_proxy_connect()
 #include <time.h>
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #else
 #include <unistd.h>
@@ -49,7 +49,7 @@
 #  define be64toh(x) OSSwapBigToHostInt64(x)
 #elif defined(__FreeBSD__) || defined(__NetBSD__)
 #  include <sys/endian.h>
-#elif defined(WIN32) || defined(WIN64)
+#elif defined(_WIN32) || defined(_WIN64)
 #  pragma comment(lib, "rpcrt4.lib")
 #  include <Rpc.h>
 #  define strncasecmp(s1,s2,c) _strnicmp(s1,s2,c)
@@ -87,7 +87,7 @@
 
 #define HTTP_PROTOCOL(x) x ? "https" : "http"
 
-#if !(defined(WIN32) || defined(WIN64))
+#if !(defined(_WIN32) || defined(_WIN64))
 #if defined(LIBUUID)
 #include <uuid/uuid.h>
 #else /* if defined(USE_LIBUUID) */
@@ -137,7 +137,7 @@ void uuid_unparse( uuid_t uu, char *out )
 	*out = '\0';
 }
 #endif /* else if defined(LIBUUID) */
-#endif /* if !(defined(WIN32) || defined(WIN64)) */
+#endif /* if !(defined(_WIN32) || defined(_WIN64)) */
 
 /** raw websocket frame data */
 struct ws_frame
@@ -334,11 +334,11 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 	size_t hostname_len;
 	int port = 80;
 	const char *topic = NULL;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	UUID uuid;
-#else /* if defined(WIN32) || defined(WIN64) */
+#else /* if defined(_WIN32) || defined(_WIN64) */
 	uuid_t uuid;
-#endif /* else if defined(WIN32) || defined(WIN64) */
+#endif /* else if defined(_WIN32) || defined(_WIN64) */
 
 	FUNC_ENTRY;
 	/* Generate UUID */
@@ -346,14 +346,14 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 		net->websocket_key = malloc(25u);
 	else
 		net->websocket_key = realloc(net->websocket_key, 25u);
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	ZeroMemory( &uuid, sizeof(UUID) );
 	UuidCreate( &uuid );
 	Base64_encode( net->websocket_key, 25u, (const b64_data_t*)&uuid, sizeof(UUID) );
-#else /* if defined(WIN32) || defined(WIN64) */
+#else /* if defined(_WIN32) || defined(_WIN64) */
 	uuid_generate( uuid );
 	Base64_encode( net->websocket_key, 25u, uuid, sizeof(uuid_t) );
-#endif /* else if defined(WIN32) || defined(WIN64) */
+#endif /* else if defined(_WIN32) || defined(_WIN64) */
 
 	hostname_len = MQTTProtocol_addressPort(uri, &port, &topic);
 
@@ -1377,7 +1377,7 @@ int WebSocket_proxy_connect( networkHandles *net, int ssl, const char *hostname)
 				rc = SOCKET_ERROR;
 				break;
 			}
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 			Sleep(250);
 #else
 			usleep(250000);

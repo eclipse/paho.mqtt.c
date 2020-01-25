@@ -38,7 +38,7 @@
 #include <time.h>
 #include <string.h>
 
-#if !defined(WIN32) && !defined(WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 #include <syslog.h>
 #include <sys/stat.h>
 #define GETTIMEOFDAY 1
@@ -52,7 +52,7 @@
 	#include <sys/timeb.h>
 #endif
 
-#if !defined(WIN32) && !defined(WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 /**
  * _unlink mapping for linux
  */
@@ -121,7 +121,7 @@ struct timeb ts, last_ts;
 #endif
 static char msg_buf[512];
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 mutex_type log_mutex;
 #else
 static pthread_mutex_t log_mutex_store = PTHREAD_MUTEX_INITIALIZER;
@@ -133,7 +133,7 @@ int Log_initialize(Log_nameValue* info)
 {
 	int rc = -1;
 	char* envval = NULL;
-#if !defined(WIN32) && !defined(WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 	struct stat buf;
 #endif
 
@@ -183,7 +183,7 @@ int Log_initialize(Log_nameValue* info)
 			info++;
 		}
 	}
-#if !defined(WIN32) && !defined(WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 	if (stat("/proc/version", &buf) != -1)
 	{
 		FILE* vfile;

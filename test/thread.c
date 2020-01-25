@@ -112,7 +112,7 @@ void MyLog(int LOGA_level, char* format, ...)
 }
 
 
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 #define mysleep(A) Sleep(1000*A)
 #define START_TIME_TYPE DWORD
 static DWORD start_time = 0;
@@ -142,7 +142,7 @@ START_TIME_TYPE start_clock(void)
 #endif
 
 
-#if defined(WIN32)
+#if defined(_WIN32)
 long elapsed(START_TIME_TYPE start_time)
 {
 	return GetTickCount() - start_time;
@@ -312,7 +312,7 @@ int test_sem(struct Options options)
 	return failures;
 }
 
-#if !defined(WIN32) && !defined(WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 thread_return_type cond_secondary(void* n)
 {
 	int rc = 0;
@@ -485,7 +485,7 @@ int main(int argc, char** argv)
  	int (*tests[])() = {NULL,
  		test_mutex,
  		test_sem,
-#if !defined(WIN32) && !defined(WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 		test_cond
 #endif
  	}; /* indexed starting from 1 */

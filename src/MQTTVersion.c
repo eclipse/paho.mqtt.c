@@ -26,7 +26,7 @@
 #include <ctype.h>
 #include "MQTTAsync.h"
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #include <tchar.h>
 #include <io.h>
@@ -137,7 +137,7 @@ int loadandcall(const char* libname)
 {
 	int rc = 0;
 	MQTTAsync_nameValue* (*func_address)(void) = NULL;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	HMODULE APILibrary = LoadLibraryA(libname);
 	if (APILibrary == NULL)
 		printf("Error loading library %s, error code %d\n", libname, GetLastError());
@@ -201,7 +201,7 @@ int main(int argc, char** argv)
 		{
 #if defined(__CYGWIN__)
 			sprintf(namebuf, "cyg%s-1.dll", libraries[i]);
-#elif defined(WIN32) || defined(WIN64)
+#elif defined(_WIN32) || defined(_WIN64)
 			sprintf(namebuf, "%s.dll", libraries[i]);
 #elif defined(OSX)
 			sprintf(namebuf, "lib%s.1.dylib", libraries[i]);

@@ -19,7 +19,7 @@
 #include <string.h>
 #include "MQTTAsync.h"
 
-#if !defined(WIN32)
+#if !defined(_WIN32)
 #include <unistd.h>
 #else
 #include <windows.h>
@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
 	}
 
 	while	(!subscribed)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -180,7 +180,7 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
  	while	(!disc_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);

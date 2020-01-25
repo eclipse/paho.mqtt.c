@@ -19,7 +19,7 @@
 #include <string.h>
 #include "MQTTAsync.h"
 
-#if !defined(WIN32)
+#if !defined(_WIN32)
 #include <unistd.h>
 #else
 #include <windows.h>
@@ -144,7 +144,7 @@ int main(int argc, char* argv[])
          "on topic %s for client with ClientID: %s\n",
          PAYLOAD, TOPIC, CLIENTID);
 	while (!finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);

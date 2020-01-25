@@ -110,7 +110,7 @@
  extern "C" {
 #endif
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	#if defined(MQTT_EXPORTS)
 		#define LIBMQTT_API __declspec(dllexport)
 	#else

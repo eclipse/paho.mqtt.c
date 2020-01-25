@@ -50,7 +50,7 @@ enum MQTTPropertyCodes {
   MQTTPROPERTY_CODE_SHARED_SUBSCRIPTION_AVAILABLE = 42/**< The value is 241 */
 };
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
   #define DLLImport __declspec(dllimport)
   #define DLLExport __declspec(dllexport)
 #else

@@ -291,7 +291,7 @@ void MyLog(int LOGA_level, char* format, ...)
 }
 
 
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 #define mqsleep(A) Sleep(1000*A)
 #define START_TIME_TYPE DWORD
 static DWORD start_time = 0;
@@ -321,7 +321,7 @@ START_TIME_TYPE start_clock(void)
 #endif
 
 
-#if defined(WIN32)
+#if defined(_WIN32)
 long elapsed(START_TIME_TYPE start_time)
 {
 	return GetTickCount() - start_time;
@@ -520,7 +520,7 @@ void multiThread_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 			rc = MQTTClient_publishMessage(c, test_topic, &multiThread_pubmsg, &dt);
 		assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(100000L);
@@ -530,7 +530,7 @@ void multiThread_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 		while ((multiThread_arrivedcount < i) && (wait_seconds-- > 0))
 		{
 			MyLog(LOGA_DEBUG, "Arrived %d count %d", multiThread_arrivedcount, i);
-			#if defined(WIN32)
+			#if defined(_WIN32)
 				Sleep(1000);
 			#else
 				usleep(1000000L);
@@ -549,7 +549,7 @@ void multiThread_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 		while ((multiThread_deliveryCompleted < iterations) && (wait_seconds-- > 0))
 		{
 			MyLog(LOGA_DEBUG, "Delivery Completed %d count %d", multiThread_deliveryCompleted, i);
-			#if defined(WIN32)
+			#if defined(_WIN32)
 				Sleep(1000);
 			#else
 				usleep(1000000L);

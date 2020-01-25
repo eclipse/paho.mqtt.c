@@ -46,7 +46,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#if !defined(WIN32) && !defined(WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 	#include <sys/time.h>
 #endif
 
@@ -108,7 +108,7 @@ enum MQTTAsync_threadStates receiveThread_state = STOPPED;
 static thread_id_type sendThread_id = 0,
 					receiveThread_id = 0;
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 static mutex_type mqttasync_mutex = NULL;
 static mutex_type socket_mutex = NULL;
 static mutex_type mqttcommand_mutex = NULL;
@@ -209,7 +209,7 @@ static int tostop = 0;
 static List* commands = NULL;
 
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #define START_TIME_TYPE DWORD
 START_TIME_TYPE MQTTAsync_start_clock(void)
 {
@@ -237,7 +237,7 @@ START_TIME_TYPE MQTTAsync_start_clock(void)
 }
 #endif
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 void MQTTAsync_init_rand(void)
 {
 	START_TIME_TYPE now = MQTTAsync_start_clock();
@@ -258,7 +258,7 @@ void MQTTAsync_init_rand(void)
 #endif
 
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 long MQTTAsync_elapsed(DWORD milliseconds)
 {
 	return GetTickCount() - milliseconds;
@@ -456,7 +456,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc);
 void MQTTAsync_sleep(long milliseconds)
 {
 	FUNC_ENTRY;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	Sleep(milliseconds);
 #else
 	usleep(milliseconds*1000);
@@ -1098,7 +1098,7 @@ static int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_si
 #endif
 	}
 	MQTTAsync_unlock_mutex(mqttcommand_mutex);
-#if !defined(WIN32) && !defined(WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 	rc = Thread_signal_cond(send_cond);
 	if (rc != 0)
 		Log(LOG_ERROR, 0, "Error %d from signal cond", rc);
@@ -1907,7 +1907,7 @@ static thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 			if (MQTTAsync_processCommand() == 0)
 				break;  /* no commands were processed, so go into a wait */
 		}
-#if !defined(WIN32) && !defined(WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 		if ((rc = Thread_wait_cond(send_cond, 1)) != 0 && rc != ETIMEDOUT)
 			Log(LOG_ERROR, -1, "Error %d waiting for condition variable", rc);
 #else
@@ -2157,7 +2157,7 @@ static int MQTTAsync_completeConnection(MQTTAsyncs* m, Connack* connack)
 			}
 		}
 		m->pack = NULL;
-#if !defined(WIN32) && !defined(WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 		Thread_signal_cond(send_cond);
 #else
 		Thread_post_sem(send_sem);
@@ -2480,7 +2480,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 	receiveThread_state = STOPPED;
 	receiveThread_id = 0;
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
-#if !defined(WIN32) && !defined(WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 	if (sendThread_state != STOPPED)
 		Thread_signal_cond(send_cond);
 #else

@@ -66,7 +66,7 @@ enum MQTTReasonCodes {
   MQTTREASONCODE_WILDCARD_SUBSCRIPTIONS_NOT_SUPPORTED = 162
 };
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
   #define DLLImport __declspec(dllimport)
   #define DLLExport __declspec(dllexport)
 #else

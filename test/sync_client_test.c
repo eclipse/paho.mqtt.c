@@ -171,7 +171,7 @@ void getopts(int argc, char** argv)
 }
 
 
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 #define msleep Sleep
 #define START_TIME_TYPE DWORD
 static DWORD start_time = 0;
@@ -597,11 +597,11 @@ int retained_message_test(void)
 
 int test6_socket_error(char* aString, int sock)
 {
-#if defined(WIN32)
+#if defined(_WIN32)
 	int errno;
 #endif
 
-#if defined(WIN32)
+#if defined(_WIN32)
 	errno = WSAGetLastError();
 #endif
 	if (errno != EINTR && errno != EAGAIN && errno != EINPROGRESS && errno != EWOULDBLOCK)
@@ -616,7 +616,7 @@ int test6_socket_close(int socket)
 {
 	int rc;
 
-#if defined(WIN32)
+#if defined(_WIN32)
 	if (shutdown(socket, SD_BOTH) == SOCKET_ERROR)
 		test6_socket_error("shutdown", socket);
 	if ((rc = closesocket(socket)) == SOCKET_ERROR)

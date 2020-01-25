@@ -124,7 +124,7 @@ void MyLog(int LOGA_level, char* format, ...)
 #endif
 
 
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 #define mqsleep(A) Sleep(1000*A)
 #define START_TIME_TYPE DWORD
 static DWORD start_time = 0;
@@ -154,7 +154,7 @@ START_TIME_TYPE start_clock(void)
 #endif
 
 
-#if defined(WIN32)
+#if defined(_WIN32)
 long elapsed(START_TIME_TYPE start_time)
 {
 	return GetTickCount() - start_time;
@@ -372,7 +372,7 @@ int test1(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -462,7 +462,7 @@ int test2(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -671,7 +671,7 @@ int test3(struct Options options)
 	while (test_finished < num_clients)
 	{
 		MyLog(LOGA_DEBUG, "num_clients %d test_finished %d\n", num_clients, test_finished);
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -858,7 +858,7 @@ int test4(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(1000L);
@@ -941,7 +941,7 @@ int test5a(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1003,7 +1003,7 @@ int test5b(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1065,7 +1065,7 @@ int test5c(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);

@@ -92,7 +92,7 @@
  extern "C" {
 #endif
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	#if defined(MQTT_EXPORTS)
 	  #define LIBMQTT_API __declspec(dllexport)
 	#else
@@ -1835,7 +1835,7 @@ int main(int argc, char* argv[])
          "on topic %s for client with ClientID: %s\n",
          PAYLOAD, TOPIC, CLIENTID);
 	while (!finished)
-		#if defined(WIN32) || defined(WIN64)
+		#if defined(_WIN32) || defined(_WIN64)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1985,7 +1985,7 @@ int main(int argc, char* argv[])
 	}
 
 	while	(!subscribed)
-		#if defined(WIN32) || defined(WIN64)
+		#if defined(_WIN32) || defined(_WIN64)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -2006,7 +2006,7 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
  	while	(!disc_finished)
-		#if defined(WIN32) || defined(WIN64)
+		#if defined(_WIN32) || defined(_WIN64)
 			Sleep(100);
 		#else
 			usleep(10000L);

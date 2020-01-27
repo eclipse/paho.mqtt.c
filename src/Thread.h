@@ -26,7 +26,7 @@
 
 #include "mutex_type.h" /* Needed for mutex_type */
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	#include <windows.h>
 	#define thread_type HANDLE
 	#define thread_id_type DWORD

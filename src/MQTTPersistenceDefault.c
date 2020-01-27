@@ -36,7 +36,7 @@
 #include <string.h>
 #include <errno.h>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	#include <direct.h>
 	/* Windows doesn't have strtok_r, so remap it to strtok */
 	#define strtok_r( A, B, C ) strtok( A, B )
@@ -135,7 +135,7 @@ int pstmkdir( char *pPathname )
 	int rc = 0;
 
 	FUNC_ENTRY;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	if ( _mkdir( pPathname ) != 0 )
 	{
 #else
@@ -279,7 +279,7 @@ int pstremove(void* handle, char* key)
 	file = malloc(strlen(clientDir) + strlen(key) + strlen(MESSAGE_FILENAME_EXTENSION) + 2);
 	sprintf(file, "%s/%s%s", clientDir, key, MESSAGE_FILENAME_EXTENSION);
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	if ( _unlink(file) != 0 )
 	{
 #else
@@ -313,7 +313,7 @@ int pstclose(void* handle)
 		goto exit;
 	}
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	if ( _rmdir(clientDir) != 0 )
 	{
 #else
@@ -347,7 +347,7 @@ int pstcontainskey(void *handle, char *key)
 		goto exit;
 	}
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	rc = containskeyWin32(clientDir, key);
 #else
 	rc = containskeyUnix(clientDir, key);
@@ -359,7 +359,7 @@ exit:
 }
 
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 int containskeyWin32(char *dirname, char *key)
 {
 	int notFound = MQTTCLIENT_PERSISTENCE_ERROR;
@@ -457,7 +457,7 @@ int pstclear(void *handle)
 		goto exit;
 	}
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	rc = clearWin32(clientDir);
 #else
 	rc = clearUnix(clientDir);
@@ -469,7 +469,7 @@ exit:
 }
 
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 int clearWin32(char *dirname)
 {
 	int rc = 0;
@@ -557,7 +557,7 @@ int pstkeys(void *handle, char ***keys, int *nkeys)
 		goto exit;
 	}
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	rc = keysWin32(clientDir, keys, nkeys);
 #else
 	rc = keysUnix(clientDir, keys, nkeys);
@@ -569,7 +569,7 @@ exit:
 }
 
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 int keysWin32(char *dirname, char ***keys, int *nkeys)
 {
 	int rc = 0;

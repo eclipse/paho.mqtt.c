@@ -18,7 +18,7 @@
 #if !defined(SOCKETBUFFER_H)
 #define SOCKETBUFFER_H
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #include <winsock2.h>
 #else
 #include <sys/socket.h>
@@ -28,7 +28,7 @@
 #include <openssl/ssl.h>
 #endif
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	typedef WSABUF iobuf;
 #else
 	typedef struct iovec iobuf;

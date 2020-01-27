@@ -17,7 +17,7 @@
 #if !defined(EXPORTDECLARATIONS_H)
 #define EXPORTDECLARATIONS_H
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #   if defined(MQTT_EXPORTS)
 #       define LIBMQTT_API __declspec(dllexport)
 #   elif defined(MQTT_DIRECT)

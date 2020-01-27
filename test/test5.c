@@ -256,7 +256,7 @@ void MyLog(int LOGA_level, char* format, ...)
 }
 
 
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 #define mqsleep(A) Sleep(1000*A)
 #define START_TIME_TYPE DWORD
 static DWORD start_time = 0;
@@ -285,7 +285,7 @@ START_TIME_TYPE start_clock(void)
 }
 #endif
 
-#if defined(WIN32)
+#if defined(_WIN32)
 long elapsed(START_TIME_TYPE start_time)
 {
 	return GetTickCount() - start_time;
@@ -424,7 +424,7 @@ void sendAndReceive(MQTTAsync* c, int qos, char* test_topic)
 					&ropts);
 		assert("Good rc from publish", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(100000L);
@@ -435,7 +435,7 @@ void sendAndReceive(MQTTAsync* c, int qos, char* test_topic)
 		{
 			MyLog(LOGA_DEBUG, "Arrived %d count %d", multiThread_arrivedcount,
 					i);
-#if defined(WIN32)
+#if defined(_WIN32)
 			Sleep(1000);
 #else
 			usleep(1000000L);
@@ -456,7 +456,7 @@ void sendAndReceive(MQTTAsync* c, int qos, char* test_topic)
 		{
 			MyLog(LOGA_DEBUG, "Delivery Completed %d count %d",
 					multiThread_deliveryCompleted, i);
-#if defined(WIN32)
+#if defined(_WIN32)
 			Sleep(1000);
 #else
 			usleep(1000000L);
@@ -719,7 +719,7 @@ int test1(struct Options options)
 
 	/* wait for success or failure callback */
 	while (!test1Finished && ++count < 10000)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -825,7 +825,7 @@ int test2a(struct Options options)
 		goto exit;
 
 	while (!tc.subscribed && !tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -835,7 +835,7 @@ int test2a(struct Options options)
 		goto exit;
 
 	while (!tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -932,7 +932,7 @@ int test2b(struct Options options)
 		goto exit;
 
 	while (!test2bFinished && ++count < 10000)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1030,7 +1030,7 @@ int test2c(struct Options options)
 	}
 
 	while (!test2cFinished && ++count < 10000)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1139,7 +1139,7 @@ int test2d(struct Options options)
 #define TEST2D_COUNT 1000
 		while (!test2dFinished && ++count < TEST2D_COUNT)
 		{
-#if defined(WIN32)
+#if defined(_WIN32)
 			Sleep(100);
 #else
 			usleep(10000L);
@@ -1237,7 +1237,7 @@ int test3a(struct Options options)
 		goto exit;
 
 	while (!tc.subscribed && !tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1266,7 +1266,7 @@ int test3a(struct Options options)
 	}
 
 	while (!tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1360,7 +1360,7 @@ int test3b(struct Options options)
 		goto exit;
 
 	while (!test3bFinished && ++count < 10000)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1458,7 +1458,7 @@ int test4(struct Options options)
 		goto exit;
 
 	while (!tc.subscribed && !tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1487,7 +1487,7 @@ int test4(struct Options options)
 	}
 
 	while (!tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1591,7 +1591,7 @@ int test5a(struct Options options)
 		goto exit;
 
 	while (!tc.subscribed && !tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1620,7 +1620,7 @@ int test5a(struct Options options)
 	}
 
 	while (!tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1724,7 +1724,7 @@ int test5b(struct Options options)
 		goto exit;
 
 	while (!tc.subscribed && !tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1753,7 +1753,7 @@ int test5b(struct Options options)
 	}
 
 	while (!tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1845,7 +1845,7 @@ int test5c(struct Options options)
 		goto exit;
 
 	while (!test5cFinished && ++count < 10000)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1951,7 +1951,7 @@ int test6(struct Options options)
 	{
 		MyLog(LOGA_DEBUG, "num_clients %d test_finished %d\n", num_clients,
 				test6finished);
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 
 #else
@@ -2231,7 +2231,7 @@ int test7(struct Options options)
 		goto exit;
 
 	while (!tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(1000L);
@@ -2323,7 +2323,7 @@ int test8(struct Options options)
 		goto exit;
 
 	while (!tc.subscribed && !tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -2333,7 +2333,7 @@ int test8(struct Options options)
 		goto exit;
 
 	while (!tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -2434,7 +2434,7 @@ int test9(struct Options options)
 		goto exit;
 
 	while (!tc.subscribed && !tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -2444,7 +2444,7 @@ int test9(struct Options options)
 		goto exit;
 
 	while (!tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -2555,7 +2555,7 @@ int test10(struct Options options)
 		goto exit;
 
 	while (!test10Finished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);

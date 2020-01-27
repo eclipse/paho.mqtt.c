@@ -18,7 +18,7 @@
 #if !defined(SSLSOCKET_H)
 #define SSLSOCKET_H
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	#define ssl_mutex_type HANDLE
 #else
 	#include <pthread.h>

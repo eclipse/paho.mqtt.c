@@ -202,14 +202,14 @@ void MyLog(int log_level, char* format, ...)
 
 void MySleep(long milliseconds)
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	Sleep(milliseconds);
 #else
 	usleep(milliseconds*1000);
 #endif
 }
 
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 #define START_TIME_TYPE DWORD
 static DWORD start_time = 0;
 START_TIME_TYPE start_clock(void)
@@ -235,7 +235,7 @@ START_TIME_TYPE start_clock(void)
 }
 #endif
 
-#if defined(WIN32)
+#if defined(_WIN32)
 long elapsed(START_TIME_TYPE start_time)
 {
 	return GetTickCount() - start_time;
@@ -962,7 +962,7 @@ int main(int argc, char** argv)
 	static char topic_buf[200];
 	static char clientid[40];
 
-#if !defined(WIN32)
+#if !defined(_WIN32)
 	signal(SIGPIPE, SIG_IGN);
 #endif
 

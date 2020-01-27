@@ -20,7 +20,7 @@
 
 #include <sys/types.h>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #include <errno.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>

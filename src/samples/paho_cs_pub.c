@@ -24,7 +24,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #define sleep Sleep
 #else
 #include <sys/time.h>
@@ -144,7 +144,7 @@ int main(int argc, char** argv)
 	int rc = 0;
 	char* url;
 	const char* version = NULL;
-#if !defined(WIN32)
+#if !defined(_WIN32)
     struct sigaction sa;
 #endif
 	const char* program_name = "paho_cs_pub";
@@ -183,7 +183,7 @@ int main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 
-#if defined(WIN32)
+#if defined(_WIN32)
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
 #else

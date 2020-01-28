@@ -55,7 +55,7 @@ IF (WIN32)
 ELSEIF (UNIX)
     IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
         SET(LIBS_SYSTEM c dl pthread anl)
-        ADD_DEFINITIONS(-D_GNU_SOURCE)
+        ADD_DEFINITIONS(-D_GNU_SOURCE -fvisibility=hidden)
     ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Android")
         SET(LIBS_SYSTEM c dl)
     ELSEIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
@@ -156,7 +156,7 @@ IF (PAHO_WITH_SSL)
     FIND_LIBRARY(OPENSSL_LIB NAMES ssl libssl ssleay32
         HINTS ${OPENSSL_SEARCH_PATH}/lib ${OPENSSL_SEARCH_LIB_PATH})
     FIND_LIBRARY(OPENSSLCRYPTO_LIB NAMES crypto libcrypto libeay32
-      	HINTS ${OPENSSL_SEARCH_PATH}/lib ${OPENSSL_SEARCH_LIB_PATH})
+        HINTS ${OPENSSL_SEARCH_PATH}/lib ${OPENSSL_SEARCH_LIB_PATH})
 
     MESSAGE(STATUS "OpenSSL hints: ${OPENSSL_SEARCH_PATH}")
     MESSAGE(STATUS "OpenSSL headers found at ${OPENSSL_INCLUDE_DIR}")
@@ -170,8 +170,9 @@ IF (PAHO_WITH_SSL)
     ## common compilation for libpaho-mqtt3cs and libpaho-mqtt3as
     ## Note: SSL libraries must be recompiled due ifdefs
     ADD_LIBRARY(common_ssl_obj OBJECT ${common_src})
-    SET_PROPERTY(TARGET common_ssl_obj PROPERTY POSITION_INDEPENDENT_CODE ON)
-    SET_PROPERTY(TARGET common_ssl_obj PROPERTY COMPILE_DEFINITIONS "OPENSSL=1")
+    SET_PROPERTY(TARGET common_ssl_obj PROPERTY	POSITION_INDEPENDENT_CODE ON)
+    SET_PROPERTY(TARGET common_ssl_obj PROPERTY COMPILE_DEFINITIONS "OPENSSL=1;MQTT_EXPORTS=1")
+
     ADD_LIBRARY(paho-mqtt3cs SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTClient.c SSLSocket.c)
     ADD_LIBRARY(paho-mqtt3as SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTAsync.c SSLSocket.c)
 
@@ -181,7 +182,8 @@ IF (PAHO_WITH_SSL)
         paho-mqtt3cs paho-mqtt3as PROPERTIES
         VERSION ${CLIENT_VERSION}
         SOVERSION ${PAHO_VERSION_MAJOR}
-        COMPILE_DEFINITIONS "OPENSSL=1")
+        COMPILE_DEFINITIONS "OPENSSL=1"
+        DEFINE_SYMBOL "MQTT_EXPORTS")
     FOREACH(TARGET paho-mqtt3cs paho-mqtt3as)
         TARGET_INCLUDE_DIRECTORIES(${TARGET}
             PUBLIC
@@ -206,7 +208,8 @@ IF (PAHO_WITH_SSL)
         paho-mqtt3cs-static paho-mqtt3as-static PROPERTIES
         VERSION ${CLIENT_VERSION}
         SOVERSION ${PAHO_VERSION_MAJOR}
-        COMPILE_DEFINITIONS "OPENSSL=1")
+	COMPILE_DEFINITIONS "OPENSSL=1"
+	LINK_FLAGS "MQTT_EXPORTS")
         SET_TARGET_PROPERTIES(paho-mqtt3cs-static PROPERTIES OUTPUT_NAME paho-mqtt3cs)
         SET_TARGET_PROPERTIES(paho-mqtt3as-static PROPERTIES OUTPUT_NAME paho-mqtt3as)
 

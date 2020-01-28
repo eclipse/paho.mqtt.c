@@ -49,6 +49,8 @@
 	#include <sys/time.h>
 #endif
 
+#include "ExportDeclarations.h"
+
 #include "MQTTClient.h"
 #if !defined(NO_PERSISTENCE)
 #include "MQTTPersistence.h"
@@ -577,7 +579,7 @@ void MQTTClient_free(void* memory)
 }
 
 
-DLLExport void MQTTResponse_free(MQTTResponse response)
+void MQTTResponse_free(MQTTResponse response)
 {
 	FUNC_ENTRY;
 	if (response.properties)

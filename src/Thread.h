@@ -16,10 +16,13 @@
  *    Ian Craggs - fix for bug #420851
  *    Ian Craggs - change MacOS semaphore implementation
  *******************************************************************************/
-#include "MQTTClient.h"
 
 #if !defined(THREAD_H)
 #define THREAD_H
+
+#include "ExportDeclarations.h"
+
+#include "MQTTClient.h"
 
 #include "mutex_type.h" /* Needed for mutex_type */
 

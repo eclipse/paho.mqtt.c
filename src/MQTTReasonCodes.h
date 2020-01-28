@@ -17,6 +17,8 @@
 #if !defined(MQTTREASONCODES_H)
 #define MQTTREASONCODES_H
 
+#include "ExportDeclarations.h"
+
 /** The MQTT V5 one byte reason code */
 enum MQTTReasonCodes {
   MQTTREASONCODE_SUCCESS = 0,
@@ -66,20 +68,12 @@ enum MQTTReasonCodes {
   MQTTREASONCODE_WILDCARD_SUBSCRIPTIONS_NOT_SUPPORTED = 162
 };
 
-#if defined(_WIN32) || defined(_WIN64)
-  #define DLLImport __declspec(dllimport)
-  #define DLLExport __declspec(dllexport)
-#else
-  #define DLLImport extern
-  #define DLLExport __attribute__ ((visibility ("default")))
-#endif
-
 /**
  * Returns a printable string description of an MQTT V5 reason code.
  * @param value an MQTT V5 reason code.
  * @return the printable string description of the input reason code.
  * NULL if the code was not found.
  */
-DLLExport const char* MQTTReasonCode_toString(enum MQTTReasonCodes value);
+LIBMQTT_API const char* MQTTReasonCode_toString(enum MQTTReasonCodes value);
 
 #endif

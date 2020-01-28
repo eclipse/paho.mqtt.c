@@ -111,7 +111,7 @@ IF (PAHO_BUILD_STATIC)
     SET_TARGET_PROPERTIES(paho-mqtt3c-static PROPERTIES OUTPUT_NAME paho-mqtt3c)
     SET_TARGET_PROPERTIES(paho-mqtt3a-static PROPERTIES OUTPUT_NAME paho-mqtt3a)
 
-    FOREACH(TARGET paho-mqtt3c paho-mqtt3a)
+    FOREACH(TARGET paho-mqtt3c-static paho-mqtt3a-static)
         TARGET_INCLUDE_DIRECTORIES(${TARGET}
             PUBLIC
                 $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018, 2019 Wind River Systems, Inc. and others. All Rights Reserved.
+ * Copyright (c) 2018, 2020 Wind River Systems, Inc. and others. All Rights Reserved.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +13,7 @@
  * Contributors:
  *    Keith Holman - initial implementation and documentation
  *    Ian Craggs - use memory tracking
+ *    Ian Craggs - fix for one MQTT packet spread over >1 ws frame
  *******************************************************************************/
 
 #include <stdint.h>
@@ -20,7 +21,7 @@
 #include <string.h>
 // for timeout process in WebSocket_proxy_connect()
 #include <time.h>
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #else
 #include <unistd.h>
@@ -48,7 +49,7 @@
 #  define be64toh(x) OSSwapBigToHostInt64(x)
 #elif defined(__FreeBSD__) || defined(__NetBSD__)
 #  include <sys/endian.h>
-#elif defined(WIN32) || defined(WIN64)
+#elif defined(_WIN32) || defined(_WIN64)
 #  pragma comment(lib, "rpcrt4.lib")
 #  include <Rpc.h>
 #  define strncasecmp(s1,s2,c) _strnicmp(s1,s2,c)
@@ -86,7 +87,7 @@
 
 #define HTTP_PROTOCOL(x) x ? "https" : "http"
 
-#if !(defined(WIN32) || defined(WIN64))
+#if !(defined(_WIN32) || defined(_WIN64))
 #if defined(LIBUUID)
 #include <uuid/uuid.h>
 #else /* if defined(USE_LIBUUID) */
@@ -136,7 +137,7 @@ void uuid_unparse( uuid_t uu, char *out )
 	*out = '\0';
 }
 #endif /* else if defined(LIBUUID) */
-#endif /* if !(defined(WIN32) || defined(WIN64)) */
+#endif /* if !(defined(_WIN32) || defined(_WIN64)) */
 
 /** raw websocket frame data */
 struct ws_frame
@@ -333,11 +334,11 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 	size_t hostname_len;
 	int port = 80;
 	const char *topic = NULL;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	UUID uuid;
-#else /* if defined(WIN32) || defined(WIN64) */
+#else /* if defined(_WIN32) || defined(_WIN64) */
 	uuid_t uuid;
-#endif /* else if defined(WIN32) || defined(WIN64) */
+#endif /* else if defined(_WIN32) || defined(_WIN64) */
 
 	FUNC_ENTRY;
 	/* Generate UUID */
@@ -345,14 +346,14 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 		net->websocket_key = malloc(25u);
 	else
 		net->websocket_key = realloc(net->websocket_key, 25u);
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	ZeroMemory( &uuid, sizeof(UUID) );
 	UuidCreate( &uuid );
 	Base64_encode( net->websocket_key, 25u, (const b64_data_t*)&uuid, sizeof(UUID) );
-#else /* if defined(WIN32) || defined(WIN64) */
+#else /* if defined(_WIN32) || defined(_WIN64) */
 	uuid_generate( uuid );
 	Base64_encode( net->websocket_key, 25u, uuid, sizeof(uuid_t) );
-#endif /* else if defined(WIN32) || defined(WIN64) */
+#endif /* else if defined(_WIN32) || defined(_WIN64) */
 
 	hostname_len = MQTTProtocol_addressPort(uri, &port, &topic);
 
@@ -365,7 +366,7 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 		char *headers_buf_cur = NULL;
 		while ( headers->name != NULL && headers->value != NULL )
 		{
-			headers_buf_len += strlen(headers->name) + strlen(headers->value) + 4;
+			headers_buf_len += (int)(strlen(headers->name) + strlen(headers->value) + 4);
 			headers++;
 		}
 		headers_buf_len++;
@@ -564,7 +565,9 @@ exit:
 }
 
 /**
- * @brief receives data from a socket
+ * @brief receives data from a socket.
+ * It should receive all data from the socket that is immediately available.
+ * Because it is encapsulated in websocket frames which cannot be
  *
  * @param[in,out]  net                 network connection
  * @param[in]      bytes               amount of data to get (0 if last packet)
@@ -604,7 +607,7 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 			goto exit;
 		}
 
-		/* no current frame, let's see if there's one in the list */
+		/* look at the first websocket frame */
 		if ( in_frames && in_frames->first )
 			frame = in_frames->first->content;
 
@@ -621,11 +624,27 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 		if ( frame )
 		{
 			rv = (char *)frame + sizeof(struct ws_frame) + frame->pos;
-			*actual_len = frame->len - frame->pos;
+			*actual_len = frame->len - frame->pos; /* use the rest of the frame */
 
-			if ( *actual_len == bytes && in_frames)
+
+			while (*actual_len < bytes) {
+				const int rc = WebSocket_receiveFrame(net, bytes, actual_len);
+
+				if (rc != TCPSOCKET_COMPLETE) {
+					frame->pos = 0;
+					break;
+				}
+
+				/* refresh pointers */
+				frame = in_frames->first->content;
+				rv = (char *)frame + sizeof(struct ws_frame) + frame->pos;
+				*actual_len = frame->len - frame->pos; /* use the rest of the frame */
+
+			} /* end while */
+
+
+			if (*actual_len == bytes && in_frames)
 			{
-				/* set new frame as current frame */
 				if ( last_frame )
 					free( last_frame );
 				last_frame = ListDetachHead(in_frames);
@@ -659,8 +678,7 @@ void WebSocket_rewindData( void )
  *
  * @return a buffer containing raw data
  */
-char *WebSocket_getRawSocketData(
-	networkHandles *net, size_t bytes, size_t* actual_len)
+char *WebSocket_getRawSocketData(networkHandles *net, size_t bytes, size_t* actual_len)
 {
 	char *rv;
 
@@ -872,6 +890,8 @@ int WebSocket_putdatas(networkHandles* net, char* buf0, size_t buf0len,
 
 /**
  * receives incoming socket data and parses websocket frames
+ * Copes with socket reads returning partial websocket frames by using the
+ * SocketBuffer mechanism.
  *
  * @param[in]      net                 network connection
  * @param[in]      bytes               amount of data to receive
@@ -881,8 +901,7 @@ int WebSocket_putdatas(networkHandles* net, char* buf0, size_t buf0len,
  * @retval TCPSOCKET_INTERRUPTED       incomplete packet received
  * @retval SOCKET_ERROR                an error was encountered
  */
-int WebSocket_receiveFrame(networkHandles *net,
-	size_t bytes, size_t *actual_len )
+int WebSocket_receiveFrame(networkHandles *net, size_t bytes, size_t *actual_len)
 {
 	struct ws_frame *res = NULL;
 	int rc = TCPSOCKET_COMPLETE;
@@ -891,12 +910,12 @@ int WebSocket_receiveFrame(networkHandles *net,
 	if ( !in_frames )
 		in_frames = ListInitialize();
 
-	/* see if there is frame acurrently on queue */
+	/* see if there is frame currently on queue */
 	if ( in_frames->first )
 		res = in_frames->first->content;
 
-	while( !res )
-	{
+	//while( !res )
+	//{
 		int opcode = WebSocket_OP_BINARY;
 		do
 		{
@@ -948,8 +967,9 @@ int WebSocket_receiveFrame(networkHandles *net,
 				/* determine payload length */
 				if ( payload_len == 126 )
 				{
-					b = WebSocket_getRawSocketData( net,
-						2u, &len);
+					/* If 126, the following 2 bytes interpreted as a
+					      16-bit unsigned integer are the payload length. */
+					b = WebSocket_getRawSocketData(net, 2u, &len);
 					if ( !b )
 					{
 						rc = SOCKET_ERROR;
@@ -965,8 +985,9 @@ int WebSocket_receiveFrame(networkHandles *net,
 				}
 				else if ( payload_len == 127 )
 				{
-					b = WebSocket_getRawSocketData( net,
-						8u, &len);
+					 /* If 127, the following 8 bytes interpreted as a 64-bit unsigned integer (the
+					      most significant bit MUST be 0) are the payload length */
+					b = WebSocket_getRawSocketData(net, 8u, &len);
 					if ( !b )
 					{
 						rc = SOCKET_ERROR;
@@ -998,8 +1019,8 @@ int WebSocket_receiveFrame(networkHandles *net,
 					memcpy( &mask[0], b, sizeof(uint32_t));
 				}
 
-				b = WebSocket_getRawSocketData(net,
-					payload_len, &len);
+				/* use the socket buffer to read in the whole websocket frame */
+				b = WebSocket_getRawSocketData(net, payload_len, &len);
 
 				if ( !b )
 				{
@@ -1024,11 +1045,14 @@ int WebSocket_receiveFrame(networkHandles *net,
 					cur_len = res->len;
 
 				if (res == NULL)
+				{
 					res = malloc( sizeof(struct ws_frame) + cur_len + len );
-				else
+					res->pos = 0u;
+				} else
 					res = realloc( res, sizeof(struct ws_frame) + cur_len + len );
+				if (in_frames && in_frames->first)
+					in_frames->first->content = res; /* realloc moves the data */
 				memcpy( (unsigned char *)res + sizeof(struct ws_frame) + cur_len, b, len );
-				res->pos = 0u;
 				res->len = cur_len + len;
 
 				WebSocket_getRawSocketData(net, 0u, &len);
@@ -1055,10 +1079,10 @@ int WebSocket_receiveFrame(networkHandles *net,
 				goto exit;
 			}
 		} while ( opcode == WebSocket_OP_PING || opcode == WebSocket_OP_PONG );
-	}
+	//}
 
-	/* add new frame to end of list */
-	ListAppend( in_frames, res, sizeof(struct ws_frame) + res->len);
+	if (in_frames->count == 0)
+		ListAppend( in_frames, res, sizeof(struct ws_frame) + res->len);
 	*actual_len = res->len - res->pos;
 
 exit:
@@ -1353,7 +1377,7 @@ int WebSocket_proxy_connect( networkHandles *net, int ssl, const char *hostname)
 				rc = SOCKET_ERROR;
 				break;
 			}
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 			Sleep(250);
 #else
 			usleep(250000);

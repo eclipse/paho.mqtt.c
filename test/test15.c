@@ -174,7 +174,7 @@ void MyLog(int LOGA_level, char* format, ...)
 }
 
 
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 #define mqsleep(A) Sleep(1000*A)
 #define START_TIME_TYPE DWORD
 static DWORD start_time = 0;
@@ -204,7 +204,7 @@ START_TIME_TYPE start_clock(void)
 #endif
 
 
-#if defined(WIN32)
+#if defined(_WIN32)
 long elapsed(START_TIME_TYPE start_time)
 {
 	return GetTickCount() - start_time;
@@ -594,7 +594,7 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 			response = MQTTClient_publishMessage5(c, test_topic, &test2_pubmsg, &dt);
 		assert("Good rc from publish", response.reasonCode == MQTTCLIENT_SUCCESS, "rc was %d", response.reasonCode);
 
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(100000L);
@@ -604,7 +604,7 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 		while ((test2_arrivedcount < i) && (wait_seconds-- > 0))
 		{
 			MyLog(LOGA_DEBUG, "Arrived %d count %d", test2_arrivedcount, i);
-			#if defined(WIN32)
+			#if defined(_WIN32)
 				Sleep(1000);
 			#else
 				usleep(1000000L);
@@ -623,7 +623,7 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 		while ((test2_deliveryCompleted < iterations) && (wait_seconds-- > 0))
 		{
 			MyLog(LOGA_DEBUG, "Delivery Completed %d count %d", test2_deliveryCompleted, i);
-			#if defined(WIN32)
+			#if defined(_WIN32)
 				Sleep(1000);
 			#else
 				usleep(1000000L);
@@ -1243,7 +1243,7 @@ int test6(struct Options options)
 	count = 0;
 	while (++count < 40)
 	{
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(1000L);
 		#else
 			sleep(1);
@@ -1359,7 +1359,7 @@ int test6a(struct Options options)
 	count = 0;
 	while (++count < 40)
 	{
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(1000L);
 		#else
 			sleep(1);

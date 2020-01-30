@@ -149,7 +149,7 @@ void MyLog(int LOGA_level, char* format, ...)
 #endif
 
 
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 #define mqsleep(A) Sleep(1000*A)
 #define START_TIME_TYPE DWORD
 static DWORD start_time = 0;
@@ -179,7 +179,7 @@ START_TIME_TYPE start_clock(void)
 #endif
 
 
-#if defined(WIN32)
+#if defined(_WIN32)
 long elapsed(START_TIME_TYPE start_time)
 {
 	return GetTickCount() - start_time;
@@ -508,7 +508,7 @@ int test_client_topic_aliases(struct Options options)
 		goto exit;
 
 	while (test_client_topic_aliases_globals.disconnected == 0)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -521,7 +521,7 @@ int test_client_topic_aliases(struct Options options)
 		goto exit;
 
 	while (test_client_topic_aliases_globals.test_finished == 0)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -699,7 +699,7 @@ int test_server_topic_aliases(struct Options options)
 		goto exit;
 
 	while (test_server_topic_aliases_globals.test_finished == 0)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -879,7 +879,7 @@ int test_subscription_ids(struct Options options)
 		goto exit;
 
 	while (test_subscription_ids_globals.test_finished == 0)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1041,7 +1041,7 @@ int test_flow_control(struct Options options)
 		goto exit;
 
 	while (test_flow_control_globals.test_finished == 0)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1215,7 +1215,7 @@ int test_error_reporting(struct Options options)
 		goto exit;
 
 	while (test_error_reporting_globals.test_finished == 0)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1420,7 +1420,7 @@ int test_qos_1_2_errors(struct Options options)
 		goto exit;
 
 	while (test_qos_1_2_errors_globals.test_finished == 0)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1657,7 +1657,7 @@ int test_request_response(struct Options options)
 		goto exit;
 
 	while (test_request_response_globals.test_finished == 0)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1844,7 +1844,7 @@ int test_subscribeOptions(struct Options options)
 		goto exit;
 
 	while (test_subscribeOptions_globals.test_finished == 0)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -2044,14 +2044,14 @@ int test_shared_subscriptions(struct Options options)
 		goto exit;
 
 	while (test_shared_subscriptions_globals.test_finished == 0 && ++count < 1000)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
 		#endif
 
 	/* sleep a bit more to see if any other messages arrive */
-	#if defined(WIN32)
+	#if defined(_WIN32)
 		Sleep(100);
 	#else
 		usleep(10000L);

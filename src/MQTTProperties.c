@@ -14,6 +14,8 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
+#include "ExportDeclarations.h"
+
 #include "MQTTProperties.h"
 
 #include "MQTTPacket.h"
@@ -359,7 +361,7 @@ const char* MQTTPropertyName(enum MQTTPropertyCodes value)
 }
 
 
-DLLExport void MQTTProperties_free(MQTTProperties* props)
+void MQTTProperties_free(MQTTProperties* props)
 {
   int i = 0;
 

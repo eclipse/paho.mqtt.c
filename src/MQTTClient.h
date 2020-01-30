@@ -110,25 +110,12 @@
  extern "C" {
 #endif
 
-#if defined(WIN32) || defined(WIN64)
-	#if defined(MQTT_EXPORTS)
-		#define LIBMQTT_API __declspec(dllexport)
-	#else
-		#define LIBMQTT_API __declspec(dllimport)
-	#endif
-
-#else
-	#if defined(MQTT_EXPORTS)
-		#define LIBMQTT_API  __attribute__ ((visibility ("default")))
-	#else
-		#define LIBMQTT_API extern
-	#endif
-#endif
-
 #include <stdio.h>
 /*
 /// @endcond
 */
+
+#include "ExportDeclarations.h"
 
 #include "MQTTProperties.h"
 #include "MQTTReasonCodes.h"

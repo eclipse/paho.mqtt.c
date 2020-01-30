@@ -38,7 +38,7 @@
 #undef realloc
 #undef free
 
-#if !defined(WIN32) && !defined(WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 #include <errno.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -59,7 +59,7 @@
  */
 thread_type Thread_start(thread_fn fn, void* parameter)
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	thread_type thread = NULL;
 #else
 	thread_type thread = 0;
@@ -67,7 +67,7 @@ thread_type Thread_start(thread_fn fn, void* parameter)
 #endif
 
 	FUNC_ENTRY;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	thread = CreateThread(NULL, 0, fn, parameter, 0, NULL);
 #else
 	pthread_attr_init(&attr);
@@ -91,7 +91,7 @@ mutex_type Thread_create_mutex(void)
 	int rc = 0;
 
 	FUNC_ENTRY;
-	#if defined(WIN32) || defined(WIN64)
+	#if defined(_WIN32) || defined(_WIN64)
 		mutex = CreateMutex(NULL, 0, NULL);
 		if (mutex == NULL)
 			rc = GetLastError();
@@ -113,7 +113,7 @@ int Thread_lock_mutex(mutex_type mutex)
 	int rc = -1;
 
 	/* don't add entry/exit trace points as the stack log uses mutexes - recursion beckons */
-	#if defined(WIN32) || defined(WIN64)
+	#if defined(_WIN32) || defined(_WIN64)
 		/* WaitForSingleObject returns WAIT_OBJECT_0 (0), on success */
 		rc = WaitForSingleObject(mutex, INFINITE);
 	#else
@@ -134,7 +134,7 @@ int Thread_unlock_mutex(mutex_type mutex)
 	int rc = -1;
 
 	/* don't add entry/exit trace points as the stack log uses mutexes - recursion beckons */
-	#if defined(WIN32) || defined(WIN64)
+	#if defined(_WIN32) || defined(_WIN64)
 		/* if ReleaseMutex fails, the return value is 0 */
 		if (ReleaseMutex(mutex) == 0)
 			rc = GetLastError();
@@ -157,7 +157,7 @@ void Thread_destroy_mutex(mutex_type mutex)
 	int rc = 0;
 
 	FUNC_ENTRY;
-	#if defined(WIN32) || defined(WIN64)
+	#if defined(_WIN32) || defined(_WIN64)
 		rc = CloseHandle(mutex);
 	#else
 		rc = pthread_mutex_destroy(mutex);
@@ -173,7 +173,7 @@ void Thread_destroy_mutex(mutex_type mutex)
  */
 thread_id_type Thread_getid(void)
 {
-	#if defined(WIN32) || defined(WIN64)
+	#if defined(_WIN32) || defined(_WIN64)
 		return GetCurrentThreadId();
 	#else
 		return pthread_self();
@@ -191,7 +191,7 @@ sem_type Thread_create_sem(void)
 	int rc = 0;
 
 	FUNC_ENTRY;
-	#if defined(WIN32) || defined(WIN64)
+	#if defined(_WIN32) || defined(_WIN64)
 		sem = CreateEvent(
 		        NULL,               /* default security attributes */
 		        FALSE,              /* manual-reset event? */
@@ -230,7 +230,7 @@ int Thread_wait_sem(sem_type sem, int timeout)
  * so I've used trywait in a loop instead. Ian Craggs 23/7/2010
  */
 	int rc = -1;
-#if !defined(WIN32) && !defined(WIN64) && !defined(OSX)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(OSX)
 #define USE_TRYWAIT
 #if defined(USE_TRYWAIT)
 	int i = 0;
@@ -242,7 +242,7 @@ int Thread_wait_sem(sem_type sem, int timeout)
 #endif
 
 	FUNC_ENTRY;
-	#if defined(WIN32) || defined(WIN64)
+	#if defined(_WIN32) || defined(_WIN64)
 		/* returns 0 (WAIT_OBJECT_0) on success, non-zero (WAIT_TIMEOUT) if timeout occurred */
 		rc = WaitForSingleObject(sem, timeout < 0 ? 0 : timeout);
 		if (rc == WAIT_TIMEOUT)
@@ -288,7 +288,7 @@ int Thread_wait_sem(sem_type sem, int timeout)
  */
 int Thread_check_sem(sem_type sem)
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	/* if the return value is not 0, the semaphore will not have been decremented */
 	return WaitForSingleObject(sem, 0) == WAIT_OBJECT_0;
 #elif defined(OSX)
@@ -312,7 +312,7 @@ int Thread_post_sem(sem_type sem)
 	int rc = 0;
 
 	FUNC_ENTRY;
-	#if defined(WIN32) || defined(WIN64)
+	#if defined(_WIN32) || defined(_WIN64)
 		if (SetEvent(sem) == 0)
 			rc = GetLastError();
 	#elif defined(OSX)
@@ -340,7 +340,7 @@ int Thread_destroy_sem(sem_type sem)
 	int rc = 0;
 
 	FUNC_ENTRY;
-	#if defined(WIN32) || defined(WIN64)
+	#if defined(_WIN32) || defined(_WIN64)
 		rc = CloseHandle(sem);
   #elif defined(OSX)
 	  dispatch_release(sem);
@@ -353,7 +353,7 @@ int Thread_destroy_sem(sem_type sem)
 }
 
 
-#if !defined(WIN32) && !defined(WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 
 /**
  * Create a new condition variable
@@ -443,7 +443,7 @@ int Thread_destroy_cond(cond_type condvar)
 
 #if defined(THREAD_UNIT_TESTS)
 
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 #define mqsleep(A) Sleep(1000*A)
 #define START_TIME_TYPE DWORD
 static DWORD start_time = 0;
@@ -473,7 +473,7 @@ START_TIME_TYPE start_clock(void)
 #endif
 
 
-#if defined(WIN32)
+#if defined(_WIN32)
 long elapsed(START_TIME_TYPE start_time)
 {
 	return GetTickCount() - start_time;

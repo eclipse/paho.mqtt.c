@@ -24,7 +24,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #include <windows.h>
 #define sleep Sleep
 #else
@@ -56,7 +56,7 @@ MQTTProperties props = MQTTProperties_initializer;
 
 void mysleep(int ms)
 {
-	#if defined(WIN32)
+	#if defined(_WIN32)
 		Sleep(ms);
 	#else
 		usleep(ms * 1000);
@@ -371,7 +371,7 @@ int main(int argc, char** argv)
 	const char* version = NULL;
 	const char* program_name = "paho_c_pub";
 	MQTTAsync_nameValue* infos = MQTTAsync_getVersionInfo();
-#if !defined(WIN32)
+#if !defined(_WIN32)
     struct sigaction sa;
 #endif
 
@@ -408,7 +408,7 @@ int main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 
-#if defined(WIN32)
+#if defined(_WIN32)
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
 #else

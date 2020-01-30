@@ -32,6 +32,7 @@ file(READ version.patch PAHO_VERSION_PATCH)
 SET(CLIENT_VERSION ${PAHO_VERSION_MAJOR}.${PAHO_VERSION_MINOR}.${PAHO_VERSION_PATCH})
 
 INCLUDE(GNUInstallDirs)
+INCLUDE(GenerateExportHeader)
 
 STRING(TIMESTAMP BUILD_TIMESTAMP UTC)
 MESSAGE(STATUS "Timestamp is ${BUILD_TIMESTAMP}")
@@ -44,7 +45,7 @@ ENDIF()
 
 ## build options
 SET(PAHO_WITH_SSL FALSE CACHE BOOL "Flag that defines whether to build ssl-enabled binaries too. ")
-SET(PAHO_BUILD_STATIC FALSE CACHE BOOL "Build static library")
+SET(PAHO_BUILD_STATIC FALSE CACHE BOOL "Build as a static library")
 SET(PAHO_BUILD_DOCUMENTATION FALSE CACHE BOOL "Create and install the HTML based API documentation (requires Doxygen)")
 SET(PAHO_BUILD_SAMPLES FALSE CACHE BOOL "Build sample programs")
 SET(PAHO_BUILD_DEB_PACKAGE FALSE CACHE BOOL "Build debian package")
@@ -98,7 +99,7 @@ INCLUDE(CPack)
 
 IF(PAHO_ENABLE_TESTING)
     ENABLE_TESTING()
-    INCLUDE_DIRECTORIES(test src)
+    INCLUDE_DIRECTORIES(test ${CMAKE_BINARY_DIR} src)
     ADD_SUBDIRECTORY(test)
 ELSE()
     INCLUDE_DIRECTORIES(src)

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -2876,7 +2876,6 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 
 	if (options->will) /* check validity of will options structure */
 	{
-		printf("will set\n");
 		if (strncmp(options->will->struct_id, "MQTW", 4) != 0 || (options->will->struct_version != 0 && options->will->struct_version != 1))
 		{
 			rc = MQTTASYNC_BAD_STRUCTURE;
@@ -2889,12 +2888,10 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		}
 		if (options->will->topicName == NULL)
 		{
-			printf("null topic\n");
 			rc = MQTTASYNC_NULL_PARAMETER;
 			goto exit;
 		} else if (strlen(options->will->topicName) == 0)
 		{
-			printf("0 len topic name\n");
 			rc = MQTTASYNC_0_LEN_WILL_TOPIC;
 			goto exit;
 		}

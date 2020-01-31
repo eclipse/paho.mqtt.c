@@ -932,7 +932,7 @@ int Socket_abortWrite(int socket)
 	{
 		if (pw->frees[i])
 		{
-			printf("cleaning in abortwrite for socket %d\n", socket);
+			Log(TRACE_MIN, -1, "Cleaning in abortWrite for socket %d", socket);
 			free(pw->iovecs[i].iov_base);
 		}
 	}

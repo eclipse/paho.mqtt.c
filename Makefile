@@ -154,11 +154,11 @@ PAHO_C_SUB_TARGET = ${blddir}/samples/${PAHO_C_SUB_NAME}
 PAHO_CS_PUB_TARGET = ${blddir}/samples/${PAHO_CS_PUB_NAME}
 PAHO_CS_SUB_TARGET = ${blddir}/samples/${PAHO_CS_SUB_NAME}
 
-#CCFLAGS_SO = -g -fPIC $(CFLAGS) -Os -Wall -fvisibility=hidden -I$(blddir_work) -Iexport
+#CCFLAGS_SO = -g -fPIC $(CFLAGS) -Os -Wall -fvisibility=hidden -I$(blddir_work) 
 #FLAGS_EXE = $(LDFLAGS) -I ${srcdir} -lpthread -L ${blddir}
 #FLAGS_EXES = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread -lssl -lcrypto ${END_GROUP} -L ${blddir}
 
-CCFLAGS_SO = -g -fPIC $(CFLAGS) -D_GNU_SOURCE -Os -Wall -fvisibility=hidden -I$(blddir_work) -Iexport -DMQTT_EXPORTS=1
+CCFLAGS_SO = -g -fPIC $(CFLAGS) -D_GNU_SOURCE -Os -Wall -fvisibility=hidden -I$(blddir_work) -DMQTT_EXPORTS=1
 FLAGS_EXE = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread ${GAI_LIB} ${END_GROUP} -L ${blddir}
 FLAGS_EXES = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread ${GAI_LIB} -lssl -lcrypto ${END_GROUP} -L ${blddir}
 
@@ -304,7 +304,6 @@ install: build
 	$(INSTALL_DATA) ${srcdir}/MQTTProperties.h $(DESTDIR)${includedir}
 	$(INSTALL_DATA) ${srcdir}/MQTTReasonCodes.h $(DESTDIR)${includedir}
 	$(INSTALL_DATA) ${srcdir}/MQTTSubscribeOpts.h $(DESTDIR)${includedir}	
-	$(INSTALL_DATA) export/ExportDeclarations.h $(DESTDIR)${includedir}	
 	- $(INSTALL_DATA) doc/man/man1/paho_c_pub.1 $(DESTDIR)${man1dir}
 	- $(INSTALL_DATA) doc/man/man1/paho_c_sub.1 $(DESTDIR)${man1dir}
 	- $(INSTALL_DATA) doc/man/man1/paho_cs_pub.1 $(DESTDIR)${man1dir}

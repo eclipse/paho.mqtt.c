@@ -8,46 +8,46 @@ SET(CERTDIR ${CMAKE_SOURCE_DIR}/test/ssl)
 
 
 IF (PAHO_WITH_SSL)
-    SET(OPENSSL_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries and includes")
+	SET(OPENSSL_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries and includes")
 
-    IF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-      IF(OPENSSL_SEARCH_PATH STREQUAL "")
-        SET(OPENSSL_SEARCH_PATH "/usr/local/opt/openssl")
-      ENDIF ()	
-    ENDIF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+	IF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+		IF(OPENSSL_SEARCH_PATH STREQUAL "")
+			SET(OPENSSL_SEARCH_PATH "/usr/local/opt/openssl")
+		ENDIF ()	
+	ENDIF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 
-    IF (WIN32)
-      IF(OPENSSL_SEARCH_PATH STREQUAL "")
-        SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win64")
-        IF (DEFINED ENV{PAHO_WINDOWS_BUILD_BIT})
-          IF ($ENV{PAHO_WINDOWS_BUILD_BIT} STREQUAL "x86")
-            SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win32")
-          ENDIF ()
-        ENDIF ()
-      ENDIF ()
-    ENDIF ()
+	IF (WIN32)
+		IF(OPENSSL_SEARCH_PATH STREQUAL "")
+			SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win64")
+			IF (DEFINED ENV{PAHO_WINDOWS_BUILD_BIT})
+				IF ($ENV{PAHO_WINDOWS_BUILD_BIT} STREQUAL "x86")
+					SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win32")
+				ENDIF ()
+			ENDIF ()
+		ENDIF ()
+	ENDIF ()
 
-    FIND_PATH(OPENSSL_INCLUDE_DIR openssl/ssl.h
-        HINTS ${OPENSSL_SEARCH_PATH}/include)
+	FIND_PATH(OPENSSL_INCLUDE_DIR openssl/ssl.h
+		HINTS ${OPENSSL_SEARCH_PATH}/include)
 
-    MESSAGE(STATUS "OpenSSL hints: ${OPENSSL_SEARCH_PATH}")
-    MESSAGE(STATUS "OpenSSL headers found at ${OPENSSL_INCLUDE_DIR}")
+	MESSAGE(STATUS "OpenSSL hints: ${OPENSSL_SEARCH_PATH}")
+	MESSAGE(STATUS "OpenSSL headers found at ${OPENSSL_INCLUDE_DIR}")
 
-    INCLUDE_DIRECTORIES(
-        ${OPENSSL_INCLUDE_DIR}
-    )
+	INCLUDE_DIRECTORIES(
+		${OPENSSL_INCLUDE_DIR}
+	)
 ENDIF ()
 
 IF (WIN32)
-    SET(LIBS_SYSTEM ws2_32)
+	SET(LIBS_SYSTEM ws2_32)
 ELSEIF (UNIX)
-    IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
-        SET(LIBS_SYSTEM c dl pthread)
-    ELSEIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-        SET(LIBS_SYSTEM compat pthread)
-    ELSE()
-        SET(LIBS_SYSTEM c pthread)
-    ENDIF()
+	IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
+		SET(LIBS_SYSTEM c dl pthread)
+	ELSEIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+		SET(LIBS_SYSTEM compat pthread)
+	ELSE()
+		SET(LIBS_SYSTEM c pthread)
+	ENDIF()
 ENDIF()
 
 ADD_EXECUTABLE(
@@ -70,10 +70,17 @@ ADD_EXECUTABLE(
 	test1.c
 )
 
-TARGET_LINK_LIBRARIES(
-	test1
-	paho-mqtt3c
-)
+IF (NOT PAHO_BUILD_SHARED)
+	TARGET_LINK_LIBRARIES(
+		test1
+		paho-mqtt3c-static
+	)
+ELSE()
+	TARGET_LINK_LIBRARIES(
+		test1
+		paho-mqtt3c
+	)
+ENDIF()
 
 IF (WIN32)
 	ADD_CUSTOM_COMMAND(
@@ -134,10 +141,17 @@ ADD_EXECUTABLE(
 	test15.c
 )
 
-TARGET_LINK_LIBRARIES(
-	test15
-	paho-mqtt3c
-)
+IF (NOT PAHO_BUILD_SHARED)
+	TARGET_LINK_LIBRARIES(
+		test15
+		paho-mqtt3c-static
+	)
+ELSE()
+	TARGET_LINK_LIBRARIES(
+		test15
+		paho-mqtt3c
+	)
+ENDIF()
 
 ADD_TEST(
 	NAME test15-1-single-thread-client
@@ -190,10 +204,17 @@ ADD_EXECUTABLE(
 	test2.c
 )
 
-TARGET_LINK_LIBRARIES(
-	test2
-	paho-mqtt3c
-)
+IF (NOT PAHO_BUILD_SHARED)
+	TARGET_LINK_LIBRARIES(
+		test2
+		paho-mqtt3c-static
+	)
+ELsE()
+	TARGET_LINK_LIBRARIES(
+		test2
+		paho-mqtt3c
+	)
+ENDIF()
 
 ADD_TEST(
 	NAME test2-1-multiple-threads-single-client
@@ -211,10 +232,17 @@ IF (PAHO_WITH_SSL)
 		test3.c
 	)
 
-	TARGET_LINK_LIBRARIES(
-		test3
-		paho-mqtt3cs
-	)
+	IF (NOT PAHO_BUILD_SHARED)
+		TARGET_LINK_LIBRARIES(
+			test3
+			paho-mqtt3cs-static
+		)
+	ELSE()
+		TARGET_LINK_LIBRARIES(
+			test3
+			paho-mqtt3cs
+		)
+	ENDIF()
 
 ADD_TEST(
 	NAME test3-1-ssl-conn-to-non-SSL-broker
@@ -293,10 +321,17 @@ ADD_EXECUTABLE(
 	test4.c
 )
 
-TARGET_LINK_LIBRARIES(
-	test4
-	paho-mqtt3a
-)
+IF (NOT PAHO_BUILD_SHARED)
+	TARGET_LINK_LIBRARIES(
+		test4
+		paho-mqtt3a-static
+	)
+ELSE()
+	TARGET_LINK_LIBRARIES(
+		test4
+		paho-mqtt3a
+	)
+ENDIF()
 
 ADD_TEST(
 	NAME test4-1-basic-connect-subscribe-receive
@@ -355,10 +390,17 @@ ADD_EXECUTABLE(
 	test45.c
 )
 
-TARGET_LINK_LIBRARIES(
-	test45
-	paho-mqtt3a
-)
+IF (NOT PAHO_BUILD_SHARED)
+	TARGET_LINK_LIBRARIES(
+		test45
+		paho-mqtt3a-static
+	)
+ELSE()
+	TARGET_LINK_LIBRARIES(
+		test45
+		paho-mqtt3a
+	)
+ENDIF()
 
 ADD_TEST(
 	NAME test45-1-basic-connect-subscribe-receive
@@ -425,102 +467,102 @@ IF (PAHO_WITH_SSL)
 
 ADD_TEST(
 	NAME test5-1-ssl-connection-to-no-SSL-server
-	COMMAND test5 "--test_no" "1" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "1" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-1-ws-ssl-connection-to-no-SSL-server
-	COMMAND test5 "--test_no" "1" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "1" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-2a-mutual-ssl-auth-certificates-in-place
-	COMMAND test5 "--test_no" "2" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "2" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-2a-ws-mutual-ssl-auth-certificates-in-place
-	COMMAND test5 "--test_no" "2" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "2" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-2b-mutual-ssl-auth-broker-missing-client-cert
-	COMMAND test5 "--test_no" "3" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "3" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-2b-ws-mutual-ssl-auth-broker-missing-client-cert
-	COMMAND test5 "--test_no" "3" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "3" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-2c-mutual-ssl-auth-client-missing-broker-cert
-	COMMAND test5 "--test_no" "4" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "4" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-2c-ws-mutual-ssl-auth-client-missing-broker-cert
-	COMMAND test5 "--test_no" "4" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "4" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-2d-mutual-ssl-auth-client-missing-client-cert
-	COMMAND test5 "--test_no" "5" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "5" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-2d-ws-mutual-ssl-auth-client-missing-client-cert
-	COMMAND test5 "--test_no" "5" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "5" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-3a-server-auth-server-cert-in-client-store
-	COMMAND test5 "--test_no" "6" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "6" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-3a-ws-server-auth-server-cert-in-client-store
-	COMMAND test5 "--test_no" "6" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "6" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-3b-server-auth-client-missing-broker-cert
-	COMMAND test5 "--test_no" "7" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "7" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-3b-ws-server-auth-client-missing-broker-cert
-	COMMAND test5 "--test_no" "7" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "7" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-4-accept-invalid-certificates
-	COMMAND test5 "--test_no" "8" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "8" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-4-ws-accept-invalid-certificates
-	COMMAND test5 "--test_no" "8" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "8" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-6-multiple-connections
-	COMMAND test5 "--test_no" "9" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "9" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-6-ws-multiple-connections
-	COMMAND test5 "--test_no" "9" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "9" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-7-big-messages
-	COMMAND test5 "--test_no" "10" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "10" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 ADD_TEST(
 	NAME test5-7-ws-big-messages
-	COMMAND test5 "--test_no" "10" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+	COMMAND test5 "--test_no" "10" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 )
 
 #ADD_TEST(
@@ -532,22 +574,22 @@ IF (NOT WIN32)
 # OpenSSL CApath tests rely on Unix-type filesystem - can it work on Windows?
 ADD_TEST(
 	NAME test5-5-server-verify-with-capath
-	COMMAND test5 "--test_no" "12" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--capath"	"${CERTDIR}/capath"
+	COMMAND test5 "--test_no" "12" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--capath"	"${CERTDIR}/capath"
 )
 
 ADD_TEST(
 	NAME test5-5-ws-server-verify-with-capath
-	COMMAND test5 "--test_no" "12" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--capath"	"${CERTDIR}/capath"
+	COMMAND test5 "--test_no" "12" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--capath"	"${CERTDIR}/capath"
 )
 
 ADD_TEST(
 	NAME test5-6-server-verify-with-capath
-	COMMAND test5 "--test_no" "13" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--capath"	"${CERTDIR}/notexist"
+	COMMAND test5 "--test_no" "13" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--capath"	"${CERTDIR}/notexist"
 )
 
 ADD_TEST(
 	NAME test5-6-ws-server-verify-with-capath
-	COMMAND test5 "--test_no" "13" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" 	"${CERTDIR}/client.pem" "--capath"	"${CERTDIR}/notexist"
+	COMMAND test5 "--test_no" "13" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--capath"	"${CERTDIR}/notexist"
 )
 
 SET_TESTS_PROPERTIES(
@@ -592,10 +634,17 @@ ADD_EXECUTABLE(
 	test6.c
 )
 
-TARGET_LINK_LIBRARIES(
-	test6
-	paho-mqtt3a
-)
+IF (NOT PAHO_BUILD_SHARED)
+	TARGET_LINK_LIBRARIES(
+		test6
+		paho-mqtt3a-static
+	)
+ELSE()
+	TARGET_LINK_LIBRARIES(
+		test6
+		paho-mqtt3a
+	)
+ENDIF()
 
 ADD_TEST(
 	NAME test6-restart-recovery
@@ -612,10 +661,17 @@ ADD_EXECUTABLE(
 	test8.c
 )
 
-TARGET_LINK_LIBRARIES(
-	test8
-	paho-mqtt3a
-)
+IF (NOT PAHO_BUILD_SHARED)
+	TARGET_LINK_LIBRARIES(
+		test8
+		paho-mqtt3a-static
+	)
+ELSE()
+	TARGET_LINK_LIBRARIES(
+		test8
+		paho-mqtt3a
+	)
+ENDIF()
 
 ADD_TEST(
 	NAME test8-1-basic-connect-subscribe-receive
@@ -657,9 +713,9 @@ SET_TESTS_PROPERTIES(
 	test8-2-connect-timeout
 	test8-3-multiple-client-objects-simultaneous-working
 	test8-4-send-receive-big-messages
-        test8-5a-all-ha-connections-out-of-service
-        test8-5b-all-ha-connections-out-of-service-except-the-last-one
-        test8-5c-all-ha-connections-out-of-service-except-the-first-one
+	test8-5a-all-ha-connections-out-of-service
+	test8-5b-all-ha-connections-out-of-service-except-the-last-one
+	test8-5c-all-ha-connections-out-of-service-except-the-first-one
 	PROPERTIES TIMEOUT 540
 )
 
@@ -669,10 +725,17 @@ ADD_EXECUTABLE(
 	test9.c
 )
 
-TARGET_LINK_LIBRARIES(
-	test9
-	paho-mqtt3a
-)
+IF (NOT PAHO_BUILD_SHARED)
+	TARGET_LINK_LIBRARIES(
+		test9
+		paho-mqtt3a-static
+	)
+ELSE()
+	TARGET_LINK_LIBRARIES(
+		test9
+		paho-mqtt3a
+	)
+ENDIF()
 
 ADD_TEST(
 	NAME test9-1-offline-buffering-send-disconnected
@@ -719,10 +782,17 @@ ADD_EXECUTABLE(
 	test95.c
 )
 
-TARGET_LINK_LIBRARIES(
-	test95
-	paho-mqtt3a
-)
+IF (NOT PAHO_BUILD_SHARED)
+	TARGET_LINK_LIBRARIES(
+		test95
+		paho-mqtt3a-static
+	)
+ELSE()
+	TARGET_LINK_LIBRARIES(
+		test95
+		paho-mqtt3a
+	)
+ENDIF()
 
 ADD_TEST(
 	NAME test95-1-offline-buffering-send-disconnected
@@ -769,10 +839,17 @@ ADD_EXECUTABLE(
 	test10.c
 )
 
-TARGET_LINK_LIBRARIES(
-	test10
-	paho-mqtt3c
-)
+IF (NOT PAHO_BUILD_SHARED)
+	TARGET_LINK_LIBRARIES(
+		test10
+		paho-mqtt3c-static
+	)
+ELSE()
+	TARGET_LINK_LIBRARIES(
+		test10
+		paho-mqtt3c
+	)
+ENDIF()
 
 ADD_TEST(
 	NAME test10-1-client_topic_aliases
@@ -837,10 +914,17 @@ ADD_EXECUTABLE(
 	test11.c
 )
 
-TARGET_LINK_LIBRARIES(
-	test11
-	paho-mqtt3a
-)
+IF (NOT PAHO_BUILD_SHARED)
+	TARGET_LINK_LIBRARIES(
+		test11
+		paho-mqtt3a-static
+	)
+ELSE()
+	TARGET_LINK_LIBRARIES(
+		test11
+		paho-mqtt3a
+	)
+ENDIF()
 
 ADD_TEST(
 	NAME test11-1-client_topic_aliases
@@ -905,27 +989,41 @@ ADD_EXECUTABLE(
 	test_issue373.c
 )
 
-TARGET_LINK_LIBRARIES(
-	test_issue373
-	paho-mqtt3a
-)
+IF (NOT PAHO_BUILD_SHARED)
+	TARGET_LINK_LIBRARIES(
+		test_issue373
+		paho-mqtt3a-static
+	)
+ELSE()
+	TARGET_LINK_LIBRARIES(
+		test_issue373
+		paho-mqtt3a
+	)
+ENDIF()
 
 ADD_EXECUTABLE(
-        test_sync_session_present
-        test_sync_session_present.c
+		test_sync_session_present
+		test_sync_session_present.c
 )
 
-TARGET_LINK_LIBRARIES(
-        test_sync_session_present
-        paho-mqtt3c
-)
+IF (NOT PAHO_BUILD_SHARED)
+	TARGET_LINK_LIBRARIES(
+			test_sync_session_present
+			paho-mqtt3c-static
+	)
+ELSE()
+	TARGET_LINK_LIBRARIES(
+			test_sync_session_present
+			paho-mqtt3c
+	)
+ENDIF()
 
 ADD_TEST(
-        NAME test_sync_session_present-1-client_session_present_after_reconnect
-        COMMAND "test_sync_session_present" "--test_no" "1" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+	NAME test_sync_session_present-1-client_session_present_after_reconnect
+	COMMAND "test_sync_session_present" "--test_no" "1" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
 )
 
 SET_TESTS_PROPERTIES(
-        test_sync_session_present-1-client_session_present_after_reconnect
-        PROPERTIES TIMEOUT 540
+	test_sync_session_present-1-client_session_present_after_reconnect
+	PROPERTIES TIMEOUT 540
 )

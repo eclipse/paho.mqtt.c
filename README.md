@@ -89,6 +89,7 @@ Before compiling, determine the value of some variables in order to configure fe
 
 Variable | Default Value | Description
 ------------ | ------------- | -------------
+PAHO_BUILD_SHARED | TRUE | Build a shared version of the libraries
 PAHO_BUILD_STATIC | FALSE | Build a static version of the libraries
 PAHO_WITH_SSL | FALSE | Flag that defines whether to build ssl-enabled binaries too. 
 OPENSSL_SEARCH_PATH | "" (system default) | Directory containing your OpenSSL installation (i.e. `/usr/local` when headers are in `/usr/local/include` and libraries are in `/usr/local/lib`)

@@ -73,34 +73,36 @@ SET_TARGET_PROPERTIES(common_obj PROPERTIES
 
 ADD_EXECUTABLE(MQTTVersion MQTTVersion.c)
 
-ADD_LIBRARY(paho-mqtt3c SHARED $<TARGET_OBJECTS:common_obj> MQTTClient.c)
-ADD_LIBRARY(paho-mqtt3a SHARED $<TARGET_OBJECTS:common_obj> MQTTAsync.c)
-
-TARGET_LINK_LIBRARIES(paho-mqtt3c ${LIBS_SYSTEM})
-TARGET_LINK_LIBRARIES(paho-mqtt3a ${LIBS_SYSTEM})
-
-TARGET_LINK_LIBRARIES(MQTTVersion paho-mqtt3a paho-mqtt3c ${LIBS_SYSTEM})
-SET_TARGET_PROPERTIES(
-    paho-mqtt3c paho-mqtt3a PROPERTIES
-    VERSION ${CLIENT_VERSION}
-    SOVERSION ${PAHO_VERSION_MAJOR}
-    DEFINE_SYMBOL "MQTT_EXPORTS")
-FOREACH(TARGET paho-mqtt3c paho-mqtt3a)
-    TARGET_INCLUDE_DIRECTORIES(${TARGET}
-        PUBLIC
-            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        PRIVATE
-            ${CMAKE_BINARY_DIR})
-ENDFOREACH()
-
-INSTALL(TARGETS paho-mqtt3c paho-mqtt3a
-    EXPORT eclipse-paho-mqtt-cTargets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-INSTALL(TARGETS MQTTVersion
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+IF (PAHO_BUILD_SHARED)
+    ADD_LIBRARY(paho-mqtt3c SHARED $<TARGET_OBJECTS:common_obj> MQTTClient.c)
+    ADD_LIBRARY(paho-mqtt3a SHARED $<TARGET_OBJECTS:common_obj> MQTTAsync.c)
+    
+    TARGET_LINK_LIBRARIES(paho-mqtt3c ${LIBS_SYSTEM})
+    TARGET_LINK_LIBRARIES(paho-mqtt3a ${LIBS_SYSTEM})
+    
+    TARGET_LINK_LIBRARIES(MQTTVersion paho-mqtt3a paho-mqtt3c ${LIBS_SYSTEM})
+    SET_TARGET_PROPERTIES(
+        paho-mqtt3c paho-mqtt3a PROPERTIES
+        VERSION ${CLIENT_VERSION}
+        SOVERSION ${PAHO_VERSION_MAJOR}
+        DEFINE_SYMBOL "MQTT_EXPORTS")
+    FOREACH(TARGET paho-mqtt3c paho-mqtt3a)
+        TARGET_INCLUDE_DIRECTORIES(${TARGET}
+            PUBLIC
+                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+            PRIVATE
+                ${CMAKE_BINARY_DIR})
+    ENDFOREACH()
+    
+	INSTALL(TARGETS paho-mqtt3c paho-mqtt3a
+		EXPORT eclipse-paho-mqtt-cTargets
+		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    INSTALL(TARGETS MQTTVersion
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+ENDIF()
 
 IF (PAHO_BUILD_STATIC)
     ADD_LIBRARY(paho-mqtt3c-static STATIC $<TARGET_OBJECTS:common_obj> MQTTClient.c)
@@ -108,8 +110,10 @@ IF (PAHO_BUILD_STATIC)
 
     TARGET_LINK_LIBRARIES(paho-mqtt3c-static ${LIBS_SYSTEM})
     TARGET_LINK_LIBRARIES(paho-mqtt3a-static ${LIBS_SYSTEM})
-    SET_TARGET_PROPERTIES(paho-mqtt3c-static PROPERTIES OUTPUT_NAME paho-mqtt3c)
-    SET_TARGET_PROPERTIES(paho-mqtt3a-static PROPERTIES OUTPUT_NAME paho-mqtt3a)
+    IF (NOT WIN32)
+        SET_TARGET_PROPERTIES(paho-mqtt3c-static PROPERTIES OUTPUT_NAME paho-mqtt3c)
+        SET_TARGET_PROPERTIES(paho-mqtt3a-static PROPERTIES OUTPUT_NAME paho-mqtt3a)
+    ENDIF()
 
     FOREACH(TARGET paho-mqtt3c-static paho-mqtt3a-static)
         TARGET_INCLUDE_DIRECTORIES(${TARGET}
@@ -120,35 +124,44 @@ IF (PAHO_BUILD_STATIC)
                 ${CMAKE_BINARY_DIR})
     ENDFOREACH()
 
-    INSTALL(TARGETS paho-mqtt3c-static paho-mqtt3a-static
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    IF (NOT PAHO_BUILD_SHARED)
+        TARGET_LINK_LIBRARIES(MQTTVersion paho-mqtt3a-static paho-mqtt3c-static ${LIBS_SYSTEM})
+        INSTALL(TARGETS paho-mqtt3c-static paho-mqtt3a-static
+            EXPORT eclipse-paho-mqtt-cTargets
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    ELSE()
+        INSTALL(TARGETS paho-mqtt3c-static paho-mqtt3a-static
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    ENDIF()
 ENDIF()
 
-INSTALL(FILES MQTTAsync.h MQTTClient.h MQTTClientPersistence.h MQTTProperties.h MQTTReasonCodes.h MQTTSubscribeOpts.h
+INSTALL(FILES MQTTAsync.h MQTTClient.h MQTTClientPersistence.h MQTTProperties.h MQTTReasonCodes.h MQTTSubscribeOpts.h ExportDeclarations.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 IF (PAHO_WITH_SSL)
     SET(OPENSSL_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries and includes")
 
     IF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-      IF(OPENSSL_SEARCH_PATH STREQUAL "")
-        SET(OPENSSL_SEARCH_PATH "/usr/local/opt/openssl")
-      ENDIF ()
+        IF(OPENSSL_SEARCH_PATH STREQUAL "")
+            SET(OPENSSL_SEARCH_PATH "/usr/local/opt/openssl")
+        ENDIF ()
     ENDIF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 
     IF (WIN32)
-      IF(OPENSSL_SEARCH_PATH STREQUAL "")
-        SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win64")
-        SET(OPENSSL_SEARCH_LIB_PATH "${OPENSSL_SEARCH_PATH}/lib64")
-        IF (DEFINED ENV{PAHO_WINDOWS_BUILD_BIT})
-          IF ($ENV{PAHO_WINDOWS_BUILD_BIT} STREQUAL "x86")
-            SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win32")
-            SET(OPENSSL_SEARCH_LIB_PATH "${OPENSSL_SEARCH_PATH}/lib32")
-          ENDIF ()
+        IF(OPENSSL_SEARCH_PATH STREQUAL "")
+            SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win64")
+            SET(OPENSSL_SEARCH_LIB_PATH "${OPENSSL_SEARCH_PATH}/lib64")
+            IF (DEFINED ENV{PAHO_WINDOWS_BUILD_BIT})
+                IF ($ENV{PAHO_WINDOWS_BUILD_BIT} STREQUAL "x86")
+                    SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win32")
+                    SET(OPENSSL_SEARCH_LIB_PATH "${OPENSSL_SEARCH_PATH}/lib32")
+                ENDIF ()
+            ENDIF ()
         ENDIF ()
-      ENDIF ()
     ELSE()
-      SET(OPENSSL_SEARCH_LIB_PATH "${OPENSSL_SEARCH_PATH}/lib64")
+        SET(OPENSSL_SEARCH_LIB_PATH "${OPENSSL_SEARCH_PATH}/lib64")
     ENDIF ()
 
     FIND_PATH(OPENSSL_INCLUDE_DIR openssl/ssl.h
@@ -173,30 +186,32 @@ IF (PAHO_WITH_SSL)
     SET_PROPERTY(TARGET common_ssl_obj PROPERTY	POSITION_INDEPENDENT_CODE ON)
     SET_PROPERTY(TARGET common_ssl_obj PROPERTY COMPILE_DEFINITIONS "OPENSSL=1;MQTT_EXPORTS=1")
 
-    ADD_LIBRARY(paho-mqtt3cs SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTClient.c SSLSocket.c)
-    ADD_LIBRARY(paho-mqtt3as SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTAsync.c SSLSocket.c)
-
-    TARGET_LINK_LIBRARIES(paho-mqtt3cs ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} ${LIBS_SYSTEM})
-    TARGET_LINK_LIBRARIES(paho-mqtt3as ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} ${LIBS_SYSTEM})
-    SET_TARGET_PROPERTIES(
-        paho-mqtt3cs paho-mqtt3as PROPERTIES
-        VERSION ${CLIENT_VERSION}
-        SOVERSION ${PAHO_VERSION_MAJOR}
-        COMPILE_DEFINITIONS "OPENSSL=1"
-        DEFINE_SYMBOL "MQTT_EXPORTS")
-    FOREACH(TARGET paho-mqtt3cs paho-mqtt3as)
-        TARGET_INCLUDE_DIRECTORIES(${TARGET}
-            PUBLIC
-                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-            PRIVATE
-                ${CMAKE_BINARY_DIR})
-    ENDFOREACH()
-    INSTALL(TARGETS paho-mqtt3cs paho-mqtt3as
-        EXPORT eclipse-paho-mqtt-cTargets
-        ARCHIVE DESTINATION  ${CMAKE_INSTALL_LIBDIR}
-        LIBRARY DESTINATION  ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION  ${CMAKE_INSTALL_BINDIR})
+    IF (PAHO_BUILD_SHARED)
+        ADD_LIBRARY(paho-mqtt3cs SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTClient.c SSLSocket.c)
+        ADD_LIBRARY(paho-mqtt3as SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTAsync.c SSLSocket.c)
+    
+        TARGET_LINK_LIBRARIES(paho-mqtt3cs ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} ${LIBS_SYSTEM})
+        TARGET_LINK_LIBRARIES(paho-mqtt3as ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} ${LIBS_SYSTEM})
+        SET_TARGET_PROPERTIES(
+            paho-mqtt3cs paho-mqtt3as PROPERTIES
+            VERSION ${CLIENT_VERSION}
+            SOVERSION ${PAHO_VERSION_MAJOR}
+            COMPILE_DEFINITIONS "OPENSSL=1"
+            DEFINE_SYMBOL "MQTT_EXPORTS")
+        FOREACH(TARGET paho-mqtt3cs paho-mqtt3as)
+            TARGET_INCLUDE_DIRECTORIES(${TARGET}
+                PUBLIC
+                    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                PRIVATE
+                    ${CMAKE_BINARY_DIR})
+        ENDFOREACH()
+        INSTALL(TARGETS paho-mqtt3cs paho-mqtt3as
+            EXPORT eclipse-paho-mqtt-cTargets
+            ARCHIVE DESTINATION  ${CMAKE_INSTALL_LIBDIR}
+            LIBRARY DESTINATION  ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION  ${CMAKE_INSTALL_BINDIR})
+    ENDIF()
 
     IF (PAHO_BUILD_STATIC)
         ADD_LIBRARY(paho-mqtt3cs-static STATIC $<TARGET_OBJECTS:common_ssl_obj> MQTTClient.c SSLSocket.c)
@@ -205,16 +220,26 @@ IF (PAHO_WITH_SSL)
         TARGET_LINK_LIBRARIES(paho-mqtt3cs-static ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
         TARGET_LINK_LIBRARIES(paho-mqtt3as-static ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
         SET_TARGET_PROPERTIES(
-        paho-mqtt3cs-static paho-mqtt3as-static PROPERTIES
-        VERSION ${CLIENT_VERSION}
-        SOVERSION ${PAHO_VERSION_MAJOR}
-	COMPILE_DEFINITIONS "OPENSSL=1"
-	LINK_FLAGS "MQTT_EXPORTS")
-        SET_TARGET_PROPERTIES(paho-mqtt3cs-static PROPERTIES OUTPUT_NAME paho-mqtt3cs)
-        SET_TARGET_PROPERTIES(paho-mqtt3as-static PROPERTIES OUTPUT_NAME paho-mqtt3as)
+            paho-mqtt3cs-static paho-mqtt3as-static PROPERTIES
+            VERSION ${CLIENT_VERSION}
+            SOVERSION ${PAHO_VERSION_MAJOR}
+            COMPILE_DEFINITIONS "OPENSSL=1"
+	        LINK_FLAGS "MQTT_EXPORTS")
+        IF (NOT WIN32)
+            SET_TARGET_PROPERTIES(paho-mqtt3cs-static PROPERTIES OUTPUT_NAME paho-mqtt3cs)
+            SET_TARGET_PROPERTIES(paho-mqtt3as-static PROPERTIES OUTPUT_NAME paho-mqtt3as)
+        ENDIF()
 
-        INSTALL(TARGETS paho-mqtt3cs-static paho-mqtt3as-static
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        IF (NOT PAHO_BUILD_SHARED)
+            INSTALL(TARGETS paho-mqtt3cs-static paho-mqtt3as-static
+                EXPORT eclipse-paho-mqtt-cTargets
+                ARCHIVE DESTINATION  ${CMAKE_INSTALL_LIBDIR}
+                LIBRARY DESTINATION  ${CMAKE_INSTALL_LIBDIR}
+                RUNTIME DESTINATION  ${CMAKE_INSTALL_BINDIR})
+        ELSE()
+            INSTALL(TARGETS paho-mqtt3cs-static paho-mqtt3as-static
+                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        ENDIF()
         FOREACH(TARGET paho-mqtt3cs-static paho-mqtt3as-static)
             TARGET_INCLUDE_DIRECTORIES(${TARGET}
                 PUBLIC

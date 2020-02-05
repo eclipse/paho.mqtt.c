@@ -29,6 +29,8 @@ IF (WIN32)
 ENDIF()
 
 # sample files c
+
+IF (PAHO_BUILD_SHARED)
 ADD_EXECUTABLE(paho_c_pub paho_c_pub.c pubsub_opts.c)
 ADD_EXECUTABLE(paho_c_sub paho_c_sub.c pubsub_opts.c)
 ADD_EXECUTABLE(paho_cs_pub paho_cs_pub.c pubsub_opts.c)
@@ -63,3 +65,18 @@ INSTALL(TARGETS paho_c_sub
 
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ENDIF()
+
+IF (PAHO_BUILD_STATIC)
+ADD_EXECUTABLE(paho_c_pub_static paho_c_pub.c pubsub_opts.c)
+ADD_EXECUTABLE(paho_c_sub_static paho_c_sub.c pubsub_opts.c)
+ADD_EXECUTABLE(paho_cs_pub_static paho_cs_pub.c pubsub_opts.c)
+ADD_EXECUTABLE(paho_cs_sub_static paho_cs_sub.c pubsub_opts.c)
+
+TARGET_LINK_LIBRARIES(paho_c_pub_static paho-mqtt3as-static ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB})
+TARGET_LINK_LIBRARIES(paho_c_sub_static paho-mqtt3as-static ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB})
+TARGET_LINK_LIBRARIES(paho_cs_pub_static paho-mqtt3cs-static ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB})
+TARGET_LINK_LIBRARIES(paho_cs_sub_static paho-mqtt3cs-static ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB})
+
+ENDIF()
+

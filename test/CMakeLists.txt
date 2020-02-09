@@ -7,37 +7,6 @@ SET(MQTT_SSL_HOSTNAME "localhost" CACHE STRING "Hostname of a test SSL MQTT brok
 SET(CERTDIR ${CMAKE_SOURCE_DIR}/test/ssl)
 
 
-IF (PAHO_WITH_SSL)
-	SET(OPENSSL_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries and includes")
-
-	IF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-		IF(OPENSSL_SEARCH_PATH STREQUAL "")
-			SET(OPENSSL_SEARCH_PATH "/usr/local/opt/openssl")
-		ENDIF ()	
-	ENDIF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-
-	IF (WIN32)
-		IF(OPENSSL_SEARCH_PATH STREQUAL "")
-			SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win64")
-			IF (DEFINED ENV{PAHO_WINDOWS_BUILD_BIT})
-				IF ($ENV{PAHO_WINDOWS_BUILD_BIT} STREQUAL "x86")
-					SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win32")
-				ENDIF ()
-			ENDIF ()
-		ENDIF ()
-	ENDIF ()
-
-	FIND_PATH(OPENSSL_INCLUDE_DIR openssl/ssl.h
-		HINTS ${OPENSSL_SEARCH_PATH}/include)
-
-	MESSAGE(STATUS "OpenSSL hints: ${OPENSSL_SEARCH_PATH}")
-	MESSAGE(STATUS "OpenSSL headers found at ${OPENSSL_INCLUDE_DIR}")
-
-	INCLUDE_DIRECTORIES(
-		${OPENSSL_INCLUDE_DIR}
-	)
-ENDIF ()
-
 IF (WIN32)
 	SET(LIBS_SYSTEM ws2_32)
 ELSEIF (UNIX)
@@ -357,7 +326,7 @@ IF (PAHO_WITH_SSL)
 		)
 		TARGET_LINK_LIBRARIES(
 			test3-static
-			paho-mqtt3cs-static  ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB}
+			paho-mqtt3cs-static
 		)
 		
 		ADD_TEST(
@@ -777,7 +746,7 @@ IF (PAHO_WITH_SSL)
 		
 		TARGET_LINK_LIBRARIES(
 			test5-static
-			paho-mqtt3as-static ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB}
+			paho-mqtt3as-static
 		)
 		
 		ADD_TEST(

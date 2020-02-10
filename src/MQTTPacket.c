@@ -843,9 +843,10 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 	if (rc != TCPSOCKET_INTERRUPTED)
 		free(topiclen);
 	if (qos == 0)
-		Log(LOG_PROTOCOL, 27, NULL, net->socket, clientID, retained, rc);
+		Log(LOG_PROTOCOL, 27, NULL, net->socket, clientID, retained, rc, pack->payloadlen,
+				min(20, pack->payloadlen), pack->payload);
 	else
-		Log(LOG_PROTOCOL, 10, NULL, net->socket, clientID, pack->msgId, qos, retained, rc,
+		Log(LOG_PROTOCOL, 10, NULL, net->socket, clientID, pack->msgId, qos, retained, rc, pack->payloadlen,
 				min(20, pack->payloadlen), pack->payload);
 	FUNC_EXIT_RC(rc);
 	return rc;

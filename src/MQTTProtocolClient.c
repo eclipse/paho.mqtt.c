@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -279,7 +279,7 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	clientid = client->clientID;
 	Log(LOG_PROTOCOL, 11, NULL, sock, clientid, publish->msgId, publish->header.bits.qos,
-					publish->header.bits.retain, min(20, publish->payloadlen), publish->payload);
+					publish->header.bits.retain, publish->payloadlen, min(20, publish->payloadlen), publish->payload);
 
 	if (publish->header.bits.qos == 0)
 		Protocol_processPublication(publish, client);

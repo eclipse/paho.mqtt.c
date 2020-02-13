@@ -164,8 +164,26 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
 			basic_auth_in_len--;
 			p0 = (char *)basic_auth;
-			while(*p1 != '@')
-				*p0++ = *p1++;
+			while (*p1 != '@') {
+				if (*p1 != '%') {
+					*p0++ = *p1++;
+				}
+				else {
+					if (*(p1+1) == '%') {
+						*p0++ = *p1++;
+						basic_auth_in_len -= 1;
+					}
+					else if (*(p1+1) != '@' && *(p1 + 2) != '@') {
+						char hex[3];
+						p1++;
+						hex[0] = *p1++;
+						hex[1] = *p1++;
+						hex[2] = '\0';
+						*p0++ = (char)strtol(hex, 0, 16);
+						basic_auth_in_len -= 2;
+					}
+				}
+			}
 			*p0 = 0x0;
 			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
 			aClient->net.https_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len);

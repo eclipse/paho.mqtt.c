@@ -170,6 +170,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 				}
 				else {
 					if (*(p1+1) == '%') {
+						p1++;
 						*p0++ = *p1++;
 						basic_auth_in_len -= 1;
 					}

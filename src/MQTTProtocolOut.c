@@ -168,21 +168,14 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 				if (*p1 != '%') {
 					*p0++ = *p1++;
 				}
-				else {
-					if (*(p1+1) == '%') {
-						p1++;
-						*p0++ = *p1++;
-						basic_auth_in_len -= 1;
-					}
-					else if (*(p1+1) != '@' && *(p1 + 2) != '@') {
-						char hex[3];
-						p1++;
-						hex[0] = *p1++;
-						hex[1] = *p1++;
-						hex[2] = '\0';
-						*p0++ = (char)strtol(hex, 0, 16);
-						basic_auth_in_len -= 2;
-					}
+				else if (*(p1+1) != '@' && *(p1 + 2) != '@') {
+					char hex[3];
+					p1++;
+					hex[0] = *p1++;
+					hex[1] = *p1++;
+					hex[2] = '\0';
+					*p0++ = (char)strtol(hex, 0, 16);
+					basic_auth_in_len -= 2;
 				}
 			}
 			*p0 = 0x0;

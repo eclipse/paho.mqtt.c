@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -180,20 +180,13 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 {
 	int rc;
 	size_t buf0len;
-	size_t ws_header;
 	char *buf;
-	int count = 0;
 
 	FUNC_ENTRY;
-	ws_header = WebSocket_calculateFrameHeaderSize(net, 1, buflen + 10);
-
-	buf = malloc(10 + ws_header);
-	if ( !buf ) return -1;
-	buf[ws_header] = header.byte;
-	buf0len = 1 + MQTTPacket_encode(&buf[ws_header + 1], buflen);
-
-	if (buffer != NULL)
-		count = 1;
+	buf0len = 1 + MQTTPacket_encode(NULL, buflen);
+	buf = malloc(buf0len);
+	buf[0] = header.byte;
+	MQTTPacket_encode(&buf[1], buflen);
 
 #if !defined(NO_PERSISTENCE)
 	if (header.bits.type == PUBREL)
@@ -201,11 +194,11 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 		char* ptraux = buffer;
 		int msgId = readInt(&ptraux);
 
-		rc = MQTTPersistence_put(net->socket, &buf[ws_header], buf0len, count, &buffer, &buflen,
+		rc = MQTTPersistence_put(net->socket, buf, buf0len, 1, &buffer, &buflen,
 			header.bits.type, msgId, 0, MQTTVersion);
 	}
 #endif
-	rc = WebSocket_putdatas(net, &buf[ws_header], buf0len, count, &buffer, &buflen, &freeData);
+	rc = WebSocket_putdatas(net, &buf, &buf0len, 1, &buffer, &buflen, &freeData);
 
 	if (rc == TCPSOCKET_COMPLETE)
 		time(&(net->lastSent));
@@ -213,6 +206,7 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 	if (rc != TCPSOCKET_INTERRUPTED)
 	  free(buf);
 
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -233,36 +227,38 @@ int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffe
 {
 	int i, rc;
 	size_t buf0len, total = 0;
-	size_t ws_header;
 	char *buf;
 
 	FUNC_ENTRY;
-
 	for (i = 0; i < count; i++)
 		total += buflens[i];
+	buf0len = 1 + MQTTPacket_encode(NULL, total);
+	buf = malloc(buf0len);
+	if (buf == NULL)
+	{
+		rc = SOCKET_ERROR;
+		goto exit;
+	}
+	buf[0] = header.byte;
+	MQTTPacket_encode(&buf[1], total);
 
-	ws_header = WebSocket_calculateFrameHeaderSize(net, 1, total + 10);
-	buf = malloc(10 + ws_header);
-	if ( !buf ) return -1;
-
-	buf[ws_header] = header.byte;
-	buf0len = 1 + MQTTPacket_encode(&buf[ws_header + 1], total);
 #if !defined(NO_PERSISTENCE)
 	if (header.bits.type == PUBLISH && header.bits.qos != 0)
 	{   /* persist PUBLISH QoS1 and Qo2 */
 		char *ptraux = buffers[2];
 		int msgId = readInt(&ptraux);
-		rc = MQTTPersistence_put(net->socket, &buf[ws_header], buf0len, count, buffers, buflens,
+		rc = MQTTPersistence_put(net->socket, buf, buf0len, count, buffers, buflens,
 			header.bits.type, msgId, 0, MQTTVersion);
 	}
 #endif
-	rc = WebSocket_putdatas(net, &buf[ws_header], buf0len, count, buffers, buflens, frees);
+	rc = WebSocket_putdatas(net, &buf, &buf0len, count, buffers, buflens, frees);
 
 	if (rc == TCPSOCKET_COMPLETE)
 		time(&(net->lastSent));
 	
 	if (rc != TCPSOCKET_INTERRUPTED)
 	  free(buf);
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -286,7 +282,10 @@ int MQTTPacket_encode(char* buf, size_t length)
 		/* if there are more digits to encode, set the top bit of this digit */
 		if (length > 0)
 			d |= 0x80;
-		buf[rc++] = d;
+		if (buf)
+			buf[rc++] = d;
+		else
+			rc++;
 	} while (length > 0);
 	FUNC_EXIT_RC(rc);
 	return rc;

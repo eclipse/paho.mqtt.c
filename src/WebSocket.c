@@ -174,6 +174,39 @@ static int WebSocket_receiveFrame(networkHandles *net,
 
 
 /**
+ * calculates the amount of data required for the websocket header
+ *
+ * this function is used to calculate how much offset is required before calling
+ * @p WebSocket_putdatas, as that function will write data before the passed in
+ * buffer
+ *
+ * @param[in,out]  net                 network connection
+ * @param[in]      mask_data           whether to mask the data
+ * @param[in]      data_len            amount of data in the payload
+ *
+ * @return the size in bytes of the websocket header required
+ *
+ * @see WebSocket_putdatas
+ */
+size_t WebSocket_calculateFrameHeaderSize(networkHandles *net, int mask_data, size_t data_len)
+{
+	int ret = 0;
+	if ( net && net->websocket )
+	{
+		if ( data_len < 126u)
+			ret = 2; /* header 2 bytes */
+		else if ( data_len < 65536u )
+			ret = 4; /* for extra 2-bytes for payload length */
+		else if ( data_len < 0xFFFFFFFFFFFFFFFF )
+			ret = 10; /* for extra 8-bytes for payload length */
+		if ( mask_data & 0x1 )
+			ret += sizeof(uint32_t); /* for mask */
+	}
+	return ret;
+}
+
+
+/**
  * @brief builds a websocket frame for data transmission
  *
  * write a websocket header and will mask the payload in all the passed in
@@ -192,21 +225,38 @@ static int WebSocket_receiveFrame(networkHandles *net,
  * @return amount of data to write to socket
  */
 static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
-	char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens)
+	char** pbuf0, size_t* pbuf0len, int count, char** buffers, size_t* buflens)
 {
-	int i;
 	int buf_len = 0u;
-	size_t data_len = buf0len;
 
 	FUNC_ENTRY;
-	for (i = 0; i < count; ++i)
-		data_len += buflens[i];
-
-	buf0 -= WebSocket_calculateFrameHeaderSize(net, mask_data, data_len);
 	if ( net->websocket )
 	{
+		size_t ws_header_size = 0u;
 		uint8_t mask[4];
-		/* genearate mask, since we are a client */
+		int i;
+		size_t buf0len = *pbuf0len;
+		char* buf0 = NULL;
+		size_t data_len = buf0len;
+
+		for (i = 0; i < count; ++i)
+			data_len += buflens[i];
+
+		/* add space for websocket frame header */
+		ws_header_size = WebSocket_calculateFrameHeaderSize(net, mask_data, data_len);
+		if (*pbuf0)
+		{
+			buf0 = *pbuf0 = realloc(*pbuf0, buf0len + ws_header_size);
+			memcpy(&buf0[ws_header_size], buf0, buf0len);
+			*pbuf0len = (buf0len += ws_header_size);
+		}
+		else
+		{
+			buf0 = *pbuf0 = malloc(ws_header_size);
+			*pbuf0len = buf0len = ws_header_size;
+		}
+
+		/* generate mask, since we are a client */
 #if defined(OPENSSL)
 		RAND_bytes( &mask[0], sizeof(mask) );
 #else /* if defined(OPENSSL) */
@@ -257,13 +307,13 @@ static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
 			buf_len += sizeof(uint32_t);
 		}
 
-		/* mask data */
-		if ( mask_data & 0x1 )
+		if ( mask_data & 0x1 ) 		/* mask data */
 		{
 			size_t idx = 0u;
+
 			/* packet fixed header */
-			for (i = 0; i < (int)buf0len; ++i, ++idx)
-				buf0[buf_len + i] ^= mask[idx % 4];
+			for (i = (int)ws_header_size; i < (int)buf0len; ++i, ++idx)
+				buf0[i] ^= mask[idx % 4];
 
 			/* variable data buffers */
 			for (i = 0; i < count; ++i)
@@ -274,43 +324,10 @@ static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
 			}
 		}
 	}
-
 	FUNC_EXIT_RC(buf_len);
 	return buf_len;
 }
 
-/**
- * calculates the amount of data required for the websocket header
- *
- * this function is used to calculate how much offset is required before calling
- * @p WebSocket_putdatas, as that function will write data before the passed in
- * buffer
- *
- * @param[in,out]  net                 network connection
- * @param[in]      mask_data           whether to mask the data
- * @param[in]      data_len            amount of data in the payload
- *
- * @return the size in bytes of the websocket header required
- *
- * @see WebSocket_putdatas
- */
-size_t WebSocket_calculateFrameHeaderSize(networkHandles *net, int mask_data,
-	size_t data_len)
-{
-	int ret = 0;
-	if ( net && net->websocket )
-	{
-		if ( data_len < 126u)
-			ret = 2; /* header 2 bytes */
-		else if ( data_len < 65536u )
-			ret = 4; /* for extra 2-bytes for payload length */
-		else if ( data_len < 0xFFFFFFFFFFFFFFFF )
-			ret = 10; /* for extra 8-bytes for payload length */
-		if ( mask_data & 0x1 )
-			ret += sizeof(uint32_t); /* for mask */
-	}
-	return ret;
-}
 
 /**
  * sends out a websocket request on the given uri
@@ -456,7 +473,6 @@ void WebSocket_close(networkHandles *net, int status_code, const char *reason)
 	{
 		char *buf0;
 		size_t buf0len = sizeof(uint16_t);
-		size_t header_len;
 		uint16_t status_code_be;
 		const int mask_data = 0;
 
@@ -467,24 +483,21 @@ void WebSocket_close(networkHandles *net, int status_code, const char *reason)
 		if ( reason )
 			buf0len += strlen(reason);
 
-		header_len = WebSocket_calculateFrameHeaderSize(net,
-			mask_data, buf0len);
-		buf0 = malloc(header_len + buf0len);
+		buf0 = malloc(buf0len);
 		if ( !buf0 )
 			goto exit;
 
 		/* encode status code */
 		status_code_be = htobe16((uint16_t)status_code);
-		memcpy( &buf0[header_len], &status_code_be, sizeof(uint16_t));
+		memcpy(buf0, &status_code_be, sizeof(uint16_t));
 
 		/* encode reason, if provided */
 		if ( reason )
-			strcpy( &buf0[header_len + sizeof(uint16_t)], reason );
+			strcpy( &buf0[sizeof(uint16_t)], reason );
 
 		WebSocket_buildFrame( net, WebSocket_OP_CLOSE, mask_data,
-			&buf0[header_len], buf0len, 0, NULL, NULL );
+			&buf0, &buf0len, 0, NULL, NULL);
 
-		buf0len += header_len;
 #if defined(OPENSSL)
 		if (net->ssl)
 			SSLSocket_putdatas(net->ssl, net->socket,
@@ -786,38 +799,31 @@ exit:
  * @param[in]      app_data            application data to put in payload
  * @param[in]      app_data_len        application data length
  */
-void WebSocket_pong(networkHandles *net, char *app_data,
-	size_t app_data_len)
+void WebSocket_pong(networkHandles *net, char *app_data, size_t app_data_len)
 {
 	FUNC_ENTRY;
 	if ( net->websocket )
 	{
-		char *buf0;
-		size_t header_len;
+		char *buf0 = NULL;
+		size_t buf0len = 0;
 		int freeData = 0;
 		const int mask_data = 0;
 
-		header_len = WebSocket_calculateFrameHeaderSize(net, mask_data,
-			app_data_len);
-		buf0 = malloc(header_len);
-		if ( !buf0 )
-			goto exit;
-
 		WebSocket_buildFrame( net, WebSocket_OP_PONG, 1,
-			&buf0[header_len], header_len, mask_data, &app_data,
-				&app_data_len );
+			&buf0, &buf0len, mask_data, &app_data,
+				&app_data_len);
 
 		Log(TRACE_PROTOCOL, 1, "Sending WebSocket PONG" );
 
 #if defined(OPENSSL)
 		if (net->ssl)
 			SSLSocket_putdatas(net->ssl, net->socket, buf0,
-				header_len + app_data_len, 1,
+				buf0len /*header_len + app_data_len*/, 1,
 				&app_data, &app_data_len, &freeData);
 		else
 #endif
 			Socket_putdatas(net->socket, buf0,
-				header_len + app_data_len, 1,
+				buf0len /*header_len + app_data_len*/, 1,
 				&app_data, &app_data_len, &freeData );
 
 		/* clean up memory */
@@ -847,42 +853,28 @@ exit:
  *
  * @see WebSocket_calculateFrameHeaderSize
  */
-int WebSocket_putdatas(networkHandles* net, char* buf0, size_t buf0len,
+int WebSocket_putdatas(networkHandles* net, char** buf0, size_t* buf0len,
 	int count, char** buffers, size_t* buflens, int* freeData)
 {
 	int rc;
 
 	FUNC_ENTRY;
-	/* prepend WebSocket frame */
+
 	if ( net->websocket )
 	{
-		size_t data_len = buf0len + 4u;
-		size_t header_len;
-		const int mask_data = 1;
+		const int mask_data = 1; /* must mask websocket data from client */
 
-		for (rc = 0; rc < count; ++rc)
-			data_len += buflens[rc];
-
-		header_len = WebSocket_calculateFrameHeaderSize(
-			net, mask_data, data_len);
 		rc = WebSocket_buildFrame(
 			net, WebSocket_OP_BINARY, mask_data, buf0, buf0len,
-			count, buffers, buflens );
-
-		/* header added so adjust buffer */
-		if ( rc > 0 )
-		{
-			buf0 -= header_len;
-			buf0len += header_len;
-		}
+			count, buffers, buflens);
 	}
 
 #if defined(OPENSSL)
 	if (net->ssl)
-		rc = SSLSocket_putdatas(net->ssl, net->socket, buf0, buf0len, count, buffers, buflens, freeData);
+		rc = SSLSocket_putdatas(net->ssl, net->socket, *buf0, *buf0len, count, buffers, buflens, freeData);
 	else
 #endif
-		rc = Socket_putdatas(net->socket, buf0, buf0len, count, buffers, buflens, freeData);
+		rc = Socket_putdatas(net->socket, *buf0, *buf0len, count, buffers, buflens, freeData);
 
 	FUNC_EXIT_RC(rc);
 	return rc;

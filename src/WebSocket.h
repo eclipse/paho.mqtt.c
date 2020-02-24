@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018 Wind River Systems, Inc. All Rights Reserved.
+ * Copyright (c) 2018, 2020 Wind River Systems, Inc. and others. All Rights Reserved.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -56,16 +56,12 @@ void WebSocket_close(networkHandles *net, int status_code, const char *reason);
 /* sends upgrade request */
 int WebSocket_connect(networkHandles *net, const char *uri);
 
-/* calculates the extra data required in a packet to hold a WebSocket frame header */
-size_t WebSocket_calculateFrameHeaderSize(networkHandles *net, int mask_data,
-	size_t data_len);
-
 /* obtain data from network socket */
 int WebSocket_getch(networkHandles *net, char* c);
 char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len);
 
 /* send data out, in websocket format only if required */
-int WebSocket_putdatas(networkHandles* net, char* buf0, size_t buf0len,
+int WebSocket_putdatas(networkHandles* net, char** buf0, size_t* buf0len,
 	int count, char** buffers, size_t* buflens, int* freeData);
 
 /* releases any resources used by the websocket system */

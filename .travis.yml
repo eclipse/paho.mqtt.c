@@ -24,7 +24,7 @@ addons:
   coverity_scan:
     project:
       name: eclipse/paho.mqtt.c
-    notification_email: icraggs@uk.ibm.com
+    notification_email: icraggs@gmail.com
     build_command_prepend: make clean
     build_command: make -j 4
     branch_pattern: coverity-.*

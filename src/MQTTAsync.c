@@ -1509,6 +1509,7 @@ static int MQTTAsync_processCommand(void)
 						command->client->websocket = 1;
 					}
 #endif
+					command->client->serverURI = MQTTStrdup(serverURI);
 				}
 			}
 

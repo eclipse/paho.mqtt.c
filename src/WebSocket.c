@@ -95,8 +95,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "Heap.h"
-
 /** @brief raw uuid type */
 typedef unsigned char uuid_t[16];
 
@@ -138,6 +136,8 @@ void uuid_unparse( uuid_t uu, char *out )
 }
 #endif /* else if defined(LIBUUID) */
 #endif /* if !(defined(_WIN32) || defined(_WIN64)) */
+
+#include "Heap.h"
 
 /** raw websocket frame data */
 struct ws_frame

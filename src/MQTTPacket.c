@@ -178,13 +178,18 @@ exit:
 int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buflen, int freeData,
 		int MQTTVersion)
 {
-	int rc;
+	int rc = SOCKET_ERROR;
 	size_t buf0len;
 	char *buf;
 
 	FUNC_ENTRY;
 	buf0len = 1 + MQTTPacket_encode(NULL, buflen);
 	buf = malloc(buf0len);
+	if (buf == NULL)
+	{
+		rc = SOCKET_ERROR;
+		goto exit;
+	}
 	buf[0] = header.byte;
 	MQTTPacket_encode(&buf[1], buflen);
 
@@ -225,7 +230,7 @@ exit:
 int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffers, size_t* buflens,
 		int* frees, int MQTTVersion)
 {
-	int i, rc;
+	int i, rc = SOCKET_ERROR;
 	size_t buf0len, total = 0;
 	char *buf;
 

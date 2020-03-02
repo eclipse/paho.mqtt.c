@@ -829,7 +829,6 @@ void WebSocket_pong(networkHandles *net, char *app_data, size_t app_data_len)
 		/* clean up memory */
 		free( buf0 );
 	}
-exit:
 	FUNC_EXIT;
 }
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -245,7 +245,7 @@ int test_sem(struct Options options)
 	int rc = 0, i = 0;
 	START_TIME_TYPE start;
 	long duration;
-	sem_type sem = Thread_create_sem();
+	sem_type sem = Thread_create_sem(&rc);
 	thread_type thread;
 
 	MyLog(LOGA_INFO, "Starting semaphore test");
@@ -347,7 +347,7 @@ int test_cond(struct Options options)
 	int rc = 0, i = 0;
 	START_TIME_TYPE start;
 	long duration;
-	cond_type cond = Thread_create_cond();
+	cond_type cond = Thread_create_cond(&rc);
 	thread_type thread;
 
 	MyLog(LOGA_INFO, "Starting condition variable test");
@@ -435,7 +435,7 @@ int test_mutex(struct Options options)
 {
 	char* testname = "test_mutex";
 	int rc = 0;
-	mutex_type mutex = Thread_create_mutex();
+	mutex_type mutex = Thread_create_mutex(&rc);
 	thread_type thread;
 	START_TIME_TYPE start;
 	long duration;

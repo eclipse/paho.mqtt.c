@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -85,21 +85,21 @@ thread_type Thread_start(thread_fn fn, void* parameter)
  * Create a new mutex
  * @return the new mutex
  */
-mutex_type Thread_create_mutex(void)
+mutex_type Thread_create_mutex(int* rc)
 {
 	mutex_type mutex = NULL;
-	int rc = 0;
 
 	FUNC_ENTRY;
+	*rc = 0;
 	#if defined(_WIN32) || defined(_WIN64)
 		mutex = CreateMutex(NULL, 0, NULL);
 		if (mutex == NULL)
-			rc = GetLastError();
+			*rc = GetLastError();
 	#else
 		mutex = malloc(sizeof(pthread_mutex_t));
-		rc = pthread_mutex_init(mutex, NULL);
+		*rc = pthread_mutex_init(mutex, NULL);
 	#endif
-	FUNC_EXIT_RC(rc);
+	FUNC_EXIT_RC(*rc);
 	return mutex;
 }
 
@@ -152,7 +152,7 @@ int Thread_unlock_mutex(mutex_type mutex)
  * Destroy a mutex which has already been created
  * @param mutex the mutex
  */
-void Thread_destroy_mutex(mutex_type mutex)
+int Thread_destroy_mutex(mutex_type mutex)
 {
 	int rc = 0;
 
@@ -164,6 +164,7 @@ void Thread_destroy_mutex(mutex_type mutex)
 		free(mutex);
 	#endif
 	FUNC_EXIT_RC(rc);
+	return rc;
 }
 
 
@@ -185,12 +186,12 @@ thread_id_type Thread_getid(void)
  * Create a new semaphore
  * @return the new condition variable
  */
-sem_type Thread_create_sem(void)
+sem_type Thread_create_sem(int *rc)
 {
 	sem_type sem = NULL;
-	int rc = 0;
 
 	FUNC_ENTRY;
+	*rc = 0;
 	#if defined(_WIN32) || defined(_WIN64)
 		sem = CreateEvent(
 		        NULL,               /* default security attributes */
@@ -208,12 +209,12 @@ sem_type Thread_create_sem(void)
 #endif
 	#elif defined(OSX)
 		sem = dispatch_semaphore_create(0L);
-		rc = (sem == NULL) ? -1 : 0;
+		*rc = (sem == NULL) ? -1 : 0;
 	#else
 		sem = malloc(sizeof(sem_t));
-		rc = sem_init(sem, 0, 0);
+		*rc = sem_init(sem, 0, 0);
 	#endif
-	FUNC_EXIT_RC(rc);
+	FUNC_EXIT_RC(*rc);
 	return sem;
 }
 
@@ -327,7 +328,7 @@ int Thread_post_sem(sem_type sem)
 	#endif
 
  	FUNC_EXIT_RC(rc);
-  return rc;
+ 	return rc;
 }
 
 
@@ -342,7 +343,7 @@ int Thread_destroy_sem(sem_type sem)
 	FUNC_ENTRY;
 	#if defined(_WIN32) || defined(_WIN64)
 		rc = CloseHandle(sem);
-  #elif defined(OSX)
+	#elif defined(OSX)
 	  dispatch_release(sem);
 	#else
 		rc = sem_destroy(sem);
@@ -359,13 +360,13 @@ int Thread_destroy_sem(sem_type sem)
  * Create a new condition variable
  * @return the condition variable struct
  */
-cond_type Thread_create_cond(void)
+cond_type Thread_create_cond(int *rc)
 {
 	cond_type condvar = NULL;
 	pthread_condattr_t attr;
-	int rc = 0;
 
 	FUNC_ENTRY;
+	*rc = 0;
 	pthread_condattr_init(&attr);
 
 #if 0
@@ -379,10 +380,10 @@ cond_type Thread_create_cond(void)
 #endif
 
 	condvar = malloc(sizeof(cond_type_struct));
-	rc = pthread_cond_init(&condvar->cond, &attr);
-	rc = pthread_mutex_init(&condvar->mutex, NULL);
+	*rc = pthread_cond_init(&condvar->cond, &attr);
+	*rc = pthread_mutex_init(&condvar->mutex, NULL);
 
-	FUNC_EXIT_RC(rc);
+	FUNC_EXIT_RC(*rc);
 	return condvar;
 }
 

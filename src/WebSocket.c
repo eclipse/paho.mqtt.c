@@ -593,7 +593,6 @@ exit:
 char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 {
 	char *rv = NULL;
-	int rc = 0;
 
 	FUNC_ENTRY;
 	if ( net->websocket )
@@ -672,8 +671,7 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 		rv = Socket_getdata(net->socket, bytes, actual_len);
 
 exit:
-	rc = rv != NULL;
-	FUNC_EXIT_RC(rc);
+	FUNC_EXIT_RC(rv);
 	return rv;
 }
 

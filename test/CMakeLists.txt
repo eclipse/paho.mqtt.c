@@ -1768,6 +1768,7 @@ IF (PAHO_BUILD_SHARED)
 	)
 ENDIF()
 
+IF (NOT PAHO_HIGH_PERFORMANCE)
 IF (PAHO_BUILD_STATIC)
 	ADD_EXECUTABLE(
 		test_issue373-static
@@ -1788,6 +1789,7 @@ IF (PAHO_BUILD_SHARED)
 		test_issue373
 		paho-mqtt3a
 	)
+ENDIF()
 ENDIF()
 
 

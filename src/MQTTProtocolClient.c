@@ -227,11 +227,13 @@ Publications* MQTTProtocol_storePublication(Publish* publish, int* len)
 	*len = (int)strlen(publish->topic)+1;
 	p->topic = malloc(*len);
 	strcpy(p->topic, publish->topic);
+#if !defined(NO_HEAP_TRACKING)
 	if (Heap_findItem(publish->topic))
 	{
 		free(publish->topic);
 		publish->topic = NULL;
 	}
+#endif
 
 	*len += sizeof(Publications);
 

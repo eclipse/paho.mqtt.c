@@ -1,5 +1,5 @@
 #*******************************************************************************
-#  Copyright (c) 2015, 2019 logi.cals GmbH and others
+#  Copyright (c) 2015, 2020 logi.cals GmbH and others
 #
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,31 @@ CONFIGURE_FILE(VersionInfo.h.in
     @ONLY
     )
 
-SET(common_src
+IF (PAHO_HIGH_PERFORMANCE)
+  SET(common_src
+    MQTTProtocolClient.c
+    Clients.c
+    utf-8.c
+    MQTTPacket.c
+    MQTTPacketOut.c
+    Messages.c
+    Tree.c
+    Socket.c
+    Log.c
+    MQTTPersistence.c
+    Thread.c
+    MQTTProtocolOut.c
+    MQTTPersistenceDefault.c
+    SocketBuffer.c
+    LinkedList.c
+    MQTTProperties.c
+    MQTTReasonCodes.c
+    Base64.c
+    SHA1.c
+    WebSocket.c
+    )
+ELSE()
+  SET(common_src
     MQTTProtocolClient.c
     Clients.c
     utf-8.c
@@ -49,6 +73,7 @@ SET(common_src
     SHA1.c
     WebSocket.c
     )
+ENDIF()
 
 IF (WIN32)
     SET(LIBS_SYSTEM ws2_32 crypt32 RpcRT4)

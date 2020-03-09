@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -59,6 +59,8 @@ typedef struct
 } threadEntry;
 
 #include "StackTrace.h"
+
+#if !defined(NOSTACKTRACE)
 
 static int thread_count = 0;
 static threadEntry threads[MAX_THREADS];
@@ -202,3 +204,5 @@ char* StackTrace_get(thread_id_type threadid, char* buf, int bufsize)
 exit:
 	return buf;
 }
+
+#endif

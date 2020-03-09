@@ -42,6 +42,8 @@ char* Broker_recordFFDC(char* symptoms);
 
 #include "Heap.h"
 
+#if !defined(NO_HEAP_TRACKING)
+
 #undef malloc
 #undef realloc
 #undef free
@@ -469,6 +471,8 @@ int HeapDump(FILE* file)
 	}
 	return rc;
 }
+
+#endif
 
 
 #if defined(HEAP_UNIT_TESTS)

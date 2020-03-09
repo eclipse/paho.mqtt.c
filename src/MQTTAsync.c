@@ -600,7 +600,7 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 
 	if (!global_initialized)
 	{
-		#if defined(HEAP_H)
+		#if !defined(NO_HEAP_TRACKING)
 			Heap_initialize();
 		#endif
 		Log_initialize((Log_nameValue*)MQTTAsync_getVersionInfo());
@@ -704,7 +704,7 @@ static void MQTTAsync_terminate(void)
 		ListFree(commands);
 		handles = NULL;
 		WebSocket_terminate();
-		#if defined(HEAP_H)
+		#if !defined(NO_HEAP_TRACKING)
 			Heap_terminate();
 		#endif
 		Log_terminate();
@@ -2494,7 +2494,9 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 
 static void MQTTAsync_stop(void)
 {
+#if !defined(NOSTACKTRACE)
 	int rc = 0;
+#endif
 
 	FUNC_ENTRY;
 	if (sendThread_state != STOPPED || receiveThread_state != STOPPED)
@@ -2525,7 +2527,9 @@ static void MQTTAsync_stop(void)
 				MQTTAsync_sleep(100L);
 				MQTTAsync_lock_mutex(mqttasync_mutex);
 			}
+#if !defined(NOSTACKTRACE)
 			rc = 1;
+#endif
 			tostop = 0;
 		}
 	}

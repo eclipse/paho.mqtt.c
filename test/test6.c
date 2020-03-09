@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2014 IBM Corp.
+ * Copyright (c) 2011, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -21,8 +21,8 @@
  */
 
 #include "MQTTAsync.h"
-#define NO_HEAP_TRACKING
-#include "Heap.h"
+/*#define NO_HEAP_TRACKING 1
+#include "Heap.h"*/
 #include <string.h>
 #include <stdlib.h>
 
@@ -514,8 +514,8 @@ int recreateReconnect(void)
 
 		MQTTAsync_destroy(&client); /* destroy the client object so that we force persistence to be read on recreate */
 #if !defined(_WINDOWS)
-		heap_info* mqtt_mem = 0;
-		/*mqtt_mem = Heap_get_info();
+		/*heap_info* mqtt_mem = 0;
+		mqtt_mem = Heap_get_info();
 		MyLog(LOGA_INFO, "MQTT mem current %ld, max %ld",mqtt_mem->current_size,mqtt_mem->max_size);
 		if (mqtt_mem->current_size > 20)
 		  HeapScan(5); */

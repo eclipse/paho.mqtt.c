@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -60,7 +60,7 @@ int pem_passwd_cb(char* buf, int size, int rwflag, void* userdata);
 int SSL_create_mutex(ssl_mutex_type* mutex);
 int SSL_lock_mutex(ssl_mutex_type* mutex);
 int SSL_unlock_mutex(ssl_mutex_type* mutex);
-void SSL_destroy_mutex(ssl_mutex_type* mutex);
+int SSL_destroy_mutex(ssl_mutex_type* mutex);
 #if (OPENSSL_VERSION_NUMBER >= 0x010000000)
 extern void SSLThread_id(CRYPTO_THREADID *id);
 #else
@@ -383,7 +383,7 @@ int SSL_unlock_mutex(ssl_mutex_type* mutex)
 	return rc;
 }
 
-void SSL_destroy_mutex(ssl_mutex_type* mutex)
+int SSL_destroy_mutex(ssl_mutex_type* mutex)
 {
 	int rc = 0;
 
@@ -394,6 +394,7 @@ void SSL_destroy_mutex(ssl_mutex_type* mutex)
 	rc = pthread_mutex_destroy(mutex);
 #endif
 	FUNC_EXIT_RC(rc);
+	return rc;
 }
 
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,6 +16,10 @@
 
 #ifndef STACKTRACE_H_
 #define STACKTRACE_H_
+
+#if defined(HIGH_PERFORMANCE)
+#define NOSTACKTRACE 1
+#endif
 
 #include <stdio.h>
 #include "Log.h"

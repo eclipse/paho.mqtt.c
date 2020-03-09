@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -325,7 +325,7 @@ static int MQTTClient_deliverMessage(
 static int clientSockCompare(void* a, void* b);
 static thread_return_type WINAPI connectionLost_call(void* context);
 static thread_return_type WINAPI MQTTClient_run(void* n);
-static void MQTTClient_stop(void);
+static int MQTTClient_stop(void);
 static void MQTTClient_closeSession(Clients* client, enum MQTTReasonCodes reason, MQTTProperties* props);
 static int MQTTClient_cleanSession(Clients* client);
 static MQTTResponse MQTTClient_connectURIVersion(
@@ -389,7 +389,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 
 	if (!library_initialized)
 	{
-		#if defined(HEAP_H)
+		#if !defined(NO_HEAP_TRACKING)
 			Heap_initialize();
 		#endif
 		Log_initialize((Log_nameValue*)MQTTClient_getVersionInfo());
@@ -445,10 +445,10 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 	m->c->inboundMsgs = ListInitialize();
 	m->c->messageQueue = ListInitialize();
 	m->c->clientID = MQTTStrdup(clientId);
-	m->connect_sem = Thread_create_sem();
-	m->connack_sem = Thread_create_sem();
-	m->suback_sem = Thread_create_sem();
-	m->unsuback_sem = Thread_create_sem();
+	m->connect_sem = Thread_create_sem(&rc);
+	m->connack_sem = Thread_create_sem(&rc);
+	m->suback_sem = Thread_create_sem(&rc);
+	m->unsuback_sem = Thread_create_sem(&rc);
 
 #if !defined(NO_PERSISTENCE)
 	rc = MQTTPersistence_create(&(m->c->persistence), persistence_type, persistence_context);
@@ -486,7 +486,7 @@ static void MQTTClient_terminate(void)
 		ListFree(handles);
 		handles = NULL;
 		WebSocket_terminate();
-		#if defined(HEAP_H)
+		#if !defined(NO_HEAP_TRACKING)
 			Heap_terminate();
 		#endif
 		Log_terminate();
@@ -935,7 +935,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 }
 
 
-static void MQTTClient_stop(void)
+static int MQTTClient_stop(void)
 {
 	int rc = 0;
 
@@ -975,6 +975,7 @@ static void MQTTClient_stop(void)
 		}
 	}
 	FUNC_EXIT_RC(rc);
+	return rc;
 }
 
 

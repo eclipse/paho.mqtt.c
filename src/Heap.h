@@ -29,6 +29,8 @@
 #include <stdlib.h>
 
 #if !defined(NO_HEAP_TRACKING)
+
+#if !defined(TREE_C)
 /**
  * redefines malloc to use "mymalloc" so that heap allocation can be tracked
  * @param x the size of the item to be allocated
@@ -79,6 +81,8 @@ void* Heap_findItem(void* p);
 void Heap_unlink(char* file, int line, void* p);
 #ifdef __cplusplus
      }
+#endif
+
 #endif
 
 #endif

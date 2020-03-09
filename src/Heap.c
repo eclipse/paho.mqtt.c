@@ -242,7 +242,7 @@ static int Internal_heap_unlink(char* file, int line, void* p)
 	Node* e = NULL;
 	int rc = 0;
 
-	e = TreeFind(&heap, ((int*)p)-1);
+	e = TreeFind(&heap, ((double*)p)-1);
 	if (e == NULL)
 		Log(LOG_ERROR, 13, "Failed to remove heap item at file %s line %d", file, line);
 	else
@@ -318,7 +318,7 @@ void *myrealloc(char* file, int line, void* p, size_t size)
 	storageElement* s = NULL;
 
 	Thread_lock_mutex(heap_mutex);
-	s = TreeRemoveKey(&heap, ((int*)p)-1);
+	s = TreeRemoveKey(&heap, ((double*)p)-1);
 	if (s == NULL)
 		Log(LOG_ERROR, 13, "Failed to reallocate heap item at file %s line %d", file, line);
 	else
@@ -364,7 +364,7 @@ void* Heap_findItem(void* p)
 	Node* e = NULL;
 
 	Thread_lock_mutex(heap_mutex);
-	e = TreeFind(&heap, ((int*)p)-1);
+	e = TreeFind(&heap, ((double*)p)-1);
 	Thread_unlock_mutex(heap_mutex);
 	return (e == NULL) ? NULL : e->content;
 }
@@ -384,7 +384,7 @@ static void HeapScan(enum LOG_LEVELS log_level)
 	{
 		storageElement* s = (storageElement*)(current->content);
 		Log(log_level, -1, "Heap element size %d, line %d, file %s, ptr %p", (int)s->size, s->line, s->file, s->ptr);
-		Log(log_level, -1, "  Content %.*s", (10 > current->size) ? (int)s->size : 10, (char*)(((int*)s->ptr) + 1));
+		Log(log_level, -1, "  Content %.*s", (10 > current->size) ? (int)s->size : 10, (char*)(((double*)s->ptr) + 1));
 #if defined(HEAP_STACK)
 		Log(log_level, -1, "  Stack:\n%s", s->stack);
 #endif

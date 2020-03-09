@@ -1064,22 +1064,11 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 	memcpy(mm, &initialized, sizeof(MQTTClient_message));
 
 	qe->msg = mm;
-
 	qe->topicName = publish->topic;
 	qe->topicLen = publish->topiclen;
 	publish->topic = NULL;
-
-	/* If the message is QoS 2, then we have already stored the incoming payload
-	 * in an allocated buffer, so we don't need to copy again.
-	 */
-	if (publish->header.bits.qos == 2)
-		mm->payload = publish->payload;
-	else
-	{
-		mm->payload = malloc(publish->payloadlen);
-		memcpy(mm->payload, publish->payload, publish->payloadlen);
-	}
-
+	mm->payload = malloc(publish->payloadlen);
+	memcpy(mm->payload, publish->payload, publish->payloadlen);
 	mm->payloadlen = publish->payloadlen;
 	mm->qos = publish->header.bits.qos;
 	mm->retained = publish->header.bits.retain;
@@ -2183,14 +2172,13 @@ MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int p
 		goto exit;
 	}
 
-	p = malloc(sizeof(Publish) + payloadlen);
-	p->payload = (void*)payload;
+	p = malloc(sizeof(Publish));
+	p->payload = NULL;
 	p->payloadlen = payloadlen;
 	if (payloadlen > 0)
 	{
-		p->payload = (char*)p + sizeof(Publish);
+		p->payload = malloc(payloadlen);
 		memcpy(p->payload, payload, payloadlen);
-		p->payloadlen = payloadlen;
 	}
 	p->topic = MQTTStrdup(topicName);
 	p->msgId = msgid;
@@ -2236,7 +2224,10 @@ MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int p
 	if (deliveryToken && qos > 0)
 		*deliveryToken = msg->msgid;
 
-	if (p->topic) free(p->topic);
+	if (p->topic)
+		free(p->topic);
+	if (p->payload)
+		free(p->payload);
 	free(p);
 
 	if (rc == SOCKET_ERROR)

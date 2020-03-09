@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -237,7 +237,7 @@ int MQTTPersistence_restore(Clients *c)
 						Publish* publish = (Publish*)pack;
 						Messages* msg = NULL;
 						publish->MQTTVersion = c->MQTTVersion;
-						msg = MQTTProtocol_createMessage(publish, &msg, publish->header.bits.qos, publish->header.bits.retain);
+						msg = MQTTProtocol_createMessage(publish, &msg, publish->header.bits.qos, publish->header.bits.retain, 1);
 						msg->nextMessageType = PUBREL;
 						/* order does not matter for persisted received messages */
 						ListAppend(c->inboundMsgs, msg, msg->len);
@@ -245,6 +245,7 @@ int MQTTPersistence_restore(Clients *c)
 						{
 							free(msg->publish->payload);
 							free(msg->publish->topic);
+							msg->publish->payload = msg->publish->topic = NULL;
 						}
 						publish->topic = NULL;
 						MQTTPacket_freePublish(publish);
@@ -262,7 +263,7 @@ int MQTTPersistence_restore(Clients *c)
 							sprintf(key, "%s%d", PERSISTENCE_V5_PUBREL, publish->msgId);
 						else
 							sprintf(key, "%s%d", PERSISTENCE_PUBREL, publish->msgId);
-						msg = MQTTProtocol_createMessage(publish, &msg, publish->header.bits.qos, publish->header.bits.retain);
+						msg = MQTTProtocol_createMessage(publish, &msg, publish->header.bits.qos, publish->header.bits.retain, 1);
 						if (c->persistence->pcontainskey(c->phandle, key) == 0)
 							/* PUBLISH Qo2 and PUBREL sent */
 							msg->nextMessageType = PUBCOMP;

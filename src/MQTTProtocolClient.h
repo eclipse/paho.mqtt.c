@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2017 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -32,7 +32,7 @@
 #define MAX_CLIENTID_LEN 65535
 
 int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int retained, Messages** m);
-Messages* MQTTProtocol_createMessage(Publish* publish, Messages** mm, int qos, int retained);
+Messages* MQTTProtocol_createMessage(Publish* publish, Messages** mm, int qos, int retained, int allocatePayload);
 Publications* MQTTProtocol_storePublication(Publish* publish, int* len);
 int messageIDCompare(void* a, void* b);
 int MQTTProtocol_assignMsgId(Clients* client);

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2018 IBM Corp., and others
+ * Copyright (c) 2012, 2020 IBM Corp., and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -367,6 +367,7 @@ int main(int argc, char** argv)
 	MQTTAsync client;
 	char* buffer = NULL;
 	char* url = NULL;
+	int url_allocated = 0;
 	int rc = 0;
 	const char* version = NULL;
 	const char* program_name = "paho_c_pub";
@@ -386,6 +387,7 @@ int main(int argc, char** argv)
 	else
 	{
 		url = malloc(100);
+		url_allocated = 1;
 		sprintf(url, "%s:%s", opts.host, opts.port);
 	}
 	if (opts.verbose)
@@ -502,6 +504,9 @@ int main(int argc, char** argv)
 		mysleep(100);
 
 	MQTTAsync_destroy(&client);
+
+	if (url_allocated)
+		free(url);
 
 	return EXIT_SUCCESS;
 }

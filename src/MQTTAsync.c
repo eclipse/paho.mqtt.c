@@ -1293,7 +1293,8 @@ static void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command)
 		if (command->command.details.pub.destinationName)
 			free(command->command.details.pub.destinationName);
 		command->command.details.pub.destinationName = NULL;
-		free(command->command.details.pub.payload);
+		if (command->command.details.pub.payload)
+			free(command->command.details.pub.payload);
 		command->command.details.pub.payload = NULL;
 	}
 	MQTTProperties_free(&command->command.properties);
@@ -1653,7 +1654,10 @@ static int MQTTAsync_processCommand(void)
 			}
 		}
 		else
+		{
+			command->command.details.pub.payload = NULL; /* this will be freed by the protocol code */
 			command->command.details.pub.destinationName = NULL; /* this will be freed by the protocol code */
+		}
 		free(p); /* should this be done if the write isn't complete? */
 	}
 	else if (command->command.type == DISCONNECT)
@@ -2781,17 +2785,8 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 	mm = malloc(sizeof(MQTTAsync_message));
 	memcpy(mm, &initialized, sizeof(MQTTAsync_message));
 
-	/* If the message is QoS 2, then we have already stored the incoming payload
-	 * in an allocated buffer, so we don't need to copy again.
-	 */
-	if (publish->header.bits.qos == 2)
-		mm->payload = publish->payload;
-	else
-	{
-		mm->payload = malloc(publish->payloadlen);
-		memcpy(mm->payload, publish->payload, publish->payloadlen);
-	}
-
+	mm->payload = malloc(publish->payloadlen);
+	memcpy(mm->payload, publish->payload, publish->payloadlen);
 	mm->payloadlen = publish->payloadlen;
 	mm->qos = publish->header.bits.qos;
 	mm->retained = publish->header.bits.retain;

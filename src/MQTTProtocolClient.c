@@ -156,7 +156,7 @@ int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int
 	FUNC_ENTRY;
 	if (qos > 0)
 	{
-		*mm = MQTTProtocol_createMessage(publish, mm, qos, retained);
+		*mm = MQTTProtocol_createMessage(publish, mm, qos, retained, 0);
 		ListAppend(pubclient->outboundMsgs, *mm, (*mm)->len);
 		/* we change these pointers to the saved message location just in case the packet could not be written
 		entirely; the socket buffer will use these locations to finish writing the packet */
@@ -177,9 +177,10 @@ int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int
  * @param mm - pointer to the message data to store
  * @param qos the MQTT QoS to use
  * @param retained boolean - whether to set the MQTT retained flag
+ * @param allocatePayload boolean - whether or not to malloc payload
  * @return pointer to the message data stored
  */
-Messages* MQTTProtocol_createMessage(Publish* publish, Messages **mm, int qos, int retained)
+Messages* MQTTProtocol_createMessage(Publish* publish, Messages **mm, int qos, int retained, int allocatePayload)
 {
 	Messages* m = malloc(sizeof(Messages));
 
@@ -191,8 +192,14 @@ Messages* MQTTProtocol_createMessage(Publish* publish, Messages **mm, int qos, i
 		*mm = m;
 		m->publish = MQTTProtocol_storePublication(publish, &len1);
 		m->len += len1;
+		if (allocatePayload) {
+			char *temp = m->publish->payload;
+
+			m->publish->payload = malloc(m->publish->payloadlen);
+			memcpy(m->publish->payload, temp, m->publish->payloadlen);
+		}
 	}
-	else
+	else /* this is now never used, I think */
 	{
 		++(((*mm)->publish)->refcount);
 		m->publish = (*mm)->publish;
@@ -225,22 +232,13 @@ Publications* MQTTProtocol_storePublication(Publish* publish, int* len)
 	p->refcount = 1;
 
 	*len = (int)strlen(publish->topic)+1;
-	p->topic = malloc(*len);
-	strcpy(p->topic, publish->topic);
-#if !defined(NO_HEAP_TRACKING)
-	if (Heap_findItem(publish->topic))
-	{
-		free(publish->topic);
-		publish->topic = NULL;
-	}
-#endif
-
+	p->topic = publish->topic;
+	publish->topic = NULL;
 	*len += sizeof(Publications);
-
 	p->topiclen = publish->topiclen;
 	p->payloadlen = publish->payloadlen;
-	p->payload = malloc(publish->payloadlen);
-	memcpy(p->payload, publish->payload, p->payloadlen);
+	p->payload = publish->payload;
+	publish->payload = NULL;
 	*len += publish->payloadlen;
 
 	ListAppend(&(state.publications), p, *len);

@@ -37,7 +37,7 @@ Publications* MQTTProtocol_storePublication(Publish* publish, int* len);
 int messageIDCompare(void* a, void* b);
 int MQTTProtocol_assignMsgId(Clients* client);
 void MQTTProtocol_removePublication(Publications* p);
-void Protocol_processPublication(Publish* publish, Clients* client);
+void Protocol_processPublication(Publish* publish, Clients* client, int allocatePayload);
 
 int MQTTProtocol_handlePublishes(void* pack, int sock);
 int MQTTProtocol_handlePubacks(void* pack, int sock);

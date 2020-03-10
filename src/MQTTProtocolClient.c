@@ -264,6 +264,8 @@ void MQTTProtocol_removePublication(Publications* p)
 
 /**
  * Process an incoming publish packet for a socket
+ * The payload field of the packet has not been transferred to another buffer at this point.
+ * If it's needed beyond the scope of this function, it has to be copied.
  * @param pack pointer to the publish packet
  * @param sock the socket on which the packet was received
  * @return completion code
@@ -282,7 +284,7 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 					publish->header.bits.retain, publish->payloadlen, min(20, publish->payloadlen), publish->payload);
 
 	if (publish->header.bits.qos == 0)
-		Protocol_processPublication(publish, client);
+		Protocol_processPublication(publish, client, 1);
 	else if (!Socket_noPendingWrites(sock))
 		rc = SOCKET_ERROR; /* queue acks? */
 	else if (publish->header.bits.qos == 1)
@@ -290,7 +292,7 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 	  /* send puback before processing the publications because a lot of return publications could fill up the socket buffer */
 	  rc = MQTTPacket_send_puback(publish->MQTTVersion, publish->msgId, &client->net, client->clientID);
 	  /* if we get a socket error from sending the puback, should we ignore the publication? */
-	  Protocol_processPublication(publish, client);
+	  Protocol_processPublication(publish, client, 1);
 	}
 	else if (publish->header.bits.qos == 2)
 	{
@@ -335,9 +337,16 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 			publish1.MQTTVersion = m->MQTTVersion;
 			publish1.properties = m->properties;
 
-			Protocol_processPublication(&publish1, client);
+			Protocol_processPublication(&publish1, client, 1);
 			ListRemove(&(state.publications), m->publish);
 			m->publish = NULL;
+		} else
+		{	/* allocate and copy payload data as it's needed for pubrel.
+		       For other cases, it's done in Protocol_processPublication */
+			char *temp = m->publish->payload;
+
+			m->publish->payload = malloc(m->publish->payloadlen);
+			memcpy(m->publish->payload, temp, m->publish->payloadlen);
 		}
 		publish->topic = NULL;
 	}
@@ -518,7 +527,7 @@ int MQTTProtocol_handlePubrels(void* pack, int sock)
 			if (publish.MQTTVersion >= MQTTVERSION_5)
 				publish.properties = m->properties;
 			else
-				Protocol_processPublication(&publish, client); /* only for 3.1.1 and lower */
+				Protocol_processPublication(&publish, client, 0); /* only for 3.1.1 and lower */
 			#if !defined(NO_PERSISTENCE)
 				rc += MQTTPersistence_remove(client,
 						(m->MQTTVersion >= MQTTVERSION_5) ? PERSISTENCE_V5_PUBLISH_RECEIVED : PERSISTENCE_PUBLISH_RECEIVED,

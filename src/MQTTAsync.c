@@ -2775,7 +2775,7 @@ static int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, size_t topic
 }
 
 
-void Protocol_processPublication(Publish* publish, Clients* client)
+void Protocol_processPublication(Publish* publish, Clients* client, int allocatePayload)
 {
 	MQTTAsync_message* mm = NULL;
 	MQTTAsync_message initialized = MQTTAsync_message_initializer;
@@ -2785,8 +2785,12 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 	mm = malloc(sizeof(MQTTAsync_message));
 	memcpy(mm, &initialized, sizeof(MQTTAsync_message));
 
-	mm->payload = malloc(publish->payloadlen);
-	memcpy(mm->payload, publish->payload, publish->payloadlen);
+	if (allocatePayload)
+	{
+		mm->payload = malloc(publish->payloadlen);
+		memcpy(mm->payload, publish->payload, publish->payloadlen);
+	} else
+		mm->payload = publish->payload;
 	mm->payloadlen = publish->payloadlen;
 	mm->qos = publish->header.bits.qos;
 	mm->retained = publish->header.bits.retain;

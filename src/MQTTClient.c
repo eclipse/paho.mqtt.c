@@ -1052,7 +1052,7 @@ static int MQTTClient_cleanSession(Clients* client)
 }
 
 
-void Protocol_processPublication(Publish* publish, Clients* client)
+void Protocol_processPublication(Publish* publish, Clients* client, int allocatePayload)
 {
 	qEntry* qe = NULL;
 	MQTTClient_message* mm = NULL;
@@ -1067,8 +1067,13 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 	qe->topicName = publish->topic;
 	qe->topicLen = publish->topiclen;
 	publish->topic = NULL;
-	mm->payload = malloc(publish->payloadlen);
-	memcpy(mm->payload, publish->payload, publish->payloadlen);
+	if (allocatePayload)
+	{
+		mm->payload = malloc(publish->payloadlen);
+		memcpy(mm->payload, publish->payload, publish->payloadlen);
+	}
+	else
+		mm->payload = publish->payload;
 	mm->payloadlen = publish->payloadlen;
 	mm->qos = publish->header.bits.qos;
 	mm->retained = publish->header.bits.retain;

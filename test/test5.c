@@ -774,7 +774,7 @@ int test2a(struct Options options)
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	MQTTAsync_create(&c, options.mutual_auth_connection, "test2a", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	rc = MQTTAsync_create(&c, options.mutual_auth_connection, "test2a", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 		goto exit;

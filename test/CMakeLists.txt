@@ -684,7 +684,7 @@ IF (PAHO_BUILD_STATIC)
 	
 	ADD_TEST(
 		NAME test45-7-pending-tokens-static
-		COMMAND test45-static "--test_no" "7" --verbose "--connection" ${MQTT_TEST_BROKER} 
+		COMMAND test45-static "--test_no" "7" "--connection" ${MQTT_TEST_BROKER} 
 	)
 	
 	ADD_TEST(
@@ -747,7 +747,7 @@ IF (PAHO_BUILD_SHARED)
 	
 	ADD_TEST(
 		NAME test45-7-pending-tokens
-		COMMAND test45 "--test_no" "7" --verbose "--connection" ${MQTT_TEST_BROKER} 
+		COMMAND test45 "--test_no" "7" "--connection" ${MQTT_TEST_BROKER} 
 	)
 	
 	ADD_TEST(

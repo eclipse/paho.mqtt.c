@@ -4,8 +4,10 @@ environment:
   matrix:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
       PAHO_WINDOWS_BUILD_BIT: x86
+      OPENSSL_ROOT_DIR: "C:/OpenSSL-Win32"
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       PAHO_WINDOWS_BUILD_BIT: x64
+      OPENSSL_ROOT_DIR: "C:/OpenSSL-Win64"
     
 configuration: Debug
 install:
@@ -32,7 +34,7 @@ build_script:
 
     if "%APPVEYOR_BUILD_WORKER_IMAGE%" == "Visual Studio 2013" call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" %PAHO_WINDOWS_BUILD_BIT%
 
-    cmake -G "NMake Makefiles" -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=TRUE ..
+    cmake -G "NMake Makefiles" -DPAHO_WITH_SSL=TRUE -DOPENSSL_ROOT_DIR=%OPENSSL_ROOT_DIR% -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=TRUE ..
 
     nmake
 

@@ -111,6 +111,24 @@ IF (PAHO_BUILD_SHARED)
         VERSION ${CLIENT_VERSION}
         SOVERSION ${PAHO_VERSION_MAJOR}
         DEFINE_SYMBOL "MQTT_EXPORTS")
+
+    IF(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+		SET(MQTTCLIENT_ENTRY_POINT _MQTTClient_init)
+		SET(MQTTASYNC_ENTRY_POINT _MQTTAsync_init)
+	ELSEIF (NOT WIN32)
+		SET(MQTTCLIENT_ENTRY_POINT MQTTClient_init)
+		SET(MQTTASYNC_ENTRY_POINT MQTTAsync_init)
+	ENDIF()
+
+    IF (NOT WIN32)
+        SET_TARGET_PROPERTIES(
+            paho-mqtt3c PROPERTIES
+            LINK_FLAGS "-Wl,-init,${MQTTCLIENT_ENTRY_POINT}")
+        SET_TARGET_PROPERTIES(
+            paho-mqtt3a PROPERTIES
+            LINK_FLAGS "-Wl,-init,${MQTTASYNC_ENTRY_POINT}")
+    ENDIF()
+
     FOREACH(TARGET paho-mqtt3c paho-mqtt3a)
         TARGET_INCLUDE_DIRECTORIES(${TARGET}
             PUBLIC
@@ -166,48 +184,13 @@ INSTALL(FILES MQTTAsync.h MQTTClient.h MQTTClientPersistence.h MQTTProperties.h 
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 IF (PAHO_WITH_SSL)
-    SET(OPENSSL_SEARCH_PATH "" CACHE PATH "Directory containing OpenSSL libraries and includes")
-
-    IF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-        IF(OPENSSL_SEARCH_PATH STREQUAL "")
-            SET(OPENSSL_SEARCH_PATH "/usr/local/opt/openssl")
-        ENDIF ()
-    ENDIF (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-
-    IF (WIN32)
-        IF(OPENSSL_SEARCH_PATH STREQUAL "")
-            SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win64")
-            SET(OPENSSL_SEARCH_LIB_PATH "${OPENSSL_SEARCH_PATH}/lib64")
-            IF (DEFINED ENV{PAHO_WINDOWS_BUILD_BIT})
-                IF ($ENV{PAHO_WINDOWS_BUILD_BIT} STREQUAL "x86")
-                    SET(OPENSSL_SEARCH_PATH "C:/OpenSSL-Win32")
-                    SET(OPENSSL_SEARCH_LIB_PATH "${OPENSSL_SEARCH_PATH}/lib32")
-                ENDIF ()
-            ENDIF ()
-        ENDIF ()
-    ELSE()
-        SET(OPENSSL_SEARCH_LIB_PATH "${OPENSSL_SEARCH_PATH}/lib64")
-    ENDIF ()
-
-    FIND_PATH(OPENSSL_INCLUDE_DIR openssl/ssl.h
-        HINTS ${OPENSSL_SEARCH_PATH}/include)
-    FIND_LIBRARY(OPENSSL_LIB NAMES ssl libssl ssleay32
-        HINTS ${OPENSSL_SEARCH_PATH}/lib ${OPENSSL_SEARCH_LIB_PATH})
-    FIND_LIBRARY(OPENSSLCRYPTO_LIB NAMES crypto libcrypto libeay32
-        HINTS ${OPENSSL_SEARCH_PATH}/lib ${OPENSSL_SEARCH_LIB_PATH})
-
-    MESSAGE(STATUS "OpenSSL hints: ${OPENSSL_SEARCH_PATH}")
-    MESSAGE(STATUS "OpenSSL headers found at ${OPENSSL_INCLUDE_DIR}")
-    MESSAGE(STATUS "OpenSSL library found at ${OPENSSL_LIB}")
-    MESSAGE(STATUS "OpenSSL Crypto library found at ${OPENSSLCRYPTO_LIB}")
-
-    INCLUDE_DIRECTORIES(
-        ${OPENSSL_INCLUDE_DIR}
-    )
+    SET(OPENSSL_ROOT_DIR "" CACHE PATH "Directory containing OpenSSL libraries and includes")
+    find_package(OpenSSL REQUIRED)
 
     ## common compilation for libpaho-mqtt3cs and libpaho-mqtt3as
     ## Note: SSL libraries must be recompiled due ifdefs
     ADD_LIBRARY(common_ssl_obj OBJECT ${common_src})
+    TARGET_INCLUDE_DIRECTORIES(common_ssl_obj PUBLIC ${OPENSSL_INCLUDE_DIR})
     SET_PROPERTY(TARGET common_ssl_obj PROPERTY	POSITION_INDEPENDENT_CODE ON)
     SET_PROPERTY(TARGET common_ssl_obj PROPERTY COMPILE_DEFINITIONS "OPENSSL=1;MQTT_EXPORTS=1")
 
@@ -215,14 +198,30 @@ IF (PAHO_WITH_SSL)
         ADD_LIBRARY(paho-mqtt3cs SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTClient.c SSLSocket.c)
         ADD_LIBRARY(paho-mqtt3as SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTAsync.c SSLSocket.c)
     
-        TARGET_LINK_LIBRARIES(paho-mqtt3cs ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} ${LIBS_SYSTEM})
-        TARGET_LINK_LIBRARIES(paho-mqtt3as ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} ${LIBS_SYSTEM})
         SET_TARGET_PROPERTIES(
             paho-mqtt3cs paho-mqtt3as PROPERTIES
             VERSION ${CLIENT_VERSION}
             SOVERSION ${PAHO_VERSION_MAJOR}
             COMPILE_DEFINITIONS "OPENSSL=1"
             DEFINE_SYMBOL "MQTT_EXPORTS")
+
+        IF(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+		    SET(MQTTCLIENT_ENTRY_POINT _MQTTClient_init)
+		    SET(MQTTASYNC_ENTRY_POINT _MQTTAsync_init)
+        ELSEIF (NOT WIN32)
+            SET(MQTTCLIENT_ENTRY_POINT MQTTClient_init)
+		    SET(MQTTASYNC_ENTRY_POINT MQTTAsync_init)
+        ENDIF()
+
+        IF (NOT WIN32)
+            SET_TARGET_PROPERTIES(
+	           paho-mqtt3cs PROPERTIES
+	           LINK_FLAGS "-Wl,-init,${MQTTCLIENT_ENTRY_POINT}")
+	        SET_TARGET_PROPERTIES(
+	           paho-mqtt3as PROPERTIES
+	           LINK_FLAGS "-Wl,-init,${MQTTASYNC_ENTRY_POINT}")
+        ENDIF()
+
         FOREACH(TARGET paho-mqtt3cs paho-mqtt3as)
             TARGET_INCLUDE_DIRECTORIES(${TARGET}
                 PUBLIC
@@ -230,6 +229,9 @@ IF (PAHO_WITH_SSL)
                     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                 PRIVATE
                     ${CMAKE_BINARY_DIR})
+            TARGET_LINK_LIBRARIES(${TARGET}
+                PUBLIC
+                    OpenSSL::SSL OpenSSL::Crypto ${LIBS_SYSTEM})
         ENDFOREACH()
         INSTALL(TARGETS paho-mqtt3cs paho-mqtt3as
             EXPORT eclipse-paho-mqtt-cTargets
@@ -242,8 +244,6 @@ IF (PAHO_WITH_SSL)
         ADD_LIBRARY(paho-mqtt3cs-static STATIC $<TARGET_OBJECTS:common_ssl_obj> MQTTClient.c SSLSocket.c)
         ADD_LIBRARY(paho-mqtt3as-static STATIC $<TARGET_OBJECTS:common_ssl_obj> MQTTAsync.c SSLSocket.c)
 
-        TARGET_LINK_LIBRARIES(paho-mqtt3cs-static ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
-        TARGET_LINK_LIBRARIES(paho-mqtt3as-static ${OPENSSL_LIBRARIES} ${LIBS_SYSTEM})
         SET_TARGET_PROPERTIES(
             paho-mqtt3cs-static paho-mqtt3as-static PROPERTIES
             VERSION ${CLIENT_VERSION}
@@ -254,6 +254,23 @@ IF (PAHO_WITH_SSL)
             SET_TARGET_PROPERTIES(paho-mqtt3cs-static PROPERTIES OUTPUT_NAME paho-mqtt3cs)
             SET_TARGET_PROPERTIES(paho-mqtt3as-static PROPERTIES OUTPUT_NAME paho-mqtt3as)
         ENDIF()
+
+	    IF(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+			SET(MQTTCLIENT_ENTRY_POINT _MQTTClient_init)
+			SET(MQTTASYNC_ENTRY_POINT _MQTTAsync_init)
+		ELSEIF (NOT WIN32)
+			SET(MQTTCLIENT_ENTRY_POINT MQTTClient_init)
+			SET(MQTTASYNC_ENTRY_POINT MQTTAsync_init)
+		ENDIF()
+
+		IF (NOT WIN32)
+		    SET_TARGET_PROPERTIES(
+	            paho-mqtt3cs-static PROPERTIES
+	            LINK_FLAGS "-Wl,-init,${MQTTCLIENT_ENTRY_POINT}")
+	        SET_TARGET_PROPERTIES(
+	            paho-mqtt3as-static PROPERTIES
+	            LINK_FLAGS "-Wl,-init,${MQTTASYNC_ENTRY_POINT}")
+	    ENDIF()
 
         IF (NOT PAHO_BUILD_SHARED)
             INSTALL(TARGETS paho-mqtt3cs-static paho-mqtt3as-static
@@ -272,6 +289,9 @@ IF (PAHO_WITH_SSL)
                     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                 PRIVATE
                     ${CMAKE_BINARY_DIR})
+            TARGET_LINK_LIBRARIES(${TARGET}
+                PUBLIC
+                    OpenSSL::SSL OpenSSL::Crypto ${LIBS_SYSTEM})
         ENDFOREACH()
     ENDIF()
 ENDIF()
@@ -294,7 +314,7 @@ ADD_EXECUTABLE( Base64Test EXCLUDE_FROM_ALL Base64.c Base64.h )
 TARGET_COMPILE_DEFINITIONS( Base64Test PUBLIC "-DBASE64_TEST" )
 IF (PAHO_WITH_SSL)
 	ADD_EXECUTABLE( Base64TestOpenSSL EXCLUDE_FROM_ALL Base64.c Base64.h )
-	TARGET_LINK_LIBRARIES( Base64TestOpenSSL ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} )
+	TARGET_LINK_LIBRARIES( Base64TestOpenSSL OpenSSL::SSL OpenSSL::Crypto)
 	TARGET_COMPILE_DEFINITIONS( Base64TestOpenSSL PUBLIC "-DBASE64_TEST -DOPENSSL=1" )
 ENDIF (PAHO_WITH_SSL)
 
@@ -303,6 +323,6 @@ ADD_EXECUTABLE( Sha1Test EXCLUDE_FROM_ALL SHA1.c SHA1.h )
 TARGET_COMPILE_DEFINITIONS( Sha1Test PUBLIC "-DSHA1_TEST" )
 IF (PAHO_WITH_SSL)
 	ADD_EXECUTABLE( Sha1TestOpenSSL EXCLUDE_FROM_ALL SHA1.c SHA1.h )
-	TARGET_LINK_LIBRARIES( Sha1TestOpenSSL ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB} )
+	TARGET_LINK_LIBRARIES( Sha1TestOpenSSL OpenSSL::SSL OpenSSL::Crypto)
 	TARGET_COMPILE_DEFINITIONS( Sha1TestOpenSSL PUBLIC "-DSHA1_TEST -DOPENSSL=1" )
 ENDIF (PAHO_WITH_SSL)

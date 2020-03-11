@@ -111,6 +111,24 @@ IF (PAHO_BUILD_SHARED)
         VERSION ${CLIENT_VERSION}
         SOVERSION ${PAHO_VERSION_MAJOR}
         DEFINE_SYMBOL "MQTT_EXPORTS")
+
+    IF(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+		SET(MQTTCLIENT_ENTRY_POINT _MQTTClient_init)
+		SET(MQTTASYNC_ENTRY_POINT _MQTTAsync_init)
+	ELSEIF (NOT WIN32)
+		SET(MQTTCLIENT_ENTRY_POINT MQTTClient_init)
+		SET(MQTTASYNC_ENTRY_POINT MQTTAsync_init)
+	ENDIF()
+
+    IF (NOT WIN32)
+        SET_TARGET_PROPERTIES(
+            paho-mqtt3c PROPERTIES
+            LINK_FLAGS "-Wl,-init,${MQTTCLIENT_ENTRY_POINT}")
+        SET_TARGET_PROPERTIES(
+            paho-mqtt3a PROPERTIES
+            LINK_FLAGS "-Wl,-init,${MQTTASYNC_ENTRY_POINT}")
+    ENDIF()
+
     FOREACH(TARGET paho-mqtt3c paho-mqtt3a)
         TARGET_INCLUDE_DIRECTORIES(${TARGET}
             PUBLIC
@@ -186,6 +204,24 @@ IF (PAHO_WITH_SSL)
             SOVERSION ${PAHO_VERSION_MAJOR}
             COMPILE_DEFINITIONS "OPENSSL=1"
             DEFINE_SYMBOL "MQTT_EXPORTS")
+
+        IF(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+		    SET(MQTTCLIENT_ENTRY_POINT _MQTTClient_init)
+		    SET(MQTTASYNC_ENTRY_POINT _MQTTAsync_init)
+        ELSEIF (NOT WIN32)
+            SET(MQTTCLIENT_ENTRY_POINT MQTTClient_init)
+		    SET(MQTTASYNC_ENTRY_POINT MQTTAsync_init)
+        ENDIF()
+
+        IF (NOT WIN32)
+            SET_TARGET_PROPERTIES(
+	           paho-mqtt3cs PROPERTIES
+	           LINK_FLAGS "-Wl,-init,${MQTTCLIENT_ENTRY_POINT}")
+	        SET_TARGET_PROPERTIES(
+	           paho-mqtt3as PROPERTIES
+	           LINK_FLAGS "-Wl,-init,${MQTTASYNC_ENTRY_POINT}")
+        ENDIF()
+
         FOREACH(TARGET paho-mqtt3cs paho-mqtt3as)
             TARGET_INCLUDE_DIRECTORIES(${TARGET}
                 PUBLIC
@@ -218,6 +254,23 @@ IF (PAHO_WITH_SSL)
             SET_TARGET_PROPERTIES(paho-mqtt3cs-static PROPERTIES OUTPUT_NAME paho-mqtt3cs)
             SET_TARGET_PROPERTIES(paho-mqtt3as-static PROPERTIES OUTPUT_NAME paho-mqtt3as)
         ENDIF()
+
+	    IF(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+			SET(MQTTCLIENT_ENTRY_POINT _MQTTClient_init)
+			SET(MQTTASYNC_ENTRY_POINT _MQTTAsync_init)
+		ELSEIF (NOT WIN32)
+			SET(MQTTCLIENT_ENTRY_POINT MQTTClient_init)
+			SET(MQTTASYNC_ENTRY_POINT MQTTAsync_init)
+		ENDIF()
+
+		IF (NOT WIN32)
+		    SET_TARGET_PROPERTIES(
+	            paho-mqtt3cs-static PROPERTIES
+	            LINK_FLAGS "-Wl,-init,${MQTTCLIENT_ENTRY_POINT}")
+	        SET_TARGET_PROPERTIES(
+	            paho-mqtt3as-static PROPERTIES
+	            LINK_FLAGS "-Wl,-init,${MQTTASYNC_ENTRY_POINT}")
+	    ENDIF()
 
         IF (NOT PAHO_BUILD_SHARED)
             INSTALL(TARGETS paho-mqtt3cs-static paho-mqtt3as-static

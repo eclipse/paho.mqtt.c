@@ -56,7 +56,9 @@ static mutex_type heap_mutex = &heap_mutex_store;
 #endif
 
 static heap_info state = {0, 0}; /**< global heap state information */
-static int eyecatcher = 0x88888888;
+
+typedef double eyecatcherType;
+static eyecatcherType eyecatcher = 0x8888888888888888;
 
 /*#define HEAP_STACK 1 */
 
@@ -193,39 +195,39 @@ void* mymalloc(char* file, int line, size_t size)
 #endif
 	s->line = line;
 	/* Add space for eyecatcher at each end */
-	if ((s->ptr = malloc(size + 2*sizeof(int))) == NULL)
+	if ((s->ptr = malloc(size + 2*sizeof(eyecatcherType))) == NULL)
 	{
 		Log(LOG_ERROR, 13, errmsg);
 		free(s->file);
 		free(s);
 		return NULL;
 	}
-	memset(s->ptr, 0, size + 2*sizeof(int));
-	space += size + 2*sizeof(int);
-	*(int*)(s->ptr) = eyecatcher; /* start eyecatcher */
-	*(int*)(((char*)(s->ptr)) + (sizeof(int) + size)) = eyecatcher; /* end eyecatcher */
+	memset(s->ptr, 0, size + 2*sizeof(eyecatcherType));
+	space += size + 2*sizeof(eyecatcherType);
+	*(eyecatcherType*)(s->ptr) = eyecatcher; /* start eyecatcher */
+	*(eyecatcherType*)(((char*)(s->ptr)) + (sizeof(eyecatcherType) + size)) = eyecatcher; /* end eyecatcher */
 	Log(TRACE_MAX, -1, "Allocating %d bytes in heap at file %s line %d ptr %p\n", (int)size, file, line, s->ptr);
 	TreeAdd(&heap, s, space);
 	state.current_size += size;
 	if (state.current_size > state.max_size)
 		state.max_size = state.current_size;
 	Thread_unlock_mutex(heap_mutex);
-	return ((int*)(s->ptr)) + 1;	/* skip start eyecatcher */
+	return ((eyecatcherType*)(s->ptr)) + 1;	/* skip start eyecatcher */
 }
 
 
 static void checkEyecatchers(char* file, int line, void* p, size_t size)
 {
-	int *sp = (int*)p;
+	eyecatcherType *sp = (eyecatcherType*)p;
 	char *cp = (char*)p;
-	int us;
+	eyecatcherType us;
 	static const char *msg = "Invalid %s eyecatcher %d in heap item at file %s line %d";
 
 	if ((us = *--sp) != eyecatcher)
 		Log(LOG_ERROR, 13, msg, "start", us, file, line);
 
 	cp += size;
-	if ((us = *(int*)cp) != eyecatcher)
+	if ((us = *(eyecatcherType*)cp) != eyecatcher)
 		Log(LOG_ERROR, 13, msg, "end", us, file, line);
 }
 
@@ -242,7 +244,7 @@ static int Internal_heap_unlink(char* file, int line, void* p)
 	Node* e = NULL;
 	int rc = 0;
 
-	e = TreeFind(&heap, ((int*)p)-1);
+	e = TreeFind(&heap, ((eyecatcherType*)p)-1);
 	if (e == NULL)
 		Log(LOG_ERROR, 13, "Failed to remove heap item at file %s line %d", file, line);
 	else
@@ -275,7 +277,7 @@ void myfree(char* file, int line, void* p)
 	{
 		Thread_lock_mutex(heap_mutex);
 		if (Internal_heap_unlink(file, line, p))
-			free(((int*)p)-1);
+			free(((eyecatcherType*)p)-1);
 		Thread_unlock_mutex(heap_mutex);
 	}
 	else
@@ -318,7 +320,7 @@ void *myrealloc(char* file, int line, void* p, size_t size)
 	storageElement* s = NULL;
 
 	Thread_lock_mutex(heap_mutex);
-	s = TreeRemoveKey(&heap, ((int*)p)-1);
+	s = TreeRemoveKey(&heap, ((eyecatcherType*)p)-1);
 	if (s == NULL)
 		Log(LOG_ERROR, 13, "Failed to reallocate heap item at file %s line %d", file, line);
 	else
@@ -331,14 +333,14 @@ void *myrealloc(char* file, int line, void* p, size_t size)
 		state.current_size += size - s->size;
 		if (state.current_size > state.max_size)
 			state.max_size = state.current_size;
-		if ((s->ptr = realloc(s->ptr, size + 2*sizeof(int))) == NULL)
+		if ((s->ptr = realloc(s->ptr, size + 2*sizeof(eyecatcherType))) == NULL)
 		{
 			Log(LOG_ERROR, 13, errmsg);
 			return NULL;
 		}
-		space += size + 2*sizeof(int) - s->size;
-		*(int*)(s->ptr) = eyecatcher; /* start eyecatcher */
-		*(int*)(((char*)(s->ptr)) + (sizeof(int) + size)) = eyecatcher; /* end eyecatcher */
+		space += size + 2*sizeof(eyecatcherType) - s->size;
+		*(eyecatcherType*)(s->ptr) = eyecatcher; /* start eyecatcher */
+		*(eyecatcherType*)(((char*)(s->ptr)) + (sizeof(eyecatcherType) + size)) = eyecatcher; /* end eyecatcher */
 		s->size = size;
 		space -= strlen(s->file);
 		s->file = realloc(s->file, filenamelen);
@@ -349,7 +351,7 @@ void *myrealloc(char* file, int line, void* p, size_t size)
 		TreeAdd(&heap, s, space);
 	}
 	Thread_unlock_mutex(heap_mutex);
-	return (rc == NULL) ? NULL : ((int*)(rc)) + 1;	/* skip start eyecatcher */
+	return (rc == NULL) ? NULL : ((eyecatcherType*)(rc)) + 1;	/* skip start eyecatcher */
 }
 
 
@@ -364,7 +366,7 @@ void* Heap_findItem(void* p)
 	Node* e = NULL;
 
 	Thread_lock_mutex(heap_mutex);
-	e = TreeFind(&heap, ((int*)p)-1);
+	e = TreeFind(&heap, ((eyecatcherType*)p)-1);
 	Thread_unlock_mutex(heap_mutex);
 	return (e == NULL) ? NULL : e->content;
 }
@@ -384,7 +386,7 @@ static void HeapScan(enum LOG_LEVELS log_level)
 	{
 		storageElement* s = (storageElement*)(current->content);
 		Log(log_level, -1, "Heap element size %d, line %d, file %s, ptr %p", (int)s->size, s->line, s->file, s->ptr);
-		Log(log_level, -1, "  Content %.*s", (10 > current->size) ? (int)s->size : 10, (char*)(((int*)s->ptr) + 1));
+		Log(log_level, -1, "  Content %.*s", (10 > current->size) ? (int)s->size : 10, (char*)(((eyecatcherType*)s->ptr) + 1));
 #if defined(HEAP_STACK)
 		Log(log_level, -1, "  Stack:\n%s", s->stack);
 #endif

@@ -73,10 +73,10 @@ ADD_EXECUTABLE(paho_c_sub_static paho_c_sub.c pubsub_opts.c)
 ADD_EXECUTABLE(paho_cs_pub_static paho_cs_pub.c pubsub_opts.c)
 ADD_EXECUTABLE(paho_cs_sub_static paho_cs_sub.c pubsub_opts.c)
 
-TARGET_LINK_LIBRARIES(paho_c_pub_static paho-mqtt3as-static ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB})
-TARGET_LINK_LIBRARIES(paho_c_sub_static paho-mqtt3as-static ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB})
-TARGET_LINK_LIBRARIES(paho_cs_pub_static paho-mqtt3cs-static ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB})
-TARGET_LINK_LIBRARIES(paho_cs_sub_static paho-mqtt3cs-static ${OPENSSL_LIB} ${OPENSSLCRYPTO_LIB})
+TARGET_LINK_LIBRARIES(paho_c_pub_static paho-mqtt3as-static)
+TARGET_LINK_LIBRARIES(paho_c_sub_static paho-mqtt3as-static)
+TARGET_LINK_LIBRARIES(paho_cs_pub_static paho-mqtt3cs-static)
+TARGET_LINK_LIBRARIES(paho_cs_sub_static paho-mqtt3cs-static)
 
 ENDIF()
 

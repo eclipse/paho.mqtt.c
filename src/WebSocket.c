@@ -474,7 +474,7 @@ void WebSocket_close(networkHandles *net, int status_code, const char *reason)
 		char *buf0;
 		size_t buf0len = sizeof(uint16_t);
 		uint16_t status_code_be;
-		const int mask_data = 0;
+		const int mask_data = 1; /* all frames from client must be masked */
 
 		if ( status_code < WebSocket_CLOSE_NORMAL ||
 			status_code > WebSocket_CLOSE_TLS_FAIL )
@@ -805,11 +805,10 @@ void WebSocket_pong(networkHandles *net, char *app_data, size_t app_data_len)
 		char *buf0 = NULL;
 		size_t buf0len = 0;
 		int freeData = 0;
-		const int mask_data = 0;
+		const int mask_data = 1; /* all frames from client must be masked */
 
-		WebSocket_buildFrame( net, WebSocket_OP_PONG, 1,
-			&buf0, &buf0len, mask_data, &app_data,
-				&app_data_len);
+		WebSocket_buildFrame( net, WebSocket_OP_PONG, mask_data,
+			&buf0, &buf0len, 1, &app_data, &app_data_len);
 
 		Log(TRACE_PROTOCOL, 1, "Sending WebSocket PONG" );
 

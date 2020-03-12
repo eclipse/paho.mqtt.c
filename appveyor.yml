@@ -12,7 +12,7 @@ environment:
       PENSSL_ROOT_DIR: "C:/OpenSSL-Win64"
       PAHO_BUILD_STATIC: FALSE
       PAHO_BUILD_SHARED: TRUE
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       PAHO_WINDOWS_BUILD_BIT: x64
       PENSSL_ROOT_DIR: "C:/OpenSSL-Win64"
       PAHO_BUILD_STATIC: TRUE
@@ -38,6 +38,8 @@ build_script:
     cd build.paho
 
     echo %APPVEYOR_BUILD_WORKER_IMAGE%
+
+    if "%APPVEYOR_BUILD_WORKER_IMAGE%" == "Visual Studio 2019" call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %PAHO_WINDOWS_BUILD_BIT%
 
     if "%APPVEYOR_BUILD_WORKER_IMAGE%" == "Visual Studio 2015" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" %PAHO_WINDOWS_BUILD_BIT%
 

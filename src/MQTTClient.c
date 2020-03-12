@@ -112,30 +112,6 @@ extern mutex_type stack_mutex;
 extern mutex_type heap_mutex;
 extern mutex_type log_mutex;
 
-/*
-BOOL APIENTRY DllMain(HANDLE hModule,
-					  DWORD  ul_reason_for_call,
-					  LPVOID lpReserved)
-{
-	switch (ul_reason_for_call)
-	{
-		case DLL_PROCESS_ATTACH:
-			Log(TRACE_MAX, -1, "DLL process attach");
-			MQTTClient_init();
-			break;
-		case DLL_THREAD_ATTACH:
-			Log(TRACE_MAX, -1, "DLL thread attach");
-			break;
-		case DLL_THREAD_DETACH:
-			Log(TRACE_MAX, -1, "DLL thread detach");
-			break;
-		case DLL_PROCESS_DETACH:
-			Log(TRACE_MAX, -1, "DLL process detach");
-			break;
-	}
-	return TRUE;
-}*/
-
 void MQTTClient_init(void)
 {
 	if (mqttclient_mutex == NULL)
@@ -151,6 +127,7 @@ void MQTTClient_init(void)
 	}
 }
 
+#if defined(PAHO_BUILD_STATIC)
 // Global variable for one-time initialization structure
 INIT_ONCE g_InitOnce = INIT_ONCE_STATIC_INIT; // Static initialization
 
@@ -193,6 +170,30 @@ BOOL CALLBACK InitHandleFunction (
     return TRUE;
 }
 
+#else
+BOOL APIENTRY DllMain(HANDLE hModule,
+					  DWORD  ul_reason_for_call,
+					  LPVOID lpReserved)
+{
+	switch (ul_reason_for_call)
+	{
+		case DLL_PROCESS_ATTACH:
+			Log(TRACE_MAX, -1, "DLL process attach");
+			MQTTClient_init();
+			break;
+		case DLL_THREAD_ATTACH:
+			Log(TRACE_MAX, -1, "DLL thread attach");
+			break;
+		case DLL_THREAD_DETACH:
+			Log(TRACE_MAX, -1, "DLL thread detach");
+			break;
+		case DLL_PROCESS_DETACH:
+			Log(TRACE_MAX, -1, "DLL process detach");
+			break;
+	}
+	return TRUE;
+}
+#endif
 
 #else
 static pthread_mutex_t mqttclient_mutex_store = PTHREAD_MUTEX_INITIALIZER;
@@ -396,7 +397,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 	int rc = 0;
 	MQTTClients *m = NULL;
 
-#if defined(_WIN32) || defined(_WIN64)
+#if (defined(_WIN32) || defined(_WIN64)) && defined(PAHO_BUILD_STATIC)
 	OpenEventHandleSync(); /* intializes mutexes once.  Must come before FUNC_ENTRY */
 #endif
 	FUNC_ENTRY;

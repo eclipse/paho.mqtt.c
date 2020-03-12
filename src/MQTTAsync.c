@@ -605,10 +605,10 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 	int rc = 0;
 	MQTTAsyncs *m = NULL;
 
-	FUNC_ENTRY;
 #if defined(_WIN32) || defined(_WIN64)
-	OpenEventHandleSync();
+	OpenEventHandleSync(); /* intializes mutexes once.  Must come before FUNC_ENTRY */
 #endif
+	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttasync_mutex);
 
 	if (serverURI == NULL || clientId == NULL)

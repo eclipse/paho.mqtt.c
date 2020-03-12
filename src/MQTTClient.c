@@ -396,8 +396,10 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 	int rc = 0;
 	MQTTClients *m = NULL;
 
+#if defined(_WIN32) || defined(_WIN64)
+	OpenEventHandleSync(); /* intializes mutexes once.  Must come before FUNC_ENTRY */
+#endif
 	FUNC_ENTRY;
-	OpenEventHandleSync();
 	rc = Thread_lock_mutex(mqttclient_mutex);
 
 	if (serverURI == NULL || clientId == NULL)

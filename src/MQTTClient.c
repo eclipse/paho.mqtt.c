@@ -111,6 +111,8 @@ static mutex_type connect_mutex = NULL;
 extern mutex_type stack_mutex;
 extern mutex_type heap_mutex;
 extern mutex_type log_mutex;
+
+/*
 BOOL APIENTRY DllMain(HANDLE hModule,
 					  DWORD  ul_reason_for_call,
 					  LPVOID lpReserved)
@@ -132,7 +134,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 			break;
 	}
 	return TRUE;
-}
+}*/
 
 void MQTTClient_init(void)
 {
@@ -148,6 +150,49 @@ void MQTTClient_init(void)
 		socket_mutex = CreateMutex(NULL, 0, NULL);
 	}
 }
+
+// Global variable for one-time initialization structure
+INIT_ONCE g_InitOnce = INIT_ONCE_STATIC_INIT; // Static initialization
+
+// Initialization callback function
+BOOL CALLBACK InitHandleFunction (
+    PINIT_ONCE InitOnce,
+    PVOID Parameter,
+    PVOID *lpContext);
+
+// Returns a handle to an event object that is created only once
+HANDLE OpenEventHandleSync()
+{
+  PVOID lpContext;
+  BOOL  bStatus;
+
+  // Execute the initialization callback function
+  bStatus = InitOnceExecuteOnce(&g_InitOnce,          // One-time initialization structure
+                                InitHandleFunction,   // Pointer to initialization callback function
+                                NULL,                 // Optional parameter to callback function (not used)
+                                &lpContext);          // Receives pointer to event object stored in g_InitOnce
+
+  // InitOnceExecuteOnce function succeeded. Return event object.
+  if (bStatus)
+  {
+    return (HANDLE)lpContext;
+  }
+  else
+  {
+    return (INVALID_HANDLE_VALUE);
+  }
+}
+
+// Initialization callback function that creates the event object
+BOOL CALLBACK InitHandleFunction (
+    PINIT_ONCE InitOnce,        // Pointer to one-time initialization structure
+    PVOID Parameter,            // Optional parameter passed by InitOnceExecuteOnce
+    PVOID *lpContext)           // Receives pointer to event object
+{
+	MQTTClient_init();
+    return TRUE;
+}
+
 
 #else
 static pthread_mutex_t mqttclient_mutex_store = PTHREAD_MUTEX_INITIALIZER;
@@ -352,6 +397,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 	MQTTClients *m = NULL;
 
 	FUNC_ENTRY;
+	OpenEventHandleSync();
 	rc = Thread_lock_mutex(mqttclient_mutex);
 
 	if (serverURI == NULL || clientId == NULL)

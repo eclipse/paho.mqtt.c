@@ -114,6 +114,7 @@ extern mutex_type log_mutex;
 
 void MQTTClient_init(void)
 {
+	printf("MQTTClient_init\n");
 	if (mqttclient_mutex == NULL)
 	{
 		mqttclient_mutex = CreateMutex(NULL, 0, NULL);

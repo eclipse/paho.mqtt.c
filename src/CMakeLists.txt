@@ -25,53 +25,33 @@ CONFIGURE_FILE(VersionInfo.h.in
     @ONLY
     )
 
-IF (PAHO_HIGH_PERFORMANCE)
-  SET(common_src
-    MQTTProtocolClient.c
-    Clients.c
-    utf-8.c
-    MQTTPacket.c
-    MQTTPacketOut.c
-    Messages.c
-    Tree.c
-    Socket.c
-    Log.c
-    MQTTPersistence.c
-    Thread.c
-    MQTTProtocolOut.c
-    MQTTPersistenceDefault.c
-    SocketBuffer.c
-    LinkedList.c
-    MQTTProperties.c
-    MQTTReasonCodes.c
-    Base64.c
-    SHA1.c
-    WebSocket.c
-    )
-ELSE()
-  SET(common_src
-    MQTTProtocolClient.c
-    Clients.c
-    utf-8.c
+SET(common_src
+  MQTTProtocolClient.c
+  Clients.c
+  utf-8.c
+  MQTTPacket.c
+  MQTTPacketOut.c
+  Messages.c
+  Tree.c
+  Socket.c
+  Log.c
+  MQTTPersistence.c
+  Thread.c
+  MQTTProtocolOut.c
+  MQTTPersistenceDefault.c
+  SocketBuffer.c
+  LinkedList.c
+  MQTTProperties.c
+  MQTTReasonCodes.c
+  Base64.c
+  SHA1.c
+  WebSocket.c
+)
+
+IF (NOT PAHO_HIGH_PERFORMANCE)
+  SET(common_src ${common_src}
     StackTrace.c
-    MQTTPacket.c
-    MQTTPacketOut.c
-    Messages.c
-    Tree.c
-    Socket.c
-    Log.c
-    MQTTPersistence.c
-    Thread.c
-    MQTTProtocolOut.c
-    MQTTPersistenceDefault.c
-    SocketBuffer.c
     Heap.c
-    LinkedList.c
-    MQTTProperties.c
-    MQTTReasonCodes.c
-    Base64.c
-    SHA1.c
-    WebSocket.c
     )
 ENDIF()
 

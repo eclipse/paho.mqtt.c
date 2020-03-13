@@ -144,12 +144,14 @@ HANDLE OpenEventHandleSync()
   PVOID lpContext;
   BOOL  bStatus;
 
+  printf("OpenEventHandleSync\n");
   // Execute the initialization callback function
   bStatus = InitOnceExecuteOnce(&g_InitOnce,          // One-time initialization structure
                                 InitHandleFunction,   // Pointer to initialization callback function
                                 NULL,                 // Optional parameter to callback function (not used)
                                 &lpContext);          // Receives pointer to event object stored in g_InitOnce
 
+  printf("OpenEventHandleSync 2\n");
   // InitOnceExecuteOnce function succeeded. Return event object.
   if (bStatus)
   {
@@ -398,9 +400,12 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 	int rc = 0;
 	MQTTClients *m = NULL;
 
+	printf("createWithOptions 1\n");
 #if (defined(_WIN32) || defined(_WIN64)) && defined(PAHO_BUILD_STATIC)
 	OpenEventHandleSync(); /* intializes mutexes once.  Must come before FUNC_ENTRY */
 #endif
+	printf("createWithOptions 2\n");
+	MQTTClient_sleep(100L);
 	FUNC_ENTRY;
 	rc = Thread_lock_mutex(mqttclient_mutex);
 

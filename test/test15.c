@@ -415,6 +415,7 @@ int test1(struct Options options)
 	MyLog(LOGA_INFO, "Starting test 1 - single threaded client using receive");
 
 	createOpts.MQTTVersion = MQTTVERSION_5;
+	printf("calling createWithOptions\n");
 	rc = MQTTClient_createWithOptions(&c, options.connection, "single_threaded_test",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);

@@ -154,14 +154,18 @@ void MyLog(int LOGA_level, char* format, ...)
 	va_list args;
 	struct timeb ts;
 
-	struct tm *timeinfo;
+	struct tm timeinfo;
 
 	if (LOGA_level == LOGA_DEBUG && options.verbose == 0)
 	  return;
 
 	ftime(&ts);
-	timeinfo = localtime(&ts.time);
-	strftime(msg_buf, 80, "%Y%m%d %H%M%S", timeinfo);
+#if defined(_WIN32) || defined(_WINDOWS)
+	localtime_s(&timeinfo, &ts.time);
+#else
+	localtime_r(&ts.time, &timeinfo);
+#endif
+	strftime(msg_buf, 80, "%Y%m%d %H%M%S", &timeinfo);
 
 	sprintf(&msg_buf[strlen(msg_buf)], ".%.3hu ", ts.millitm);
 
@@ -658,6 +662,7 @@ int test2(struct Options options)
 	failures = 0;
 
 	createOpts.MQTTVersion = MQTTVERSION_5;
+	printf("calling createWithOptions\n");
 	MQTTClient_createWithOptions(&c, options.connection, "multi_threaded_sample",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 
@@ -749,6 +754,7 @@ int test3(struct Options options)
 	MQTTClient_destroy(&c);
 #endif
 	/* broker unavailable (RC = 3)  - TDD when allow_anonymous not set*/
+	printf("calling createWithOptions\n");
 	rc = MQTTClient_createWithOptions(&c, options.connection, "The C Client", MQTTCLIENT_PERSISTENCE_NONE,
 			NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);

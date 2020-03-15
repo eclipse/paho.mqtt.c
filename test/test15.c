@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -419,7 +419,6 @@ int test1(struct Options options)
 	MyLog(LOGA_INFO, "Starting test 1 - single threaded client using receive");
 
 	createOpts.MQTTVersion = MQTTVERSION_5;
-	printf("calling createWithOptions\n");
 	rc = MQTTClient_createWithOptions(&c, options.connection, "single_threaded_test",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
@@ -662,7 +661,6 @@ int test2(struct Options options)
 	failures = 0;
 
 	createOpts.MQTTVersion = MQTTVERSION_5;
-	printf("calling createWithOptions\n");
 	MQTTClient_createWithOptions(&c, options.connection, "multi_threaded_sample",
 			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
 
@@ -754,7 +752,6 @@ int test3(struct Options options)
 	MQTTClient_destroy(&c);
 #endif
 	/* broker unavailable (RC = 3)  - TDD when allow_anonymous not set*/
-	printf("calling createWithOptions\n");
 	rc = MQTTClient_createWithOptions(&c, options.connection, "The C Client", MQTTCLIENT_PERSISTENCE_NONE,
 			NULL, &createOpts);
 	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);

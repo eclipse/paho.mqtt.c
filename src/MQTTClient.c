@@ -114,7 +114,6 @@ extern mutex_type log_mutex;
 
 void MQTTClient_init(void)
 {
-	printf("MQTTClient_init\n");
 	if (mqttclient_mutex == NULL)
 	{
 		mqttclient_mutex = CreateMutex(NULL, 0, NULL);
@@ -144,14 +143,12 @@ HANDLE OpenEventHandleSync()
   PVOID lpContext;
   BOOL  bStatus;
 
-  printf("OpenEventHandleSync\n");
   // Execute the initialization callback function
   bStatus = InitOnceExecuteOnce(&g_InitOnce,          // One-time initialization structure
                                 InitHandleFunction,   // Pointer to initialization callback function
                                 NULL,                 // Optional parameter to callback function (not used)
                                 &lpContext);          // Receives pointer to event object stored in g_InitOnce
 
-  printf("OpenEventHandleSync 2\n");
   // InitOnceExecuteOnce function succeeded. Return event object.
   if (bStatus)
   {

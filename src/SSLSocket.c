@@ -749,7 +749,7 @@ int SSLSocket_connect(SSL* ssl, int sock, const char* hostname, int verify, int 
 			rc = TCPSOCKET_INTERRUPTED;
 	}
 #if (OPENSSL_VERSION_NUMBER >= 0x010002000) /* 1.0.2 and later */
-	else if (verify == 1)
+	else if (verify)
 	{
 		char* peername = NULL;
 		int port;

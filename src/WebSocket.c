@@ -1208,7 +1208,15 @@ int WebSocket_upgrade( networkHandles *net )
 		{
 			const char *p;
 
-			read_buf = WebSocket_getRawSocketData( net, 500u, &rcv );
+			read_buf = WebSocket_getRawSocketData( net, 1024u, &rcv );
+
+			/* Did we read the whole response? */
+			if (memcmp(&read_buf[rcv-4], "\r\n\r\n", 4) != 0)
+			{
+				Log(TRACE_PROTOCOL, -1, "WebSocket HTTP upgrade response read not complete %d", rcv);
+				rc = SOCKET_ERROR;
+				goto exit;
+			}
 
 			/* check for upgrade */
 			p = WebSocket_strcasefind(

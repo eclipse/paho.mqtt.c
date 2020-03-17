@@ -691,7 +691,7 @@ void WebSocket_rewindData( void )
  */
 char *WebSocket_getRawSocketData(networkHandles *net, size_t bytes, size_t* actual_len)
 {
-	char *rv;
+	char *rv = NULL;
 
 	size_t bytes_requested = bytes;
 
@@ -1208,10 +1208,10 @@ int WebSocket_upgrade( networkHandles *net )
 		{
 			const char *p;
 
-			read_buf = WebSocket_getRawSocketData( net, 1024u, &rcv );
+			read_buf = WebSocket_getRawSocketData(net, 1024u, &rcv );
 
 			/* Did we read the whole response? */
-			if (memcmp(&read_buf[rcv-4], "\r\n\r\n", 4) != 0)
+			if (read_buf && rcv > 4 && memcmp(&read_buf[rcv-4], "\r\n\r\n", 4) != 0)
 			{
 				Log(TRACE_PROTOCOL, -1, "WebSocket HTTP upgrade response read not complete %d", rcv);
 				rc = SOCKET_ERROR;

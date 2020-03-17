@@ -1819,7 +1819,7 @@ IF (PAHO_BUILD_STATIC)
  
     ADD_TEST(
             NAME test_connect_destroy-1-execute-destroy-during-connect-static
-            COMMAND "test_connect_destroy" "--test_no" "1" "--connection" ${MQTT_TEST_BROKER}
+            COMMAND "test_connect_destroy-static" "--test_no" "1" "--connection" ${MQTT_TEST_BROKER}
     )
     
     SET_TESTS_PROPERTIES(

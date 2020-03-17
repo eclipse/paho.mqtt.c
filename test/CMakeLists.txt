@@ -1807,46 +1807,46 @@ IF (PAHO_BUILD_SHARED)
 ENDIF()
 
 IF (PAHO_BUILD_STATIC)
-ADD_EXECUTABLE(
-    test_connect_destroy-static
-    test_connect_destroy.c
-)
+    ADD_EXECUTABLE(
+        test_connect_destroy-static
+        test_connect_destroy.c
+    )
 
-TARGET_LINK_LIBRARIES(
-    test_connect_destroy-static
-    paho-mqtt3c
-)
-
-ADD_TEST(
-        NAME test_connect_destroy-1-execute-destroy-during-connect-static
-        COMMAND "test_connect_destroy" "--test_no" "1" "--connection" ${MQTT_TEST_BROKER}
-)
-
-SET_TESTS_PROPERTIES(
-        test_connect_destroy-1-execute-destroy-during-connect-static
-        PROPERTIES TIMEOUT 540
-)
+   TARGET_LINK_LIBRARIES(
+        test_connect_destroy-static
+        paho-mqtt3c-static
+    )
+ 
+    ADD_TEST(
+            NAME test_connect_destroy-1-execute-destroy-during-connect-static
+            COMMAND "test_connect_destroy" "--test_no" "1" "--connection" ${MQTT_TEST_BROKER}
+    )
+    
+    SET_TESTS_PROPERTIES(
+            test_connect_destroy-1-execute-destroy-during-connect-static
+            PROPERTIES TIMEOUT 540
+    )
 ENDIF()
 
 
 IF (PAHO_BUILD_SHARED)
-ADD_EXECUTABLE(
-	test_connect_destroy
-	test_connect_destroy.c
-)
-
-TARGET_LINK_LIBRARIES(
-	test_connect_destroy
-	paho-mqtt3c
-)
-
-ADD_TEST(
-        NAME test_connect_destroy-1-execute-destroy-during-connect
-        COMMAND "test_connect_destroy" "--test_no" "1" "--connection" ${MQTT_TEST_BROKER}
-)
-
-SET_TESTS_PROPERTIES(
-        test_connect_destroy-1-execute-destroy-during-connect
-        PROPERTIES TIMEOUT 540
-)
+    ADD_EXECUTABLE(
+    	test_connect_destroy
+    	test_connect_destroy.c
+    )
+    
+    TARGET_LINK_LIBRARIES(
+    	test_connect_destroy
+    	paho-mqtt3c
+    )
+    
+    ADD_TEST(
+            NAME test_connect_destroy-1-execute-destroy-during-connect
+            COMMAND "test_connect_destroy" "--test_no" "1" "--connection" ${MQTT_TEST_BROKER}
+    )
+    
+    SET_TESTS_PROPERTIES(
+            test_connect_destroy-1-execute-destroy-during-connect
+            PROPERTIES TIMEOUT 540
+    )
 ENDIF()

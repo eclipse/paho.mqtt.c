@@ -571,6 +571,7 @@ void MQTTClient_destroy(MQTTClient* handle)
 	MQTTClients* m = *handle;
 
 	FUNC_ENTRY;
+	Thread_lock_mutex(connect_mutex);
 	Thread_lock_mutex(mqttclient_mutex);
 
 	if (m == NULL)
@@ -605,6 +606,7 @@ void MQTTClient_destroy(MQTTClient* handle)
 
 exit:
 	Thread_unlock_mutex(mqttclient_mutex);
+	Thread_unlock_mutex(connect_mutex);
 	FUNC_EXIT;
 }
 
@@ -1636,6 +1638,12 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions*
 	Thread_lock_mutex(mqttclient_mutex);
 
 	rc.reasonCode = SOCKET_ERROR;
+	if (!library_initialized)
+	{
+		rc.reasonCode = MQTTCLIENT_FAILURE;
+		goto exit;
+	}
+
 	if (options == NULL)
 	{
 		rc.reasonCode = MQTTCLIENT_NULL_PARAMETER;

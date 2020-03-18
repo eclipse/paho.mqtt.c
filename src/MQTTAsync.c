@@ -3697,8 +3697,26 @@ static void MQTTAsync_retry(void)
 static int MQTTAsync_connecting(MQTTAsyncs* m)
 {
 	int rc = -1;
+	char* serverURI = m->serverURI;
 
 	FUNC_ENTRY;
+	if (m->serverURIcount > 0)
+	{
+		serverURI = m->serverURIs[m->connect.details.conn.currentURI];
+
+		/* skip URI scheme */
+		if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
+			serverURI += strlen(URI_TCP);
+		else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
+			serverURI += strlen(URI_WS);
+#if defined(OPENSSL)
+		else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
+			serverURI += strlen(URI_SSL);
+		else if (strncmp(URI_WSS, serverURI, strlen(URI_WSS)) == 0)
+			serverURI += strlen(URI_WSS);
+#endif
+	}
+
 	if (m->c->connect_state == TCP_IN_PROGRESS) /* TCP connect started - check for completion */
 	{
 		int error;
@@ -3721,13 +3739,13 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 
 			if (m->websocket && m->c->net.https_proxy) {
 				m->c->connect_state = PROXY_CONNECT_IN_PROGRESS;
-				if ((rc = WebSocket_proxy_connect( &m->c->net, 1, m->serverURI)) == SOCKET_ERROR )
+				if ((rc = WebSocket_proxy_connect( &m->c->net, 1, serverURI)) == SOCKET_ERROR )
 					goto exit;
 			}
 
-			hostname_len = MQTTProtocol_addressPort(m->serverURI, &port, NULL);
+			hostname_len = MQTTProtocol_addressPort(serverURI, &port, NULL);
 			setSocketForSSLrc = SSLSocket_setSocketForSSL(&m->c->net, m->c->sslopts,
-				m->serverURI, hostname_len);
+					serverURI, hostname_len);
 
 			if (setSocketForSSLrc != MQTTASYNC_SUCCESS)
 			{
@@ -3735,9 +3753,9 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)
 						Log(TRACE_MIN, -1, "Failed to set SSL session with stored data, non critical");
 				rc = m->c->sslopts->struct_version >= 3 ?
-					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI,
+					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, serverURI,
 						m->c->sslopts->verify, m->c->sslopts->ssl_error_cb, m->c->sslopts->ssl_error_context) :
-					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI,
+					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, serverURI,
 						m->c->sslopts->verify, NULL, NULL);
 				if (rc == TCPSOCKET_INTERRUPTED)
 				{
@@ -3754,7 +3772,7 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 					if ( m->websocket )
 					{
 						m->c->connect_state = WEBSOCKET_IN_PROGRESS;
-						if ((rc = WebSocket_connect(&m->c->net, m->serverURI)) == SOCKET_ERROR )
+						if ((rc = WebSocket_connect(&m->c->net, serverURI)) == SOCKET_ERROR )
 							goto exit;
 					}
 					else
@@ -3785,12 +3803,12 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 			{
 				if (m->c->net.http_proxy) {
 					m->c->connect_state = PROXY_CONNECT_IN_PROGRESS;
-					if ((rc = WebSocket_proxy_connect( &m->c->net, 0, m->serverURI)) == SOCKET_ERROR )
+					if ((rc = WebSocket_proxy_connect( &m->c->net, 0, serverURI)) == SOCKET_ERROR )
 						goto exit;
 				}
 
 				m->c->connect_state = WEBSOCKET_IN_PROGRESS;
-				if ((rc = WebSocket_connect(&m->c->net, m->serverURI)) == SOCKET_ERROR )
+				if ((rc = WebSocket_connect(&m->c->net, serverURI)) == SOCKET_ERROR )
 					goto exit;
 			}
 			else
@@ -3808,9 +3826,9 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 	else if (m->c->connect_state == SSL_IN_PROGRESS) /* SSL connect sent - wait for completion */
 	{
 		rc = m->c->sslopts->struct_version >= 3 ?
-			SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI,
+			SSLSocket_connect(m->c->net.ssl, m->c->net.socket, serverURI,
 				m->c->sslopts->verify, m->c->sslopts->ssl_error_cb, m->c->sslopts->ssl_error_context) :
-			SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI,
+			SSLSocket_connect(m->c->net.ssl, m->c->net.socket, serverURI,
 				m->c->sslopts->verify, NULL, NULL);
 		if (rc != 1)
 			goto exit;
@@ -3821,7 +3839,7 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 		if ( m->websocket )
 		{
 			m->c->connect_state = WEBSOCKET_IN_PROGRESS;
-			if ((rc = WebSocket_connect(&m->c->net, m->serverURI)) == SOCKET_ERROR )
+			if ((rc = WebSocket_connect(&m->c->net, serverURI)) == SOCKET_ERROR )
 				goto exit;
 		}
 		else

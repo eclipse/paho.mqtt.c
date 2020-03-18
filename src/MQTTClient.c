@@ -255,6 +255,7 @@ typedef struct
 typedef struct
 {
 	char* serverURI;
+	const char* currentServerURI; /* when using HA options, set the currently used serverURI */
 #if defined(OPENSSL)
 	int ssl;
 #endif
@@ -970,10 +971,11 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 
 			else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS)
 			{
-				if (rc != TCPSOCKET_INTERRUPTED) {
-				Log(TRACE_MIN, -1, "Posting websocket handshake for client %s rc %d", m->c->clientID, m->rc);
-				m->c->connect_state = WAIT_FOR_CONNACK;
-				Thread_post_sem(m->connect_sem);
+				if (rc != TCPSOCKET_INTERRUPTED)
+				{
+					Log(TRACE_MIN, -1, "Posting websocket handshake for client %s rc %d", m->c->clientID, m->rc);
+					m->c->connect_state = WAIT_FOR_CONNACK;
+					Thread_post_sem(m->connect_sem);
 				}
 			}
 		}
@@ -1212,13 +1214,13 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 
 			if (m->websocket && m->c->net.https_proxy) {
 				m->c->connect_state = PROXY_CONNECT_IN_PROGRESS;
-				if ((rc = WebSocket_proxy_connect( &m->c->net, 1, m->serverURI)) == SOCKET_ERROR )
+				if ((rc = WebSocket_proxy_connect( &m->c->net, 1, serverURI)) == SOCKET_ERROR )
 					goto exit;
 			}
 
-			hostname_len = MQTTProtocol_addressPort(m->serverURI, &port, &topic);
+			hostname_len = MQTTProtocol_addressPort(serverURI, &port, &topic);
 			setSocketForSSLrc = SSLSocket_setSocketForSSL(&m->c->net, m->c->sslopts,
-				m->serverURI, hostname_len);
+				serverURI, hostname_len);
 
 			if (setSocketForSSLrc != MQTTCLIENT_SUCCESS)
 			{
@@ -1226,9 +1228,9 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 					if ((rc = SSL_set_session(m->c->net.ssl, m->c->session)) != 1)
 						Log(TRACE_MIN, -1, "Failed to set SSL session with stored data, non critical");
 				rc = m->c->sslopts->struct_version >= 3 ?
-					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI,
+					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, serverURI,
 						m->c->sslopts->verify, m->c->sslopts->ssl_error_cb, m->c->sslopts->ssl_error_context) :
-					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, m->serverURI,
+					SSLSocket_connect(m->c->net.ssl, m->c->net.socket, serverURI,
 						m->c->sslopts->verify, NULL, NULL);
 				if (rc == TCPSOCKET_INTERRUPTED)
 					m->c->connect_state = SSL_IN_PROGRESS;  /* the connect is still in progress */
@@ -1242,7 +1244,7 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 					if (m->websocket)
 					{
 						m->c->connect_state = WEBSOCKET_IN_PROGRESS;
-						rc = WebSocket_connect(&m->c->net,m->serverURI);
+						rc = WebSocket_connect(&m->c->net, serverURI);
 						if ( rc == SOCKET_ERROR )
 							goto exit;
 					}
@@ -1271,12 +1273,12 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 		{
 			if (m->c->net.http_proxy) {
 				m->c->connect_state = PROXY_CONNECT_IN_PROGRESS;
-				if ((rc = WebSocket_proxy_connect( &m->c->net, 0, m->serverURI)) == SOCKET_ERROR )
+				if ((rc = WebSocket_proxy_connect( &m->c->net, 0, serverURI)) == SOCKET_ERROR )
 					goto exit;
 			}
 
 			m->c->connect_state = WEBSOCKET_IN_PROGRESS;
-			if ( WebSocket_connect(&m->c->net, m->serverURI) == SOCKET_ERROR )
+			if ( WebSocket_connect(&m->c->net, serverURI) == SOCKET_ERROR )
 			{
 				rc = SOCKET_ERROR;
 				goto exit;
@@ -1311,7 +1313,7 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 		{
 			/* wait for websocket connect */
 			m->c->connect_state = WEBSOCKET_IN_PROGRESS;
-			rc = WebSocket_connect( &m->c->net, m->serverURI );
+			rc = WebSocket_connect( &m->c->net, serverURI );
 			if ( rc != 1 )
 			{
 				rc = SOCKET_ERROR;
@@ -1434,6 +1436,7 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 	millisecsTimeout = options->connectTimeout * 1000;
 	start = MQTTClient_start_clock();
 
+	m->currentServerURI = serverURI;
 	m->c->keepAliveInterval = options->keepAliveInterval;
 	m->c->retryInterval = options->retryInterval;
 	setRetryLoopInterval(options->keepAliveInterval);
@@ -2540,10 +2543,11 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 #if defined(OPENSSL)
 				else if (m->c->connect_state == SSL_IN_PROGRESS)
 				{
+
 					*rc = m->c->sslopts->struct_version >= 3 ?
-						SSLSocket_connect(m->c->net.ssl, sock, m->serverURI,
+						SSLSocket_connect(m->c->net.ssl, sock, m->currentServerURI,
 							m->c->sslopts->verify, m->c->sslopts->ssl_error_cb, m->c->sslopts->ssl_error_context) :
-						SSLSocket_connect(m->c->net.ssl, sock, m->serverURI,
+						SSLSocket_connect(m->c->net.ssl, sock, m->currentServerURI,
 							m->c->sslopts->verify, NULL, NULL);
 					if (*rc == SSL_FATAL)
 						break;

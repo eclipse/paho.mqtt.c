@@ -355,6 +355,16 @@ IF (PAHO_WITH_SSL)
 		)
 		
 		ADD_TEST(
+            NAME test3-2e-ssl-with-ha-static
+            COMMAND test3-static "--test_no" "12" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"   "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
+        )
+        
+        ADD_TEST(
+            NAME test3-2e-ws-ssl-with-ha-static
+            COMMAND test3-static "--test_no" "12" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"   "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
+        )
+		
+		ADD_TEST(
 			NAME test3-3as-broker-auth-server-cert-in-client-store-single-thread-static
 			COMMAND test3-static "--test_no" "6" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 		)
@@ -390,6 +400,8 @@ IF (PAHO_WITH_SSL)
 			test3-2am-mutual-ssl-auth-multi-thread-static
 			test3-2b-mutual-ssl-broker-missing-client-cert-static
 			test3-2c-mutual-ssl-client-missing-broker-cert-static
+			test3-2e-ssl-with-ha-static
+			test3-2e-ws-ssl-with-ha-static
 			test3-3as-broker-auth-server-cert-in-client-store-single-thread-static
 			test3-3am-broker-auth-server-cert-in-client-store-multi-thread-static
 			test3-3b-broker-auth-client-missing-broker-cert-static
@@ -436,6 +448,16 @@ IF (PAHO_WITH_SSL)
 		)
 		
 		ADD_TEST(
+            NAME test3-2e-ssl-with-ha
+            COMMAND test3-static "--test_no" "12" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"   "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
+        )
+        
+        ADD_TEST(
+            NAME test3-2e-ws-ssl-with-ha
+            COMMAND test3-static "--test_no" "12" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"   "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
+        )
+		
+		ADD_TEST(
 			NAME test3-3as-broker-auth-server-cert-in-client-store-single-thread
 			COMMAND test3 "--test_no" "6" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 		)
@@ -471,6 +493,8 @@ IF (PAHO_WITH_SSL)
 			test3-2am-mutual-ssl-auth-multi-thread
 			test3-2b-mutual-ssl-broker-missing-client-cert
 			test3-2c-mutual-ssl-client-missing-broker-cert
+			test3-2e-ssl-with-ha
+			test3-2e-ws-ssl-with-ha
 			test3-3as-broker-auth-server-cert-in-client-store-single-thread
 			test3-3am-broker-auth-server-cert-in-client-store-multi-thread
 			test3-3b-broker-auth-client-missing-broker-cert
@@ -849,6 +873,16 @@ IF (PAHO_WITH_SSL)
 			COMMAND test5-static "--test_no" "10" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 		)
 		
+		ADD_TEST(
+            NAME test5-2e-ssl-with-ha-static
+            COMMAND test5-static "--test_no" "14" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"   "${CERTDIR}/client.pem" "--server_key" "${CERTDIR}/test-root-ca.crt"
+        )
+        
+        ADD_TEST(
+            NAME test5-2e-ws-ssl-with-ha-static
+            COMMAND test5-static "--test_no" "14" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"    "${CERTDIR}/client.pem" "--server_key" "${CERTDIR}/test-root-ca.crt"
+        )
+		
 		#ADD_TEST(
 		#	NAME test5-8-psk-ssl-auth-static
 		#	COMMAND test5-static "--test_no" "11" "--hostname" ${MQTT_SSL_HOSTNAME}
@@ -897,6 +931,8 @@ IF (PAHO_WITH_SSL)
 			test5-2c-ws-mutual-ssl-auth-client-missing-broker-cert-static
 			test5-2d-mutual-ssl-auth-client-missing-client-cert-static
 			test5-2d-ws-mutual-ssl-auth-client-missing-client-cert-static
+			test5-2e-ssl-with-ha-static
+			test5-2e-ws-ssl-with-ha-static
 			test5-3a-server-auth-server-cert-in-client-store-static
 			test5-3a-ws-server-auth-server-cert-in-client-store-static
 			test5-3b-server-auth-client-missing-broker-cert-static
@@ -1023,6 +1059,16 @@ IF (PAHO_WITH_SSL)
 			COMMAND test5 "--test_no" "10" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
 		)
 		
+		ADD_TEST(
+            NAME test5-2e-ssl-with-ha
+            COMMAND test5-static "--test_no" "14" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"   "${CERTDIR}/client.pem" "--server_key" "${CERTDIR}/test-root-ca.crt"
+        )
+        
+        ADD_TEST(
+            NAME test5-2e-ws-ssl-with-ha
+            COMMAND test5-static "--test_no" "14" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"    "${CERTDIR}/client.pem" "--server_key" "${CERTDIR}/test-root-ca.crt"
+        )
+		
 		#ADD_TEST(
 		#	NAME test5-8-psk-ssl-auth
 		#	COMMAND test5 "--test_no" "11" "--hostname" ${MQTT_SSL_HOSTNAME}
@@ -1070,6 +1116,8 @@ IF (PAHO_WITH_SSL)
 			test5-2c-ws-mutual-ssl-auth-client-missing-broker-cert
 			test5-2d-mutual-ssl-auth-client-missing-client-cert
 			test5-2d-ws-mutual-ssl-auth-client-missing-client-cert
+			test5-2e-ssl-with-ha
+			test5-2e-ws-ssl-with-ha
 			test5-3a-server-auth-server-cert-in-client-store
 			test5-3a-ws-server-auth-server-cert-in-client-store
 			test5-3b-server-auth-client-missing-broker-cert

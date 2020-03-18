@@ -1160,6 +1160,127 @@ int test2d(struct Options options)
 
 /*********************************************************************
 
+ Test2e: Mutual SSL Authentication using serverURIs
+
+ *********************************************************************/
+
+void test2eOnConnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	AsyncTestClient* client = (AsyncTestClient*) context;
+	MyLog(LOGA_DEBUG, "In test2eOnConnectFailure callback, %s",
+			client->clientid);
+
+	assert("There should be no failures in this test. ", 0, "test2eOnConnectFailure callback was called\n", 0);
+	client->testFinished = 1;
+}
+
+void test2eOnPublishFailure(void* context, MQTTAsync_failureData* response)
+{
+	AsyncTestClient* client = (AsyncTestClient*) context;
+	MyLog(LOGA_DEBUG, "In test2eOnPublishFailure callback, %s",
+			client->clientid);
+
+	assert("There should be no failures in this test. ", 0, "test2eOnPublishFailure callback was called\n", 0);
+}
+
+int test2e(struct Options options)
+{
+	char* testname = "test2e";
+
+	AsyncTestClient tc =
+	AsyncTestClient_initializer;
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
+	char* uris[2] = {"rubbish", options.mutual_auth_connection};
+	int rc = 0;
+
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 2e - Mutual SSL authentication with serverURIs");
+	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
+	global_start_time = start_clock();
+
+	rc = MQTTAsync_create(&c, "none", "test2e", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	tc.client = c;
+	sprintf(tc.clientid, "%s", testname);
+	sprintf(tc.topic, "C client SSL test2e");
+	tc.maxmsgs = MAXMSGS;
+	//tc.rcvdmsgs = 0;
+	tc.subscribed = 0;
+	tc.testFinished = 0;
+
+	opts.keepAliveInterval = 20;
+	opts.cleansession = 1;
+	opts.username = "testuser";
+	opts.password = "testpassword";
+
+	opts.will = &wopts;
+	opts.will->message = "will message";
+	opts.will->qos = 1;
+	opts.will->retained = 0;
+	opts.will->topicName = "will topic";
+	opts.will = NULL;
+	opts.onSuccess = asyncTestOnConnect;
+	opts.onFailure = test2eOnConnectFailure;
+	opts.context = &tc;
+	opts.serverURIs = uris;
+	opts.serverURIcount = 2;
+
+	opts.ssl = &sslopts;
+	if (options.server_key_file != NULL)
+		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
+	opts.ssl->keyStore = options.client_key_file; /*file of certificate for client to present to server*/
+	if (options.client_key_pass != NULL)
+		opts.ssl->privateKeyPassword = options.client_key_pass;
+	//opts.ssl->enabledCipherSuites = "DEFAULT";
+	//opts.ssl->enabledServerCertAuth = 1;
+	opts.ssl->verify = 1;
+	MyLog(LOGA_DEBUG, "enableServerCertAuth %d\n", opts.ssl->enableServerCertAuth);
+	MyLog(LOGA_DEBUG, "verify %d\n", opts.ssl->verify);
+
+	rc = MQTTAsync_setCallbacks(c, &tc, NULL, asyncTestMessageArrived,
+			asyncTestOnDeliveryComplete);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (!tc.subscribed && !tc.testFinished)
+#if defined(_WIN32)
+		Sleep(100);
+#else
+		usleep(10000L);
+#endif
+
+	if (tc.testFinished)
+		goto exit;
+
+	while (!tc.testFinished)
+#if defined(_WIN32)
+		Sleep(100);
+#else
+		usleep(10000L);
+#endif
+
+	MyLog(LOGA_DEBUG, "Stopping");
+
+	exit: MQTTAsync_destroy(&c);
+	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", testname, tests, failures);
+	write_test_result();
+	return failures;
+}
+
+/*********************************************************************
+
  Test3a: Server Authentication - server certificate in client trust store
 
  *********************************************************************/
@@ -2582,7 +2703,7 @@ int main(int argc, char** argv)
 	int rc = 0;
 	int (*tests[])() =
             { NULL, test1, test2a, test2b, test2c, test2d, test3a, test3b, test4, /* test5a,
-			test5b, test5c, */ test6, test7, test8, test9, test10 };
+			test5b, test5c, */ test6, test7, test8, test9, test10, test2e };
 
 	xml = fopen("TEST-test5.xml", "w");
 	fprintf(xml, "<testsuite name=\"test5\" tests=\"%d\">\n", (int)ARRAY_SIZE(tests) - 1);

@@ -323,8 +323,8 @@ void SocketBuffer_queueChar(int socket, char c)
  * @param total total data length to be written
  * @param bytes actual data length that was written
  */
-#if defined(OPENSSL)
-void SocketBuffer_pendingWrite(int socket, SSL* ssl, int count, iobuf* iovecs, int* frees, size_t total, size_t bytes)
+#if defined(OPENSSL) || defined(MBEDTLS)
+void SocketBuffer_pendingWrite(int socket, sslHandler* sslHdl, int count, iobuf* iovecs, int* frees, size_t total, size_t bytes)
 #else
 void SocketBuffer_pendingWrite(int socket, int count, iobuf* iovecs, int* frees, size_t total, size_t bytes)
 #endif
@@ -336,8 +336,8 @@ void SocketBuffer_pendingWrite(int socket, int count, iobuf* iovecs, int* frees,
 	/* store the buffers until the whole packet is written */
 	pw = malloc(sizeof(pending_writes));
 	pw->socket = socket;
-#if defined(OPENSSL)
-	pw->ssl = ssl;
+#if defined(OPENSSL) || defined(MBEDTLS)
+         pw->sslHdl = sslHdl;
 #endif
 	pw->bytes = bytes;
 	pw->total = total;

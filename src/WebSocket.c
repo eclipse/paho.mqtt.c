@@ -79,10 +79,12 @@
 #  endif
 #endif
 
-#if defined(OPENSSL)
+#if defined(OPENSSL) || defined(MBEDTLS)
 #include "SSLSocket.h"
+#if defined(OPENSSL)
 #include <openssl/rand.h>
 #endif /* defined(OPENSSL) */
+#endif /* defined(OPENSSL) || defined(MBEDTLS) */
 #include "Socket.h"
 
 #define HTTP_PROTOCOL(x) x ? "https" : "http"
@@ -104,8 +106,17 @@ typedef unsigned char uuid_t[16];
  */
 void uuid_generate( uuid_t out )
 {
+#if defined(OPENSSL) || defined(MBEDTLS)
+        int rc = 0;
+
 #if defined(OPENSSL)
-	int rc = RAND_bytes( out, sizeof(uuid_t));
+	rc = RAND_bytes( out, sizeof(uuid_t));
+#elif defined(MBEDTL)
+        mbedtls_ctr_drbg_context mbed_ctx;
+        mbedtls_ctr_drbg_init(&mbed_ctx);
+        rc = mbedtls_ctr_drbg_random(&mbed_ctx, out, sizeof(uuid_t));
+        mbedtls_ctr_drbg_free(&mbed_ctx);
+#endif
 	if ( !rc )
 #endif /* defined (OPENSSL) */
 	{
@@ -259,7 +270,12 @@ static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
 		/* generate mask, since we are a client */
 #if defined(OPENSSL)
 		RAND_bytes( &mask[0], sizeof(mask) );
-#else /* if defined(OPENSSL) */
+#elif defined(MBEDTL)
+                mbedtls_ctr_drbg_context mbed_ctx;
+                mbedtls_ctr_drbg_init(&mbed_ctx);
+                mbedtls_ctr_drbg_random(&mbed_ctx, mask, sizeof(mask));
+                mbedtls_ctr_drbg_free(&mbed_ctx);
+#else /* !defined(OPENSSL) && !defined(MBEDTLS) */
 		mask[0] = (rand() % UINT8_MAX);
 		mask[1] = (rand() % UINT8_MAX);
 		mask[2] = (rand() % UINT8_MAX);
@@ -414,8 +430,8 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 			"%s"
 			"\r\n", topic,
 			(int)hostname_len, uri, port,
-#if defined(OPENSSL)
-			HTTP_PROTOCOL(net->ssl),
+#if defined(OPENSSL) || defined(MBEDTLS)
+			HTTP_PROTOCOL(net->sslHdl.ssl),
 #else
 			HTTP_PROTOCOL(0),
 #endif
@@ -436,9 +452,9 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 
 	if ( buf )
 	{
-#if defined(OPENSSL)
-		if (net->ssl)
-			SSLSocket_putdatas(net->ssl, net->socket,
+#if defined(OPENSSL) || defined(MBEDTLS)
+		if (net->sslHdl.ssl)
+			SSLSocket_putdatas(&net->sslHdl, net->socket,
 				buf, buf_len, 0, NULL, NULL, NULL );
 		else
 #endif
@@ -498,9 +514,9 @@ void WebSocket_close(networkHandles *net, int status_code, const char *reason)
 		WebSocket_buildFrame( net, WebSocket_OP_CLOSE, mask_data,
 			&buf0, &buf0len, 0, NULL, NULL);
 
-#if defined(OPENSSL)
-		if (net->ssl)
-			SSLSocket_putdatas(net->ssl, net->socket,
+#if defined(OPENSSL) || defined(MBEDTLS)
+		if (net->sslHdl.ssl)
+			SSLSocket_putdatas(&net->sslHdl, net->socket,
 				buf0, buf0len, 0, NULL, NULL, NULL);
 		else
 #endif
@@ -565,9 +581,9 @@ int WebSocket_getch(networkHandles *net, char* c)
 			rc = TCPSOCKET_COMPLETE;
 		}
 	}
-#if defined(OPENSSL)
-	else if ( net->ssl )
-		rc = SSLSocket_getch(net->ssl, net->socket, c);
+#if defined(OPENSSL) || defined(MBEDTLS)
+	else if ( net->sslHdl.ssl )
+		rc = SSLSocket_getch(&net->sslHdl, net->socket, c);
 #endif
 	else
 		rc = Socket_getch(net->socket, c);
@@ -663,9 +679,9 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 			}
 		}
 	}
-#if defined(OPENSSL)
-	else if ( net->ssl )
-		rv = SSLSocket_getdata(net->ssl, net->socket, bytes, actual_len);
+#if defined(OPENSSL) || defined(MBEDTLS)
+	else if ( net->sslHdl.ctx )
+		rv = SSLSocket_getdata(&net->sslHdl, net->socket, bytes, actual_len);
 #endif
 	else
 		rv = Socket_getdata(net->socket, bytes, actual_len);
@@ -715,9 +731,9 @@ char *WebSocket_getRawSocketData(networkHandles *net, size_t bytes, size_t* actu
 	*actual_len = 0;
 	
 	// not enough data in the buffer, get data from socket
-#if defined(OPENSSL)
-	if ( net->ssl )
-		rv = SSLSocket_getdata(net->ssl, net->socket, bytes, actual_len);
+#if defined(OPENSSL) || defined(MBEDTLS)
+	if ( net->sslHdl.ssl )
+		rv = SSLSocket_getdata(&net->sslHdl, net->socket, bytes, actual_len);
 	else
 #endif
 		rv = Socket_getdata(net->socket, bytes, actual_len);
@@ -812,9 +828,9 @@ void WebSocket_pong(networkHandles *net, char *app_data, size_t app_data_len)
 
 		Log(TRACE_PROTOCOL, 1, "Sending WebSocket PONG" );
 
-#if defined(OPENSSL)
-		if (net->ssl)
-			SSLSocket_putdatas(net->ssl, net->socket, buf0,
+#if defined(OPENSSL) || defined(MBEDTLS)
+		if (net->sslHdl.ssl)
+			SSLSocket_putdatas(&net->sslHdl, net->socket, buf0,
 				buf0len /*header_len + app_data_len*/, 1,
 				&app_data, &app_data_len, &freeData);
 		else
@@ -865,9 +881,9 @@ int WebSocket_putdatas(networkHandles* net, char** buf0, size_t* buf0len,
 			count, buffers, buflens);
 	}
 
-#if defined(OPENSSL)
-	if (net->ssl)
-		rc = SSLSocket_putdatas(net->ssl, net->socket, *buf0, *buf0len, count, buffers, buflens, freeData);
+#if defined(OPENSSL) || defined(MBEDTLS)
+	if (net->sslHdl.ssl)
+		rc = SSLSocket_putdatas(&net->sslHdl, net->socket, *buf0, *buf0len, count, buffers, buflens, freeData);
 	else
 #endif
 		rc = Socket_putdatas(net->socket, *buf0, *buf0len, count, buffers, buflens, freeData);
@@ -1147,7 +1163,7 @@ void WebSocket_terminate( void )
 	frame_buffer_data_len = 0;
 
 	Socket_outTerminate();
-#if defined(OPENSSL)
+#if defined(OPENSSL) || defined(MBEDTLS)
 	SSLSocket_terminate();
 #endif
 	FUNC_EXIT;
@@ -1309,15 +1325,15 @@ int WebSocket_proxy_connect( networkHandles *net, int ssl, const char *hostname)
  
 	hostname_len = MQTTProtocol_addressPort(hostname, &port, NULL);
 	for ( i = 0; i < 2; ++i ) {
-#if defined(OPENSSL)
+#if defined(OPENSSL) || defined(MBEDTLS)
 		if(ssl) {
-			if (net->https_proxy_auth) {
+			if (net->sslHdl.https_proxy_auth) {
 				buf_len = snprintf( buf, (size_t)buf_len, "CONNECT %.*s:%d HTTP/1.1\r\n"
 					"Host: %.*s\r\n"
 					"Proxy-authorization: Basic %s\r\n"
 					"\r\n",
 					(int)hostname_len, hostname, port,
-					(int)hostname_len, hostname, net->https_proxy_auth);
+					(int)hostname_len, hostname, net->sslHdl.https_proxy_auth);
 			}
 			else {
 				buf_len = snprintf( buf, (size_t)buf_len, "CONNECT %.*s:%d HTTP/1.1\r\n"
@@ -1344,7 +1360,7 @@ int WebSocket_proxy_connect( networkHandles *net, int ssl, const char *hostname)
 					(int)hostname_len, hostname, port,
 					(int)hostname_len, hostname);
 			}
-#if defined(OPENSSL)
+#if defined(OPENSSL) || defined(MBEDTLS)
 		}
 #endif
 		if ( i==0 && buf_len > 0 ) {

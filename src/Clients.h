@@ -23,11 +23,19 @@
 #define CLIENTS_H
 
 #include <time.h>
-#if defined(OPENSSL)
+#if defined(OPENSSL) || defined(MBEDTLS)
 #if defined(_WIN32) || defined(_WIN64)
 #include <winsock2.h>
 #endif
+#if defined(OPENSSL)
 #include <openssl/ssl.h>
+#elif defined(MBEDTLS)
+#include <mbedtls/ssl.h>
+#include "mbedtls/net_sockets.h"
+#include "mbedtls/entropy.h"
+#include "mbedtls/ctr_drbg.h"
+#include "mbedtls/version.h"
+#endif
 #endif
 #include "MQTTClient.h"
 #include "LinkedList.h"
@@ -74,17 +82,43 @@ typedef struct
 	int qos;
 } willMessages;
 
+#if defined(OPENSSL) || defined(MBEDTLS)
+typedef struct
+{
+#if defined(OPENSSL)
+	SSL* ssl;
+	SSL_CTX* ctx;
+#elif defined(MBEDTLS)
+        mbedtls_ssl_context * ssl;
+        mbedtls_net_context * ctx;
+
+        mbedtls_ssl_config * conf;
+
+        mbedtls_entropy_context * entropy;
+        mbedtls_ctr_drbg_context * ctr_drbg;
+
+        mbedtls_x509_crt * ca_cert;
+
+        mbedtls_x509_crt * cl_cert;
+        mbedtls_pk_context * cl_key;
+
+	// This profile is needed because Paho testing certificates are signed with 1024 bits RSA key, which is insecure.
+	// Remove when testing suite is upgraded.
+	mbedtls_x509_crt_profile cert_profile;
+#endif
+	char *https_proxy;
+	char *https_proxy_auth;
+} sslHandler;
+#endif
+
 typedef struct
 {
 	int socket;
 	time_t lastSent;
 	time_t lastReceived;
 	time_t lastPing;
-#if defined(OPENSSL)
-	SSL* ssl;
-	SSL_CTX* ctx;
-	char *https_proxy;
-	char *https_proxy_auth;
+#if defined(OPENSSL) || defined(MBEDTLS)
+        sslHandler sslHdl;
 #endif
 	char *http_proxy;
 	char *http_proxy_auth;
@@ -140,9 +174,13 @@ typedef struct
 	void* context; /* calling context - used when calling disconnect_internal */
 	int MQTTVersion;
 	int sessionExpiry; /**< MQTT 5 session expiry */
-#if defined(OPENSSL)
+#if defined(OPENSSL) || defined(MBEDTLS)
 	MQTTClient_SSLOptions *sslopts;
+#if defined(OPENSSL)
 	SSL_SESSION* session;    /***< SSL session pointer for fast handhake */
+#elif defined(MBEDTLS)
+        mbedtls_ssl_session* session;
+#endif
 #endif
 } Clients;
 

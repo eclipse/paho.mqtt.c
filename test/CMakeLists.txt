@@ -449,12 +449,12 @@ IF (PAHO_WITH_SSL)
 		
 		ADD_TEST(
             NAME test3-2e-ssl-with-ha
-            COMMAND test3-static "--test_no" "12" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"   "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
+            COMMAND test3 "--test_no" "12" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"   "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
         )
         
         ADD_TEST(
             NAME test3-2e-ws-ssl-with-ha
-            COMMAND test3-static "--test_no" "12" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"   "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
+            COMMAND test3 "--test_no" "12" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"   "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
         )
 		
 		ADD_TEST(
@@ -1061,12 +1061,12 @@ IF (PAHO_WITH_SSL)
 		
 		ADD_TEST(
             NAME test5-2e-ssl-with-ha
-            COMMAND test5-static "--test_no" "14" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"   "${CERTDIR}/client.pem" "--server_key" "${CERTDIR}/test-root-ca.crt"
+            COMMAND test5 "--test_no" "14" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"   "${CERTDIR}/client.pem" "--server_key" "${CERTDIR}/test-root-ca.crt"
         )
         
         ADD_TEST(
             NAME test5-2e-ws-ssl-with-ha
-            COMMAND test5-static "--test_no" "14" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"    "${CERTDIR}/client.pem" "--server_key" "${CERTDIR}/test-root-ca.crt"
+            COMMAND test5 "--test_no" "14" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"    "${CERTDIR}/client.pem" "--server_key" "${CERTDIR}/test-root-ca.crt"
         )
 		
 		#ADD_TEST(

@@ -402,7 +402,8 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 	OpenEventHandleSync(); /* intializes mutexes once.  Must come before FUNC_ENTRY */
 #endif
 	FUNC_ENTRY;
-	rc = Thread_lock_mutex(mqttclient_mutex);
+	if ((rc = Thread_lock_mutex(mqttclient_mutex)) != 0)
+		goto exit;
 
 	if (serverURI == NULL || clientId == NULL)
 	{
@@ -453,7 +454,11 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 		library_initialized = 1;
 	}
 
-	m = malloc(sizeof(MQTTClients));
+	if ((m = malloc(sizeof(MQTTClients))) == NULL)
+	{
+		rc = PAHO_MEMORY_ERROR;
+		goto exit;
+	}
 	*handle = m;
 	memset(m, '\0', sizeof(MQTTClients));
 	if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
@@ -487,7 +492,12 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 	m->serverURI = MQTTStrdup(serverURI);
 	ListAppend(handles, m, sizeof(MQTTClients));
 
-	m->c = malloc(sizeof(Clients));
+	if ((m->c = malloc(sizeof(Clients))) == NULL)
+	{
+		ListRemove(handles, m);
+		rc = PAHO_MEMORY_ERROR;
+		goto exit;
+	}
 	memset(m->c, '\0', sizeof(Clients));
 	m->c->context = m;
 	m->c->MQTTVersion = (options) ? options->MQTTVersion : MQTTVERSION_DEFAULT;

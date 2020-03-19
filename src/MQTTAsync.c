@@ -140,6 +140,22 @@ void MQTTAsync_init(void)
 	}
 }
 
+void MQTTAsync_cleanup(void)
+{
+	if (send_sem)
+		CloseHandle(send_sem);
+	if (stack_mutex)
+		CloseHandle(stack_mutex);
+	if (heap_mutex)
+		CloseHandle(heap_mutex);
+	if (log_mutex)
+		CloseHandle(log_mutex);
+	if (socket_mutex)
+		CloseHandle(socket_mutex);
+	if (mqttasync_mutex)
+		CloseHandle(mqttasync_mutex);
+}
+
 #if defined(PAHO_BUILD_STATIC)
 // Global variable for one-time initialization structure
 INIT_ONCE g_InitOnce = INIT_ONCE_STATIC_INIT; // Static initialization
@@ -201,6 +217,8 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 			break;
 		case DLL_PROCESS_DETACH:
 			Log(TRACE_MAX, -1, "DLL process detach");
+			if (lpReserved)
+				MQTTAsync_cleanup();
 		break;
 	}
 	return TRUE;
@@ -2071,6 +2089,9 @@ static thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 	sendThread_id = 0;
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
 	FUNC_EXIT;
+#if defined(_WIN32) || defined(_WIN64)
+	ExitThread(0);
+#endif
 	return 0;
 }
 
@@ -2639,6 +2660,9 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 		Thread_post_sem(send_sem);
 #endif
 	FUNC_EXIT;
+#if defined(_WIN32) || defined(_WIN64)
+	ExitThread(0);
+#endif
 	return 0;
 }
 

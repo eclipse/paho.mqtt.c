@@ -140,8 +140,27 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
 			basic_auth_in_len--;
 			p0 = (char *)basic_auth;
-			while(*p1 != '@')
-				*p0++ = *p1++;
+			/**
+			 * Allow user or password characters to be expressed in the form of %XX, XX being the 
+			 * hexadecimal value of the caracter. This will avoid problems when a user code or a password
+			 * contains a '@' or another special character ('%' included)
+			 */
+			while(*p1 != '@') {
+				if (*p1 != '%') {
+					*p0++ = *p1++;
+				}
+				else if (isxdigit(*(p1 + 1)) && isxdigit(*(p1 + 2))) {
+					/* next 2 characters are hexa digits */
+					char hex[3];
+					p1++;
+					hex[0] = *p1++;
+					hex[1] = *p1++;
+					hex[2] = '\0';
+					*p0++ = (char)strtol(hex, 0, 16);
+					/* 3 input char => 1 output char */
+					basic_auth_in_len -= 2;
+				}
+			}
 			*p0 = 0x0;
 			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
 			aClient->net.http_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len);
@@ -164,17 +183,24 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
 			basic_auth_in_len--;
 			p0 = (char *)basic_auth;
+			/**
+			 * Allow user or password characters to be expressed in the form of %XX, XX being the
+			 * hexadecimal value of the caracter. This will avoid problems when a user code or a password
+			 * contains a '@' or another special character ('%' included)
+			 */
 			while (*p1 != '@') {
 				if (*p1 != '%') {
 					*p0++ = *p1++;
 				}
-				else if (*(p1+1) != '@' && *(p1 + 2) != '@') {
+				else if (isxdigit(*(p1 + 1)) && isxdigit(*(p1 + 2))) {
+					/* next 2 characters are hexa digits */
 					char hex[3];
 					p1++;
 					hex[0] = *p1++;
 					hex[1] = *p1++;
 					hex[2] = '\0';
 					*p0++ = (char)strtol(hex, 0, 16);
+					/* 3 input char => 1 output char */
 					basic_auth_in_len -= 2;
 				}
 			}

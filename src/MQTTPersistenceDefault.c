@@ -447,7 +447,7 @@ int containskeyWin32(char *dirname, char *key)
 		}
 		FindClose(hDir);
 	}
-
+exit:
 	FUNC_EXIT_RC(notFound);
 	return notFound;
 }

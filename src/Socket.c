@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -181,8 +181,19 @@ int Socket_addSocket(int newSd)
 		else
 		{
 			int* pnewSd = (int*)malloc(sizeof(newSd));
+
+			if (!pnewSd)
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 			*pnewSd = newSd;
-			ListAppend(s.clientsds, pnewSd, sizeof(newSd));
+			if (!ListAppend(s.clientsds, pnewSd, sizeof(newSd)))
+			{
+				free(pnewSd);
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 			FD_SET(newSd, &(s.rset_saved));
 			s.maxfdp1 = max(s.maxfdp1, newSd + 1);
 			rc = Socket_setnonblocking(newSd);
@@ -193,6 +204,7 @@ int Socket_addSocket(int newSd)
 	else
 		Log(LOG_ERROR, -1, "addSocket: socket %d already in the list", newSd);
 
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -527,6 +539,12 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 		else
 		{
 			int* sockmem = (int*)malloc(sizeof(int));
+
+			if (!sockmem)
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 			Log(TRACE_MIN, -1, "Partial write: %lu bytes of %lu actually written on socket %d",
 					bytes, total, socket);
 #if defined(OPENSSL)
@@ -535,18 +553,17 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 			SocketBuffer_pendingWrite(socket, count+1, iovecs, frees1, total, bytes);
 #endif
 			*sockmem = socket;
-			ListAppend(s.write_pending, sockmem, sizeof(int));
+			if (!ListAppend(s.write_pending, sockmem, sizeof(int)))
+			{
+				free(sockmem);
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 			FD_SET(socket, &(s.pending_wset));
 			rc = TCPSOCKET_INTERRUPTED;
 		}
 	}
 exit:
-#if 0
-        if (rc == TCPSOCKET_INTERRUPTED)
-        {
-            Log(LOG_ERROR, -1, "Socket_putdatas: TCPSOCKET_INTERRUPTED");
-        }
-#endif
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -680,7 +697,11 @@ int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 		--addr_len;
 	}
 
-	addr_mem = malloc( addr_len + 1u );
+	if ((addr_mem = malloc( addr_len + 1u )) == NULL)
+	{
+		rc = PAHO_MEMORY_ERROR;
+		goto exit;
+	}
 	memcpy( addr_mem, addr, addr_len );
 	addr_mem[addr_len] = '\0';
 
@@ -789,23 +810,33 @@ int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 				if (rc == EINPROGRESS || rc == EWOULDBLOCK)
 				{
 					int* pnewSd = (int*)malloc(sizeof(int));
+
+					if (!pnewSd)
+					{
+						rc = PAHO_MEMORY_ERROR;
+						goto exit;
+					}
 					*pnewSd = *sock;
-					ListAppend(s.connect_pending, pnewSd, sizeof(int));
+					if (!ListAppend(s.connect_pending, pnewSd, sizeof(int)))
+					{
+						free(pnewSd);
+						rc = PAHO_MEMORY_ERROR;
+						goto exit;
+					}
 					Log(TRACE_MIN, 15, "Connect pending");
 				}
 			}
-                        /* Prevent socket leak by closing unusable sockets,
-                         * as reported in
-                         * https://github.com/eclipse/paho.mqtt.c/issues/135
-                         */
-                        if (rc != 0 && (rc != EINPROGRESS) && (rc != EWOULDBLOCK))
-                        {
-                            Socket_close(*sock); /* close socket and remove from our list of sockets */
-                            *sock = -1; /* as initialized before */
-                        }
+            /* Prevent socket leak by closing unusable sockets,
+               as reported in https://github.com/eclipse/paho.mqtt.c/issues/135 */
+            if (rc != 0 && (rc != EINPROGRESS) && (rc != EWOULDBLOCK))
+            {
+            	Socket_close(*sock); /* close socket and remove from our list of sockets */
+                *sock = -1; /* as initialized before */
+            }
 		}
 	}
 
+exit:
 	if (addr_mem)
 		free(addr_mem);
 

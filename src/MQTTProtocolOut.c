@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -131,20 +131,32 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 
 	aClient->net.http_proxy = NULL;
 	aClient->net.http_proxy_auth = NULL;
-	if ((p0 = getenv("http_proxy"))) {
+	if ((p0 = getenv("http_proxy")))
+	{
 		p1 = strchr(p0, '@');
-		if(p1) {
+		if(p1)
+		{
 			aClient->net.http_proxy = p1 + 1;
 			p1 = strchr(p0, ':') + 3;
 			basic_auth_in_len = (b64_size_t)(aClient->net.http_proxy - p1);
 			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
+			if (!basic_auth)
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 			basic_auth_in_len--;
 			p0 = (char *)basic_auth;
 			while(*p1 != '@')
 				*p0++ = *p1++;
 			*p0 = 0x0;
 			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
-			aClient->net.http_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len);
+			if ((aClient->net.http_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
+			{
+				free(basic_auth);
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 			Base64_encode(aClient->net.http_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
 			free(basic_auth);
 		}
@@ -162,13 +174,23 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 			p1 = strchr(p0, ':') + 3;
 			basic_auth_in_len =  (b64_size_t)(aClient->net.https_proxy - p1);
 			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
+			if (!basic_auth)
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 			basic_auth_in_len--;
 			p0 = (char *)basic_auth;
 			while(*p1 != '@')
 				*p0++ = *p1++;
 			*p0 = 0x0;
 			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
-			aClient->net.https_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len);
+			if ((aClient->net.https_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
+			{
+				free(basic_auth);
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 			Base64_encode(aClient->net.https_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
 			free(basic_auth);
 		}
@@ -262,6 +284,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 		}
 	}
 
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

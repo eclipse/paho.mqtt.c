@@ -127,38 +127,29 @@ void MQTTClient_init(void)
 	}
 }
 
+void MQTTClient_cleanup(void)
+{
+	if (connect_mutex)
+		CloseHandle(connect_mutex);
+	if (subscribe_mutex)
+		CloseHandle(subscribe_mutex);
+	if (unsubscribe_mutex)
+		CloseHandle(unsubscribe_mutex);
+	if (stack_mutex)
+		CloseHandle(stack_mutex);
+	if (heap_mutex)
+		CloseHandle(heap_mutex);
+	if (log_mutex)
+		CloseHandle(log_mutex);
+	if (socket_mutex)
+		CloseHandle(socket_mutex);
+	if (mqttclient_mutex)
+		CloseHandle(mqttclient_mutex);
+}
+
 #if defined(PAHO_BUILD_STATIC)
 // Global variable for one-time initialization structure
 INIT_ONCE g_InitOnce = INIT_ONCE_STATIC_INIT; // Static initialization
-
-// Initialization callback function
-BOOL CALLBACK InitHandleFunction (
-    PINIT_ONCE InitOnce,
-    PVOID Parameter,
-    PVOID *lpContext);
-
-// Returns a handle to an event object that is created only once
-HANDLE OpenEventHandleSync()
-{
-  PVOID lpContext;
-  BOOL  bStatus;
-
-  // Execute the initialization callback function
-  bStatus = InitOnceExecuteOnce(&g_InitOnce,          // One-time initialization structure
-                                InitHandleFunction,   // Pointer to initialization callback function
-                                NULL,                 // Optional parameter to callback function (not used)
-                                &lpContext);          // Receives pointer to event object stored in g_InitOnce
-
-  // InitOnceExecuteOnce function succeeded. Return event object.
-  if (bStatus)
-  {
-    return (HANDLE)lpContext;
-  }
-  else
-  {
-    return (INVALID_HANDLE_VALUE);
-  }
-}
 
 // Initialization callback function that creates the event object
 BOOL CALLBACK InitHandleFunction (
@@ -189,6 +180,8 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 			break;
 		case DLL_PROCESS_DETACH:
 			Log(TRACE_MAX, -1, "DLL process detach");
+			if (lpReserved)
+				MQTTClient_cleanup();
 			break;
 	}
 	return TRUE;
@@ -399,7 +392,9 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 	MQTTClients *m = NULL;
 
 #if (defined(_WIN32) || defined(_WIN64)) && defined(PAHO_BUILD_STATIC)
-	OpenEventHandleSync(); /* intializes mutexes once.  Must come before FUNC_ENTRY */
+	/* intializes mutexes once.  Must come before FUNC_ENTRY */
+	PVOID lpContext;
+	BOOL bStatus = InitOnceExecuteOnce(&g_InitOnce, InitHandleFunction, NULL, &lpContext);
 #endif
 	FUNC_ENTRY;
 	if ((rc = Thread_lock_mutex(mqttclient_mutex)) != 0)
@@ -1002,6 +997,9 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 	running = tostop = 0;
 	Thread_unlock_mutex(mqttclient_mutex);
 	FUNC_EXIT;
+#if defined(_WIN32) || defined(_WIN64)
+	ExitThread(0);
+#endif
 	return 0;
 }
 

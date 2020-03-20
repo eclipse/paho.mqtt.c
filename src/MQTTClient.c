@@ -82,7 +82,7 @@
 const char *client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
 const char *client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
 
-void MQTTClient_init(void);
+int MQTTClient_init(void);
 
 void MQTTClient_global_init(MQTTClient_init_options* inits)
 {
@@ -112,19 +112,63 @@ extern mutex_type stack_mutex;
 extern mutex_type heap_mutex;
 extern mutex_type log_mutex;
 
-void MQTTClient_init(void)
+int MQTTClient_init(void)
 {
+	DWORD rc = 0;
+
 	if (mqttclient_mutex == NULL)
 	{
-		mqttclient_mutex = CreateMutex(NULL, 0, NULL);
-		subscribe_mutex = CreateMutex(NULL, 0, NULL);
-		unsubscribe_mutex = CreateMutex(NULL, 0, NULL);
-		connect_mutex = CreateMutex(NULL, 0, NULL);
-		stack_mutex = CreateMutex(NULL, 0, NULL);
-		heap_mutex = CreateMutex(NULL, 0, NULL);
-		log_mutex = CreateMutex(NULL, 0, NULL);
-		socket_mutex = CreateMutex(NULL, 0, NULL);
+		if ((mqttclient_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
+		{
+			rc = GetLastError();
+			printf("mqttclient_mutex error %d\n", rc);
+			goto exit;
+		}
+		if ((subscribe_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
+		{
+			rc = GetLastError();
+			printf("subscribe_mutex error %d\n", rc);
+			goto exit;
+		}
+		if ((unsubscribe_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
+		{
+			rc = GetLastError();
+			printf("unsubscribe_mutex error %d\n", rc);
+			goto exit;
+		}
+		if ((connect_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
+		{
+			rc = GetLastError();
+			printf("connect_mutex error %d\n", rc);
+			goto exit;
+		}
+		if ((stack_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
+		{
+			rc = GetLastError();
+			printf("stack_mutex error %d\n", rc);
+			goto exit;
+		}
+		if ((heap_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
+		{
+			rc = GetLastError();
+			printf("heap_mutex error %d\n", rc);
+			goto exit;
+		}
+		if ((log_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
+		{
+			rc = GetLastError();
+			printf("log_mutex error %d\n", rc);
+			goto exit;
+		}
+		if ((socket_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
+		{
+			rc = GetLastError();
+			printf("socket_mutex error %d\n", rc);
+			goto exit;
+		}
 	}
+exit:
+	return rc;
 }
 
 void MQTTClient_cleanup(void)
@@ -148,17 +192,18 @@ void MQTTClient_cleanup(void)
 }
 
 #if defined(PAHO_BUILD_STATIC)
-// Global variable for one-time initialization structure
-INIT_ONCE g_InitOnce = INIT_ONCE_STATIC_INIT; // Static initialization
+/* Global variable for one-time initialization structure */
+static INIT_ONCE g_InitOnce = INIT_ONCE_STATIC_INIT; /* Static initialization */
+static PVOID lpContext; /* used by caller to InitOnceFunction */
 
-// Initialization callback function that creates the event object
-BOOL CALLBACK InitHandleFunction (
-    PINIT_ONCE InitOnce,        // Pointer to one-time initialization structure
-    PVOID Parameter,            // Optional parameter passed by InitOnceExecuteOnce
-    PVOID *lpContext)           // Receives pointer to event object
+/* One time initialization function */
+BOOL InitOnceFunction (
+    PINIT_ONCE InitOnce,        /* Pointer to one-time initialization structure */
+    PVOID Parameter,            /* Optional parameter passed by InitOnceExecuteOnce */
+    PVOID *lpContext)           /* Receives pointer to event object */
 {
-	MQTTClient_init();
-    return TRUE;
+	int rc = MQTTClient_init();
+    return rc == 0;
 }
 
 #else
@@ -204,7 +249,7 @@ static mutex_type unsubscribe_mutex = &unsubscribe_mutex_store;
 static pthread_mutex_t connect_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 static mutex_type connect_mutex = &connect_mutex_store;
 
-void MQTTClient_init(void)
+int MQTTClient_init(void)
 {
 	pthread_mutexattr_t attr;
 	int rc;
@@ -225,6 +270,8 @@ void MQTTClient_init(void)
 		printf("MQTTClient: error %d initializing unsubscribe_mutex\n", rc);
 	if ((rc = pthread_mutex_init(connect_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing connect_mutex\n", rc);
+
+	return rc;
 }
 
 #define WINAPI
@@ -393,8 +440,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 
 #if (defined(_WIN32) || defined(_WIN64)) && defined(PAHO_BUILD_STATIC)
 	/* intializes mutexes once.  Must come before FUNC_ENTRY */
-	PVOID lpContext;
-	BOOL bStatus = InitOnceExecuteOnce(&g_InitOnce, InitHandleFunction, NULL, &lpContext);
+	BOOL bStatus = InitOnceExecuteOnce(&g_InitOnce, InitOnceFunction, NULL, &lpContext);
 #endif
 	FUNC_ENTRY;
 	if ((rc = Thread_lock_mutex(mqttclient_mutex)) != 0)

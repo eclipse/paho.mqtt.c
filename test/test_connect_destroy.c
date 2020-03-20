@@ -305,12 +305,13 @@ thread_return_type WINAPI test1_destroy(void* n)
 	MQTTClient* c = parms->c;
 
 	MQTTClient_destroy(c);
+	return 0;
 }
 
 
 int test1(struct Options options)
 {
-	srand(time(0));
+	srand((unsigned int)time(0));
 
 	MQTTClient c;
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;

@@ -880,15 +880,17 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts,
                 if(mbedtls_ssl_setup(net->sslHdl.ssl, net->sslHdl.conf) != 0)
                         goto error;
 
-
-                hostname_plus_null = malloc(hostname_len + 1u );
-                MQTTStrncpy(hostname_plus_null, hostname, hostname_len + 1u);
-                if(mbedtls_ssl_set_hostname(net->sslHdl.ssl, hostname_plus_null) != 0)
-                {
-                        free(hostname_plus_null);
-                        goto error;
-                }
+		if (opts->verify == 1)
+		{
+                        hostname_plus_null = malloc(hostname_len + 1u );
+                        MQTTStrncpy(hostname_plus_null, hostname, hostname_len + 1u);
+                        if(mbedtls_ssl_set_hostname(net->sslHdl.ssl, hostname_plus_null) != 0)
+                        {
+                                free(hostname_plus_null);
+                                goto error;
+                        }
                 free(hostname_plus_null);
+		}
 
                 mbedtls_ssl_set_bio(net->sslHdl.ssl, net->sslHdl.ctx, mbedtls_net_send, mbedtls_net_recv, NULL);
 #endif

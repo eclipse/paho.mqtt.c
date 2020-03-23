@@ -113,8 +113,10 @@ static mutex_type mqttasync_mutex = NULL;
 static mutex_type socket_mutex = NULL;
 static mutex_type mqttcommand_mutex = NULL;
 static sem_type send_sem = NULL;
+#if !defined(NO_HEAP_TRACKING)
 extern mutex_type stack_mutex;
 extern mutex_type heap_mutex;
+#endif
 extern mutex_type log_mutex;
 
 void MQTTAsync_init(void)
@@ -129,8 +131,10 @@ void MQTTAsync_init(void)
 				FALSE,              /* initial state is nonsignaled */
 				NULL                /* object name */
 				);
+#if !defined(NO_HEAP_TRACKING)
 		stack_mutex = CreateMutex(NULL, 0, NULL);
 		heap_mutex = CreateMutex(NULL, 0, NULL);
+#endif
 		log_mutex = CreateMutex(NULL, 0, NULL);
 		socket_mutex = CreateMutex(NULL, 0, NULL);
 	}
@@ -144,10 +148,12 @@ void MQTTAsync_cleanup(void)
 {
 	if (send_sem)
 		CloseHandle(send_sem);
+#if !defined(NO_HEAP_TRACKING)
 	if (stack_mutex)
 		CloseHandle(stack_mutex);
 	if (heap_mutex)
 		CloseHandle(heap_mutex);
+#endif
 	if (log_mutex)
 		CloseHandle(log_mutex);
 	if (socket_mutex)

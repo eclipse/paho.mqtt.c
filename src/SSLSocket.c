@@ -956,8 +956,11 @@ int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int cou
 	ptr += buf0len;
 	for (i = 0; i < count; i++)
 	{
-		memcpy(ptr, buffers[i], buflens[i]);
-		ptr += buflens[i];
+		if (buffers[i] != NULL && buflens[i] > 0)
+		{
+			memcpy(ptr, buffers[i], buflens[i]);
+			ptr += buflens[i];
+		}
 	}
 
 	SSL_lock_mutex(&sslCoreMutex);

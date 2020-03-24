@@ -330,12 +330,13 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 		int already_received = 0;
 		ListElement* listElem = NULL;
 		Messages* m = malloc(sizeof(Messages));
+		Publications* p = NULL;
 		if (!m)
 		{
 			rc = PAHO_MEMORY_ERROR;
 			goto exit;
 		}
-		Publications* p = MQTTProtocol_storePublication(publish, &len);
+		p = MQTTProtocol_storePublication(publish, &len);
 
 		m->publish = p;
 		m->msgid = publish->msgId;

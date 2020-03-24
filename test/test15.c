@@ -344,14 +344,14 @@ void test1_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 			MQTTClient_freeMessage(&m);
 		}
 		else
-			printf("No message received within timeout period\n");
+			MyLog(LOGA_INFO, "No message received within timeout period\n");
 	}
 
 	/* receive any outstanding messages */
 	MQTTClient_receive(c, &topicName, &topicLen, &m, 2000);
 	while (topicName)
 	{
-		printf("Message received on topic %s is %.*s.\n", topicName, m->payloadlen, (char*)(m->payload));
+		MyLog(LOGA_INFO, "Message received on topic %s is %.*s.\n", topicName, m->payloadlen, (char*)(m->payload));
 		MQTTClient_free(topicName);
 		MQTTClient_freeMessage(&m);
 		MQTTClient_receive(c, &topicName, &topicLen, &m, 2000);
@@ -1144,13 +1144,13 @@ volatile int test6_connection_lost_called = 0;
 void test6_connectionLost(void* context, char* cause)
 {
 	MQTTClient c = (MQTTClient)context;
-	printf("%s -> Callback: connection lost\n", (c == test6_c1) ? "Client-1" : "Client-2");
+	MyLog(LOGA_INFO, "%s -> Callback: connection lost", (c == test6_c1) ? "Client-1" : "Client-2");
 	test6_connection_lost_called = 1;
 }
 
 void test6_deliveryComplete(void* context, MQTTClient_deliveryToken token)
 {
-	printf("Client-2 -> Callback: publish complete for token %d\n", token);
+	MyLog(LOGA_DEBUG, "Client-2 -> Callback: publish complete for token %d", token);
 }
 
 char* test6_will_topic = "C Test 2: will topic";
@@ -1159,7 +1159,7 @@ char* test6_will_message = "will message from Client-1";
 int test6_messageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* m)
 {
 	MQTTClient c = (MQTTClient)context;
-	printf("%s -> Callback: message received on topic '%s' is '%.*s'.\n",
+	MyLog(LOGA_INFO, "%s -> Callback: message received on topic '%s' is '%.*s'",
 			 (c == test6_c1) ? "Client-1" : "Client-2", topicName, m->payloadlen, (char*)(m->payload));
 	if (c == test6_c2 && strcmp(topicName, test6_will_topic) == 0 && memcmp(m->payload, test6_will_message, m->payloadlen) == 0)
 		test6_will_message_arrived = 1;

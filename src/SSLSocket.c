@@ -863,14 +863,19 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts,
 				SSLSocket_error("SSL_set_fd", net->sslHdl.ssl, net->socket, rc, NULL, NULL);
 		}
 		hostname_plus_null = malloc(hostname_len + 1u );
-		MQTTStrncpy(hostname_plus_null, hostname, hostname_len + 1u);
-		if ((rc = SSL_set_tlsext_host_name(net->sslHdl.ssl, hostname_plus_null)) != 1) {
-			if (opts->struct_version >= 3)
-				SSLSocket_error("SSL_set_tlsext_host_name", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
-			else
-				SSLSocket_error("SSL_set_tlsext_host_name", NULL, net->socket, rc, NULL, NULL);
+		if (hostname_plus_null)
+		{
+			MQTTStrncpy(hostname_plus_null, hostname, hostname_len + 1u);
+			if ((rc = SSL_set_tlsext_host_name(net->sslHdl.ssl, hostname_plus_null)) != 1) {
+				if (opts->struct_version >= 3)
+					SSLSocket_error("SSL_set_tlsext_host_name", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
+				else
+					SSLSocket_error("SSL_set_tlsext_host_name", NULL, net->socket, rc, NULL, NULL);
+			}
+			free(hostname_plus_null);
 		}
-		free(hostname_plus_null);
+		else
+			rc = PAHO_MEMORY_ERROR;
 #elif defined(MBEDTLS)
                 if (!(net->sslHdl.ssl = malloc(sizeof(mbedtls_ssl_context))))
                         goto error;
@@ -883,13 +888,21 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts,
 		if (opts->verify == 1)
 		{
                         hostname_plus_null = malloc(hostname_len + 1u );
-                        MQTTStrncpy(hostname_plus_null, hostname, hostname_len + 1u);
-                        if(mbedtls_ssl_set_hostname(net->sslHdl.ssl, hostname_plus_null) != 0)
-                        {
-                                free(hostname_plus_null);
-                                goto error;
-                        }
-                free(hostname_plus_null);
+			if (hostname_plus_null)
+			{
+				MQTTStrncpy(hostname_plus_null, hostname, hostname_len + 1u);
+				if(mbedtls_ssl_set_hostname(net->sslHdl.ssl, hostname_plus_null) != 0)
+				{
+				        free(hostname_plus_null);
+				        goto error;
+				}
+				free(hostname_plus_null);
+			}
+			else
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 		}
 
                 mbedtls_ssl_set_bio(net->sslHdl.ssl, net->sslHdl.ctx, mbedtls_net_send, mbedtls_net_recv, NULL);
@@ -1227,6 +1240,11 @@ int SSLSocket_putdatas(sslHandler* sslHdl, int socket, char* buf0, size_t buf0le
 		iovec.iov_len += (ULONG)buflens[i];
 
 	ptr = iovec.iov_base = (char *)malloc(iovec.iov_len);
+	if (!ptr)
+	{
+		rc = PAHO_MEMORY_ERROR;
+		goto exit;
+	}
 	memcpy(ptr, buf0, buf0len);
 	ptr += buf0len;
 	for (i = 0; i < count; i++)
@@ -1265,6 +1283,11 @@ int SSLSocket_putdatas(sslHandler* sslHdl, int socket, char* buf0, size_t buf0le
 			int* sockmem = (int*)malloc(sizeof(int));
 			int free = 1;
 
+			if (!sockmem)
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 			Log(TRACE_MIN, -1, "Partial write: incomplete write of %d bytes on SSL socket %d",
 				iovec.iov_len, socket);
 			SocketBuffer_pendingWrite(socket, sslHdl, 1, &iovec, &free, iovec.iov_len, 0);
@@ -1288,11 +1311,12 @@ int SSLSocket_putdatas(sslHandler* sslHdl, int socket, char* buf0, size_t buf0le
 		{
 		    if (frees[i])
 		    {
-			free(buffers[i]);
-			buffers[i] = NULL;
+		    	free(buffers[i]);
+		    	buffers[i] = NULL;
 		    }
 		}	
 	}
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -1304,8 +1328,11 @@ void SSLSocket_addPendingRead(int sock)
 	if (ListFindItem(&pending_reads, &sock, intcompare) == NULL) /* make sure we don't add the same socket twice */
 	{
 		int* psock = (int*)malloc(sizeof(sock));
-		*psock = sock;
-		ListAppend(&pending_reads, psock, sizeof(sock));
+		if (psock)
+		{
+			*psock = sock;
+			ListAppend(&pending_reads, psock, sizeof(sock));
+		}
 	}
 	else
 		Log(TRACE_MIN, -1, "SSLSocket_addPendingRead: socket %d already in the list", sock);

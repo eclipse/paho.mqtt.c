@@ -149,6 +149,12 @@ void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
 			{
 				int buf0len;
 				char *buf = malloc(10);
+
+				if (buf == NULL)
+				{
+					*error = SOCKET_ERROR;
+					goto exit;
+				}
 				buf[0] = header.byte;
 				buf0len = 1 + MQTTPacket_encode(&buf[1], remaining_length);
 				*error = MQTTPersistence_put(net->socket, buf, buf0len, 1,
@@ -368,12 +374,14 @@ static char* readUTFlen(char** pptr, char* enddata, int* len)
 		*len = readInt(pptr);
 		if (&(*pptr)[*len] <= enddata)
 		{
-			string = malloc(*len+1);
+			if ((string = malloc(*len+1)) == NULL)
+				goto exit;
 			memcpy(string, *pptr, *len);
 			string[*len] = '\0';
 			*pptr += *len;
 		}
 	}
+exit:
 	FUNC_EXIT;
 	return string;
 }
@@ -496,8 +504,14 @@ int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQT
 	if (client->MQTTVersion >= 5 && (props || reason != MQTTREASONCODE_SUCCESS))
 	{
 		size_t buflen = 1 + ((props == NULL) ? 0 : MQTTProperties_len(props));
-		char *buf = malloc(buflen), *ptr = NULL;
+		char *buf = NULL;
+		char *ptr = NULL;
 
+		if ((buf = malloc(buflen)) == NULL)
+		{
+			rc = SOCKET_ERROR;
+			goto exit;
+		}
 		ptr = buf;
 		writeChar(&ptr, reason);
 		if (props)
@@ -508,6 +522,7 @@ int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQT
 	}
 	else
 		rc = MQTTPacket_send(&client->net, header, NULL, 0, 0, client->MQTTVersion);
+exit:
 	Log(LOG_PROTOCOL, 28, NULL, client->net.socket, client->clientID, rc);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -608,11 +623,13 @@ void MQTTPacket_freeAck(Ack* pack)
 static int MQTTPacket_send_ack(int MQTTVersion, int type, int msgid, int dup, networkHandles *net)
 {
 	Header header;
-	int rc;
-	char *buf = malloc(2);
-	char *ptr = buf;
+	int rc = SOCKET_ERROR;
+	char *buf = NULL;
+	char *ptr = NULL;
 
 	FUNC_ENTRY;
+	if ((ptr = buf = malloc(2)) == NULL)
+		goto exit;
 	header.byte = 0;
 	header.bits.type = type;
 	header.bits.dup = dup;
@@ -621,6 +638,7 @@ static int MQTTPacket_send_ack(int MQTTVersion, int type, int msgid, int dup, ne
 	writeInt(&ptr, msgid);
 	if ((rc = MQTTPacket_send(net, header, buf, 2, 1, MQTTVersion)) != TCPSOCKET_INTERRUPTED)
 		free(buf);
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -805,10 +823,12 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 {
 	Header header;
 	char *topiclen;
-	int rc = -1;
+	int rc = SOCKET_ERROR;
 
 	FUNC_ENTRY;
 	topiclen = malloc(2);
+	if (topiclen == NULL)
+		goto exit;
 
 	header.bits.type = PUBLISH;
 	header.bits.dup = dup;
@@ -823,6 +843,8 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 		int frees[4] = {1, 0, 1, 0};
 
 		bufs[2] = ptr = malloc(buflen);
+		if (ptr == NULL)
+			goto exit_free;
 		if (qos > 0)
 			writeInt(&ptr, pack->msgId);
 		if (pack->MQTTVersion >= 5)
@@ -844,14 +866,16 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 		writeInt(&ptr, (int)lens[1]);
 		rc = MQTTPacket_sends(net, header, 3, bufs, lens, frees, pack->MQTTVersion);
 	}
-	if (rc != TCPSOCKET_INTERRUPTED)
-		free(topiclen);
 	if (qos == 0)
 		Log(LOG_PROTOCOL, 27, NULL, net->socket, clientID, retained, rc, pack->payloadlen,
 				min(20, pack->payloadlen), pack->payload);
 	else
 		Log(LOG_PROTOCOL, 10, NULL, net->socket, clientID, pack->msgId, qos, retained, rc, pack->payloadlen,
 				min(20, pack->payloadlen), pack->payload);
+exit_free:
+	if (rc != TCPSOCKET_INTERRUPTED)
+		free(topiclen);
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

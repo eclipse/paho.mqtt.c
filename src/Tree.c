@@ -69,7 +69,8 @@ Tree* TreeInitialize(int(*compare)(void*, void*, int))
 #else
 	Tree* newt = mymalloc(__FILE__, __LINE__, sizeof(Tree));
 #endif
-	TreeInitializeNoMalloc(newt, compare);
+	if (newt)
+		TreeInitializeNoMalloc(newt, compare);
 	return newt;
 }
 
@@ -235,7 +236,6 @@ void* TreeAddByIndex(Tree* aTree, void* content, size_t size, int index)
 		else
 		{
 			newel = curnode;
-			rc = newel->content;
 			if (index == 0)
 				aTree->size += (size - curnode->size);
 		}
@@ -247,6 +247,8 @@ void* TreeAddByIndex(Tree* aTree, void* content, size_t size, int index)
 		#else
 			newel = (aTree->heap_tracking) ? mymalloc(__FILE__, __LINE__, sizeof(Node)) : malloc(sizeof(Node));
 		#endif
+		if (newel == NULL)
+			goto exit;
 		memset(newel, '\0', sizeof(Node));
 		if (curparent)
 			curparent->child[left] = newel;
@@ -262,6 +264,7 @@ void* TreeAddByIndex(Tree* aTree, void* content, size_t size, int index)
 	}
 	newel->content = content;
 	newel->size = size;
+	rc = newel->content;
 	TreeBalanceAfterAdd(aTree, newel, index);
 exit:
 	return rc;

@@ -105,15 +105,26 @@ static void MQTTProtocol_storeQoS0(Clients* pubclient, Publish* publish)
 
 	FUNC_ENTRY;
 	/* store the publication until the write is finished */
-	pw = malloc(sizeof(pending_write));
+	if ((pw = malloc(sizeof(pending_write))) == NULL)
+		goto exit;
 	Log(TRACE_MIN, 12, NULL);
-	pw->p = MQTTProtocol_storePublication(publish, &len);
+	if ((pw->p = MQTTProtocol_storePublication(publish, &len)) == NULL)
+	{
+		free(pw);
+		goto exit;
+	}
 	pw->socket = pubclient->net.socket;
-	ListAppend(&(state.pending_writes), pw, sizeof(pending_write)+len);
+	if (!ListAppend(&(state.pending_writes), pw, sizeof(pending_write)+len))
+	{
+		free(pw->p);
+		free(pw);
+		goto exit;
+	}
 	/* we don't copy QoS 0 messages unless we have to, so now we have to tell the socket buffer where
 	the saved copy is */
 	if (SocketBuffer_updateWrite(pw->socket, pw->p->topic, pw->p->payload) == NULL)
 		Log(LOG_SEVERE, 0, "Error updating write");
+exit:
 	FUNC_EXIT;
 }
 
@@ -185,17 +196,28 @@ Messages* MQTTProtocol_createMessage(Publish* publish, Messages **mm, int qos, i
 	Messages* m = malloc(sizeof(Messages));
 
 	FUNC_ENTRY;
+	if (!m)
+		goto exit;
 	m->len = sizeof(Messages);
 	if (*mm == NULL || (*mm)->publish == NULL)
 	{
 		int len1;
 		*mm = m;
-		m->publish = MQTTProtocol_storePublication(publish, &len1);
+		if ((m->publish = MQTTProtocol_storePublication(publish, &len1)) == NULL)
+		{
+			free(m);
+			goto exit;
+		}
 		m->len += len1;
-		if (allocatePayload) {
+		if (allocatePayload)
+		{
 			char *temp = m->publish->payload;
 
-			m->publish->payload = malloc(m->publish->payloadlen);
+			if ((m->publish->payload = malloc(m->publish->payloadlen)) == NULL)
+			{
+				free(m);
+				goto exit;
+			}
 			memcpy(m->publish->payload, temp, m->publish->payloadlen);
 		}
 	}
@@ -213,6 +235,7 @@ Messages* MQTTProtocol_createMessage(Publish* publish, Messages **mm, int qos, i
 	time(&(m->lastTouch));
 	if (qos == 2)
 		m->nextMessageType = PUBREC;
+exit:
 	FUNC_EXIT;
 	return m;
 }
@@ -229,8 +252,9 @@ Publications* MQTTProtocol_storePublication(Publish* publish, int* len)
 	Publications* p = malloc(sizeof(Publications));
 
 	FUNC_ENTRY;
+	if (!p)
+		goto exit;
 	p->refcount = 1;
-
 	*len = (int)strlen(publish->topic)+1;
 	p->topic = publish->topic;
 	publish->topic = NULL;
@@ -241,7 +265,12 @@ Publications* MQTTProtocol_storePublication(Publish* publish, int* len)
 	publish->payload = NULL;
 	*len += publish->payloadlen;
 
-	ListAppend(&(state.publications), p, *len);
+	if ((ListAppend(&(state.publications), p, *len)) == NULL)
+	{
+		free(p);
+		p = NULL;
+	}
+exit:
 	FUNC_EXIT;
 	return p;
 }
@@ -301,6 +330,11 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 		int already_received = 0;
 		ListElement* listElem = NULL;
 		Messages* m = malloc(sizeof(Messages));
+		if (!m)
+		{
+			rc = PAHO_MEMORY_ERROR;
+			goto exit;
+		}
 		Publications* p = MQTTProtocol_storePublication(publish, &len);
 
 		m->publish = p;
@@ -345,11 +379,16 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 		       For other cases, it's done in Protocol_processPublication */
 			char *temp = m->publish->payload;
 
-			m->publish->payload = malloc(m->publish->payloadlen);
+			if ((m->publish->payload = malloc(m->publish->payloadlen)) == NULL)
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 			memcpy(m->publish->payload, temp, m->publish->payloadlen);
 		}
 		publish->topic = NULL;
 	}
+exit:
 	MQTTPacket_freePublish(publish);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -888,6 +927,7 @@ char* MQTTStrdup(const char* src)
 {
 	size_t mlen = strlen(src) + 1;
 	char* temp = malloc(mlen);
-	MQTTStrncpy(temp, src, mlen);
+	if (temp)
+		MQTTStrncpy(temp, src, mlen);
 	return temp;
 }

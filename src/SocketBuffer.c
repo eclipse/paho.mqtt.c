@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -56,7 +56,7 @@ static List writes;
 
 
 int socketcompare(void* a, void* b);
-void SocketBuffer_newDefQ(void);
+int SocketBuffer_newDefQ(void);
 void SocketBuffer_freeDefQ(void);
 int pending_socketcompare(void* a, void* b);
 
@@ -76,26 +76,43 @@ int socketcompare(void* a, void* b)
 /**
  * Create a new default queue when one has just been used.
  */
-void SocketBuffer_newDefQ(void)
+int SocketBuffer_newDefQ(void)
 {
+	int rc = PAHO_MEMORY_ERROR;
+
 	def_queue = malloc(sizeof(socket_queue));
-	def_queue->buflen = 1000;
-	def_queue->buf = malloc(def_queue->buflen);
-	def_queue->socket = def_queue->index = 0;
-	def_queue->buflen = def_queue->datalen = def_queue->headerlen = 0;
+	if (def_queue)
+	{
+		def_queue->buflen = 1000;
+		def_queue->buf = malloc(def_queue->buflen);
+		if (def_queue->buf)
+		{
+			def_queue->socket = def_queue->index = 0;
+			def_queue->buflen = def_queue->datalen = def_queue->headerlen = 0;
+			rc = 0;
+		}
+	}
+	return rc;
 }
 
 
 /**
  * Initialize the socketBuffer module
  */
-void SocketBuffer_initialize(void)
+int SocketBuffer_initialize(void)
 {
+	int rc = 0;
+
 	FUNC_ENTRY;
-	SocketBuffer_newDefQ();
-	queues = ListInitialize();
+	rc = SocketBuffer_newDefQ();
+	if (rc == 0)
+	{
+		if ((queues = ListInitialize()) == NULL)
+			rc = PAHO_MEMORY_ERROR;
+	}
 	ListZero(&writes);
-	FUNC_EXIT;
+	FUNC_EXIT_RC(rc);
+	return rc;
 }
 
 
@@ -176,15 +193,18 @@ char* SocketBuffer_getQueuedData(int socket, size_t bytes, size_t* actual_len)
 		if (queue->datalen > 0)
 		{
 			void* newmem = malloc(bytes);
-			memcpy(newmem, queue->buf, queue->datalen);
+
 			free(queue->buf);
 			queue->buf = newmem;
+			if (!newmem)
+				goto exit;
+			memcpy(newmem, queue->buf, queue->datalen);
 		}
 		else
 			queue->buf = realloc(queue->buf, bytes);
 		queue->buflen = bytes;
 	}
-
+exit:
 	FUNC_EXIT;
 	return queue->buf;
 }
@@ -324,17 +344,22 @@ void SocketBuffer_queueChar(int socket, char c)
  * @param bytes actual data length that was written
  */
 #if defined(OPENSSL) || defined(MBEDTLS)
-void SocketBuffer_pendingWrite(int socket, sslHandler* sslHdl, int count, iobuf* iovecs, int* frees, size_t total, size_t bytes)
+int SocketBuffer_pendingWrite(int socket, sslHandler* sslHdl, int count, iobuf* iovecs, int* frees, size_t total, size_t bytes)
 #else
-void SocketBuffer_pendingWrite(int socket, int count, iobuf* iovecs, int* frees, size_t total, size_t bytes)
+int SocketBuffer_pendingWrite(int socket, int count, iobuf* iovecs, int* frees, size_t total, size_t bytes)
 #endif
 {
 	int i = 0;
 	pending_writes* pw = NULL;
+	int rc = 0;
 
 	FUNC_ENTRY;
 	/* store the buffers until the whole packet is written */
-	pw = malloc(sizeof(pending_writes));
+	if ((pw = malloc(sizeof(pending_writes))) == NULL)
+	{
+		rc = PAHO_MEMORY_ERROR;
+		goto exit;
+	}
 	pw->socket = socket;
 #if defined(OPENSSL) || defined(MBEDTLS)
          pw->sslHdl = sslHdl;
@@ -348,7 +373,9 @@ void SocketBuffer_pendingWrite(int socket, int count, iobuf* iovecs, int* frees,
 		pw->frees[i] = frees[i];
 	}
 	ListAppend(&writes, pw, sizeof(pw) + total);
-	FUNC_EXIT;
+exit:
+	FUNC_EXIT_RC(rc);
+	return rc;
 }
 
 

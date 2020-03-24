@@ -225,11 +225,11 @@ size_t WebSocket_calculateFrameHeaderSize(networkHandles *net, int mask_data, si
  *
  * @param[in,out]  net                 network connection
  * @param[in]      opcode              websocket opcode for the packet
- * @param[in]      mask_data           whether to maskt he data
+ * @param[in]      mask_data           whether to mask the data
  * @param[in,out]  buf0                first buffer, will write before this
  * @param[in]      buf0len             size of first buffer
  * @param[in]      count               number of payload buffers
- * @param[in,out]  buffers             array of paylaod buffers
+ * @param[in,out]  buffers             array of payload buffers
  * @param[in]      buflens             array of payload buffer sizes
  * @param[in]      freeData            array indicating to free payload buffers
  *
@@ -264,6 +264,8 @@ static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
 		else
 		{
 			buf0 = *pbuf0 = malloc(ws_header_size);
+			if (buf0 == NULL)
+				goto exit;
 			*pbuf0len = buf0len = ws_header_size;
 		}
 
@@ -340,6 +342,7 @@ static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
 			}
 		}
 	}
+exit:
 	FUNC_EXIT_RC(buf_len);
 	return buf_len;
 }
@@ -379,6 +382,11 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 		net->websocket_key = malloc(25u);
 	else
 		net->websocket_key = realloc(net->websocket_key, 25u);
+	if (net->websocket_key == NULL)
+	{
+		rc = PAHO_MEMORY_ERROR;
+		goto exit;
+	}
 #if defined(_WIN32) || defined(_WIN64)
 	ZeroMemory( &uuid, sizeof(UUID) );
 	UuidCreate( &uuid );
@@ -404,7 +412,11 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 		}
 		headers_buf_len++;
 
-		headers_buf = malloc(headers_buf_len);
+		if ((headers_buf = malloc(headers_buf_len)) == NULL)
+		{
+			rc = PAHO_MEMORY_ERROR;
+			goto exit;
+		}
 		headers = net->httpHeaders;
 		headers_buf_cur = headers_buf;
 
@@ -443,7 +455,11 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 		if ( i == 0 && buf_len > 0 )
 		{
 			++buf_len; /* need 1 extra byte for ending '\0' */
-			buf = malloc( buf_len );
+			if ((buf = malloc( buf_len )) == NULL)
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 		}
 	}
 
@@ -469,7 +485,7 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 		net->websocket_key = NULL;
 		rc = SOCKET_ERROR;
 	}
-
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -754,7 +770,11 @@ char *WebSocket_getRawSocketData(networkHandles *net, size_t bytes, size_t* actu
 		// no buffer allocated
 		if (!frame_buffer)
 		{
-			frame_buffer = (char *)malloc(*actual_len);
+			if ((frame_buffer = (char *)malloc(*actual_len)) == NULL)
+			{
+				rv = NULL;
+				goto exit;
+			}
 			memcpy(frame_buffer, rv, *actual_len);
 
 			frame_buffer_index = 0;
@@ -1050,10 +1070,20 @@ int WebSocket_receiveFrame(networkHandles *net, size_t bytes, size_t *actual_len
 
 				if (res == NULL)
 				{
-					res = malloc( sizeof(struct ws_frame) + cur_len + len );
+					if ((res = malloc( sizeof(struct ws_frame) + cur_len + len)) == NULL)
+					{
+						rc = PAHO_MEMORY_ERROR;
+						goto exit;
+					}
 					res->pos = 0u;
 				} else
-					res = realloc( res, sizeof(struct ws_frame) + cur_len + len );
+				{
+					if ((res = realloc( res, sizeof(struct ws_frame) + cur_len + len )) == NULL)
+					{
+						rc = PAHO_MEMORY_ERROR;
+						goto exit;
+					}
+				}
 				if (in_frames && in_frames->first)
 					in_frames->first->content = res; /* realloc moves the data */
 				memcpy( (unsigned char *)res + sizeof(struct ws_frame) + cur_len, b, len );
@@ -1365,7 +1395,12 @@ int WebSocket_proxy_connect( networkHandles *net, int ssl, const char *hostname)
 #endif
 		if ( i==0 && buf_len > 0 ) {
 			++buf_len;
-			buf = malloc( buf_len );
+			if ((buf = malloc( buf_len )) == NULL)
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
+
 		}  
 	}
 
@@ -1401,7 +1436,7 @@ int WebSocket_proxy_connect( networkHandles *net, int ssl, const char *hostname)
 	actual_len = 1;
 	while(actual_len)
 		buf = Socket_getdata(net->socket, (size_t)1, &actual_len);
-
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

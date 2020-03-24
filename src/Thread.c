@@ -90,14 +90,15 @@ mutex_type Thread_create_mutex(int* rc)
 	mutex_type mutex = NULL;
 
 	FUNC_ENTRY;
-	*rc = 0;
+	*rc = -1;
 	#if defined(_WIN32) || defined(_WIN64)
 		mutex = CreateMutex(NULL, 0, NULL);
 		if (mutex == NULL)
 			*rc = GetLastError();
 	#else
 		mutex = malloc(sizeof(pthread_mutex_t));
-		*rc = pthread_mutex_init(mutex, NULL);
+		if (mutex)
+			*rc = pthread_mutex_init(mutex, NULL);
 	#endif
 	FUNC_EXIT_RC(*rc);
 	return mutex;
@@ -191,7 +192,7 @@ sem_type Thread_create_sem(int *rc)
 	sem_type sem = NULL;
 
 	FUNC_ENTRY;
-	*rc = 0;
+	*rc = -1;
 	#if defined(_WIN32) || defined(_WIN64)
 		sem = CreateEvent(
 		        NULL,               /* default security attributes */
@@ -212,7 +213,8 @@ sem_type Thread_create_sem(int *rc)
 		*rc = (sem == NULL) ? -1 : 0;
 	#else
 		sem = malloc(sizeof(sem_t));
-		*rc = sem_init(sem, 0, 0);
+		if (sem)
+			*rc = sem_init(sem, 0, 0);
 	#endif
 	FUNC_EXIT_RC(*rc);
 	return sem;
@@ -366,7 +368,7 @@ cond_type Thread_create_cond(int *rc)
 	pthread_condattr_t attr;
 
 	FUNC_ENTRY;
-	*rc = 0;
+	*rc = -1;
 	pthread_condattr_init(&attr);
 
 #if 0
@@ -380,8 +382,11 @@ cond_type Thread_create_cond(int *rc)
 #endif
 
 	condvar = malloc(sizeof(cond_type_struct));
-	*rc = pthread_cond_init(&condvar->cond, &attr);
-	*rc = pthread_mutex_init(&condvar->mutex, NULL);
+	if (condvar)
+	{
+		*rc = pthread_cond_init(&condvar->cond, &attr);
+		*rc = pthread_mutex_init(&condvar->mutex, NULL);
+	}
 
 	FUNC_EXIT_RC(*rc);
 	return condvar;

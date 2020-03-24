@@ -245,7 +245,7 @@ static unsigned int onPSKAuth(const char* hint,
 
 	/* psk should be array of bytes. This is a quick and dirty way to
 	 * convert hex to bytes without input validation */
-	psk_len = strlen(opts->psk) / 2;
+	psk_len = (int)strlen(opts->psk) / 2;
 	if (psk_len > max_psk_len)
 	{
 		fprintf(stderr, "PSK too long\n");

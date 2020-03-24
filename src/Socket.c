@@ -33,7 +33,7 @@
 #include "SocketBuffer.h"
 #include "Messages.h"
 #include "StackTrace.h"
-#if defined(OPENSSL)
+#if defined(OPENSSL) || defined(MBEDTLS)
 #include "SSLSocket.h"
 #endif
 
@@ -547,7 +547,7 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 			}
 			Log(TRACE_MIN, -1, "Partial write: %lu bytes of %lu actually written on socket %d",
 					bytes, total, socket);
-#if defined(OPENSSL)
+#if defined(OPENSSL) || defined (MBEDTLS)
 			SocketBuffer_pendingWrite(socket, NULL, count+1, iovecs, frees1, total, bytes);
 #else
 			SocketBuffer_pendingWrite(socket, count+1, iovecs, frees1, total, bytes);
@@ -871,8 +871,8 @@ int Socket_continueWrite(int socket)
 	FUNC_ENTRY;
 	pw = SocketBuffer_getWrite(socket);
 
-#if defined(OPENSSL)
-	if (pw->ssl)
+#if defined(OPENSSL) || defined (MBEDTLS)
+	if (pw->sslHdl)
 	{
 		rc = SSLSocket_continueWrite(pw);
 		goto exit;
@@ -931,7 +931,7 @@ int Socket_continueWrite(int socket)
                         }
 		}
 	}
-#if defined(OPENSSL)
+#if defined(OPENSSL) || defined (MBEDTLS)
 exit:
 #endif
 	FUNC_EXIT_RC(rc);
@@ -954,8 +954,8 @@ int Socket_abortWrite(int socket)
 	if ((pw = SocketBuffer_getWrite(socket)) == NULL)
 	  goto exit;
 
-#if defined(OPENSSL)
-	if (pw->ssl)
+#if defined(OPENSSL) || defined (MBEDTLS)
+	if (pw->sslHdl)
 		goto exit;
 #endif
 

@@ -822,7 +822,7 @@ void MQTTProtocol_freeClient(Clients* client)
 		free((void*)client->username);
 	if (client->password)
 		free((void*)client->password);
-#if defined(OPENSSL)
+#if defined(OPENSSL) || defined(MBEDTLS)
 	if (client->sslopts)
 	{
 		if (client->sslopts->trustStore)
@@ -843,6 +843,13 @@ void MQTTProtocol_freeClient(Clients* client)
 		free(client->sslopts);
                 client->sslopts = NULL;
 	}
+#endif
+#if defined(MBEDTLS)
+        if (client->session != NULL)
+        {
+                mbedtls_ssl_session_free(client->session);
+                free(client->session);
+        }
 #endif
 	/* don't free the client structure itself... this is done elsewhere */
 	FUNC_EXIT;

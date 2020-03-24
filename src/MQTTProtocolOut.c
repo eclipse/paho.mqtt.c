@@ -102,7 +102,7 @@ size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic)
  * @param long timeout how long to wait for a new socket to be created
  * @return return code
  */
-#if defined(OPENSSL)
+#if defined(OPENSSL) || defined(MBEDTLS)
 #if defined(__GNUC__) && defined(__linux__)
 int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties, long timeout)
@@ -164,15 +164,15 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 			aClient->net.http_proxy = strchr(p0, ':') + 3;
 		}
 	}
-#if defined(OPENSSL)
-	aClient->net.https_proxy = NULL;
-	aClient->net.https_proxy_auth = NULL;
+#if defined(OPENSSL) || defined(MBEDTLS)
+	aClient->net.sslHdl.https_proxy = NULL;
+	aClient->net.sslHdl.https_proxy_auth = NULL;
 	if ((p0 = getenv("https_proxy"))) {
 		p1 = strchr(p0, '@');
 		if(p1) {
-			aClient->net.https_proxy = p1 + 1;
+			aClient->net.sslHdl.https_proxy = p1 + 1;
 			p1 = strchr(p0, ':') + 3;
-			basic_auth_in_len =  (b64_size_t)(aClient->net.https_proxy - p1);
+			basic_auth_in_len =  (b64_size_t)(aClient->net.sslHdl.https_proxy - p1);
 			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
 			if (!basic_auth)
 			{
@@ -185,17 +185,17 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 				*p0++ = *p1++;
 			*p0 = 0x0;
 			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
-			if ((aClient->net.https_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
+			if ((aClient->net.sslHdl.https_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
 			{
 				free(basic_auth);
 				rc = PAHO_MEMORY_ERROR;
 				goto exit;
 			}
-			Base64_encode(aClient->net.https_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
+			Base64_encode(aClient->net.sslHdl.https_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
 			free(basic_auth);
 		}
 		else {
-			aClient->net.https_proxy = strchr(p0, ':') + 3;
+			aClient->net.sslHdl.https_proxy = strchr(p0, ':') + 3;
 		}
 	}
 
@@ -213,16 +213,16 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 		rc = Socket_new(aClient->net.http_proxy, addr_len, port, &(aClient->net.socket));
 #endif
 	}
-#if defined(OPENSSL)
-	else if (ssl && websocket && aClient->net.https_proxy) {
-		addr_len = MQTTProtocol_addressPort(aClient->net.https_proxy, &port, NULL);
+#if defined(OPENSSL) || defined(MBEDTLS)
+	else if (ssl && websocket && aClient->net.sslHdl.https_proxy) {
+		addr_len = MQTTProtocol_addressPort(aClient->net.sslHdl.https_proxy, &port, NULL);
 #if defined(__GNUC__) && defined(__linux__)
 		if (timeout < 0)
 			rc = -1;
 		else
-			rc = Socket_new(aClient->net.https_proxy, addr_len, port, &(aClient->net.socket), timeout);
+			rc = Socket_new(aClient->net.sslHdl.https_proxy, addr_len, port, &(aClient->net.socket), timeout);
 #else
-		rc = Socket_new(aClient->net.https_proxy, addr_len, port, &(aClient->net.socket));
+		rc = Socket_new(aClient->net.sslHdl.https_proxy, addr_len, port, &(aClient->net.socket));
 #endif
 	}
 #endif
@@ -241,19 +241,19 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 		aClient->connect_state = TCP_IN_PROGRESS; /* TCP connect called - wait for connect completion */
 	else if (rc == 0)
 	{	/* TCP connect completed. If SSL, send SSL connect */
-#if defined(OPENSSL)
+#if defined(OPENSSL) || defined(MBEDTLS)
 		if (ssl)
 		{
-			if (websocket && aClient->net.https_proxy) {
+			if (websocket && aClient->net.sslHdl.https_proxy) {
 				aClient->connect_state = PROXY_CONNECT_IN_PROGRESS;
 				rc = WebSocket_proxy_connect( &aClient->net, 1, ip_address);
 			}
 			if (rc == 0 && SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts, ip_address, addr_len) == 1)
 			{
 				rc = aClient->sslopts->struct_version >= 3 ?
-					SSLSocket_connect(aClient->net.ssl, aClient->net.socket, ip_address,
+					SSLSocket_connect(&aClient->net.sslHdl, aClient->net.socket, ip_address,
 						aClient->sslopts->verify, aClient->sslopts->ssl_error_cb, aClient->sslopts->ssl_error_context) :
-					SSLSocket_connect(aClient->net.ssl, aClient->net.socket, ip_address,
+					SSLSocket_connect(&aClient->net.sslHdl, aClient->net.socket, ip_address,
 						aClient->sslopts->verify, NULL, NULL);
 				if (rc == TCPSOCKET_INTERRUPTED)
 					aClient->connect_state = SSL_IN_PROGRESS; /* SSL connect called - wait for completion */

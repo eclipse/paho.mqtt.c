@@ -929,6 +929,7 @@ int WebSocket_receiveFrame(networkHandles *net, size_t bytes, size_t *actual_len
 {
 	struct ws_frame *res = NULL;
 	int rc = TCPSOCKET_COMPLETE;
+	int opcode = 0;
 
 	FUNC_ENTRY;
 	if ( !in_frames )
@@ -940,7 +941,7 @@ int WebSocket_receiveFrame(networkHandles *net, size_t bytes, size_t *actual_len
 
 	//while( !res )
 	//{
-		int opcode = WebSocket_OP_BINARY;
+		opcode = WebSocket_OP_BINARY;
 		do
 		{
 			/* obtain all frames in the sequence */

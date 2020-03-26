@@ -52,7 +52,7 @@ static int MQTTProtocol_startPublishCommon(
 		Publish* publish,
 		int qos,
 		int retained);
-static void MQTTProtocol_retries(time_t now, Clients* client, int regardless);
+static void MQTTProtocol_retries(START_TIME_TYPE now, Clients* client, int regardless);
 
 
 /**

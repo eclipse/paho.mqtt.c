@@ -279,7 +279,7 @@ int MQTTPersistence_restore(Clients *c)
 							msg->nextMessageType = PUBCOMP;
 						/* else: PUBLISH QoS1, or PUBLISH QoS2 and PUBREL not sent */
 						/* retry at the first opportunity */
-						msg->lastTouch = 0;
+						memset(&msg->lastTouch, '\0', sizeof(msg->lastTouch));
 						MQTTPersistence_insertInOrder(c->outboundMsgs, msg, msg->len);
 						publish->topic = NULL;
 						MQTTPacket_freePublish(publish);

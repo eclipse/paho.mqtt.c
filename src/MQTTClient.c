@@ -1179,7 +1179,7 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 #if defined(OPENSSL)
 #if defined(__GNUC__) && defined(__linux__)
 	rc = MQTTProtocol_connect(serverURI, m->c, m->ssl, m->websocket, MQTTVersion, connectProperties, willProperties,
-			millisecsTimeout - MQTTTIme_elapsed(start));
+			millisecsTimeout - MQTTTime_elapsed(start));
 #else
 	rc = MQTTProtocol_connect(serverURI, m->c, m->ssl, m->websocket, MQTTVersion, connectProperties, willProperties);
 #endif
@@ -1375,13 +1375,14 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 				if (m->c->outboundMsgs->count > 0)
 				{
 					ListElement* outcurrent = NULL;
+					START_TIME_TYPE zero = START_TIME_ZERO;
 
 					while (ListNextElement(m->c->outboundMsgs, &outcurrent))
 					{
 						Messages* m = (Messages*)(outcurrent->content);
-						m->lastTouch = 0;
+						memset(&m->lastTouch, '\0', sizeof(m->lastTouch));
 					}
-					MQTTProtocol_retry((time_t)0, 1, 1);
+					MQTTProtocol_retry(zero, 1, 1);
 					if (m->c->connected != 1)
 						rc = MQTTCLIENT_DISCONNECTED;
 				}
@@ -2432,7 +2433,7 @@ int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClie
 
 static void MQTTClient_retry(void)
 {
-	static START_TIME_TYPE last = 0L;
+	static START_TIME_TYPE last = START_TIME_ZERO;
 	START_TIME_TYPE now;
 
 	FUNC_ENTRY;

@@ -213,7 +213,7 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 	rc = WebSocket_putdatas(net, &buf, &buf0len, 1, &buffer, &buflen, &freeData);
 
 	if (rc == TCPSOCKET_COMPLETE)
-		time(&(net->lastSent));
+		net->lastSent = MQTTTime_now();
 	
 	if (rc != TCPSOCKET_INTERRUPTED)
 	  free(buf);
@@ -266,7 +266,7 @@ int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffe
 	rc = WebSocket_putdatas(net, &buf, &buf0len, count, buffers, buflens, frees);
 
 	if (rc == TCPSOCKET_COMPLETE)
-		time(&(net->lastSent));
+		net->lastSent = MQTTTime_now();
 	
 	if (rc != TCPSOCKET_INTERRUPTED)
 	  free(buf);

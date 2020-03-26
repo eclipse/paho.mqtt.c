@@ -20,10 +20,13 @@
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #define START_TIME_TYPE DWORD
+#define START_TIME_ZERO 0
 #elif defined(AIX)
 #define START_TIME_TYPE struct timespec
+#define START_TIME_ZERO {0, 0}
 #else
 #define START_TIME_TYPE struct timeval
+#define START_TIME_ZERO {0, 0}
 #endif
 
 void MQTTTime_sleep(long milliseconds);

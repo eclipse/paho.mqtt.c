@@ -1942,7 +1942,7 @@ exit:
 static void MQTTAsync_checkTimeouts(void)
 {
 	ListElement* current = NULL;
-	static START_TIME_TYPE last = 0L;
+	static START_TIME_TYPE last = START_TIME_ZERO;
 	START_TIME_TYPE now;
 
 	FUNC_ENTRY;
@@ -2255,13 +2255,14 @@ static int MQTTAsync_completeConnection(MQTTAsyncs* m, Connack* connack)
 			if (m->c->outboundMsgs->count > 0)
 			{
 				ListElement* outcurrent = NULL;
+				START_TIME_TYPE zero = START_TIME_ZERO;
 
 				while (ListNextElement(m->c->outboundMsgs, &outcurrent))
 				{
 					Messages* messages = (Messages*)(outcurrent->content);
-					messages->lastTouch = 0;
+					memset(&messages->lastTouch, '\0', sizeof(messages->lastTouch));
 				}
-				MQTTProtocol_retry((time_t)0, 1, 1);
+				MQTTProtocol_retry(zero, 1, 1);
 				if (m->c->connected != 1)
 					rc = MQTTASYNC_DISCONNECTED;
 			}
@@ -3823,7 +3824,7 @@ exit:
 
 static void MQTTAsync_retry(void)
 {
-	static START_TIME_TYPE last = 0L;
+	static START_TIME_TYPE last = START_TIME_ZERO;
 	START_TIME_TYPE now;
 
 	FUNC_ENTRY;

@@ -17,6 +17,13 @@
 #include "MQTTTime.h"
 #include "StackTrace.h"
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#else
+#include <unistd.h>
+#include <sys/time.h>
+#endif
+
 void MQTTTime_sleep(long milliseconds)
 {
 	FUNC_ENTRY;

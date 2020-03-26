@@ -12,7 +12,6 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
- *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
  *    Ian Craggs - fix for bug 421103 - trying to write to same socket, in retry
  *    Rong Xiang, Ian Craggs - C++ compatibility
@@ -47,7 +46,6 @@
 extern MQTTProtocol state;
 extern ClientStates* bstate;
 
-
 static void MQTTProtocol_storeQoS0(Clients* pubclient, Publish* publish);
 static int MQTTProtocol_startPublishCommon(
 		Clients* pubclient,
@@ -55,6 +53,7 @@ static int MQTTProtocol_startPublishCommon(
 		int qos,
 		int retained);
 static void MQTTProtocol_retries(time_t now, Clients* client, int regardless);
+
 
 /**
  * List callback function for comparing Message structures by message id
@@ -232,7 +231,7 @@ Messages* MQTTProtocol_createMessage(Publish* publish, Messages **mm, int qos, i
 	m->MQTTVersion = publish->MQTTVersion;
 	if (m->MQTTVersion >= 5)
 		m->properties = MQTTProperties_copy(&publish->properties);
-	time(&(m->lastTouch));
+	m->lastTouch = MQTTTime_now();
 	if (qos == 2)
 		m->nextMessageType = PUBREC;
 exit:
@@ -498,7 +497,7 @@ int MQTTProtocol_handlePubrecs(void* pack, int sock)
 			{
 				rc = MQTTPacket_send_pubrel(pubrec->MQTTVersion, pubrec->msgId, 0, &client->net, client->clientID);
 				m->nextMessageType = PUBCOMP;
-				time(&(m->lastTouch));
+				m->lastTouch = MQTTTime_now();
 			}
 		}
 	}
@@ -650,7 +649,7 @@ int MQTTProtocol_handlePubcomps(void* pack, int sock)
  * MQTT protocol keepAlive processing.  Sends PINGREQ packets as required.
  * @param now current time
  */
-void MQTTProtocol_keepalive(time_t now)
+void MQTTProtocol_keepalive(START_TIME_TYPE now)
 {
 	ListElement* current = NULL;
 
@@ -666,14 +665,14 @@ void MQTTProtocol_keepalive(time_t now)
 
 		if (client->ping_outstanding == 1)
 		{
-			if (difftime(now, client->net.lastPing) >= client->keepAliveInterval)
+			if (MQTTTime_difftime(now, client->net.lastPing) >= (long)(client->keepAliveInterval * 1000))
 			{
 				Log(TRACE_PROTOCOL, -1, "PINGRESP not received in keepalive interval for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
 				MQTTProtocol_closeSession(client, 1);
 			}
 		}
-		else if (difftime(now, client->net.lastSent) >= client->keepAliveInterval ||
-					difftime(now, client->net.lastReceived) >= client->keepAliveInterval)
+		else if (MQTTTime_difftime(now, client->net.lastSent) >= (long)(client->keepAliveInterval * 1000) ||
+					MQTTTime_difftime(now, client->net.lastReceived) >= (long)(client->keepAliveInterval * 1000))
 		{
 			if (Socket_noPendingWrites(client->net.socket))
 			{
@@ -700,7 +699,7 @@ void MQTTProtocol_keepalive(time_t now)
  * @param client - the client to which to apply the retry processing
  * @param regardless boolean - retry packets regardless of retry interval (used on reconnect)
  */
-static void MQTTProtocol_retries(time_t now, Clients* client, int regardless)
+static void MQTTProtocol_retries(START_TIME_TYPE now, Clients* client, int regardless)
 {
 	ListElement* outcurrent = NULL;
 
@@ -714,7 +713,7 @@ static void MQTTProtocol_retries(time_t now, Clients* client, int regardless)
 		   Socket_noPendingWrites(client->net.socket)) /* there aren't any previous packets still stacked up on the socket */
 	{
 		Messages* m = (Messages*)(outcurrent->content);
-		if (regardless || difftime(now, m->lastTouch) > max(client->retryInterval, 10))
+		if (regardless || MQTTTime_difftime(now, m->lastTouch) > (long)(max(client->retryInterval, 10) * 1000))
 		{
 			if (m->qos == 1 || (m->qos == 2 && m->nextMessageType == PUBREC))
 			{
@@ -741,7 +740,7 @@ static void MQTTProtocol_retries(time_t now, Clients* client, int regardless)
 				{
 					if (m->qos == 0 && rc == TCPSOCKET_INTERRUPTED)
 						MQTTProtocol_storeQoS0(client, &publish);
-					time(&(m->lastTouch));
+					m->lastTouch = MQTTTime_now();
 				}
 			}
 			else if (m->qos && m->nextMessageType == PUBCOMP)
@@ -756,7 +755,7 @@ static void MQTTProtocol_retries(time_t now, Clients* client, int regardless)
 					client = NULL;
 				}
 				else
-					time(&(m->lastTouch));
+					m->lastTouch = MQTTTime_now();
 			}
 			/* break; why not do all retries at once? */
 		}
@@ -772,7 +771,7 @@ exit:
  * @param doRetry boolean - retries as well as pending writes?
  * @param regardless boolean - retry packets regardless of retry interval (used on reconnect)
  */
-void MQTTProtocol_retry(time_t now, int doRetry, int regardless)
+void MQTTProtocol_retry(START_TIME_TYPE now, int doRetry, int regardless)
 {
 	ListElement* current = NULL;
 

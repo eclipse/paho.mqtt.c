@@ -33,6 +33,7 @@
 #include "Messages.h"
 #include "StackTrace.h"
 #include "WebSocket.h"
+#include "MQTTTime.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -165,7 +166,7 @@ void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
 		}
 	}
 	if (pack)
-		time(&(net->lastReceived));
+		net->lastReceived = MQTTTime_now();
 exit:
 	FUNC_EXIT_RC(*error);
 	return pack;

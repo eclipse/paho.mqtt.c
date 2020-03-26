@@ -22,7 +22,7 @@
 #if !defined(CLIENTS_H)
 #define CLIENTS_H
 
-#include <time.h>
+#include "MQTTTime.h"
 #if defined(OPENSSL)
 #if defined(_WIN32) || defined(_WIN64)
 #include <winsock2.h>
@@ -32,7 +32,6 @@
 #include "MQTTClient.h"
 #include "LinkedList.h"
 #include "MQTTClientPersistence.h"
-
 
 /**
  * Stored publication data to minimize copying
@@ -57,7 +56,7 @@ typedef struct
 	int MQTTVersion;
 	MQTTProperties properties;
 	Publications *publish;
-	time_t lastTouch;		/**> used for retry and expiry */
+	START_TIME_TYPE lastTouch;		    /**> used for retry and expiry */
 	char nextMessageType;	/**> PUBREC, PUBREL, PUBCOMP */
 	int len;				/**> length of the whole structure+data */
 } Messages;
@@ -77,9 +76,9 @@ typedef struct
 typedef struct
 {
 	int socket;
-	time_t lastSent;
-	time_t lastReceived;
-	time_t lastPing;
+	START_TIME_TYPE lastSent;
+	START_TIME_TYPE lastReceived;
+	START_TIME_TYPE lastPing;
 #if defined(OPENSSL)
 	SSL* ssl;
 	SSL_CTX* ctx;

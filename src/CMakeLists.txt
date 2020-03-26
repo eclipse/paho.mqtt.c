@@ -26,6 +26,7 @@ CONFIGURE_FILE(VersionInfo.h.in
     )
 
 SET(common_src
+  MQTTTime.c
   MQTTProtocolClient.c
   Clients.c
   utf-8.c

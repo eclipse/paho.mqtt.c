@@ -1,5 +1,5 @@
 #*******************************************************************************
-#  Copyright (c) 2015, 2017 logi.cals GmbH and others
+#  Copyright (c) 2015, 2020 logi.cals GmbH and others
 #
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
@@ -36,6 +36,10 @@ ADD_EXECUTABLE(paho_c_sub paho_c_sub.c pubsub_opts.c)
 ADD_EXECUTABLE(paho_cs_pub paho_cs_pub.c pubsub_opts.c)
 ADD_EXECUTABLE(paho_cs_sub paho_cs_sub.c pubsub_opts.c)
 
+SET_TARGET_PROPERTIES(
+     paho_c_pub paho_c_sub paho_cs_pub paho_cs_sub PROPERTIES
+     COMPILE_DEFINITIONS "PAHO_MQTT_IMPORTS=1")
+
 TARGET_LINK_LIBRARIES(paho_c_pub paho-mqtt3as)
 TARGET_LINK_LIBRARIES(paho_c_sub paho-mqtt3as)
 TARGET_LINK_LIBRARIES(paho_cs_pub paho-mqtt3cs)
@@ -46,6 +50,10 @@ ADD_EXECUTABLE(MQTTAsync_publish MQTTAsync_publish.c)
 ADD_EXECUTABLE(MQTTClient_subscribe MQTTClient_subscribe.c)
 ADD_EXECUTABLE(MQTTClient_publish MQTTClient_publish.c)
 ADD_EXECUTABLE(MQTTClient_publish_async MQTTClient_publish_async.c)
+
+SET_TARGET_PROPERTIES(
+     MQTTAsync_subscribe MQTTAsync_publish MQTTClient_subscribe MQTTClient_publish MQTTClient_publish_async PROPERTIES
+     COMPILE_DEFINITIONS "PAHO_MQTT_IMPORTS=1")
 
 TARGET_LINK_LIBRARIES(MQTTAsync_subscribe paho-mqtt3a)
 TARGET_LINK_LIBRARIES(MQTTAsync_publish paho-mqtt3a)
@@ -72,6 +80,8 @@ ADD_EXECUTABLE(paho_c_pub_static paho_c_pub.c pubsub_opts.c)
 ADD_EXECUTABLE(paho_c_sub_static paho_c_sub.c pubsub_opts.c)
 ADD_EXECUTABLE(paho_cs_pub_static paho_cs_pub.c pubsub_opts.c)
 ADD_EXECUTABLE(paho_cs_sub_static paho_cs_sub.c pubsub_opts.c)
+
+
 
 TARGET_LINK_LIBRARIES(paho_c_pub_static paho-mqtt3as-static)
 TARGET_LINK_LIBRARIES(paho_c_sub_static paho-mqtt3as-static)

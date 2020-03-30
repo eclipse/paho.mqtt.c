@@ -18,13 +18,13 @@
 #define EXPORTDECLARATIONS_H
 
 #if defined(_WIN32) || defined(_WIN64)
-#   if defined(MQTT_EXPORTS)
+#   if defined(PAHO_MQTT_EXPORTS)
 #       define LIBMQTT_API __declspec(dllexport)
-#   elif defined(MQTT_DIRECT)
-#       define LIBMQTT_API
-#   else
+#   elif defined(PAHO_MQTT_IMPORTS)
 #       define LIBMQTT_API __declspec(dllimport)
-#    endif
+#   else
+#       define LIBMQTT_API
+#   endif
 #else
 #    if defined(MQTT_EXPORTS)
 #       define LIBMQTT_API  __attribute__ ((visibility ("default")))

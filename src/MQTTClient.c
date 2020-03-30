@@ -115,7 +115,6 @@ extern mutex_type log_mutex;
 int MQTTClient_init(void)
 {
 	DWORD rc = 0;
-
 	if (mqttclient_mutex == NULL)
 	{
 		if ((mqttclient_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
@@ -191,7 +190,7 @@ void MQTTClient_cleanup(void)
 		CloseHandle(mqttclient_mutex);
 }
 
-#if defined(PAHO_BUILD_STATIC)
+#if defined(PAHO_MQTT_STATIC)
 /* Global variable for one-time initialization structure */
 static INIT_ONCE g_InitOnce = INIT_ONCE_STATIC_INIT; /* Static initialization */
 static PVOID lpContext; /* used by caller to InitOnceFunction */
@@ -368,7 +367,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 	int rc = 0;
 	MQTTClients *m = NULL;
 
-#if (defined(_WIN32) || defined(_WIN64)) && defined(PAHO_BUILD_STATIC)
+#if (defined(_WIN32) || defined(_WIN64)) && defined(PAHO_MQTT_STATIC)
 	/* intializes mutexes once.  Must come before FUNC_ENTRY */
 	BOOL bStatus = InitOnceExecuteOnce(&g_InitOnce, InitOnceFunction, NULL, &lpContext);
 #endif

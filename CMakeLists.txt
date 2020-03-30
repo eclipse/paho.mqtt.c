@@ -1,5 +1,5 @@
 #*******************************************************************************
-#  Copyright (c) 2015, 2019 logi.cals GmbH and others
+#  Copyright (c) 2015, 2020 logi.cals GmbH and others
 #
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
@@ -42,7 +42,7 @@ IF (PAHO_HIGH_PERFORMANCE)
 ENDIF()
 
 IF(WIN32)
-  ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE -DWIN32_LEAN_AND_MEAN -MD -DMQTT_EXPORTS=1)
+  ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE -DWIN32_LEAN_AND_MEAN -MD)
 ELSEIF(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
   ADD_DEFINITIONS(-DOSX)
 ENDIF()
@@ -59,10 +59,6 @@ SET(PAHO_ENABLE_CPACK TRUE CACHE BOOL "Enable CPack")
 
 IF (NOT PAHO_BUILD_SHARED AND NOT PAHO_BUILD_STATIC)
     MESSAGE(FATAL_ERROR "YOu must set either PAHO_BUILD_SHARED, PAHO_BUILD_STATIC, or both")
-ENDIF()
-
-IF (PAHO_BUILD_STATIC)
-  ADD_DEFINITIONS(-DPAHO_BUILD_STATIC=1)
 ENDIF()
 
 IF(PAHO_BUILD_DEB_PACKAGE)

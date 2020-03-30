@@ -176,7 +176,7 @@ void MQTTAsync_cleanup(void)
 		CloseHandle(mqttasync_mutex);
 }
 
-#if defined(PAHO_BUILD_STATIC)
+#if defined(PAHO_MQTT_STATIC)
 // Global variable for one-time initialization structure
 INIT_ONCE g_InitOnce = INIT_ONCE_STATIC_INIT; // Static initialization
 
@@ -565,7 +565,7 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 	int rc = 0;
 	MQTTAsyncs *m = NULL;
 
-#if (defined(_WIN32) || defined(_WIN64)) && defined(PAHO_BUILD_STATIC)
+#if (defined(_WIN32) || defined(_WIN64)) && defined(PAHO_MQTT_STATIC)
 	OpenEventHandleSync(); /* intializes mutexes once.  Must come before FUNC_ENTRY */
 #endif
 	FUNC_ENTRY;

@@ -108,8 +108,10 @@ static mutex_type socket_mutex = NULL;
 static mutex_type subscribe_mutex = NULL;
 static mutex_type unsubscribe_mutex = NULL;
 static mutex_type connect_mutex = NULL;
+#if !defined(NO_HEAP_TRACKING)
 extern mutex_type stack_mutex;
 extern mutex_type heap_mutex;
+#endif
 extern mutex_type log_mutex;
 
 int MQTTClient_init(void)
@@ -141,6 +143,7 @@ int MQTTClient_init(void)
 			printf("connect_mutex error %d\n", rc);
 			goto exit;
 		}
+#if !defined(NO_HEAP_TRACKING)
 		if ((stack_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
 		{
 			rc = GetLastError();
@@ -153,6 +156,7 @@ int MQTTClient_init(void)
 			printf("heap_mutex error %d\n", rc);
 			goto exit;
 		}
+#endif
 		if ((log_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
 		{
 			rc = GetLastError();
@@ -178,10 +182,12 @@ void MQTTClient_cleanup(void)
 		CloseHandle(subscribe_mutex);
 	if (unsubscribe_mutex)
 		CloseHandle(unsubscribe_mutex);
+#if !defined(NO_HEAP_TRACKING)
 	if (stack_mutex)
 		CloseHandle(stack_mutex);
 	if (heap_mutex)
 		CloseHandle(heap_mutex);
+#endif
 	if (log_mutex)
 		CloseHandle(log_mutex);
 	if (socket_mutex)

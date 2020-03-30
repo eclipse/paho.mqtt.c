@@ -94,6 +94,36 @@ size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic)
 
 
 /**
+ * Allow user or password characters to be expressed in the form of %XX, XX being the
+ * hexadecimal value of the caracter. This will avoid problems when a user code or a password
+ * contains a '@' or another special character ('%' included)
+ * @param p0
+ * @param p1
+ * @param basic_auth_in_len
+ */
+void MQTTProtocol_specialChars(char* p0, char* p1, b64_size_t *basic_auth_in_len)
+{
+	while(*p1 != '@') {
+		if (*p1 != '%') {
+			*p0++ = *p1++;
+		}
+		else if (isxdigit(*(p1 + 1)) && isxdigit(*(p1 + 2))) {
+			/* next 2 characters are hexa digits */
+			char hex[3];
+			p1++;
+			hex[0] = *p1++;
+			hex[1] = *p1++;
+			hex[2] = '\0';
+			*p0++ = (char)strtol(hex, 0, 16);
+			/* 3 input char => 1 output char */
+			*basic_auth_in_len -= 2;
+		}
+	}
+	*p0 = 0x0;
+}
+
+
+/**
  * MQTT outgoing connect processing for a client
  * @param ip_address the TCP address:port to connect to
  * @param aClient a structure with all MQTT data needed
@@ -147,9 +177,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 			}
 			basic_auth_in_len--;
 			p0 = (char *)basic_auth;
-			while(*p1 != '@')
-				*p0++ = *p1++;
-			*p0 = 0x0;
+			MQTTProtocol_specialChars(p0, p1, &basic_auth_in_len);
 			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
 			if ((aClient->net.http_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
 			{
@@ -181,9 +209,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 			}
 			basic_auth_in_len--;
 			p0 = (char *)basic_auth;
-			while(*p1 != '@')
-				*p0++ = *p1++;
-			*p0 = 0x0;
+			MQTTProtocol_specialChars(p0, p1, &basic_auth_in_len);
 			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
 			if ((aClient->net.https_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
 			{

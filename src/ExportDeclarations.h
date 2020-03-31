@@ -26,7 +26,7 @@
 #       define LIBMQTT_API
 #   endif
 #else
-#    if defined(MQTT_EXPORTS)
+#    if defined(PAHO_MQTT_EXPORTS)
 #       define LIBMQTT_API  __attribute__ ((visibility ("default")))
 #    else
 #       define LIBMQTT_API extern

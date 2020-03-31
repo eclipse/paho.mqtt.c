@@ -73,7 +73,7 @@ after_build:
 
     7z rn %ZIPNAME% build.paho\src\samples bin
 
-    7z a %ZIPNAME% %APPVEYOR_BUILD_FOLDER%\build.paho\src\MQTTVersion.exe
+    if "%PAHO_BUILD_SHARED%" == "TRUE" "7z a %ZIPNAME% %APPVEYOR_BUILD_FOLDER%\build.paho\src\MQTTVersion.exe"
 
     7z rn %ZIPNAME% MQTTVersion.exe bin\MQTTVersion.exe
 

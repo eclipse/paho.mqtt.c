@@ -1,12 +1,12 @@
 <!--****************************************************************************
-  Copyright (c) 2012, 2019 IBM Corp.
+  Copyright (c) 2012, 2020 IBM Corp.
 
   All rights reserved. This program and the accompanying materials
-  are made available under the terms of the Eclipse Public License v1.0
+  are made available under the terms of the Eclipse Public License v2.0
   and Eclipse Distribution License v1.0 which accompany this distribution.
 
   The Eclipse Public License is available at
-     http://www.eclipse.org/legal/epl-v10.html
+     https://www.eclipse.org/legal/epl-2.0/
   and the Eclipse Distribution License is available at
     http://www.eclipse.org/org/documents/edl-v10.php.
 
@@ -221,7 +221,7 @@
       <fileset dir="src" includes="MQTTClient.h,MQTTAsync.h,MQTTClientPersistence.h"/>
     </copy>
     <copy overwrite="true" todir="${output.folder}">
-      <fileset dir="." includes="README.md,CONTRIBUTING.md,about.html,notice.html,edl-v10,epl-v10"/>
+      <fileset dir="." includes="README.md,CONTRIBUTING.md,about.html,notice.html,edl-v10,epl-v20"/>
     </copy>
     <mkdir dir="${output.folder}/lib"/>
     <move overwrite="true" todir="${output.folder}/lib">
@@ -250,7 +250,7 @@
       <arg value="notice.html"/>
       <arg value="README.md"/>
       <arg value="CONTRIBUTING.md"/>
-      <arg value="epl-v10"/>
+      <arg value="epl-v20"/>
       <arg value="edl-v10"/>
       <arg value="include"/>
 	  <arg value="samples"/>
@@ -266,7 +266,7 @@
       <arg value="notice.html"/>
       <arg value="README.md"/>
       <arg value="CONTRIBUTING.md"/>
-      <arg value="epl-v10"/>
+      <arg value="epl-v20"/>
       <arg value="edl-v10"/>
       <arg value="include"/>
 	  <arg value="samples"/>
@@ -286,7 +286,7 @@
       <arg value="notice.html"/>
       <arg value="README.md"/>
       <arg value="CONTRIBUTING.md"/>
-      <arg value="epl-v10"/>
+      <arg value="epl-v20"/>
       <arg value="edl-v10"/>
       <arg value="Makefile"/>
       <arg value="build.xml"/>

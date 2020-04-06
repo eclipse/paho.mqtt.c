@@ -4,7 +4,7 @@ from conans import ConanFile, CMake, tools
 class PahocConan(ConanFile):
     name = "paho.mqtt.c"
     version = "1.3.1"
-    license = "Eclipse Public License - v 1.0"
+    license = "Eclipse Public License - v 2.0"
     url = "https://github.com/eclipse/paho.mqtt.c"
     description = """The Eclipse Paho project provides open-source client implementations of MQTT
 and MQTT-SN messaging protocols aimed at new, existing, and emerging applications for the Internet

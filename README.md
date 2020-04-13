@@ -21,25 +21,48 @@ The Paho C client comprises four shared libraries:
 
 Optionally, using the CMake build, you can build static versions of those libraries.
 
-## Build instructions for GNU Make
+## Build instructions for Unix and Linux
 
-Ensure the OpenSSL development package is installed.  Then from the client library base directory run:
+### Pre-requisites
+
+On *nix systems CMake creates Makefiles.The build process currently supports a number of Unix and Linux flavors. The build process requires the following tools:
+
+  * CMake v3.5 or newer
+  * GCC v4.8 or newer or Clang v3.9 or newer
+  * GNU Make
+  * OpenSSL development libraries
+
+On Debian based systems this would mean that the following packages have to be installed:
 
 ```
-make
-sudo make install
+$ sudo apt-get install build-essential gcc make cmake cmake-gui cmake-curses-gui libssl-dev
+```
+
+Building the documentation requires doxygen and optionally graphviz to be installed:
+
+```
+$ sudo apt-get install doxygen graphviz 
+```
+
+### Building
+
+From the client library base directory run:
+
+```
+$ make
+$ sudo make install
 ```
 
 This will build and install the libraries.  To uninstall:
 
 ```
-sudo make uninstall
+$ sudo make uninstall
 ```
 
 To build the documentation requires doxygen and optionally graphviz.
 
 ```
-make html
+$ make html
 ```
 
 The provided GNU Makefile is intended to perform all build steps in the ```build``` directory within the source-tree of Eclipse Paho. Generated binares, libraries, and the documentation can be found in the ```build/output``` directory after completion. 
@@ -52,14 +75,112 @@ CC | Path to the C compiler
 CFLAGS | Flags passed to compiler calls
 LDFLAGS | Flags passed to linker calls
 
+## Build instructions for Mac OSX
 
-## Build requirements / compilation using CMake
+### Pre-requisites
 
-There build process currently supports a number of Linux "flavors" including ARM and s390, OS X, AIX and Solaris as well as the Windows operating system. The build process requires the following tools:
+You need Xcode or the Xcode command line utils. If you're not sure if they are already installed open a terminal and try to run the gcc command. If you need to install the compiler a popup will appear to do so.
+
+You will also need to install openssl library. On command line type:
+```
+$ sudo port install openssl
+```
+
+### Building
+
+To prepare the build environment, you need to traverse to the cloned repository. Create a directory called `build` and execute the following commands:
+```
+$ cd paho.mqtt.c
+$ mkdir build && cd build 
+```
+
+Next, we need to export a few variables for `make` to run successfully:
+```
+$ export SSL_DIR=/opt/local/
+$ export MQTTCLIENT_DIR=../src
+```
+
+If you want to build the samples, export the following:
+```
+$ export BUILD_SAMPLES=YES
+$ export SAMPLES_DIR=../src/samples
+```
+
+Now, you are ready to build. Type:
+```
+$ make
+```
+
+Your output should be shown on a folder named `darwin_ia64`. You will find your PAHO C libraries there.
+
+## Build instructions on Windows 7/8/10
+
+### Pre-requisites
+
+You need to install [CMake](http://cmake.org) in order to build under Windows. Make sure cmake is added to your `PATH` before opening up command prompt.
+
+If you would like to build with OpenSSL support, it is highly recommended you download the pre-built OpenSSL libraries from one of the links posted here: [https://wiki.openssl.org/index.php/Binaries](https://wiki.openssl.org/index.php/Binaries)
+
+The build process currently supports a number Windows versions. The build process requires the following tools:
+  * CMake GUI v3.5 or newer
+  * Visual Studio 2013 or newer
+
+> Note: You can probably build MQTT C library using GCC & Bash for Windows but this has not been tested at this point. You are more than welcome to try and contribute those documented steps to this Readme.
+
+> Note: For the list of Visual studio generators accepted by `cmake`, please see: [Visual Studio Generator for CMake](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html#visual-studio-generators) to select your appropriate Visual studio edition.
+
+### Building using MSVC 32-bit
+
+This method will use `cmake` to auto-detect your compiler on windows. Try this method first. Typically, it will detect the 32-bit compiler by default on windows. Type the following on command prompt:
+```
+> cmake -Bbuild -H. -DPAHO_WITH_SSL=TRUE
+> cmake --build build/ --target install
+```
+Note that the default installation directory for the library on Windows is: `C:\Program Files (x86)\Paho.Mqtt.c`. If you would like to install to your own installation path, pass `CMAKE_INSTALL_PREFIX` with your path to `cmake`.
+
+### Building using MSVC 64-bit
+
+It seems quite odd, but even on a 64-bit system using a 64-bit compiler, MSVC seems to default to a 32-bit build target. The 64-bit target can be selected using the CMake generator switch, *-G*, at configuration time. The full version must be provided.
+
+For Visual Studio 2013 (v12) x64, type the following in command prompt:
+```
+> cmake -G "Visual Studio 12 2013" -A x64 -Bbuild -H. -DCMAKE_INSTALL_PREFIX=C:\mqtt\paho-c
+> cmake --build build/ --target install
+```
+
+For Visual Studio 2015 (v14) x64, type the following in command prompt:
+```
+> cmake -G "Visual Studio 14 2015" -A x64 -Bbuild -H. -DCMAKE_INSTALL_PREFIX=C:\mqtt\paho-c
+> cmake --build build/ --target install
+```
+
+For Visual Studio 2017 (v15) x64, type the following in command prompt:
+```
+> cmake -G "Visual Studio 15 2017" -A x64 -Bbuild -H. -DCMAKE_INSTALL_PREFIX=C:\mqtt\paho-c
+> cmake --build build/ --target install
+```
+
+These commands will build and install the MQTT libraries under `C:\mqtt\paho-c`. To install it to a directory of your choice, change `CMAKE_INSTALL_PREFIX` to the path of your choice.
+
+#### Building with OpenSSL Support
+
+Building with OpenSSL support requires you to install the OpenSSL binaries on Windows. Make sure they are installed. To use openssl, pass the variable `PAHO_WITH_SSL=TRUE` to `cmake` as follows:
+```
+> cmake -G "Visual Studio 15 2017" -A x64 -Bbuild -H. -DCMAKE_INSTALL_PREFIX=C:\mqtt\paho-c -DPAHO_WITH_SSL=TRUE
+> cmake --build build/ --target install
+```
+
+## Build using CMake on Linux
+
+### Pre-requisites
+
+There build process currently supports a number of Linux "flavors" including ARM and s390, OS X, AIX and Solaris. The build process requires the following tools:
   * CMake (http://cmake.org)
   * Ninja (https://martine.github.io/ninja/) or
     GNU Make (https://www.gnu.org/software/make/), and
   * gcc (https://gcc.gnu.org/).
+
+#### Building on Debian based Linux system
 
 On Debian based systems this would mean that the following packages have to be installed:
 
@@ -84,6 +205,18 @@ The documentation requires doxygen and optionally graphviz:
 ```
 apt-get install doxygen graphviz
 ```
+
+### Building
+
+Lets attempt to build now:
+```
+$ git clone https://github.com/eclipse/paho.mqtt.c.git
+$ cd paho.mqtt.c
+$ cmake -Bbuild -H. -DPAHO_WITH_SSL=TRUE
+$ sudo cmake --build build/ --target install
+$ sudo ldconfig
+```
+## Configuration Options for CMake
 
 Before compiling, determine the value of some variables in order to configure features, library locations, and other options:
 
@@ -127,7 +260,7 @@ cmake -GNinja -DCMAKE_BUILD_TYPE=Debug git/org.eclipse.paho.mqtt.c
 ```
 
 
-### Running the tests
+## Running the tests
 
 Test code is available in the ``test`` directory. The tests can be built and executed with the CMake build system. The test execution requires a MQTT broker running. By default, the build system uses ```localhost```, however it is possible to configure the build to use an external broker. These parameters are documented in the Build Requirements section above.
 
@@ -138,7 +271,7 @@ python ../test/mqttsas2.py &
 ctest -VV
 ```
 
-### Cross compilation
+## Cross compilation
 
 Cross compilation using CMake is performed by using so called "toolchain files" (see: http://www.vtk.org/Wiki/CMake_Cross_Compiling).
 
@@ -147,8 +280,6 @@ The path to the toolchain file can be specified by using CMake's `-DCMAKE_TOOLCH
 For your convenience toolchain files for the following platforms can be found in the `cmake` directory of Eclipse Paho:
   * Linux x86
   * Linux ARM11 (a.k.a. the Raspberry Pi)
-  * Windows x86_64
-  * Windows x86
 
 The provided toolchain files assume that required compilers/linkers are to be found in the environment, i. e. the PATH-Variable of your user or system. If you prefer, you can also specify the absolute location of your compilers in the toolchain files.
 
@@ -159,19 +290,6 @@ cmake -GNinja -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_SAMPLES=TRUE -DPAHO_BUILD_DOCUME
 ```
 
 Compilers for the Raspberry Pi can be obtained from e. g. Linaro (see: http://releases.linaro.org/15.06/components/toolchain/binaries/4.8/arm-linux-gnueabihf/). This example assumes that OpenSSL-libraries and includes have been installed in the ```/tmp/libssl-dev``` directory.
-
-Example invocation for Windows 64 bit:
-
-```
-cmake -GNinja -DPAHO_BUILD_SAMPLES=TRUE -DCMAKE_TOOLCHAIN_FILE=~/git/org.eclipse.paho.mqtt.c/cmake/toolchain.win64.cmake ~/git/org.eclipse.paho.mqtt.c
-
-```
-
-In this case the libraries and executable are not linked against OpenSSL Libraries. Cross compilers for the Windows platform can be installed on Debian like systems like this:
-
-```
-apt-get install gcc-mingw-w64-x86-64 gcc-mingw-w64-i686
-```
 
 ## Usage and API
 

@@ -213,4 +213,18 @@ Discussion of the Paho clients takes place on the [Eclipse paho-dev mailing list
 
 General questions about the MQTT protocol are discussed in the [MQTT Google Group](https://groups.google.com/forum/?hl=en-US&fromgroups#!forum/mqtt).
 
-There is much more information available via the [MQTT community site](http://mqtt.org).
+There is more information available via the [MQTT community site](http://mqtt.org).
+
+## Microsoft Windows
+
+### Calling convention
+
+As is normal for C programs on Windows, the calling convention is __cdecl.  See the Microsoft documentation here:
+
+https://docs.microsoft.com/en-us/cpp/cpp/cdecl?view=vs-2019
+
+If you call this library from another language, you may need to take this into account.
+
+
+
+

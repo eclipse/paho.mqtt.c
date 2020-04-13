@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -345,12 +345,16 @@ typedef struct
  * <i>topicLen</i>.
  * @param message The MQTTClient_message structure for the received message.
  * This structure contains the message payload and attributes.
- * @return This function must return a boolean value indicating whether or not
- * the message has been safely received by the client application. Returning
- * true indicates that the message has been successfully handled.
- * Returning false indicates that there was a problem. In this
+ * @return This function must return 0 or 1 indicating whether or not
+ * the message has been safely received by the client application. <br>
+ * Returning 1 indicates that the message has been successfully handled.
+ * To free the message storage, ::MQTTClient_freeMessage must be called.
+ * To free the topic name storage, ::MQTTClient_free must be called.<br>
+ * Returning 0 indicates that there was a problem. In this
  * case, the client library will reinvoke MQTTClient_messageArrived() to
  * attempt to deliver the message to the application again.
+ * Do not free the message and topic storage when returning 0, otherwise
+ * the redelivery will fail.
  */
 typedef int MQTTClient_messageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* message);
 

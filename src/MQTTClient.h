@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -41,7 +41,7 @@
  * @endcond
  * @cond MQTTClient_main
  * @mainpage MQTT Client library for C
- * &copy; Copyright IBM Corp. 2009, 2018
+ * &copy; Copyright IBM Corp. 2009, 2020 and others
  *
  * @brief An MQTT client library in C.
  *
@@ -528,6 +528,7 @@ LIBMQTT_API int MQTTClient_setPublished(MQTTClient handle, void* context, MQTTCl
 LIBMQTT_API int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context);
 
+/** Options for the ::MQTTClient_createWithOptions call */
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQCO. */
@@ -947,20 +948,36 @@ typedef struct
   */
 LIBMQTT_API int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options);
 
-
+/** MQTT version 5.0 response information */
 typedef struct MQTTResponse
 {
-	int version;
-	enum MQTTReasonCodes reasonCode;
-	int reasonCodeCount;	               /* used for subscribeMany5 and unsubscribeMany5 */
-	enum MQTTReasonCodes* reasonCodes;  /* used for subscribeMany5 and unsubscribeMany5 */
-	MQTTProperties* properties;         /* optional */
+	int version;                        /* the version number of this structure */
+	enum MQTTReasonCodes reasonCode;    /* the MQTT 5.0 reason code returned */
+	int reasonCodeCount;	            /* the number of reason codes.  Used for subscribeMany5 and unsubscribeMany5 */
+	enum MQTTReasonCodes* reasonCodes;  /* a list of reason codes.  Used for subscribeMany5 and unsubscribeMany5 */
+	MQTTProperties* properties;         /* optionally, the MQTT 5.0 properties returned */
 } MQTTResponse;
 
 #define MQTTResponse_initializer {1, MQTTREASONCODE_SUCCESS, 0, NULL, NULL}
 
+/**
+ * Frees the storage associated with the MQTT response.
+ * @param response the response structure to be freed
+ */
 LIBMQTT_API void MQTTResponse_free(MQTTResponse response);
 
+/**
+  * Attempts to connect a previously-created client (see
+  * MQTTClient_create()) to an MQTT server using MQTT version 5.0 and the specified options. If you
+  * want to enable asynchronous message and status notifications, you must call
+  * MQTTClient_setCallbacks() prior to MQTTClient_connect().
+  * @param handle A valid client handle from a successful call to
+  * MQTTClient_create().
+  * @param options A pointer to a valid MQTTClient_connectOptions
+  * structure.
+  * @param connectProperties the MQTT 5.0 connect properties to use
+  * @return the MQTT 5.0 response information: error codes and properties.
+  */
 LIBMQTT_API MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connectOptions* options,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties);
 
@@ -1014,7 +1031,19 @@ LIBMQTT_API int MQTTClient_isConnected(MQTTClient handle);
   */
 LIBMQTT_API int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos);
 
-
+/**
+  * This function attempts to subscribe an MQTT version 5.0 client to a single topic, which may
+  * contain wildcards (see @ref wildcard). This call also specifies the
+  * @ref qos requested for the subscription
+  * (see also MQTTClient_subscribeMany()).
+  * @param handle A valid client handle from a successful call to
+  * MQTTClient_create().
+  * @param topic The subscription topic, which may include wildcards.
+  * @param qos The requested quality of service for the subscription.
+  * @param opts the MQTT 5.0 subscribe options to be used
+  * @param props the MQTT 5.0 properties to be used
+  * @return the MQTT 5.0 response information: error codes and properties.
+  */
 LIBMQTT_API MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char* topic, int qos,
 		MQTTSubscribe_options* opts, MQTTProperties* props);
 
@@ -1036,6 +1065,22 @@ LIBMQTT_API MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char* to
   */
 LIBMQTT_API int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, int* qos);
 
+/**
+  * This function attempts to subscribe an MQTT version 5.0 client to a list of topics, which may
+  * contain wildcards (see @ref wildcard). This call also specifies the
+  * @ref qos requested for each topic (see also MQTTClient_subscribe()).
+  * @param handle A valid client handle from a successful call to
+  * MQTTClient_create().
+  * @param count The number of topics for which the client is requesting
+  * subscriptions.
+  * @param topic An array (of length <i>count</i>) of pointers to
+  * topics, each of which may include wildcards.
+  * @param qos An array (of length <i>count</i>) of @ref qos
+  * values. qos[n] is the requested QoS for topic[n].
+  * @param opts the MQTT 5.0 subscribe options to be used
+  * @param props the MQTT 5.0 properties to be used
+  * @return the MQTT 5.0 response information: error codes and properties.
+  */
 LIBMQTT_API MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char* const* topic,
 		int* qos, MQTTSubscribe_options* opts, MQTTProperties* props);
 
@@ -1052,6 +1097,16 @@ LIBMQTT_API MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count,
   */
 LIBMQTT_API int MQTTClient_unsubscribe(MQTTClient handle, const char* topic);
 
+/**
+  * This function attempts to remove an existing subscription made by the
+  * specified client using MQTT 5.0.
+  * @param handle A valid client handle from a successful call to
+  * MQTTClient_create().
+  * @param topic The topic for the subscription to be removed, which may
+  * include wildcards (see @ref wildcard).
+  * @param props the MQTT 5.0 properties to be used
+  * @return the MQTT 5.0 response information: error codes and properties.
+  */
 LIBMQTT_API MQTTResponse MQTTClient_unsubscribe5(MQTTClient handle, const char* topic, MQTTProperties* props);
 
 /**
@@ -1067,6 +1122,17 @@ LIBMQTT_API MQTTResponse MQTTClient_unsubscribe5(MQTTClient handle, const char* 
   */
 LIBMQTT_API int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic);
 
+/**
+  * This function attempts to remove existing subscriptions to a list of topics
+  * made by the specified client using MQTT version 5.0.
+  * @param handle A valid client handle from a successful call to
+  * MQTTClient_create().
+  * @param count The number subscriptions to be removed.
+  * @param topic An array (of length <i>count</i>) of pointers to the topics of
+  * the subscriptions to be removed, each of which may include wildcards.
+  * @param props the MQTT 5.0 properties to be used
+  * @return the MQTT 5.0 response information: error codes and properties.
+  */
 LIBMQTT_API MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count, char* const* topic, MQTTProperties* props);
 
 /**
@@ -1093,6 +1159,27 @@ LIBMQTT_API MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int coun
 LIBMQTT_API int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, const void* payload, int qos, int retained,
 		MQTTClient_deliveryToken* dt);
 
+/**
+  * Attempts to publish a message to a given topic using MQTT version 5.0 (see also
+  * MQTTClient_publishMessage5()). An ::MQTTClient_deliveryToken is issued when
+  * this function returns successfully. If the client application needs to
+  * test for succesful delivery of QoS1 and QoS2 messages, this can be done
+  * either asynchronously or synchronously (see @ref async,
+  * ::MQTTClient_waitForCompletion and MQTTClient_deliveryComplete()).
+  * @param handle A valid client handle from a successful call to
+  * MQTTClient_create().
+  * @param topicName The topic associated with this message.
+  * @param payloadlen The length of the payload in bytes.
+  * @param payload A pointer to the byte array payload of the message.
+  * @param qos The @ref qos of the message.
+  * @param retained The retained flag for the message.
+  * @param properties the MQTT 5.0 properties to be used
+  * @param dt A pointer to an ::MQTTClient_deliveryToken. This is populated
+  * with a token representing the message when the function returns
+  * successfully. If your application does not use delivery tokens, set this
+  * argument to NULL.
+  * @return the MQTT 5.0 response information: error codes and properties.
+  */
 LIBMQTT_API MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int payloadlen, const void* payload,
 		int qos, int retained, MQTTProperties* properties, MQTTClient_deliveryToken* dt);
 /**
@@ -1117,6 +1204,25 @@ LIBMQTT_API MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topi
 LIBMQTT_API int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClient_message* msg, MQTTClient_deliveryToken* dt);
 
 
+/**
+  * Attempts to publish a message to the given topic using MQTT version 5.0
+  * (see also
+  * MQTTClient_publish5()). An ::MQTTClient_deliveryToken is issued when
+  * this function returns successfully. If the client application needs to
+  * test for succesful delivery of QoS1 and QoS2 messages, this can be done
+  * either asynchronously or synchronously (see @ref async,
+  * ::MQTTClient_waitForCompletion and MQTTClient_deliveryComplete()).
+  * @param handle A valid client handle from a successful call to
+  * MQTTClient_create().
+  * @param topicName The topic associated with this message.
+  * @param msg A pointer to a valid MQTTClient_message structure containing
+  * the payload and attributes of the message to be published.
+  * @param dt A pointer to an ::MQTTClient_deliveryToken. This is populated
+  * with a token representing the message when the function returns
+  * successfully. If your application does not use delivery tokens, set this
+  * argument to NULL.
+  * @return the MQTT 5.0 response information: error codes and properties.
+  */
 LIBMQTT_API MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char* topicName, MQTTClient_message* msg,
 		MQTTClient_deliveryToken* dt);
 

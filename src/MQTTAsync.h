@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -29,7 +29,7 @@
  * @cond MQTTAsync_main
  * @mainpage Asynchronous MQTT client library for C
  *
- * &copy; Copyright IBM Corp. 2009, 2018
+ * &copy; Copyright IBM Corp. 2009, 2020 and others
  *
  * @brief An Asynchronous MQTT client library for C.
  *
@@ -489,22 +489,24 @@ typedef struct
 	/** A union of the different values that can be returned for subscribe, unsubscribe and publish. */
 	union
 	{
-		/** For subscribe, the granted QoS of the subscription returned by the server. */
+		/** For subscribe, the granted QoS of the subscription returned by the server.
+		 * Also for subscribeMany, if only 1 subscription was requested. */
 		int qos;
-		/** For subscribeMany, the list of granted QoSs of the subscriptions returned by the server. */
+		/** For subscribeMany, if more than one subscription was requested,
+		 * the list of granted QoSs of the subscriptions returned by the server. */
 		int* qosList;
 		/** For publish, the message being sent to the server. */
 		struct
 		{
-			MQTTAsync_message message;
-			char* destinationName;
+			MQTTAsync_message message; /**< the message being sent to the server */
+			char* destinationName;     /**< the topic destination for the message */
 		} pub;
 		/* For connect, the server connected to, MQTT version used, and sessionPresent flag */
 		struct
 		{
-			char* serverURI;
-			int MQTTVersion;
-			int sessionPresent;
+			char* serverURI; /**< the connection string of the server */
+			int MQTTVersion; /**< the version of MQTT being used */
+			int sessionPresent; /**< the session present flag returned from the server */
 		} connect;
 	} alt;
 } MQTTAsync_successData;
@@ -613,6 +615,11 @@ typedef void MQTTAsync_onFailure(void* context,  MQTTAsync_failureData* response
  */
 typedef void MQTTAsync_onFailure5(void* context,  MQTTAsync_failureData5* response);
 
+/** Structure to define call options.  For MQTT 5.0 there is input data as well as that
+ * describing the response method.  So there is now also a synonym ::MQTTAsync_callOptions
+ * to better reflect the use.  This responseOptions name is kept for backward
+ * compatibility.
+ */
 typedef struct MQTTAsync_responseOptions
 {
 	/** The eyecatcher for this structure.  Must be MQTR */
@@ -677,6 +684,7 @@ typedef struct MQTTAsync_responseOptions
 
 #define MQTTAsync_responseOptions_initializer { {'M', 'Q', 'T', 'R'}, 1, NULL, NULL, 0, 0, NULL, NULL, MQTTProperties_initializer, MQTTSubscribe_options_initializer, 0, NULL}
 
+/** A synonym for responseOptions to better reflect its usage since MQTT 5.0 */
 typedef struct MQTTAsync_responseOptions MQTTAsync_callOptions;
 #define MQTTAsync_callOptions_initializer MQTTAsync_responseOptions_initializer
 
@@ -850,6 +858,7 @@ LIBMQTT_API int MQTTAsync_reconnect(MQTTAsync handle);
 LIBMQTT_API int MQTTAsync_create(MQTTAsync* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context);
 
+/** Options for the ::MQTTAsync_createWithOptions call */
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQCO. */
@@ -1029,10 +1038,11 @@ typedef struct
 
 #define MQTTAsync_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 4, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL, NULL, NULL, 0}
 
+/** Utility structure where name/value pairs are needed */
 typedef struct
 {
-	const char* name;
-	const char* value;
+	const char* name; /**< name string */
+	const char* value; /**< value string */
 } MQTTAsync_nameValue;
 
 /**
@@ -1243,7 +1253,7 @@ NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, NULL, 1, NU
   */
 LIBMQTT_API int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options);
 
-
+/** Options for the ::MQTTAsync_disconnect call */
 typedef struct
 {
 	/** The eyecatcher for this structure. Must be MQTD. */

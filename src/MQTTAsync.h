@@ -97,7 +97,7 @@
 /// @endcond
 */
 
-#include "ExportDeclarations.h"
+#include "MQTTExportDeclarations.h"
 
 #include "MQTTProperties.h"
 #include "MQTTReasonCodes.h"

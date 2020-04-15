@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2018 IBM Corp.
+ * Copyright (c) 2017, 2020 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -17,7 +17,7 @@
 #if !defined(MQTTREASONCODES_H)
 #define MQTTREASONCODES_H
 
-#include "ExportDeclarations.h"
+#include "MQTTExportDeclarations.h"
 
 /** The MQTT V5 one byte reason code */
 enum MQTTReasonCodes {

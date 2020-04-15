@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2019 IBM Corp.
+ * Copyright (c) 2017, 2020 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -17,7 +17,7 @@
 #if !defined(MQTTPROPERTIES_H)
 #define MQTTPROPERTIES_H
 
-#include "ExportDeclarations.h"
+#include "MQTTExportDeclarations.h"
 
 #define MQTT_INVALID_PROPERTY_ID -2
 

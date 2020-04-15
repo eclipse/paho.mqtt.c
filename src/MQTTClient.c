@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -48,8 +48,6 @@
 #if !defined(_WIN32) && !defined(_WIN64)
 	#include <sys/time.h>
 #endif
-
-#include "ExportDeclarations.h"
 
 #include "MQTTClient.h"
 #if !defined(NO_PERSISTENCE)

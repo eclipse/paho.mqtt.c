@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2020 IBM Corp.
+ * Copyright (c) 2017, 2020 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -13,8 +13,6 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
-
-#include "ExportDeclarations.h"
 
 #include "MQTTProperties.h"
 

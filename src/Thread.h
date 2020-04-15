@@ -20,7 +20,7 @@
 #if !defined(THREAD_H)
 #define THREAD_H
 
-#include "ExportDeclarations.h"
+#include "MQTTExportDeclarations.h"
 
 #include "MQTTClient.h"
 

@@ -1,12 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2019 IBM Corp.
+ * Copyright (c) 2017, 2020 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -16,6 +16,8 @@
 
 #if !defined(MQTTPROPERTIES_H)
 #define MQTTPROPERTIES_H
+
+#include "MQTTExportDeclarations.h"
 
 #define MQTT_INVALID_PROPERTY_ID -2
 
@@ -50,21 +52,13 @@ enum MQTTPropertyCodes {
   MQTTPROPERTY_CODE_SHARED_SUBSCRIPTION_AVAILABLE = 42/**< The value is 241 */
 };
 
-#if defined(WIN32) || defined(WIN64)
-  #define DLLImport __declspec(dllimport)
-  #define DLLExport __declspec(dllexport)
-#else
-  #define DLLImport extern
-  #define DLLExport __attribute__ ((visibility ("default")))
-#endif
-
 /**
  * Returns a printable string description of an MQTT V5 property code.
  * @param value an MQTT V5 property code.
  * @return the printable string description of the input property code.
  * NULL if the code was not found.
  */
-DLLExport const char* MQTTPropertyName(enum MQTTPropertyCodes value);
+LIBMQTT_API const char* MQTTPropertyName(enum MQTTPropertyCodes value);
 
 /** The one byte MQTT V5 property type */
 enum MQTTPropertyTypes {
@@ -82,7 +76,7 @@ enum MQTTPropertyTypes {
  * @param value an MQTT V5 property code.
  * @return the MQTT V5 type code of the input property. -1 if the code was not found.
  */
-DLLExport int MQTTProperty_getType(enum MQTTPropertyCodes value);
+LIBMQTT_API int MQTTProperty_getType(enum MQTTPropertyCodes value);
 
 /**
  * The data for a length delimited string
@@ -138,7 +132,7 @@ int MQTTProperties_len(MQTTProperties* props);
  * @param prop The property to add to the list.
  * @return 0 on success, -1 on failure.
  */
-DLLExport int MQTTProperties_add(MQTTProperties* props, const MQTTProperty* prop);
+LIBMQTT_API int MQTTProperties_add(MQTTProperties* props, const MQTTProperty* prop);
 
 /**
  * Serialize the given property list to a character buffer, e.g. for writing to the network.
@@ -161,14 +155,14 @@ int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata);
  * Free all memory allocated to the property list, including any to individual properties.
  * @param properties pointer to the property list.
  */
-DLLExport void MQTTProperties_free(MQTTProperties* properties);
+LIBMQTT_API void MQTTProperties_free(MQTTProperties* properties);
 
 /**
  * Copy the contents of a property list, allocating additional memory if needed.
  * @param props pointer to the property list.
  * @return the duplicated property list.
  */
-DLLExport MQTTProperties MQTTProperties_copy(const MQTTProperties* props);
+LIBMQTT_API MQTTProperties MQTTProperties_copy(const MQTTProperties* props);
 
 /**
  * Checks if property list contains a specific property.
@@ -176,7 +170,7 @@ DLLExport MQTTProperties MQTTProperties_copy(const MQTTProperties* props);
  * @param propid the property id to check for.
  * @return 1 if found, 0 if not.
  */
-DLLExport int MQTTProperties_hasProperty(MQTTProperties *props, enum MQTTPropertyCodes propid);
+LIBMQTT_API int MQTTProperties_hasProperty(MQTTProperties *props, enum MQTTPropertyCodes propid);
 
 /**
  * Returns the number of instances of a property id. Most properties can exist only once.
@@ -185,7 +179,7 @@ DLLExport int MQTTProperties_hasProperty(MQTTProperties *props, enum MQTTPropert
  * @param propid the property id to check for.
  * @return the number of times found.  Can be 0.
  */
-DLLExport int MQTTProperties_propertyCount(MQTTProperties *props, enum MQTTPropertyCodes propid);
+LIBMQTT_API int MQTTProperties_propertyCount(MQTTProperties *props, enum MQTTPropertyCodes propid);
 
 /**
  * Returns the integer value of a specific property.  The property given must be a numeric type.
@@ -193,7 +187,7 @@ DLLExport int MQTTProperties_propertyCount(MQTTProperties *props, enum MQTTPrope
  * @param propid the property id to check for.
  * @return the integer value of the property. -9999999 on failure.
  */
-DLLExport int MQTTProperties_getNumericValue(MQTTProperties *props, enum MQTTPropertyCodes propid);
+LIBMQTT_API int MQTTProperties_getNumericValue(MQTTProperties *props, enum MQTTPropertyCodes propid);
 
 /**
  * Returns the integer value of a specific property when it's not the only instance.
@@ -203,7 +197,7 @@ DLLExport int MQTTProperties_getNumericValue(MQTTProperties *props, enum MQTTPro
  * @param index the instance number, starting at 0.
  * @return the integer value of the property. -9999999 on failure.
  */
-DLLExport int MQTTProperties_getNumericValueAt(MQTTProperties *props, enum MQTTPropertyCodes propid, int index);
+LIBMQTT_API int MQTTProperties_getNumericValueAt(MQTTProperties *props, enum MQTTPropertyCodes propid, int index);
 
 /**
  * Returns a pointer to the property structure for a specific property.
@@ -211,7 +205,7 @@ DLLExport int MQTTProperties_getNumericValueAt(MQTTProperties *props, enum MQTTP
  * @param propid the property id to check for.
  * @return the pointer to the property structure if found.  NULL if not found.
  */
-DLLExport MQTTProperty* MQTTProperties_getProperty(MQTTProperties *props, enum MQTTPropertyCodes propid);
+LIBMQTT_API MQTTProperty* MQTTProperties_getProperty(MQTTProperties *props, enum MQTTPropertyCodes propid);
 
 /**
  * Returns a pointer to the property structure for a specific property when it's not the only instance.
@@ -220,6 +214,6 @@ DLLExport MQTTProperty* MQTTProperties_getProperty(MQTTProperties *props, enum M
  * @param index the instance number, starting at 0.
  * @return the pointer to the property structure if found.  NULL if not found.
  */
-DLLExport MQTTProperty* MQTTProperties_getPropertyAt(MQTTProperties *props, enum MQTTPropertyCodes propid, int index);
+LIBMQTT_API MQTTProperty* MQTTProperties_getPropertyAt(MQTTProperties *props, enum MQTTPropertyCodes propid, int index);
 
 #endif /* MQTTPROPERTIES_H */

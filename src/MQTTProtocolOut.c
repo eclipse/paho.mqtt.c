@@ -1,12 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution. 
  *
  * The Eclipse Public License is available at 
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at 
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -32,11 +32,13 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "MQTTProtocolOut.h"
 #include "StackTrace.h"
 #include "Heap.h"
 #include "WebSocket.h"
+#include "Base64.h"
 
 extern ClientStates* bstate;
 
@@ -93,29 +95,175 @@ size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic)
 
 
 /**
+ * Allow user or password characters to be expressed in the form of %XX, XX being the
+ * hexadecimal value of the caracter. This will avoid problems when a user code or a password
+ * contains a '@' or another special character ('%' included)
+ * @param p0
+ * @param p1
+ * @param basic_auth_in_len
+ */
+void MQTTProtocol_specialChars(char* p0, char* p1, b64_size_t *basic_auth_in_len)
+{
+	while(*p1 != '@') {
+		if (*p1 != '%') {
+			*p0++ = *p1++;
+		}
+		else if (isxdigit(*(p1 + 1)) && isxdigit(*(p1 + 2))) {
+			/* next 2 characters are hexa digits */
+			char hex[3];
+			p1++;
+			hex[0] = *p1++;
+			hex[1] = *p1++;
+			hex[2] = '\0';
+			*p0++ = (char)strtol(hex, 0, 16);
+			/* 3 input char => 1 output char */
+			*basic_auth_in_len -= 2;
+		}
+	}
+	*p0 = 0x0;
+}
+
+
+/**
  * MQTT outgoing connect processing for a client
  * @param ip_address the TCP address:port to connect to
  * @param aClient a structure with all MQTT data needed
  * @param int ssl
  * @param int MQTTVersion the MQTT version to connect with (3 or 4)
+ * @param long timeout how long to wait for a new socket to be created
  * @return return code
  */
 #if defined(OPENSSL)
+#if defined(__GNUC__) && defined(__linux__)
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int websocket, int MQTTVersion,
+		MQTTProperties* connectProperties, MQTTProperties* willProperties, long timeout)
+#else
 int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties)
+#endif
+#else
+#if defined(__GNUC__) && defined(__linux__)
+int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket, int MQTTVersion,
+		MQTTProperties* connectProperties, MQTTProperties* willProperties, long timeout)
 #else
 int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties)
 #endif
+#endif
 {
 	int rc, port;
 	size_t addr_len;
+	b64_size_t basic_auth_in_len, basic_auth_out_len;
+	char *p0, *p1;
+	b64_data_t *basic_auth;
 
 	FUNC_ENTRY;
 	aClient->good = 1;
 
-	addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL);
-	rc = Socket_new(ip_address, addr_len, port, &(aClient->net.socket));
+	aClient->net.http_proxy = NULL;
+	aClient->net.http_proxy_auth = NULL;
+	if ((p0 = getenv("http_proxy")))
+	{
+		p1 = strchr(p0, '@');
+		if(p1)
+		{
+			aClient->net.http_proxy = p1 + 1;
+			p1 = strchr(p0, ':') + 3;
+			basic_auth_in_len = (b64_size_t)(aClient->net.http_proxy - p1);
+			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
+			if (!basic_auth)
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
+			basic_auth_in_len--;
+			p0 = (char *)basic_auth;
+			MQTTProtocol_specialChars(p0, p1, &basic_auth_in_len);
+			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
+			if ((aClient->net.http_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
+			{
+				free(basic_auth);
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
+			Base64_encode(aClient->net.http_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
+			free(basic_auth);
+		}
+		else {
+			aClient->net.http_proxy = strchr(p0, ':') + 3;
+		}
+	}
+#if defined(OPENSSL)
+	aClient->net.https_proxy = NULL;
+	aClient->net.https_proxy_auth = NULL;
+	if ((p0 = getenv("https_proxy"))) {
+		p1 = strchr(p0, '@');
+		if(p1) {
+			aClient->net.https_proxy = p1 + 1;
+			p1 = strchr(p0, ':') + 3;
+			basic_auth_in_len =  (b64_size_t)(aClient->net.https_proxy - p1);
+			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
+			if (!basic_auth)
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
+			basic_auth_in_len--;
+			p0 = (char *)basic_auth;
+			MQTTProtocol_specialChars(p0, p1, &basic_auth_in_len);
+			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
+			if ((aClient->net.https_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
+			{
+				free(basic_auth);
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
+			Base64_encode(aClient->net.https_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
+			free(basic_auth);
+		}
+		else {
+			aClient->net.https_proxy = strchr(p0, ':') + 3;
+		}
+	}
+
+	if (!ssl && websocket && aClient->net.http_proxy) {
+#else
+	if (websocket && aClient->net.http_proxy) {
+#endif
+		addr_len = MQTTProtocol_addressPort(aClient->net.http_proxy, &port, NULL);
+#if defined(__GNUC__) && defined(__linux__)
+		if (timeout < 0)
+			rc = -1;
+		else
+			rc = Socket_new(aClient->net.http_proxy, addr_len, port, &(aClient->net.socket), timeout);
+#else
+		rc = Socket_new(aClient->net.http_proxy, addr_len, port, &(aClient->net.socket));
+#endif
+	}
+#if defined(OPENSSL)
+	else if (ssl && websocket && aClient->net.https_proxy) {
+		addr_len = MQTTProtocol_addressPort(aClient->net.https_proxy, &port, NULL);
+#if defined(__GNUC__) && defined(__linux__)
+		if (timeout < 0)
+			rc = -1;
+		else
+			rc = Socket_new(aClient->net.https_proxy, addr_len, port, &(aClient->net.socket), timeout);
+#else
+		rc = Socket_new(aClient->net.https_proxy, addr_len, port, &(aClient->net.socket));
+#endif
+	}
+#endif
+	else {
+		addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL);
+#if defined(__GNUC__) && defined(__linux__)
+		if (timeout < 0)
+			rc = -1;
+		else
+			rc = Socket_new(ip_address, addr_len, port, &(aClient->net.socket), timeout);
+#else
+		rc = Socket_new(ip_address, addr_len, port, &(aClient->net.socket));
+#endif
+	}
 	if (rc == EINPROGRESS || rc == EWOULDBLOCK)
 		aClient->connect_state = TCP_IN_PROGRESS; /* TCP connect called - wait for connect completion */
 	else if (rc == 0)
@@ -123,7 +271,11 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 #if defined(OPENSSL)
 		if (ssl)
 		{
-			if (SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts, ip_address, addr_len) == 1)
+			if (websocket && aClient->net.https_proxy) {
+				aClient->connect_state = PROXY_CONNECT_IN_PROGRESS;
+				rc = WebSocket_proxy_connect( &aClient->net, 1, ip_address);
+			}
+			if (rc == 0 && SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts, ip_address, addr_len) == 1)
 			{
 				rc = aClient->sslopts->struct_version >= 3 ?
 					SSLSocket_connect(aClient->net.ssl, aClient->net.socket, ip_address,
@@ -136,7 +288,13 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 			else
 				rc = SOCKET_ERROR;
 		}
+		else if (websocket && aClient->net.http_proxy) {
+#else
+		if (websocket && aClient->net.http_proxy) {
 #endif
+			aClient->connect_state = PROXY_CONNECT_IN_PROGRESS;
+			rc = WebSocket_proxy_connect( &aClient->net, 0, ip_address);
+		}
 		if ( websocket )
 		{
 			rc = WebSocket_connect( &aClient->net, ip_address );
@@ -153,6 +311,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 		}
 	}
 
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

@@ -1,18 +1,17 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
- *    Ian Craggs, Allan Stockdill-Mander - SSL updates
  *    Ian Craggs - fix for bug 413429 - connectionLost not called
  *    Ian Craggs - fix for bug 421103 - trying to write to same socket, in retry
  *    Rong Xiang, Ian Craggs - C++ compatibility
@@ -47,14 +46,14 @@
 extern MQTTProtocol state;
 extern ClientStates* bstate;
 
-
 static void MQTTProtocol_storeQoS0(Clients* pubclient, Publish* publish);
 static int MQTTProtocol_startPublishCommon(
 		Clients* pubclient,
 		Publish* publish,
 		int qos,
 		int retained);
-static void MQTTProtocol_retries(time_t now, Clients* client, int regardless);
+static void MQTTProtocol_retries(START_TIME_TYPE now, Clients* client, int regardless);
+
 
 /**
  * List callback function for comparing Message structures by message id
@@ -105,15 +104,26 @@ static void MQTTProtocol_storeQoS0(Clients* pubclient, Publish* publish)
 
 	FUNC_ENTRY;
 	/* store the publication until the write is finished */
-	pw = malloc(sizeof(pending_write));
+	if ((pw = malloc(sizeof(pending_write))) == NULL)
+		goto exit;
 	Log(TRACE_MIN, 12, NULL);
-	pw->p = MQTTProtocol_storePublication(publish, &len);
+	if ((pw->p = MQTTProtocol_storePublication(publish, &len)) == NULL)
+	{
+		free(pw);
+		goto exit;
+	}
 	pw->socket = pubclient->net.socket;
-	ListAppend(&(state.pending_writes), pw, sizeof(pending_write)+len);
+	if (!ListAppend(&(state.pending_writes), pw, sizeof(pending_write)+len))
+	{
+		free(pw->p);
+		free(pw);
+		goto exit;
+	}
 	/* we don't copy QoS 0 messages unless we have to, so now we have to tell the socket buffer where
 	the saved copy is */
 	if (SocketBuffer_updateWrite(pw->socket, pw->p->topic, pw->p->payload) == NULL)
 		Log(LOG_SEVERE, 0, "Error updating write");
+exit:
 	FUNC_EXIT;
 }
 
@@ -156,7 +166,7 @@ int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int
 	FUNC_ENTRY;
 	if (qos > 0)
 	{
-		*mm = MQTTProtocol_createMessage(publish, mm, qos, retained);
+		*mm = MQTTProtocol_createMessage(publish, mm, qos, retained, 0);
 		ListAppend(pubclient->outboundMsgs, *mm, (*mm)->len);
 		/* we change these pointers to the saved message location just in case the packet could not be written
 		entirely; the socket buffer will use these locations to finish writing the packet */
@@ -177,22 +187,40 @@ int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int
  * @param mm - pointer to the message data to store
  * @param qos the MQTT QoS to use
  * @param retained boolean - whether to set the MQTT retained flag
+ * @param allocatePayload boolean - whether or not to malloc payload
  * @return pointer to the message data stored
  */
-Messages* MQTTProtocol_createMessage(Publish* publish, Messages **mm, int qos, int retained)
+Messages* MQTTProtocol_createMessage(Publish* publish, Messages **mm, int qos, int retained, int allocatePayload)
 {
 	Messages* m = malloc(sizeof(Messages));
 
 	FUNC_ENTRY;
+	if (!m)
+		goto exit;
 	m->len = sizeof(Messages);
 	if (*mm == NULL || (*mm)->publish == NULL)
 	{
 		int len1;
 		*mm = m;
-		m->publish = MQTTProtocol_storePublication(publish, &len1);
+		if ((m->publish = MQTTProtocol_storePublication(publish, &len1)) == NULL)
+		{
+			free(m);
+			goto exit;
+		}
 		m->len += len1;
+		if (allocatePayload)
+		{
+			char *temp = m->publish->payload;
+
+			if ((m->publish->payload = malloc(m->publish->payloadlen)) == NULL)
+			{
+				free(m);
+				goto exit;
+			}
+			memcpy(m->publish->payload, temp, m->publish->payloadlen);
+		}
 	}
-	else
+	else /* this is now never used, I think */
 	{
 		++(((*mm)->publish)->refcount);
 		m->publish = (*mm)->publish;
@@ -203,9 +231,10 @@ Messages* MQTTProtocol_createMessage(Publish* publish, Messages **mm, int qos, i
 	m->MQTTVersion = publish->MQTTVersion;
 	if (m->MQTTVersion >= 5)
 		m->properties = MQTTProperties_copy(&publish->properties);
-	time(&(m->lastTouch));
+	m->lastTouch = MQTTTime_now();
 	if (qos == 2)
 		m->nextMessageType = PUBREC;
+exit:
 	FUNC_EXIT;
 	return m;
 }
@@ -222,26 +251,25 @@ Publications* MQTTProtocol_storePublication(Publish* publish, int* len)
 	Publications* p = malloc(sizeof(Publications));
 
 	FUNC_ENTRY;
+	if (!p)
+		goto exit;
 	p->refcount = 1;
-
 	*len = (int)strlen(publish->topic)+1;
-	p->topic = malloc(*len);
-	strcpy(p->topic, publish->topic);
-	if (Heap_findItem(publish->topic))
-	{
-		free(publish->topic);
-		publish->topic = NULL;
-	}
-
+	p->topic = publish->topic;
+	publish->topic = NULL;
 	*len += sizeof(Publications);
-
 	p->topiclen = publish->topiclen;
 	p->payloadlen = publish->payloadlen;
-	p->payload = malloc(publish->payloadlen);
-	memcpy(p->payload, publish->payload, p->payloadlen);
+	p->payload = publish->payload;
+	publish->payload = NULL;
 	*len += publish->payloadlen;
 
-	ListAppend(&(state.publications), p, *len);
+	if ((ListAppend(&(state.publications), p, *len)) == NULL)
+	{
+		free(p);
+		p = NULL;
+	}
+exit:
 	FUNC_EXIT;
 	return p;
 }
@@ -264,6 +292,8 @@ void MQTTProtocol_removePublication(Publications* p)
 
 /**
  * Process an incoming publish packet for a socket
+ * The payload field of the packet has not been transferred to another buffer at this point.
+ * If it's needed beyond the scope of this function, it has to be copied.
  * @param pack pointer to the publish packet
  * @param sock the socket on which the packet was received
  * @return completion code
@@ -279,10 +309,10 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	clientid = client->clientID;
 	Log(LOG_PROTOCOL, 11, NULL, sock, clientid, publish->msgId, publish->header.bits.qos,
-					publish->header.bits.retain, min(20, publish->payloadlen), publish->payload);
+					publish->header.bits.retain, publish->payloadlen, min(20, publish->payloadlen), publish->payload);
 
 	if (publish->header.bits.qos == 0)
-		Protocol_processPublication(publish, client);
+		Protocol_processPublication(publish, client, 1);
 	else if (!Socket_noPendingWrites(sock))
 		rc = SOCKET_ERROR; /* queue acks? */
 	else if (publish->header.bits.qos == 1)
@@ -290,7 +320,7 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 	  /* send puback before processing the publications because a lot of return publications could fill up the socket buffer */
 	  rc = MQTTPacket_send_puback(publish->MQTTVersion, publish->msgId, &client->net, client->clientID);
 	  /* if we get a socket error from sending the puback, should we ignore the publication? */
-	  Protocol_processPublication(publish, client);
+	  Protocol_processPublication(publish, client, 1);
 	}
 	else if (publish->header.bits.qos == 2)
 	{
@@ -299,7 +329,13 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 		int already_received = 0;
 		ListElement* listElem = NULL;
 		Messages* m = malloc(sizeof(Messages));
-		Publications* p = MQTTProtocol_storePublication(publish, &len);
+		Publications* p = NULL;
+		if (!m)
+		{
+			rc = PAHO_MEMORY_ERROR;
+			goto exit;
+		}
+		p = MQTTProtocol_storePublication(publish, &len);
 
 		m->publish = p;
 		m->msgid = publish->msgId;
@@ -335,12 +371,24 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 			publish1.MQTTVersion = m->MQTTVersion;
 			publish1.properties = m->properties;
 
-			Protocol_processPublication(&publish1, client);
+			Protocol_processPublication(&publish1, client, 1);
 			ListRemove(&(state.publications), m->publish);
 			m->publish = NULL;
+		} else
+		{	/* allocate and copy payload data as it's needed for pubrel.
+		       For other cases, it's done in Protocol_processPublication */
+			char *temp = m->publish->payload;
+
+			if ((m->publish->payload = malloc(m->publish->payloadlen)) == NULL)
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
+			memcpy(m->publish->payload, temp, m->publish->payloadlen);
 		}
 		publish->topic = NULL;
 	}
+exit:
 	MQTTPacket_freePublish(publish);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -449,7 +497,7 @@ int MQTTProtocol_handlePubrecs(void* pack, int sock)
 			{
 				rc = MQTTPacket_send_pubrel(pubrec->MQTTVersion, pubrec->msgId, 0, &client->net, client->clientID);
 				m->nextMessageType = PUBCOMP;
-				time(&(m->lastTouch));
+				m->lastTouch = MQTTTime_now();
 			}
 		}
 	}
@@ -518,7 +566,7 @@ int MQTTProtocol_handlePubrels(void* pack, int sock)
 			if (publish.MQTTVersion >= MQTTVERSION_5)
 				publish.properties = m->properties;
 			else
-				Protocol_processPublication(&publish, client); /* only for 3.1.1 and lower */
+				Protocol_processPublication(&publish, client, 0); /* only for 3.1.1 and lower */
 			#if !defined(NO_PERSISTENCE)
 				rc += MQTTPersistence_remove(client,
 						(m->MQTTVersion >= MQTTVERSION_5) ? PERSISTENCE_V5_PUBLISH_RECEIVED : PERSISTENCE_PUBLISH_RECEIVED,
@@ -601,7 +649,7 @@ int MQTTProtocol_handlePubcomps(void* pack, int sock)
  * MQTT protocol keepAlive processing.  Sends PINGREQ packets as required.
  * @param now current time
  */
-void MQTTProtocol_keepalive(time_t now)
+void MQTTProtocol_keepalive(START_TIME_TYPE now)
 {
 	ListElement* current = NULL;
 
@@ -617,14 +665,14 @@ void MQTTProtocol_keepalive(time_t now)
 
 		if (client->ping_outstanding == 1)
 		{
-			if (difftime(now, client->net.lastPing) >= client->keepAliveInterval)
+			if (MQTTTime_difftime(now, client->net.lastPing) >= (long)(client->keepAliveInterval * 1000))
 			{
 				Log(TRACE_PROTOCOL, -1, "PINGRESP not received in keepalive interval for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
 				MQTTProtocol_closeSession(client, 1);
 			}
 		}
-		else if (difftime(now, client->net.lastSent) >= client->keepAliveInterval ||
-					difftime(now, client->net.lastReceived) >= client->keepAliveInterval)
+		else if (MQTTTime_difftime(now, client->net.lastSent) >= (long)(client->keepAliveInterval * 1000) ||
+					MQTTTime_difftime(now, client->net.lastReceived) >= (long)(client->keepAliveInterval * 1000))
 		{
 			if (Socket_noPendingWrites(client->net.socket))
 			{
@@ -651,7 +699,7 @@ void MQTTProtocol_keepalive(time_t now)
  * @param client - the client to which to apply the retry processing
  * @param regardless boolean - retry packets regardless of retry interval (used on reconnect)
  */
-static void MQTTProtocol_retries(time_t now, Clients* client, int regardless)
+static void MQTTProtocol_retries(START_TIME_TYPE now, Clients* client, int regardless)
 {
 	ListElement* outcurrent = NULL;
 
@@ -665,7 +713,7 @@ static void MQTTProtocol_retries(time_t now, Clients* client, int regardless)
 		   Socket_noPendingWrites(client->net.socket)) /* there aren't any previous packets still stacked up on the socket */
 	{
 		Messages* m = (Messages*)(outcurrent->content);
-		if (regardless || difftime(now, m->lastTouch) > max(client->retryInterval, 10))
+		if (regardless || MQTTTime_difftime(now, m->lastTouch) > (long)(max(client->retryInterval, 10) * 1000))
 		{
 			if (m->qos == 1 || (m->qos == 2 && m->nextMessageType == PUBREC))
 			{
@@ -692,7 +740,7 @@ static void MQTTProtocol_retries(time_t now, Clients* client, int regardless)
 				{
 					if (m->qos == 0 && rc == TCPSOCKET_INTERRUPTED)
 						MQTTProtocol_storeQoS0(client, &publish);
-					time(&(m->lastTouch));
+					m->lastTouch = MQTTTime_now();
 				}
 			}
 			else if (m->qos && m->nextMessageType == PUBCOMP)
@@ -707,7 +755,7 @@ static void MQTTProtocol_retries(time_t now, Clients* client, int regardless)
 					client = NULL;
 				}
 				else
-					time(&(m->lastTouch));
+					m->lastTouch = MQTTTime_now();
 			}
 			/* break; why not do all retries at once? */
 		}
@@ -723,7 +771,7 @@ exit:
  * @param doRetry boolean - retries as well as pending writes?
  * @param regardless boolean - retry packets regardless of retry interval (used on reconnect)
  */
-void MQTTProtocol_retry(time_t now, int doRetry, int regardless)
+void MQTTProtocol_retry(START_TIME_TYPE now, int doRetry, int regardless)
 {
 	ListElement* current = NULL;
 
@@ -872,6 +920,7 @@ char* MQTTStrdup(const char* src)
 {
 	size_t mlen = strlen(src) + 1;
 	char* temp = malloc(mlen);
-	MQTTStrncpy(temp, src, mlen);
+	if (temp)
+		MQTTStrncpy(temp, src, mlen);
 	return temp;
 }

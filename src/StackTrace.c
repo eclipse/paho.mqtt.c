@@ -1,12 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -25,7 +25,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #define snprintf _snprintf
 #endif
 
@@ -60,11 +60,13 @@ typedef struct
 
 #include "StackTrace.h"
 
+#if !defined(NOSTACKTRACE)
+
 static int thread_count = 0;
 static threadEntry threads[MAX_THREADS];
 static threadEntry *my_thread = NULL;
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 mutex_type stack_mutex;
 #else
 static pthread_mutex_t stack_mutex_store = PTHREAD_MUTEX_INITIALIZER;
@@ -202,3 +204,5 @@ char* StackTrace_get(thread_id_type threadid, char* buf, int bufsize)
 exit:
 	return buf;
 }
+
+#endif

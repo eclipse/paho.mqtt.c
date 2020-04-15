@@ -1,12 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2014 IBM Corp.
+ * Copyright (c) 2011, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -21,8 +21,8 @@
  */
 
 #include "MQTTAsync.h"
-#define NO_HEAP_TRACKING
-#include "Heap.h"
+/*#define NO_HEAP_TRACKING 1
+#include "Heap.h"*/
 #include <string.h>
 #include <stdlib.h>
 
@@ -202,14 +202,14 @@ void MyLog(int log_level, char* format, ...)
 
 void MySleep(long milliseconds)
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	Sleep(milliseconds);
 #else
 	usleep(milliseconds*1000);
 #endif
 }
 
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 #define START_TIME_TYPE DWORD
 static DWORD start_time = 0;
 START_TIME_TYPE start_clock(void)
@@ -235,7 +235,7 @@ START_TIME_TYPE start_clock(void)
 }
 #endif
 
-#if defined(WIN32)
+#if defined(_WIN32)
 long elapsed(START_TIME_TYPE start_time)
 {
 	return GetTickCount() - start_time;
@@ -514,8 +514,8 @@ int recreateReconnect(void)
 
 		MQTTAsync_destroy(&client); /* destroy the client object so that we force persistence to be read on recreate */
 #if !defined(_WINDOWS)
-		heap_info* mqtt_mem = 0;
-		/*mqtt_mem = Heap_get_info();
+		/*heap_info* mqtt_mem = 0;
+		mqtt_mem = Heap_get_info();
 		MyLog(LOGA_INFO, "MQTT mem current %ld, max %ld",mqtt_mem->current_size,mqtt_mem->max_size);
 		if (mqtt_mem->current_size > 20)
 		  HeapScan(5); */
@@ -962,7 +962,7 @@ int main(int argc, char** argv)
 	static char topic_buf[200];
 	static char clientid[40];
 
-#if !defined(WIN32)
+#if !defined(_WIN32)
 	signal(SIGPIPE, SIG_IGN);
 #endif
 

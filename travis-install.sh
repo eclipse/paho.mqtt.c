@@ -16,12 +16,12 @@ fi
 
 if [ "$TRAVIS_OS_NAME" == "osx" ]; then
 	pwd
-	brew update
+	# brew update
 	# brew install openssl mosquitto
 	# brew services stop mosquitto
 	# /usr/local/sbin/mosquitto -c test/tls-testing/mosquitto.conf &
 
-	brew upgrade python
+	# brew upgrade python
 	git clone https://github.com/eclipse/paho.mqtt.testing.git
 	cd paho.mqtt.testing/interoperability
 	python3 startbroker.py -c localhost_testing.conf &

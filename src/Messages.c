@@ -1,12 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution. 
  *
  * The Eclipse Public License is available at 
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at 
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -46,8 +46,8 @@ static const char *protocol_message_list[] =
 	"%d %s -> SUBACK msgid: %d (%d)", /* 7, was 40 */
 	"%d %s <- UNSUBSCRIBE msgid: %d", /* 8, was 41 */
 	"%d %s -> UNSUBACK msgid: %d (%d)", /* 9 */
-	"%d %s -> PUBLISH msgid: %d qos: %d retained: %d (%d) payload: %.*s", /* 10, was 42 */
-	"%d %s <- PUBLISH msgid: %d qos: %d retained: %d payload: %.*s", /* 11, was 46 */
+	"%d %s -> PUBLISH msgid: %d qos: %d retained: %d rc %d payload len(%d): %.*s", /* 10, was 42 */
+	"%d %s <- PUBLISH msgid: %d qos: %d retained: %d payload len(%d): %.*s", /* 11, was 46 */
 	"%d %s -> PUBACK msgid: %d (%d)", /* 12, was 47 */
 	"%d %s -> PUBREC msgid: %d (%d)", /* 13, was 48 */
 	"%d %s <- PUBACK msgid: %d", /* 14, was 49 */
@@ -63,7 +63,7 @@ static const char *protocol_message_list[] =
 	"%d %s <- UNSUBACK msgid: %d", /* 24, was 74 */
 	"%d %s -> UNSUBSCRIBE msgid: %d (%d)", /* 25, was 106 */
 	"%d %s <- CONNECT", /* 26 */
-	"%d %s -> PUBLISH qos: 0 retained: %d (%d)", /* 27 */
+	"%d %s -> PUBLISH qos: 0 retained: %d rc: %d payload len(%d): %.*s", /* 27 */
 	"%d %s -> DISCONNECT (%d)", /* 28 */
 	"Socket error for client identifier %s, socket %d, peer address %s; ending connection", /* 29 */
 };

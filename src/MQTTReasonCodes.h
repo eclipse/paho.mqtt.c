@@ -1,12 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2018 IBM Corp.
+ * Copyright (c) 2017, 2020 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -16,6 +16,8 @@
 
 #if !defined(MQTTREASONCODES_H)
 #define MQTTREASONCODES_H
+
+#include "MQTTExportDeclarations.h"
 
 /** The MQTT V5 one byte reason code */
 enum MQTTReasonCodes {
@@ -66,20 +68,12 @@ enum MQTTReasonCodes {
   MQTTREASONCODE_WILDCARD_SUBSCRIPTIONS_NOT_SUPPORTED = 162
 };
 
-#if defined(WIN32) || defined(WIN64)
-  #define DLLImport __declspec(dllimport)
-  #define DLLExport __declspec(dllexport)
-#else
-  #define DLLImport extern
-  #define DLLExport __attribute__ ((visibility ("default")))
-#endif
-
 /**
  * Returns a printable string description of an MQTT V5 reason code.
  * @param value an MQTT V5 reason code.
  * @return the printable string description of the input reason code.
  * NULL if the code was not found.
  */
-DLLExport const char* MQTTReasonCode_toString(enum MQTTReasonCodes value);
+LIBMQTT_API const char* MQTTReasonCode_toString(enum MQTTReasonCodes value);
 
 #endif

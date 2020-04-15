@@ -1,0 +1,6 @@
+To build .deb package:
+
+debuild -us -uc -j1
+
+This still needs to be fixed up somewhat.
+

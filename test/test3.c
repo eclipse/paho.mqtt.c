@@ -2,11 +2,11 @@
  * Copyright (c) 2012, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -291,7 +291,7 @@ void MyLog(int LOGA_level, char* format, ...)
 }
 
 
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 #define mqsleep(A) Sleep(1000*A)
 #define START_TIME_TYPE DWORD
 static DWORD start_time = 0;
@@ -321,7 +321,7 @@ START_TIME_TYPE start_clock(void)
 #endif
 
 
-#if defined(WIN32)
+#if defined(_WIN32)
 long elapsed(START_TIME_TYPE start_time)
 {
 	return GetTickCount() - start_time;
@@ -520,7 +520,7 @@ void multiThread_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 			rc = MQTTClient_publishMessage(c, test_topic, &multiThread_pubmsg, &dt);
 		assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(100000L);
@@ -530,7 +530,7 @@ void multiThread_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 		while ((multiThread_arrivedcount < i) && (wait_seconds-- > 0))
 		{
 			MyLog(LOGA_DEBUG, "Arrived %d count %d", multiThread_arrivedcount, i);
-			#if defined(WIN32)
+			#if defined(_WIN32)
 				Sleep(1000);
 			#else
 				usleep(1000000L);
@@ -549,7 +549,7 @@ void multiThread_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 		while ((multiThread_deliveryCompleted < iterations) && (wait_seconds-- > 0))
 		{
 			MyLog(LOGA_DEBUG, "Delivery Completed %d count %d", multiThread_deliveryCompleted, i);
-			#if defined(WIN32)
+			#if defined(_WIN32)
 				Sleep(1000);
 			#else
 				usleep(1000000L);
@@ -653,8 +653,7 @@ int test2a_s(struct Options options)
 	opts.cleansession = 1;
 	opts.username = "testuser";
 	opts.password = "testpassword";
-	if (options.haconnections != NULL)
-	{
+	if (options.haconnections != NULL)	{
 		opts.serverURIs = options.haconnections;
 		opts.serverURIcount = options.hacount;
 	}
@@ -667,6 +666,7 @@ int test2a_s(struct Options options)
 		opts.ssl->privateKeyPassword = options.client_key_pass;
 	if (options.client_private_key_file)
 		opts.ssl->privateKey = options.client_private_key_file;
+	opts.ssl->verify = 1;
 
 	MyLog(LOGA_DEBUG, "Connecting");
 
@@ -900,6 +900,89 @@ int test2c(struct Options options)
 
 	rc = MQTTClient_connect(c, &opts);
 	if (!(assert("Good rc from connect", rc == MQTTCLIENT_FAILURE, "rc was %d", rc)))
+		goto exit;
+
+exit:
+	MQTTClient_destroy(&c);
+	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", testname, tests, failures);
+	write_test_result();
+	return failures;
+}
+
+/*********************************************************************
+
+Test2e: Mutual SSL Authentication - high availability
+
+*********************************************************************/
+
+int test2e_s(struct Options options)
+{
+	char* testname = "test2e_s";
+	char* test_topic = "C client test2e_s";
+	int subsqos = 2;
+	MQTTClient c;
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
+	MQTTClient_SSLOptions sslopts = MQTTClient_SSLOptions_initializer;
+	char* uris[2] = {"wrong", options.mutual_auth_connection};
+	int rc = 0;
+
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 2e_s - Mutual SSL authentication - HA");
+	fprintf(xml, "<testcase classname=\"test3\" name=\"test 2e_s\"");
+	global_start_time = start_clock();
+
+	rc = MQTTClient_create(&c, "not used", "test2e_s", MQTTCLIENT_PERSISTENCE_DEFAULT, persistenceStore);
+	if (!(assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc)))
+		goto exit;
+
+	opts.keepAliveInterval = 20;
+	opts.cleansession = 1;
+	opts.username = "testuser";
+	opts.password = "testpassword";
+	opts.serverURIs = uris;
+	opts.serverURIcount = 2;
+
+	opts.ssl = &sslopts;
+	if (options.server_key_file)
+		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
+	opts.ssl->keyStore = options.client_key_file;  /*file of certificate for client to present to server*/
+	if (options.client_key_pass)
+		opts.ssl->privateKeyPassword = options.client_key_pass;
+	if (options.client_private_key_file)
+		opts.ssl->privateKey = options.client_private_key_file;
+	opts.ssl->verify = 1;
+
+	MyLog(LOGA_DEBUG, "Connecting");
+
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Good rc from connect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+		goto exit;
+
+	rc = MQTTClient_subscribe(c, test_topic, subsqos);
+	if (!(assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+		goto exit;
+
+	singleThread_sendAndReceive(c, 0, test_topic);
+	singleThread_sendAndReceive(c, 1, test_topic);
+	singleThread_sendAndReceive(c, 2, test_topic);
+
+	MyLog(LOGA_DEBUG, "Stopping\n");
+
+	rc = MQTTClient_unsubscribe(c, test_topic);
+	if (!(assert("Unsubscribe successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+		goto exit;
+	rc = MQTTClient_disconnect(c, 0);
+	if (!(assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+		goto exit;
+
+	/* Just to make sure we can connect again */
+	rc = MQTTClient_connect(c, &opts);
+	if (!(assert("Connect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
+		goto exit;
+	rc = MQTTClient_disconnect(c, 0);
+	if (!(assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc)))
 		goto exit;
 
 exit:
@@ -1609,7 +1692,8 @@ int main(int argc, char** argv)
 {
 	int* numtests = &tests;
 	int rc = 0;
- 	int (*tests[])() = {NULL, test1, test2a_s, test2a_m, test2b, test2c, test3a_s, test3a_m, test3b, test4_s, test4_m, test6, /*test5a, test5b,test5c */};
+ 	int (*tests[])() = {NULL, test1, test2a_s, test2a_m, test2b, test2c, test3a_s, test3a_m, test3b, test4_s, test4_m, test6,
+ 	  test2e_s /*test5a, test5b,test5c */};
 	//MQTTClient_nameValue* info;
 
 	xml = fopen("TEST-test3.xml", "w");

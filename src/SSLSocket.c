@@ -978,6 +978,7 @@ int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int cou
 			if (!sockmem)
 			{
 				rc = PAHO_MEMORY_ERROR;
+				SSL_unlock_mutex(&sslCoreMutex);
 				goto exit;
 			}
 			Log(TRACE_MIN, -1, "Partial write: incomplete write of %d bytes on SSL socket %d",

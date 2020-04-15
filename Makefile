@@ -1,5 +1,5 @@
 #*******************************************************************************
-#  Copyright (c) 2009, 2019 IBM Corp.
+#  Copyright (c) 2009, 2020 IBM Corp.
 #
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v2.0
@@ -304,6 +304,7 @@ install: build
 	$(INSTALL_DATA) ${srcdir}/MQTTProperties.h $(DESTDIR)${includedir}
 	$(INSTALL_DATA) ${srcdir}/MQTTReasonCodes.h $(DESTDIR)${includedir}
 	$(INSTALL_DATA) ${srcdir}/MQTTSubscribeOpts.h $(DESTDIR)${includedir}	
+	$(INSTALL_DATA) ${srcdir}/MQTTExportDeclarations.h $(DESTDIR)${includedir}
 	- $(INSTALL_DATA) doc/man/man1/paho_c_pub.1 $(DESTDIR)${man1dir}
 	- $(INSTALL_DATA) doc/man/man1/paho_c_sub.1 $(DESTDIR)${man1dir}
 	- $(INSTALL_DATA) doc/man/man1/paho_cs_pub.1 $(DESTDIR)${man1dir}
@@ -341,6 +342,7 @@ uninstall:
 	- rm $(DESTDIR)${includedir}/MQTTProperties.h
 	- rm $(DESTDIR)${includedir}/MQTTReasonCodes.h
 	- rm $(DESTDIR)${includedir}/MQTTSubscribeOpts.h
+	- rm $(DESTDIR)${includedir}/MQTTExportDeclarations.h
 	
 	- rm $(DESTDIR)${man1dir}/paho_c_pub.1
 	- rm $(DESTDIR)${man1dir}/paho_c_sub.1

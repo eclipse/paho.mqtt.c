@@ -178,7 +178,7 @@ IF (PAHO_BUILD_STATIC)
     ENDIF()
 ENDIF()
 
-INSTALL(FILES MQTTAsync.h MQTTClient.h MQTTClientPersistence.h MQTTProperties.h MQTTReasonCodes.h MQTTSubscribeOpts.h ExportDeclarations.h
+INSTALL(FILES MQTTAsync.h MQTTClient.h MQTTClientPersistence.h MQTTProperties.h MQTTReasonCodes.h MQTTSubscribeOpts.h MQTTExportDeclarations.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 IF (PAHO_WITH_SSL)

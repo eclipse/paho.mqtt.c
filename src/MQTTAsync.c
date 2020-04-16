@@ -475,46 +475,39 @@ void MQTTAsync_sleep(long milliseconds)
 }
 
 
-// Add random amount of jitter for exponential backoff on retry
-// Jitter value will be +/- 20% of "base" interval, including max interval
-// https://www.awsarchitectureblog.com/2015/03/backoff.html
-// http://ee.lbl.gov/papers/sync_94.pdf
+/* Add random amount of jitter for exponential backoff on retry
+   Jitter value will be +/- 20% of "base" interval, including max interval
+   https://www.awsarchitectureblog.com/2015/03/backoff.html
+   http://ee.lbl.gov/papers/sync_94.pdf */
 int MQTTAsync_randomJitter(int currentIntervalBase, int minInterval, int maxInterval)
 {
 	const int max_sleep = (int)(min(maxInterval, currentIntervalBase) * 1.2); // (e.g. 72 if base > 60)
 	const int min_sleep = (int)(max(minInterval, currentIntervalBase) / 1.2); // (e.g. 48 if base > 60)
 
-	if (min_sleep >= max_sleep) // shouldn't happen, but just incase
+	if (min_sleep >= max_sleep) // shouldn't happen, but just in case
 	{
 		return min_sleep;
 	}
 
 	{
-		// random_between(min_sleep, max_sleep)
-		// http://stackoverflow.com/questions/2509679/how-to-generate-a-random-number-from-within-a-range
+		/* random_between(min_sleep, max_sleep)
+		  http://stackoverflow.com/questions/2509679/how-to-generate-a-random-number-from-within-a-range */
 		int r;
 		int range = max_sleep - min_sleep + 1;
-		if (range > RAND_MAX)
+		const int buckets = RAND_MAX / range;
+		const int limit = buckets * range;
+
+		/* Create equal size buckets all in a row, then fire randomly towards
+		 * the buckets until you land in one of them. All buckets are equally
+		 * likely. If you land off the end of the line of buckets, try again. */
+		do
 		{
-			range = RAND_MAX;
-		}
+			r = rand();
+		} while (r >= limit);
 
 		{
-			const int buckets = RAND_MAX / range;
-			const int limit = buckets * range;
-
-			/* Create equal size buckets all in a row, then fire randomly towards
-			 * the buckets until you land in one of them. All buckets are equally
-			 * likely. If you land off the end of the line of buckets, try again. */
-			do
-			{
-				r = rand();
-			} while (r >= limit);
-
-			{
-				const int randResult = r / buckets;
-				return min_sleep + randResult;
-			}
+			const int randResult = r / buckets;
+			return min_sleep + randResult;
 		}
 	}
 }
@@ -2106,8 +2099,8 @@ static void MQTTAsync_removeResponsesAndCommands(MQTTAsyncs* m)
 			MQTTAsync_freeCommand1(command);
 			count++;
 		}
+		ListEmpty(m->responses);
 	}
-	ListEmpty(m->responses);
 	Log(TRACE_MINIMUM, -1, "%d responses removed for client %s", count, m->c->clientID);
 
 	/* remove commands in the command queue relating to this client */

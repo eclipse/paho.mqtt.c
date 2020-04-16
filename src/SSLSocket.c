@@ -981,7 +981,7 @@ int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int cou
 				SSL_unlock_mutex(&sslCoreMutex);
 				goto exit;
 			}
-			Log(TRACE_MIN, -1, "Partial write: incomplete write of %d bytes on SSL socket %d",
+			Log(TRACE_MIN, -1, "Partial write: incomplete write of %lu bytes on SSL socket %d",
 				iovec.iov_len, socket);
 			SocketBuffer_pendingWrite(socket, ssl, 1, &iovec, &free, iovec.iov_len, 0);
 			*sockmem = socket;

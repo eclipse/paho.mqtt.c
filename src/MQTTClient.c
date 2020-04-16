@@ -2350,12 +2350,14 @@ MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int p
 		*deliveryToken = msg->msgid;
 
 exit_and_free:
-	if (p->topic)
-		free(p->topic);
-	if (p->payload)
-		free(p->payload);
 	if (p)
+	{
+		if (p->topic)
+			free(p->topic);
+		if (p->payload)
+			free(p->payload);
 		free(p);
+	}
 
 	if (rc == SOCKET_ERROR)
 	{

@@ -768,7 +768,7 @@ int SSLSocket_connect(SSL* ssl, int sock, const char* hostname, int verify, int 
 			Log(TRACE_PROTOCOL, -1, "peername from X509_check_host is %s", peername);
 		else
 			Log(TRACE_PROTOCOL, -1, "X509_check_host for hostname %.*s failed, rc %d",
-					hostname_len, hostname, rc);
+					(int)hostname_len, hostname, rc);
 
 		if (peername != NULL)
 			OPENSSL_free(peername);
@@ -893,7 +893,7 @@ char *SSLSocket_getdata(SSL* ssl, int socket, size_t bytes, size_t* actual_len)
 	else /* we didn't read the whole packet */
 	{
 		SocketBuffer_interrupted(socket, *actual_len);
-		Log(TRACE_MAX, -1, "SSL_read: %d bytes expected but %d bytes now received", bytes, *actual_len);
+		Log(TRACE_MAX, -1, "SSL_read: %lu bytes expected but %lu bytes now received", bytes, *actual_len);
 	}
 exit:
 	FUNC_EXIT;

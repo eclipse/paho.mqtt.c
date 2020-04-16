@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2018 IBM Corp.
+ * Copyright (c) 2012, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -143,9 +143,18 @@ int main(int argc, char* argv[])
 	int rc;
 	int ch;
 
-	MQTTAsync_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+	if ((rc = MQTTAsync_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to create client, return code %d\n", rc);
+		exit(EXIT_FAILURE);
+	}
 
-	MQTTAsync_setCallbacks(client, client, connlost, msgarrvd, NULL);
+	if ((rc = MQTTAsync_setCallbacks(client, client, connlost, msgarrvd, NULL)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to create client, return code %d\n", rc);
+		rc = EXIT_FAILURE;
+		goto exit;
+	}
 
 	conn_opts.keepAliveInterval = 20;
 	conn_opts.cleansession = 1;
@@ -155,7 +164,8 @@ int main(int argc, char* argv[])
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-		exit(EXIT_FAILURE);
+		rc = EXIT_FAILURE;
+		goto exit;
 	}
 
 	while	(!subscribed)
@@ -177,7 +187,8 @@ int main(int argc, char* argv[])
 	if ((rc = MQTTAsync_disconnect(client, &disc_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start disconnect, return code %d\n", rc);
-		exit(EXIT_FAILURE);
+		rc = EXIT_FAILURE;
+		goto exit;
 	}
  	while	(!disc_finished)
 		#if defined(_WIN32)

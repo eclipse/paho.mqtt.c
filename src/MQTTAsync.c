@@ -74,7 +74,7 @@ const char *client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
 const char *client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
 
 // global objects init declaration
-void MQTTAsync_init();
+int MQTTAsync_init();
 
 void MQTTAsync_global_init(MQTTAsync_init_options* inits)
 {
@@ -139,29 +139,68 @@ extern mutex_type heap_mutex;
 #endif
 extern mutex_type log_mutex;
 
-void MQTTAsync_init(void)
+int MQTTAsync_init(void)
 {
+	DWORD rc = 0;
+
 	if (mqttasync_mutex == NULL)
 	{
-		mqttasync_mutex = CreateMutex(NULL, 0, NULL);
-		mqttcommand_mutex = CreateMutex(NULL, 0, NULL);
-		send_sem = CreateEvent(
+		if ((mqttasync_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
+		{
+			rc = GetLastError();
+			printf("mqttasync_mutex error %d\n", rc);
+			goto exit;
+		}
+		if ((mqttcommand_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
+		{
+			rc = GetLastError();
+			printf("mqttcommand_mutex error %d\n", rc);
+			goto exit;
+		}
+		if ((send_sem = CreateEvent(
 				NULL,               /* default security attributes */
 				FALSE,              /* manual-reset event? */
 				FALSE,              /* initial state is nonsignaled */
 				NULL                /* object name */
-				);
+				)) == NULL)
+		{
+			rc = GetLastError();
+			printf("send_sem error %d\n", rc);
+			goto exit;
+		}
 #if !defined(NO_HEAP_TRACKING)
-		stack_mutex = CreateMutex(NULL, 0, NULL);
-		heap_mutex = CreateMutex(NULL, 0, NULL);
+		if ((stack_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
+		{
+			rc = GetLastError();
+			printf("stack_mutex error %d\n", rc);
+			goto exit;
+		}
+		if ((heap_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
+		{
+			rc = GetLastError();
+			printf("heap_mutex error %d\n", rc);
+			goto exit;
+		}
 #endif
-		log_mutex = CreateMutex(NULL, 0, NULL);
-		socket_mutex = CreateMutex(NULL, 0, NULL);
+		if ((log_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
+		{
+			rc = GetLastError();
+			printf("log_mutex error %d\n", rc);
+			goto exit;
+		}
+		if ((socket_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
+		{
+			rc = GetLastError();
+			printf("socket_mutex error %d\n", rc);
+			goto exit;
+		}
 	}
 	else
 	{
 		Log(TRACE_MAX, -1, "Library already initialized");
 	}
+exit:
+	return rc;
 }
 
 void MQTTAsync_cleanup(void)
@@ -183,46 +222,16 @@ void MQTTAsync_cleanup(void)
 }
 
 #if defined(PAHO_MQTT_STATIC)
-// Global variable for one-time initialization structure
-INIT_ONCE g_InitOnce = INIT_ONCE_STATIC_INIT; // Static initialization
+static INIT_ONCE g_InitOnce = INIT_ONCE_STATIC_INIT; /* Global for one time initialization */
 
-// Initialization callback function
-BOOL CALLBACK InitHandleFunction (
-    PINIT_ONCE InitOnce,
-    PVOID Parameter,
-    PVOID *lpContext);
-
-// Returns a handle to an event object that is created only once
-HANDLE OpenEventHandleSync()
+/* This runs at most once */
+BOOL CALLBACK InitMutexesOnce (
+    PINIT_ONCE InitOnce,        /* Pointer to one-time initialization structure */
+    PVOID Parameter,            /* Optional parameter */
+    PVOID *lpContext)           /* Return data, if any */
 {
-  PVOID lpContext;
-  BOOL  bStatus;
-
-  // Execute the initialization callback function
-  bStatus = InitOnceExecuteOnce(&g_InitOnce,          // One-time initialization structure
-                                InitHandleFunction,   // Pointer to initialization callback function
-                                NULL,                 // Optional parameter to callback function (not used)
-                                &lpContext);          // Receives pointer to event object stored in g_InitOnce
-
-  // InitOnceExecuteOnce function succeeded. Return event object.
-  if (bStatus)
-  {
-    return (HANDLE)lpContext;
-  }
-  else
-  {
-    return (INVALID_HANDLE_VALUE);
-  }
-}
-
-// Initialization callback function that creates the event object
-BOOL CALLBACK InitHandleFunction (
-    PINIT_ONCE InitOnce,        // Pointer to one-time initialization structure
-    PVOID Parameter,            // Optional parameter passed by InitOnceExecuteOnce
-    PVOID *lpContext)           // Receives pointer to event object
-{
-	MQTTAsync_init();
-    return TRUE;
+	int rc = MQTTAsync_init();
+    return rc == 0;
 }
 #else
 BOOL APIENTRY DllMain(HANDLE hModule,
@@ -565,7 +574,8 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 	MQTTAsyncs *m = NULL;
 
 #if (defined(_WIN32) || defined(_WIN64)) && defined(PAHO_MQTT_STATIC)
-	OpenEventHandleSync(); /* intializes mutexes once.  Must come before FUNC_ENTRY */
+	 /* intializes mutexes once.  Must come before FUNC_ENTRY */
+	BOOL bStatus = InitOnceExecuteOnce(&g_InitOnce, InitMutexesOnce, NULL, NULL);
 #endif
 	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttasync_mutex);

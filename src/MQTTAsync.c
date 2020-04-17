@@ -74,7 +74,7 @@ const char *client_timestamp_eye = "MQTTAsyncV3_Timestamp " BUILD_TIMESTAMP;
 const char *client_version_eye = "MQTTAsyncV3_Version " CLIENT_VERSION;
 
 // global objects init declaration
-int MQTTAsync_init();
+int MQTTAsync_init(void);
 
 void MQTTAsync_global_init(MQTTAsync_init_options* inits)
 {
@@ -274,7 +274,7 @@ static mutex_type mqttcommand_mutex = &mqttcommand_mutex_store;
 static cond_type_struct send_cond_store = { PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER };
 static cond_type send_cond = &send_cond_store;
 
-void MQTTAsync_init(void)
+int MQTTAsync_init(void)
 {
 	pthread_mutexattr_t attr;
 	int rc;
@@ -287,15 +287,16 @@ void MQTTAsync_init(void)
 #endif
 	if ((rc = pthread_mutex_init(mqttasync_mutex, &attr)) != 0)
 		printf("MQTTAsync: error %d initializing async_mutex\n", rc);
-	if ((rc = pthread_mutex_init(mqttcommand_mutex, &attr)) != 0)
+	else if ((rc = pthread_mutex_init(mqttcommand_mutex, &attr)) != 0)
 		printf("MQTTAsync: error %d initializing command_mutex\n", rc);
-	if ((rc = pthread_mutex_init(socket_mutex, &attr)) != 0)
+	else if ((rc = pthread_mutex_init(socket_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing socket_mutex\n", rc);
-
-	if ((rc = pthread_cond_init(&send_cond->cond, NULL)) != 0)
+	else if ((rc = pthread_cond_init(&send_cond->cond, NULL)) != 0)
 		printf("MQTTAsync: error %d initializing send_cond cond\n", rc);
-	if ((rc = pthread_mutex_init(&send_cond->mutex, &attr)) != 0)
+	else if ((rc = pthread_mutex_init(&send_cond->mutex, &attr)) != 0)
 		printf("MQTTAsync: error %d initializing send_cond mutex\n", rc);
+
+	return rc;
 }
 
 #define WINAPI

@@ -265,13 +265,13 @@ int MQTTClient_init(void)
 #endif /* !defined(_WRS_KERNEL) */
 	if ((rc = pthread_mutex_init(mqttclient_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing client_mutex\n", rc);
-	if ((rc = pthread_mutex_init(socket_mutex, &attr)) != 0)
+	else if ((rc = pthread_mutex_init(socket_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing socket_mutex\n", rc);
-	if ((rc = pthread_mutex_init(subscribe_mutex, &attr)) != 0)
+	else if ((rc = pthread_mutex_init(subscribe_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing subscribe_mutex\n", rc);
-	if ((rc = pthread_mutex_init(unsubscribe_mutex, &attr)) != 0)
+	else if ((rc = pthread_mutex_init(unsubscribe_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing unsubscribe_mutex\n", rc);
-	if ((rc = pthread_mutex_init(connect_mutex, &attr)) != 0)
+	else if ((rc = pthread_mutex_init(connect_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing connect_mutex\n", rc);
 
 	return rc;

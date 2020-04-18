@@ -115,6 +115,7 @@ extern mutex_type log_mutex;
 int MQTTClient_init(void)
 {
 	DWORD rc = 0;
+
 	if (mqttclient_mutex == NULL)
 	{
 		if ((mqttclient_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
@@ -197,7 +198,6 @@ void MQTTClient_cleanup(void)
 #if defined(PAHO_MQTT_STATIC)
 /* Global variable for one-time initialization structure */
 static INIT_ONCE g_InitOnce = INIT_ONCE_STATIC_INIT; /* Static initialization */
-static PVOID lpContext; /* used by caller to InitOnceFunction */
 
 /* One time initialization function */
 BOOL InitOnceFunction (
@@ -265,13 +265,13 @@ int MQTTClient_init(void)
 #endif /* !defined(_WRS_KERNEL) */
 	if ((rc = pthread_mutex_init(mqttclient_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing client_mutex\n", rc);
-	if ((rc = pthread_mutex_init(socket_mutex, &attr)) != 0)
+	else if ((rc = pthread_mutex_init(socket_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing socket_mutex\n", rc);
-	if ((rc = pthread_mutex_init(subscribe_mutex, &attr)) != 0)
+	else if ((rc = pthread_mutex_init(subscribe_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing subscribe_mutex\n", rc);
-	if ((rc = pthread_mutex_init(unsubscribe_mutex, &attr)) != 0)
+	else if ((rc = pthread_mutex_init(unsubscribe_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing unsubscribe_mutex\n", rc);
-	if ((rc = pthread_mutex_init(connect_mutex, &attr)) != 0)
+	else if ((rc = pthread_mutex_init(connect_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing connect_mutex\n", rc);
 
 	return rc;
@@ -373,7 +373,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 
 #if (defined(_WIN32) || defined(_WIN64)) && defined(PAHO_MQTT_STATIC)
 	/* intializes mutexes once.  Must come before FUNC_ENTRY */
-	BOOL bStatus = InitOnceExecuteOnce(&g_InitOnce, InitOnceFunction, NULL, &lpContext);
+	BOOL bStatus = InitOnceExecuteOnce(&g_InitOnce, InitOnceFunction, NULL, NULL);
 #endif
 	FUNC_ENTRY;
 	if ((rc = Thread_lock_mutex(mqttclient_mutex)) != 0)
@@ -2350,12 +2350,14 @@ MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int p
 		*deliveryToken = msg->msgid;
 
 exit_and_free:
-	if (p->topic)
-		free(p->topic);
-	if (p->payload)
-		free(p->payload);
 	if (p)
+	{
+		if (p->topic)
+			free(p->topic);
+		if (p->payload)
+			free(p->payload);
 		free(p);
+	}
 
 	if (rc == SOCKET_ERROR)
 	{

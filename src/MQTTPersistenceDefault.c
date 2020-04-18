@@ -243,10 +243,10 @@ exit:
 int pstget(void* handle, char* key, char** buffer, int* buflen)
 {
 	int rc = 0;
-	FILE *fp;
+	FILE *fp = NULL;
 	char *clientDir = handle;
-	char *file;
-	char *buf;
+	char *file = NULL;
+	char *buf = NULL;
 	unsigned long fileLen = 0;
 	unsigned long bytesRead = 0;
 
@@ -274,7 +274,6 @@ int pstget(void* handle, char* key, char** buffer, int* buflen)
 		fseek(fp, 0, SEEK_SET);
 		if ((buf = (char *)malloc(fileLen)) == NULL)
 		{
-			free(file);
 			rc = PAHO_MEMORY_ERROR;
 			goto exit;
 		}
@@ -283,15 +282,15 @@ int pstget(void* handle, char* key, char** buffer, int* buflen)
 		*buflen = bytesRead;
 		if ( bytesRead != fileLen )
 			rc = MQTTCLIENT_PERSISTENCE_ERROR;
-		fclose(fp);
-		fp = NULL;
 	} else
 		rc = MQTTCLIENT_PERSISTENCE_ERROR;
 
-	free(file);
 	/* the caller must free buf */
-
 exit:
+	if (file)
+		free(file);
+	if (fp)
+		fclose(fp);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -456,7 +455,7 @@ int containskeyUnix(char *dirname, char *key)
 {
 	int notFound = MQTTCLIENT_PERSISTENCE_ERROR;
 	char *filekey, *ptraux;
-	DIR *dp;
+	DIR *dp = NULL;
 	struct dirent *dir_entry;
 	struct stat stat_info;
 
@@ -491,10 +490,11 @@ int containskeyUnix(char *dirname, char *key)
 				free(filekey);
 			}
 		}
-		closedir(dp);
 	}
 
 exit:
+	if (dp)
+		closedir(dp);
 	FUNC_EXIT_RC(notFound);
 	return notFound;
 }
@@ -730,7 +730,7 @@ int keysUnix(char *dirname, char ***keys, int *nkeys)
 	int nfkeys = 0;
 	char *ptraux;
 	int i;
-	DIR *dp;
+	DIR *dp = NULL;
 	struct dirent *dir_entry;
 	struct stat stat_info;
 
@@ -753,6 +753,7 @@ int keysUnix(char *dirname, char ***keys, int *nkeys)
 			free(temp);
 		}
 		closedir(dp);
+		dp = NULL;
 	} else
 	{
 		rc = MQTTCLIENT_PERSISTENCE_ERROR;
@@ -799,7 +800,6 @@ int keysUnix(char *dirname, char ***keys, int *nkeys)
 				}
 				free(temp);
 			}
-			closedir(dp);
 		} else
 		{
 			rc = MQTTCLIENT_PERSISTENCE_ERROR;
@@ -812,6 +812,8 @@ int keysUnix(char *dirname, char ***keys, int *nkeys)
 	/* the caller must free keys */
 
 exit:
+	if (dp)
+		closedir(dp);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

@@ -1220,7 +1220,7 @@ int WebSocket_upgrade( networkHandles *net )
 		rc = TCPSOCKET_INTERRUPTED;
 		read_buf = WebSocket_getRawSocketData( net, 12u, &rcv );
 
-		if (read_buf && rcv < 12u) {
+		if ((read_buf == NULL) || rcv < 12u) {
 			Log(TRACE_PROTOCOL, 1, "WebSocket upgrade read not complete %lu", rcv );
 			goto exit;
 		}
@@ -1244,7 +1244,7 @@ int WebSocket_upgrade( networkHandles *net )
 			/* Did we read the whole response? */
 			if (read_buf && rcv > 4 && memcmp(&read_buf[rcv-4], "\r\n\r\n", 4) != 0)
 			{
-				Log(TRACE_PROTOCOL, -1, "WebSocket HTTP upgrade response read not complete %d", rcv);
+				Log(TRACE_PROTOCOL, -1, "WebSocket HTTP upgrade response read not complete %lu", rcv);
 				rc = SOCKET_ERROR;
 				goto exit;
 			}

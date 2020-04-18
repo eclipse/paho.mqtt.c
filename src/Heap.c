@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -58,7 +58,7 @@ static mutex_type heap_mutex = &heap_mutex_store;
 static heap_info state = {0, 0}; /**< global heap state information */
 
 typedef double eyecatcherType;
-static eyecatcherType eyecatcher = 0x8888888888888888;
+static eyecatcherType eyecatcher = (eyecatcherType)0x8888888888888888;
 
 /*#define HEAP_STACK 1 */
 

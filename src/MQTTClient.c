@@ -200,7 +200,7 @@ void MQTTClient_cleanup(void)
 static INIT_ONCE g_InitOnce = INIT_ONCE_STATIC_INIT; /* Static initialization */
 
 /* One time initialization function */
-BOOL InitOnceFunction (
+BOOL WINAPI InitOnceFunction (
     PINIT_ONCE InitOnce,        /* Pointer to one-time initialization structure */
     PVOID Parameter,            /* Optional parameter passed by InitOnceExecuteOnce */
     PVOID *lpContext)           /* Receives pointer to event object */

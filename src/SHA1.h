@@ -1,12 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2018 Wind River Systems, Inc. All Rights Reserved.
+ * Copyright (c) 2018, 2019 Wind River Systems, Inc. All Rights Reserved.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -25,15 +25,15 @@
 
 #else /* if defined(OPENSSL) */
 
-#if defined(WIN32) || defined(WIN64)
-#include <Windows.h>
-#include <WinCrypt.h>
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#include <wincrypt.h>
 typedef struct SHA_CTX_S
 {
 	HCRYPTPROV hProv;
 	HCRYPTHASH hHash;
 } SHA_CTX;
-#else /* if defined(WIN32) || defined(WIN64) */
+#else /* if defined(_WIN32) || defined(_WIN64) */
 
 #include <stdint.h>
 typedef struct SHA_CTX_S {
@@ -45,7 +45,7 @@ typedef struct SHA_CTX_S {
 	unsigned int size;
 	unsigned int total;
 } SHA_CTX;
-#endif /* else if defined(WIN32) || defined(WIN64) */
+#endif /* else if defined(_WIN32) || defined(_WIN64) */
 
 #include <stddef.h>
 

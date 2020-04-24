@@ -2,11 +2,11 @@
  * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -134,7 +134,7 @@ void MyLog(int LOGA_level, char* format, ...)
 	  return;
 
 	ftime(&ts);
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 	localtime_s(&timeinfo, &ts.time);
 #else
 	localtime_r(&ts.time, &timeinfo);
@@ -155,7 +155,7 @@ void MyLog(int LOGA_level, char* format, ...)
 
 void MySleep(long milliseconds)
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	Sleep(milliseconds);
 #else
 	usleep(milliseconds*1000);
@@ -163,7 +163,7 @@ void MySleep(long milliseconds)
 }
 
 
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 #define START_TIME_TYPE DWORD
 static DWORD start_time = 0;
 START_TIME_TYPE start_clock(void)
@@ -190,7 +190,7 @@ START_TIME_TYPE start_clock(void)
 #endif
 
 
-#if defined(WIN32)
+#if defined(_WIN32)
 long elapsed(START_TIME_TYPE start_time)
 {
 	return GetTickCount() - start_time;
@@ -320,7 +320,7 @@ void waitForNoPendingTokens(MQTTAsync c)
 		if (i > 0)
 			MySleep(100);
 	}
-	while (i > 0 && ++count < 10);
+	while (i > 0 && ++count < 100);
 	assert("Number of getPendingTokens should be 0", i == 0, "i was %d ", i);
 }
 
@@ -1443,6 +1443,13 @@ void test7_onConnect5(void* context, MQTTAsync_successData5* response)
 	int rc;
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess5 callback, context %p", context);
+
+	if (test7_just_connect == 1)
+	{ /* we don't need to subscribe if we reconnected */
+		test7_subscribed = 1;
+		return;
+	}
+
 	opts.onSuccess5 = test7_onSubscribe5;
 	opts.context = c;
 
@@ -1518,6 +1525,7 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 	if (start_mqtt_version == MQTTVERSION_5)
 	{
 		opts.cleanstart = 1;
+		test7_just_connect = 0;
 		opts.connectProperties = &props;
 		property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 		property.value.integer4 = 999999;
@@ -1572,8 +1580,6 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 	rc = MQTTAsync_send(c, test7_topic, pubmsg.payloadlen, pubmsg.payload, pubmsg.qos, pubmsg.retained, &ropts);
 	assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	MyLog(LOGA_DEBUG, "Token was %d", ropts.token);
-	rc = MQTTAsync_isComplete(c, ropts.token);
-	assert("0 rc from isComplete", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	rc = MQTTAsync_waitForCompletion(c, ropts.token, 5000L);
 	assert("Good rc from waitForCompletion", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	rc = MQTTAsync_isComplete(c, ropts.token);
@@ -1651,6 +1657,7 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 	if (restore_mqtt_version == MQTTVERSION_5)
 	{
 		opts.cleanstart = opts.cleansession = 0;
+		test7_just_connect = 1;
 		opts.connectProperties = &props;
 		property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 		property.value.integer4 = 0; /* clean up at end of test */
@@ -1668,6 +1675,7 @@ int test7_run(int qos, int start_mqtt_version, int restore_mqtt_version)
 	else
 	{	/* MQTT 3 version */
 		opts.cleanstart = opts.cleansession = 0;
+		test7_just_connect = 1;
 		opts.onSuccess5 = NULL;
 		opts.onFailure5 = NULL;
 		opts.onSuccess = test7_onConnect;

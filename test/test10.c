@@ -2,11 +2,11 @@
  * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -173,7 +173,7 @@ void MyLog(int LOGA_level, char* format, ...)
 
 	strcpy(msg_buf, "");
 	ftime(&ts);
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 	localtime_s(&timeinfo, &ts.time);
 #else
 	localtime_r(&ts.time, &timeinfo);
@@ -191,7 +191,7 @@ void MyLog(int LOGA_level, char* format, ...)
 }
 
 
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 #define mqsleep(A) Sleep(1000*A)
 #define START_TIME_TYPE DWORD
 static DWORD start_time = 0;
@@ -221,7 +221,7 @@ START_TIME_TYPE start_clock(void)
 #endif
 
 
-#if defined(WIN32)
+#if defined(_WIN32)
 long elapsed(START_TIME_TYPE start_time)
 {
 	return GetTickCount() - start_time;
@@ -452,7 +452,7 @@ int test_client_topic_aliases(struct Options options)
 	count = 0;
 	while (test_topic_aliases_globals.disconnected == 0 && ++count < 10)
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(1000);
 #else
 		usleep(1000000L);
@@ -498,7 +498,7 @@ int test_client_topic_aliases(struct Options options)
 	/* should get a response */
 	while (messages_arrived == 0 && ++count < 10)
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(1000);
 #else
 		usleep(1000000L);
@@ -514,7 +514,7 @@ int test_client_topic_aliases(struct Options options)
 	/* should get a response */
 	while (messages_arrived == 0 && ++count < 10)
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(1000);
 #else
 		usleep(1000000L);
@@ -541,7 +541,7 @@ int test_client_topic_aliases(struct Options options)
 	/* should get a response */
 	while (messages_arrived == 0 && ++count < 10)
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(1000);
 #else
 		usleep(1000000L);
@@ -561,7 +561,7 @@ int test_client_topic_aliases(struct Options options)
 	/* should not get a response */
 	while (messages_arrived == 0 && ++count < 10)
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(1000);
 #else
 		usleep(1000000L);
@@ -573,7 +573,7 @@ int test_client_topic_aliases(struct Options options)
 	count = 0;
 	while (test_topic_aliases_globals.disconnected == 0 && ++count < 10)
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(1000);
 #else
 		usleep(1000000L);
@@ -716,7 +716,7 @@ int test_server_topic_aliases(struct Options options)
 	/* should get responses */
 	while (messages_arrived < msg_count && ++count < 10)
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(1000);
 #else
 		usleep(1000000L);
@@ -858,7 +858,7 @@ int test_subscription_ids(struct Options options)
 	/* should get responses */
 	while (messages_arrived < msg_count && ++count < 10)
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(1000);
 #else
 		usleep(1000000L);
@@ -985,7 +985,7 @@ int test_flow_control(struct Options options)
 	/* should get responses */
 	while (messages_arrived < receive_maximum + 2 && ++count < 10)
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(1000);
 #else
 		usleep(1000000L);
@@ -1212,7 +1212,7 @@ int test_qos_1_2_errors(struct Options options)
 	count = 0;
 	while (test_qos_1_2_errors_globals.published == 0 && ++count < 10)
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(1000);
 #else
 		usleep(1000000L);
@@ -1234,7 +1234,7 @@ int test_qos_1_2_errors(struct Options options)
 	count = 0;
 	while (test_qos_1_2_errors_globals.published == 0 && ++count < 10)
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(1000);
 #else
 		usleep(1000000L);
@@ -1255,7 +1255,7 @@ int test_qos_1_2_errors(struct Options options)
 	count = 0;
 	while (test_qos_1_2_errors_globals.published == 0 && ++count < 10)
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(1000);
 #else
 		usleep(1000000L);
@@ -1439,7 +1439,7 @@ int test_request_response(struct Options options)
 	/* should get the request */
 	while (test_request_response_globals.messages_arrived < 1 && ++count < 10)
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(1000);
 #else
 		usleep(1000000L);
@@ -1460,7 +1460,7 @@ int test_request_response(struct Options options)
 	/* should get the response */
 	while (test_request_response_globals.messages_arrived < 1 && ++count < 10)
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(1000);
 #else
 		usleep(1000000L);
@@ -1610,7 +1610,7 @@ int test_subscribe_options(struct Options options)
 	/* should get the request */
 	while (test_subscribe_options_globals.messages_arrived < 1 && ++count < 10)
 	{
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(1000);
 #else
 		usleep(1000000L);
@@ -1777,7 +1777,7 @@ int test_shared_subscriptions(struct Options options)
 		/* should get the request */
 		while (test_shared_subscriptions_globals.messages_arrived < i+1 && ++count < 100)
 		{
-#if defined(WIN32)
+#if defined(_WIN32)
 			Sleep(100);
 #else
 			usleep(100000L);

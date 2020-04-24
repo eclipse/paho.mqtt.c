@@ -1,2 +1,0 @@
-export TRAVIS_OS_NAME=osx
-export TRAVIS_BUILD_DIR=$PWD

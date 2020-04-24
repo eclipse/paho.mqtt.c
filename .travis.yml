@@ -1,17 +1,13 @@
 sudo: required
 language: c
-compiler:
-- gcc
-- clang
-os:
-- linux
-- osx
-matrix:
-  exclude:
-  - compiler: gcc
-    os: osx
-  - compiler: clang
-    os: linux
+jobs:
+  include:
+    - os: linux
+      compiler: gcc
+      env: OPENSSL_ROOT_DIR=
+    - os: osx
+      compiler: clang
+      env: OPENSSL_ROOT_DIR=/usr/local/opt/openssl
 before_install:
 #- if [ "$DEPLOY" = "true" ]; then ./travis-setup-deploy.sh; fi
 - "./travis-install.sh"
@@ -24,7 +20,7 @@ addons:
   coverity_scan:
     project:
       name: eclipse/paho.mqtt.c
-    notification_email: icraggs@uk.ibm.com
+    notification_email: icraggs@gmail.com
     build_command_prepend: make clean
     build_command: make -j 4
     branch_pattern: coverity-.*

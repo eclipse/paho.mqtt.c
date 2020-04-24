@@ -1,12 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -36,7 +36,7 @@
 #include <string.h>
 #include <errno.h>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	#include <direct.h>
 	/* Windows doesn't have strtok_r, so remap it to strtok */
 	#define strtok_r( A, B, C ) strtok( A, B )
@@ -74,13 +74,23 @@ int pstopen(void **handle, const char* clientID, const char* serverURI, void* co
 
 	FUNC_ENTRY;
 	/* Note that serverURI=address:port, but ":" not allowed in Windows directories */
-	perserverURI = malloc(strlen(serverURI) + 1);
+	if ((perserverURI = malloc(strlen(serverURI) + 1)) == NULL)
+	{
+		rc = PAHO_MEMORY_ERROR;
+		goto exit;
+	}
 	strcpy(perserverURI, serverURI);
 	while ((ptraux = strstr(perserverURI, ":")) != NULL)
 		*ptraux = '-' ;
 
 	/* consider '/'  +  '-'  +  '\0' */
 	clientDir = malloc(strlen(dataDir) + strlen(clientID) + strlen(perserverURI) + 3);
+	if (!clientDir)
+	{
+		free(perserverURI);
+		rc = PAHO_MEMORY_ERROR;
+		goto exit;
+	}
 	sprintf(clientDir, "%s/%s-%s", dataDir, clientID, perserverURI);
 
 
@@ -89,8 +99,21 @@ int pstopen(void **handle, const char* clientID, const char* serverURI, void* co
 	/* pCrtDirName - holds the directory name we are currently trying to create.           */
 	/*               This gets built up level by level untipwdl the full path name is created.*/
 	/* pTokDirName - holds the directory name that gets used by strtok.         */
-	pCrtDirName = (char*)malloc( strlen(clientDir) + 1 );
-	pTokDirName = (char*)malloc( strlen(clientDir) + 1 );
+	if ((pCrtDirName = (char*)malloc(strlen(clientDir) + 1)) == NULL)
+	{
+		free(clientDir);
+		free(perserverURI);
+		rc = PAHO_MEMORY_ERROR;
+		goto exit;
+	}
+	if ((pTokDirName = (char*)malloc( strlen(clientDir) + 1 )) == NULL)
+	{
+		free(pCrtDirName);
+		free(clientDir);
+		free(perserverURI);
+		rc = PAHO_MEMORY_ERROR;
+		goto exit;
+	}
 	strcpy( pTokDirName, clientDir );
 
 	/* If first character is directory separator, make sure it's in the created directory name #285 */
@@ -123,6 +146,7 @@ int pstopen(void **handle, const char* clientID, const char* serverURI, void* co
 	free(pCrtDirName);
 	free(perserverURI);
 
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -135,7 +159,7 @@ int pstmkdir( char *pPathname )
 	int rc = 0;
 
 	FUNC_ENTRY;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	if ( _mkdir( pPathname ) != 0 )
 	{
 #else
@@ -179,6 +203,11 @@ int pstput(void* handle, char* key, int bufcount, char* buffers[], int buflens[]
 
 	/* consider '/' + '\0' */
 	file = malloc(strlen(clientDir) + strlen(key) + strlen(MESSAGE_FILENAME_EXTENSION) + 2 );
+	if (!file)
+	{
+		rc = PAHO_MEMORY_ERROR;
+		goto exit;
+	}
 	sprintf(file, "%s/%s%s", clientDir, key, MESSAGE_FILENAME_EXTENSION);
 
 	fp = fopen(file, "wb");
@@ -214,10 +243,10 @@ exit:
 int pstget(void* handle, char* key, char** buffer, int* buflen)
 {
 	int rc = 0;
-	FILE *fp;
+	FILE *fp = NULL;
 	char *clientDir = handle;
-	char *file;
-	char *buf;
+	char *file = NULL;
+	char *buf = NULL;
 	unsigned long fileLen = 0;
 	unsigned long bytesRead = 0;
 
@@ -230,6 +259,11 @@ int pstget(void* handle, char* key, char** buffer, int* buflen)
 
 	/* consider '/' + '\0' */
 	file = malloc(strlen(clientDir) + strlen(key) + strlen(MESSAGE_FILENAME_EXTENSION) + 2);
+	if (!file)
+	{
+		rc = PAHO_MEMORY_ERROR;
+		goto exit;
+	}
 	sprintf(file, "%s/%s%s", clientDir, key, MESSAGE_FILENAME_EXTENSION);
 
 	fp = fopen(file, "rb");
@@ -238,21 +272,25 @@ int pstget(void* handle, char* key, char** buffer, int* buflen)
 		fseek(fp, 0, SEEK_END);
 		fileLen = ftell(fp);
 		fseek(fp, 0, SEEK_SET);
-		buf=(char *)malloc(fileLen);
+		if ((buf = (char *)malloc(fileLen)) == NULL)
+		{
+			rc = PAHO_MEMORY_ERROR;
+			goto exit;
+		}
 		bytesRead = (int)fread(buf, sizeof(char), fileLen, fp);
 		*buffer = buf;
 		*buflen = bytesRead;
 		if ( bytesRead != fileLen )
 			rc = MQTTCLIENT_PERSISTENCE_ERROR;
-		fclose(fp);
-		fp = NULL;
 	} else
 		rc = MQTTCLIENT_PERSISTENCE_ERROR;
 
-	free(file);
 	/* the caller must free buf */
-
 exit:
+	if (file)
+		free(file);
+	if (fp)
+		fclose(fp);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -277,9 +315,14 @@ int pstremove(void* handle, char* key)
 
 	/* consider '/' + '\0' */
 	file = malloc(strlen(clientDir) + strlen(key) + strlen(MESSAGE_FILENAME_EXTENSION) + 2);
+	if (!file)
+	{
+		rc = PAHO_MEMORY_ERROR;
+		goto exit;
+	}
 	sprintf(file, "%s/%s%s", clientDir, key, MESSAGE_FILENAME_EXTENSION);
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	if ( _unlink(file) != 0 )
 	{
 #else
@@ -313,7 +356,7 @@ int pstclose(void* handle)
 		goto exit;
 	}
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	if ( _rmdir(clientDir) != 0 )
 	{
 #else
@@ -347,7 +390,7 @@ int pstcontainskey(void *handle, char *key)
 		goto exit;
 	}
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	rc = containskeyWin32(clientDir, key);
 #else
 	rc = containskeyUnix(clientDir, key);
@@ -359,7 +402,7 @@ exit:
 }
 
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 int containskeyWin32(char *dirname, char *key)
 {
 	int notFound = MQTTCLIENT_PERSISTENCE_ERROR;
@@ -379,7 +422,11 @@ int containskeyWin32(char *dirname, char *key)
 		{
 			if (FileData.dwFileAttributes & FILE_ATTRIBUTE_ARCHIVE)
 			{
-				filekey = malloc(strlen(FileData.cFileName) + 1);
+				if ((filekey = malloc(strlen(FileData.cFileName) + 1)) == NULL)
+				{
+					notFound = PAHO_MEMORY_ERROR;
+					goto exit;
+				}
 				strcpy(filekey, FileData.cFileName);
 				ptraux = strstr(filekey, MESSAGE_FILENAME_EXTENSION);
 				if ( ptraux != NULL )
@@ -399,7 +446,7 @@ int containskeyWin32(char *dirname, char *key)
 		}
 		FindClose(hDir);
 	}
-
+exit:
 	FUNC_EXIT_RC(notFound);
 	return notFound;
 }
@@ -408,7 +455,7 @@ int containskeyUnix(char *dirname, char *key)
 {
 	int notFound = MQTTCLIENT_PERSISTENCE_ERROR;
 	char *filekey, *ptraux;
-	DIR *dp;
+	DIR *dp = NULL;
 	struct dirent *dir_entry;
 	struct stat stat_info;
 
@@ -418,12 +465,22 @@ int containskeyUnix(char *dirname, char *key)
 		while((dir_entry = readdir(dp)) != NULL && notFound)
 		{
 			char* filename = malloc(strlen(dirname) + strlen(dir_entry->d_name) + 2);
+
+			if (!filename)
+			{
+				notFound = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 			sprintf(filename, "%s/%s", dirname, dir_entry->d_name);
 			lstat(filename, &stat_info);
 			free(filename);
 			if(S_ISREG(stat_info.st_mode))
 			{
-				filekey = malloc(strlen(dir_entry->d_name) + 1);
+				if ((filekey = malloc(strlen(dir_entry->d_name) + 1)) == NULL)
+				{
+					notFound = PAHO_MEMORY_ERROR;
+					goto exit;
+				}
 				strcpy(filekey, dir_entry->d_name);
 				ptraux = strstr(filekey, MESSAGE_FILENAME_EXTENSION);
 				if ( ptraux != NULL )
@@ -433,9 +490,11 @@ int containskeyUnix(char *dirname, char *key)
 				free(filekey);
 			}
 		}
-		closedir(dp);
 	}
 
+exit:
+	if (dp)
+		closedir(dp);
 	FUNC_EXIT_RC(notFound);
 	return notFound;
 }
@@ -457,7 +516,7 @@ int pstclear(void *handle)
 		goto exit;
 	}
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	rc = clearWin32(clientDir);
 #else
 	rc = clearUnix(clientDir);
@@ -469,7 +528,7 @@ exit:
 }
 
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 int clearWin32(char *dirname)
 {
 	int rc = 0;
@@ -490,6 +549,11 @@ int clearWin32(char *dirname)
 			if (FileData.dwFileAttributes & FILE_ATTRIBUTE_ARCHIVE)
 			{
 				file = malloc(strlen(dirname) + strlen(FileData.cFileName) + 2);
+				if (!file)
+				{
+					rc = PAHO_MEMORY_ERROR;
+					goto exit;
+				}
 				sprintf(file, "%s/%s", dirname, FileData.cFileName);
 				rc = remove(file);
 				free(file);
@@ -509,6 +573,7 @@ int clearWin32(char *dirname)
 	} else
 		rc = MQTTCLIENT_PERSISTENCE_ERROR;
 
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -557,7 +622,7 @@ int pstkeys(void *handle, char ***keys, int *nkeys)
 		goto exit;
 	}
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	rc = keysWin32(clientDir, keys, nkeys);
 #else
 	rc = keysUnix(clientDir, keys, nkeys);
@@ -569,7 +634,7 @@ exit:
 }
 
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 int keysWin32(char *dirname, char ***keys, int *nkeys)
 {
 	int rc = 0;
@@ -606,8 +671,14 @@ int keysWin32(char *dirname, char ***keys, int *nkeys)
 		goto exit;
 	}
 
-	if (nfkeys != 0 )
-		fkeys = (char **)malloc(nfkeys * sizeof(char *));
+	if (nfkeys != 0)
+	{
+		if ((fkeys = (char **)malloc(nfkeys * sizeof(char *))) == NULL)
+		{
+			rc = PAHO_MEMORY_ERROR;
+			goto exit;
+		}
+	}
 
 	/* copy the keys */
 	hDir = FindFirstFileA(dir, &FileData);
@@ -619,7 +690,11 @@ int keysWin32(char *dirname, char ***keys, int *nkeys)
 		{
 			if (FileData.dwFileAttributes & FILE_ATTRIBUTE_ARCHIVE)
 			{
-				fkeys[i] = malloc(strlen(FileData.cFileName) + 1);
+				if ((fkeys[i] = malloc(strlen(FileData.cFileName) + 1)) == NULL)
+				{
+					rc = PAHO_MEMORY_ERROR;
+					goto exit;
+				}
 				strcpy(fkeys[i], FileData.cFileName);
 				ptraux = strstr(fkeys[i], MESSAGE_FILENAME_EXTENSION);
 				if ( ptraux != NULL )
@@ -655,7 +730,7 @@ int keysUnix(char *dirname, char ***keys, int *nkeys)
 	int nfkeys = 0;
 	char *ptraux;
 	int i;
-	DIR *dp;
+	DIR *dp = NULL;
 	struct dirent *dir_entry;
 	struct stat stat_info;
 
@@ -667,12 +742,18 @@ int keysUnix(char *dirname, char ***keys, int *nkeys)
 		{
 			char* temp = malloc(strlen(dirname)+strlen(dir_entry->d_name)+2);
 
+			if (!temp)
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 			sprintf(temp, "%s/%s", dirname, dir_entry->d_name);
 			if (lstat(temp, &stat_info) == 0 && S_ISREG(stat_info.st_mode))
 				nfkeys++;
 			free(temp);
 		}
 		closedir(dp);
+		dp = NULL;
 	} else
 	{
 		rc = MQTTCLIENT_PERSISTENCE_ERROR;
@@ -681,7 +762,11 @@ int keysUnix(char *dirname, char ***keys, int *nkeys)
 
 	if (nfkeys != 0)
 	{
-		fkeys = (char **)malloc(nfkeys * sizeof(char *));
+		if ((fkeys = (char **)malloc(nfkeys * sizeof(char *))) == NULL)
+		{
+			rc = PAHO_MEMORY_ERROR;
+			goto exit;
+		}
 
 		/* copy the keys */
 		if((dp = opendir(dirname)) != NULL)
@@ -691,10 +776,22 @@ int keysUnix(char *dirname, char ***keys, int *nkeys)
 			{
 				char* temp = malloc(strlen(dirname)+strlen(dir_entry->d_name)+2);
 
+				if (!temp)
+				{
+					free(fkeys);
+					rc = PAHO_MEMORY_ERROR;
+					goto exit;
+				}
 				sprintf(temp, "%s/%s", dirname, dir_entry->d_name);
 				if (lstat(temp, &stat_info) == 0 && S_ISREG(stat_info.st_mode))
 				{
-					fkeys[i] = malloc(strlen(dir_entry->d_name) + 1);
+					if ((fkeys[i] = malloc(strlen(dir_entry->d_name) + 1)) == NULL)
+					{
+						free(temp);
+						free(fkeys);
+						rc = PAHO_MEMORY_ERROR;
+						goto exit;
+					}
 					strcpy(fkeys[i], dir_entry->d_name);
 					ptraux = strstr(fkeys[i], MESSAGE_FILENAME_EXTENSION);
 					if ( ptraux != NULL )
@@ -703,7 +800,6 @@ int keysUnix(char *dirname, char ***keys, int *nkeys)
 				}
 				free(temp);
 			}
-			closedir(dp);
 		} else
 		{
 			rc = MQTTCLIENT_PERSISTENCE_ERROR;
@@ -716,6 +812,8 @@ int keysUnix(char *dirname, char ***keys, int *nkeys)
 	/* the caller must free keys */
 
 exit:
+	if (dp)
+		closedir(dp);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

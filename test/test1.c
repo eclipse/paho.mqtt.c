@@ -2,11 +2,11 @@
  * Copyright (c) 2009, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -172,7 +172,7 @@ void MyLog(int LOGA_level, char* format, ...)
 }
 
 
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 #define mqsleep(A) Sleep(1000*A)
 #define START_TIME_TYPE DWORD
 static DWORD start_time = 0;
@@ -202,7 +202,7 @@ START_TIME_TYPE start_clock(void)
 #endif
 
 
-#if defined(WIN32)
+#if defined(_WIN32)
 long elapsed(START_TIME_TYPE start_time)
 {
 	return GetTickCount() - start_time;
@@ -476,7 +476,7 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 			rc = MQTTClient_publishMessage(c, test_topic, &test2_pubmsg, &dt);
 		assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
 
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(100000L);
@@ -486,7 +486,7 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 		while ((test2_arrivedcount < i) && (wait_seconds-- > 0))
 		{
 			MyLog(LOGA_DEBUG, "Arrived %d count %d", test2_arrivedcount, i);
-			#if defined(WIN32)
+			#if defined(_WIN32)
 				Sleep(1000);
 			#else
 				usleep(1000000L);
@@ -505,7 +505,7 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 		while ((test2_deliveryCompleted < iterations) && (wait_seconds-- > 0))
 		{
 			MyLog(LOGA_DEBUG, "Delivery Completed %d count %d", test2_deliveryCompleted, i);
-			#if defined(WIN32)
+			#if defined(_WIN32)
 				Sleep(1000);
 			#else
 				usleep(1000000L);
@@ -1006,7 +1006,7 @@ int test6(struct Options options)
 	count = 0;
 	while (++count < 40)
 	{
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(1000L);
 		#else
 			sleep(1);
@@ -1114,7 +1114,7 @@ int test6a(struct Options options)
 	count = 0;
 	while (++count < 40)
 	{
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(1000L);
 		#else
 			sleep(1);

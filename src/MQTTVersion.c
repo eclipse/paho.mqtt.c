@@ -2,11 +2,11 @@
  * Copyright (c) 2012, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution. 
  *
  * The Eclipse Public License is available at 
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at 
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -26,7 +26,7 @@
 #include <ctype.h>
 #include "MQTTAsync.h"
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #include <tchar.h>
 #include <io.h>
@@ -137,7 +137,7 @@ int loadandcall(const char* libname)
 {
 	int rc = 0;
 	MQTTAsync_nameValue* (*func_address)(void) = NULL;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	HMODULE APILibrary = LoadLibraryA(libname);
 	if (APILibrary == NULL)
 		printf("Error loading library %s, error code %d\n", libname, GetLastError());
@@ -201,7 +201,7 @@ int main(int argc, char** argv)
 		{
 #if defined(__CYGWIN__)
 			sprintf(namebuf, "cyg%s-1.dll", libraries[i]);
-#elif defined(WIN32) || defined(WIN64)
+#elif defined(_WIN32) || defined(_WIN64)
 			sprintf(namebuf, "%s.dll", libraries[i]);
 #elif defined(OSX)
 			sprintf(namebuf, "lib%s.1.dylib", libraries[i]);

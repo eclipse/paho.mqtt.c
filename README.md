@@ -55,7 +55,7 @@ LDFLAGS | Flags passed to linker calls
 
 ## Build requirements / compilation using CMake
 
-There build process currently supports a number of Linux "flavors" including ARM and s390, OS X, AIX and Solaris as well as the Windows operating system. The build process requires the following tools:
+The build process currently supports a number of Linux "flavors" including ARM and s390, OS X, AIX and Solaris as well as the Windows operating system. The build process requires the following tools:
   * CMake (http://cmake.org)
   * Ninja (https://martine.github.io/ninja/) or
     GNU Make (https://www.gnu.org/software/make/), and
@@ -89,9 +89,10 @@ Before compiling, determine the value of some variables in order to configure fe
 
 Variable | Default Value | Description
 ------------ | ------------- | -------------
+PAHO_BUILD_SHARED | TRUE | Build a shared version of the libraries
 PAHO_BUILD_STATIC | FALSE | Build a static version of the libraries
 PAHO_WITH_SSL | FALSE | Flag that defines whether to build ssl-enabled binaries too. 
-OPENSSL_SEARCH_PATH | "" (system default) | Directory containing your OpenSSL installation (i.e. `/usr/local` when headers are in `/usr/local/include` and libraries are in `/usr/local/lib`)
+OPENSSL_ROOT_DIR | "" (system default) | Directory containing your OpenSSL installation (i.e. `/usr/local` when headers are in `/usr/local/include` and libraries are in `/usr/local/lib`)
 PAHO_BUILD_DOCUMENTATION | FALSE | Create and install the HTML based API documentation (requires Doxygen)
 PAHO_BUILD_SAMPLES | FALSE | Build sample programs
 MQTT_TEST_BROKER | tcp://localhost:1883 | MQTT connection URL for a broker to use during test execution
@@ -212,4 +213,18 @@ Discussion of the Paho clients takes place on the [Eclipse paho-dev mailing list
 
 General questions about the MQTT protocol are discussed in the [MQTT Google Group](https://groups.google.com/forum/?hl=en-US&fromgroups#!forum/mqtt).
 
-There is much more information available via the [MQTT community site](http://mqtt.org).
+There is more information available via the [MQTT community site](http://mqtt.org).
+
+## Microsoft Windows
+
+### Calling convention
+
+As is normal for C programs on Windows, the calling convention is __cdecl.  See the Microsoft documentation here:
+
+https://docs.microsoft.com/en-us/cpp/cpp/cdecl?view=vs-2019
+
+If you call this library from another language, you may need to take this into account.
+
+
+
+

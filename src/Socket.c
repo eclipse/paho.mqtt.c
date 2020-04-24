@@ -1,12 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -55,7 +55,7 @@ int Socket_continueWrites(fd_set* pwset);
 char* Socket_getaddrname(struct sockaddr* sa, int sock);
 int Socket_abortWrite(int socket);
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #define iov_len len
 #define iov_base buf
 #endif
@@ -74,7 +74,7 @@ static fd_set wset;
 int Socket_setnonblocking(int sock)
 {
 	int rc;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	u_long flag = 1L;
 
 	FUNC_ENTRY;
@@ -100,19 +100,19 @@ int Socket_setnonblocking(int sock)
  */
 int Socket_error(char* aString, int sock)
 {
-#if defined(WIN32) || defined(WIN64)
-	int errno;
-#endif
+	int err;
 
-#if defined(WIN32) || defined(WIN64)
-	errno = WSAGetLastError();
+#if defined(_WIN32) || defined(_WIN64)
+	err = WSAGetLastError();
+#else
+	err = errno;
 #endif
-	if (errno != EINTR && errno != EAGAIN && errno != EINPROGRESS && errno != EWOULDBLOCK)
+	if (err != EINTR && err != EAGAIN && err != EINPROGRESS && err != EWOULDBLOCK)
 	{
-		if (strcmp(aString, "shutdown") != 0 || (errno != ENOTCONN && errno != ECONNRESET))
-			Log(TRACE_MINIMUM, -1, "Socket error %s(%d) in %s for socket %d", strerror(errno), errno, aString, sock);
+		if (strcmp(aString, "shutdown") != 0 || (err != ENOTCONN && err != ECONNRESET))
+			Log(TRACE_MINIMUM, -1, "Socket error %s(%d) in %s for socket %d", strerror(err), err, aString, sock);
 	}
-	return errno;
+	return err;
 }
 
 
@@ -121,7 +121,7 @@ int Socket_error(char* aString, int sock)
  */
 void Socket_outInitialize(void)
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	WORD    winsockVer = 0x0202;
 	WSADATA wsd;
 
@@ -155,7 +155,7 @@ void Socket_outTerminate(void)
 	ListFree(s.write_pending);
 	ListFree(s.clientsds);
 	SocketBuffer_terminate();
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	WSACleanup();
 #endif
 	FUNC_EXIT;
@@ -181,8 +181,19 @@ int Socket_addSocket(int newSd)
 		else
 		{
 			int* pnewSd = (int*)malloc(sizeof(newSd));
+
+			if (!pnewSd)
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 			*pnewSd = newSd;
-			ListAppend(s.clientsds, pnewSd, sizeof(newSd));
+			if (!ListAppend(s.clientsds, pnewSd, sizeof(newSd)))
+			{
+				free(pnewSd);
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 			FD_SET(newSd, &(s.rset_saved));
 			s.maxfdp1 = max(s.maxfdp1, newSd + 1);
 			rc = Socket_setnonblocking(newSd);
@@ -193,6 +204,7 @@ int Socket_addSocket(int newSd)
 	else
 		Log(LOG_ERROR, -1, "addSocket: socket %d already in the list", newSd);
 
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -425,7 +437,7 @@ int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes)
 
 	FUNC_ENTRY;
 	*bytes = 0L;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	rc = WSASend(socket, iovecs, count, (LPDWORD)bytes, 0, NULL, NULL);
 	if (rc == SOCKET_ERROR)
 	{
@@ -527,6 +539,12 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 		else
 		{
 			int* sockmem = (int*)malloc(sizeof(int));
+
+			if (!sockmem)
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 			Log(TRACE_MIN, -1, "Partial write: %lu bytes of %lu actually written on socket %d",
 					bytes, total, socket);
 #if defined(OPENSSL)
@@ -535,18 +553,17 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 			SocketBuffer_pendingWrite(socket, count+1, iovecs, frees1, total, bytes);
 #endif
 			*sockmem = socket;
-			ListAppend(s.write_pending, sockmem, sizeof(int));
+			if (!ListAppend(s.write_pending, sockmem, sizeof(int)))
+			{
+				free(sockmem);
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
 			FD_SET(socket, &(s.pending_wset));
 			rc = TCPSOCKET_INTERRUPTED;
 		}
 	}
 exit:
-#if 0
-        if (rc == TCPSOCKET_INTERRUPTED)
-        {
-            Log(LOG_ERROR, -1, "Socket_putdatas: TCPSOCKET_INTERRUPTED");
-        }
-#endif
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -585,7 +602,7 @@ int Socket_close_only(int socket)
 	int rc;
 
 	FUNC_ENTRY;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	if (shutdown(socket, SD_BOTH) == SOCKET_ERROR)
 		Socket_error("shutdown", socket);
 	if ((rc = closesocket(socket)) == SOCKET_ERROR)
@@ -646,9 +663,14 @@ void Socket_close(int socket)
  *  @param addr the address string
  *  @param port the TCP port
  *  @param sock returns the new socket
+ *  @param timeout the timeout in milliseconds
  *  @return completion code
  */
+#if defined(__GNUC__) && defined(__linux__)
+int Socket_new(const char* addr, size_t addr_len, int port, int* sock, long timeout)
+#else
 int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
+#endif
 {
 	int type = SOCK_STREAM;
 	char *addr_mem;
@@ -657,7 +679,7 @@ int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 	struct sockaddr_in6 address6;
 #endif
 	int rc = SOCKET_ERROR;
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	short family;
 #else
 	sa_family_t family = AF_INET;
@@ -675,11 +697,37 @@ int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 		--addr_len;
 	}
 
-	addr_mem = malloc( addr_len + 1u );
+	if ((addr_mem = malloc( addr_len + 1u )) == NULL)
+	{
+		rc = PAHO_MEMORY_ERROR;
+		goto exit;
+	}
 	memcpy( addr_mem, addr, addr_len );
 	addr_mem[addr_len] = '\0';
 
-	if ((rc = getaddrinfo(addr_mem, NULL, &hints, &result)) == 0)
+//#if defined(__GNUC__) && defined(__linux__)
+#if 0
+	struct gaicb ar = {addr_mem, NULL, &hints, NULL};
+	struct gaicb *reqs[] = {&ar};
+
+	unsigned long int seconds = timeout / 1000L;
+	unsigned long int nanos = (timeout - (seconds * 1000L)) * 1000000L;
+	struct timespec timeoutspec = {seconds, nanos};
+
+	rc = getaddrinfo_a(GAI_NOWAIT, reqs, 1, NULL);
+	if (rc == 0)
+		rc = gai_suspend((const struct gaicb* const *) reqs, 1, &timeoutspec);
+
+	if (rc == 0)
+	{
+		rc = gai_error(reqs[0]);
+		result = ar.ar_result;
+	}
+#else
+	rc = getaddrinfo(addr_mem, NULL, &hints, &result);
+#endif
+
+	if (rc == 0)
 	{
 		struct addrinfo* res = result;
 
@@ -762,23 +810,33 @@ int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 				if (rc == EINPROGRESS || rc == EWOULDBLOCK)
 				{
 					int* pnewSd = (int*)malloc(sizeof(int));
+
+					if (!pnewSd)
+					{
+						rc = PAHO_MEMORY_ERROR;
+						goto exit;
+					}
 					*pnewSd = *sock;
-					ListAppend(s.connect_pending, pnewSd, sizeof(int));
+					if (!ListAppend(s.connect_pending, pnewSd, sizeof(int)))
+					{
+						free(pnewSd);
+						rc = PAHO_MEMORY_ERROR;
+						goto exit;
+					}
 					Log(TRACE_MIN, 15, "Connect pending");
 				}
 			}
-                        /* Prevent socket leak by closing unusable sockets,
-                         * as reported in
-                         * https://github.com/eclipse/paho.mqtt.c/issues/135
-                         */
-                        if (rc != 0 && (rc != EINPROGRESS) && (rc != EWOULDBLOCK))
-                        {
-                            Socket_close(*sock); /* close socket and remove from our list of sockets */
-                            *sock = -1; /* as initialized before */
-                        }
+            /* Prevent socket leak by closing unusable sockets,
+               as reported in https://github.com/eclipse/paho.mqtt.c/issues/135 */
+            if (rc != 0 && (rc != EINPROGRESS) && (rc != EWOULDBLOCK))
+            {
+            	Socket_close(*sock); /* close socket and remove from our list of sockets */
+                *sock = -1; /* as initialized before */
+            }
 		}
 	}
 
+exit:
 	if (addr_mem)
 		free(addr_mem);
 
@@ -905,7 +963,7 @@ int Socket_abortWrite(int socket)
 	{
 		if (pw->frees[i])
 		{
-			printf("cleaning in abortwrite for socket %d\n", socket);
+			Log(TRACE_MIN, -1, "Cleaning in abortWrite for socket %d", socket);
 			free(pw->iovecs[i].iov_base);
 		}
 	}
@@ -926,7 +984,7 @@ int Socket_continueWrites(fd_set* pwset)
 	ListElement* curpending = s.write_pending->first;
 
 	FUNC_ENTRY;
-	while (curpending)
+	while (curpending && curpending->content)
 	{
 		int socket = *(int*)(curpending->content);
 		int rc = 0;
@@ -972,7 +1030,7 @@ char* Socket_getaddrname(struct sockaddr* sa, int sock)
 #define PORTLEN 10
 	static char addr_string[ADDRLEN + PORTLEN];
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 	int buflen = ADDRLEN*2;
 	wchar_t buf[ADDRLEN*2];
 	if (WSAAddressToStringW(sa, sizeof(struct sockaddr_in6), NULL, buf, (LPDWORD)&buflen) == SOCKET_ERROR)

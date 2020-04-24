@@ -2,11 +2,11 @@
  * Copyright (c) 2009, 2014 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -148,7 +148,7 @@ void MyLog(int LOGA_level, char* format, ...)
 #endif
 
 
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 #define mqsleep(A) Sleep(1000*A)
 #define START_TIME_TYPE DWORD
 static DWORD start_time = 0;
@@ -178,7 +178,7 @@ START_TIME_TYPE start_clock(void)
 #endif
 
 
-#if defined(WIN32)
+#if defined(_WIN32)
 long elapsed(START_TIME_TYPE start_time)
 {
 	return GetTickCount() - start_time;
@@ -400,7 +400,7 @@ int test1(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -494,7 +494,7 @@ int test2(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -705,7 +705,7 @@ int test3(struct Options options)
 	while (test_finished < num_clients)
 	{
 		MyLog(LOGA_DEBUG, "num_clients %d test_finished %d\n", num_clients, test_finished);
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -894,7 +894,7 @@ int test4(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(1000L);
@@ -977,7 +977,7 @@ int test5(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1073,7 +1073,7 @@ int test6(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1107,7 +1107,7 @@ int test6(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1289,7 +1289,7 @@ int test7(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1306,7 +1306,7 @@ int test7(struct Options options)
 		goto exit;
 
 	while (!test7_subscribed)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1343,7 +1343,7 @@ int test7(struct Options options)
 	MQTTAsync_disconnect(c, &dopts); /* now there should be "orphaned" publications */
 
 	while (!test_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1392,7 +1392,7 @@ int test7(struct Options options)
 		goto exit;
 	}
 
-	#if defined(WIN32)
+	#if defined(_WIN32)
 		Sleep(5000);
 	#else
 		usleep(5000000L);
@@ -1413,7 +1413,7 @@ int test7(struct Options options)
 	MQTTAsync_disconnect(c, &dopts);
 
 	while (!test_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1569,7 +1569,7 @@ int test8(struct Options options)
 		goto exit;
 
 	while (!test8_subscribed)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1597,7 +1597,7 @@ int test8(struct Options options)
 	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	while (!test_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1625,7 +1625,7 @@ int test8(struct Options options)
 		goto exit;
 
 	while (!test8_subscribed)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1653,7 +1653,7 @@ int test8(struct Options options)
 	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	while (!test_finished)
-		#if defined(WIN32)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);

@@ -1,12 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2018 Wind River Systems, Inc. All Rights Reserved.
+ * Copyright (c) 2018, 2019 Wind River Systems, Inc. All Rights Reserved.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -16,10 +16,10 @@
 
 #include "Base64.h"
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #pragma comment(lib, "crypt32.lib")
-#include <Windows.h>
-#include <WinCrypt.h>
+#include <windows.h>
+#include <wincrypt.h>
 b64_size_t Base64_decode( b64_data_t *out, b64_size_t out_len, const char *in, b64_size_t in_len )
 {
 	b64_size_t ret = 0u;
@@ -37,7 +37,7 @@ b64_size_t Base64_encode( char *out, b64_size_t out_len, const b64_data_t *in, b
 		ret = (b64_size_t)dw_out_len;
 	return ret;
 }
-#else /* if defined(WIN32) || defined(WIN64) */
+#else /* if defined(_WIN32) || defined(_WIN64) */
 
 #if defined(OPENSSL)
 #include <openssl/bio.h>
@@ -234,7 +234,7 @@ b64_size_t Base64_encode( char *out, b64_size_t out_len, const b64_data_t *in, b
 	return ret;
 }
 #endif /* else if defined(OPENSSL) */
-#endif /* if else defined(WIN32) || defined(WIN64) */
+#endif /* if else defined(_WIN32) || defined(_WIN64) */
 
 b64_size_t Base64_decodeLength( const char *in, b64_size_t in_len )
 {

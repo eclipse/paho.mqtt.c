@@ -2,11 +2,11 @@
  * Copyright (c) 2012, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -69,6 +69,8 @@ struct Options
 	int test_no;
 	int size;
 	int websockets;
+	int message_count;
+	int start_port;
 } options =
 {
 	"ssl://m2m.eclipse.org:18883",
@@ -77,7 +79,7 @@ struct Options
 	"ssl://m2m.eclipse.org:18885",
 	"ssl://m2m.eclipse.org:18886",
 	"ssl://m2m.eclipse.org:18888",
-	"../../../test/ssl/client.pem",
+	NULL, // "../../../test/ssl/client.pem",
 	NULL,
 	NULL, // "../../../test/ssl/test-root-ca.crt",
 	NULL, // "../../../test/ssl/capath",
@@ -86,6 +88,8 @@ struct Options
 	0,
 	5000000,
 	0,
+	3,
+	18883,
 };
 
 typedef struct
@@ -158,18 +162,24 @@ void getopts(int argc, char** argv)
 			{
 				char* prefix = (options.websockets) ? "wss" : "ssl";
 
-				sprintf(options.connection, "%s://%s:18883", prefix, argv[count]);
+				sprintf(options.connection, "%s://%s:%d", prefix, argv[count],
+						options.start_port);
 				printf("Setting connection to %s\n", options.connection);
-				sprintf(options.mutual_auth_connection, "%s://%s:18884", prefix, argv[count]);
+				sprintf(options.mutual_auth_connection, "%s://%s:%d", prefix, argv[count],
+						options.start_port+1);
 				printf("Setting mutual_auth_connection to %s\n", options.mutual_auth_connection);
-				sprintf(options.nocert_mutual_auth_connection, "%s://%s:18887", prefix, argv[count]);
+				sprintf(options.nocert_mutual_auth_connection, "%s://%s:%d", prefix,
+						argv[count], options.start_port+4);
 				printf("Setting nocert_mutual_auth_connection to %s\n",
 					options.nocert_mutual_auth_connection);
-				sprintf(options.server_auth_connection, "%s://%s:18885", prefix, argv[count]);
+				sprintf(options.server_auth_connection, "%s://%s:%d", prefix, argv[count],
+						options.start_port+2);
 				printf("Setting server_auth_connection to %s\n", options.server_auth_connection);
-				sprintf(options.anon_connection, "%s://%s:18886", prefix, argv[count]);
+				sprintf(options.anon_connection, "%s://%s:%d", prefix, argv[count],
+						options.start_port+3);
 				printf("Setting anon_connection to %s\n", options.anon_connection);
-				sprintf(options.psk_connection, "%s://%s:18888", prefix, argv[count]);
+				sprintf(options.psk_connection, "%s://%s:%d", prefix, argv[count],
+						options.start_port+5);
 				printf("Setting psk_connection to %s\n", options.psk_connection);
 			}
 			else
@@ -180,6 +190,35 @@ void getopts(int argc, char** argv)
 			options.websockets = 1;
 			printf("\nSetting websockets on\n");
 		}
+		else if (strcmp(argv[count], "--size") == 0)
+		{
+			if (++count < argc)
+			{
+				options.size = atoi(argv[count]);
+				printf("\nSetting size to %d\n", options.size);
+			}else
+				usage();
+		}
+		else if (strcmp(argv[count], "--port") == 0)
+		{
+			if (++count < argc)
+			{
+				options.start_port = atoi(argv[count]);
+				printf("\nSetting start_port to %d\n", options.start_port);
+			}else
+				usage();
+		}
+		else if (strcmp(argv[count], "--count") == 0)
+		{
+			if (++count < argc)
+			{
+				options.message_count = atoi(argv[count]);
+				printf("\nSetting message count to %d\n", options.message_count);
+			}else
+				usage();
+		}
+		else
+			printf("Unrecognized option %s\n", argv[count]);
 		count++;
 	}
 }
@@ -217,7 +256,7 @@ void MyLog(int LOGA_level, char* format, ...)
 }
 
 
-#if defined(WIN32) || defined(_WINDOWS)
+#if defined(_WIN32) || defined(_WINDOWS)
 #define mqsleep(A) Sleep(1000*A)
 #define START_TIME_TYPE DWORD
 static DWORD start_time = 0;
@@ -246,7 +285,7 @@ START_TIME_TYPE start_clock(void)
 }
 #endif
 
-#if defined(WIN32)
+#if defined(_WIN32)
 long elapsed(START_TIME_TYPE start_time)
 {
 	return GetTickCount() - start_time;
@@ -385,7 +424,7 @@ void sendAndReceive(MQTTAsync* c, int qos, char* test_topic)
 					&ropts);
 		assert("Good rc from publish", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(100000L);
@@ -396,7 +435,7 @@ void sendAndReceive(MQTTAsync* c, int qos, char* test_topic)
 		{
 			MyLog(LOGA_DEBUG, "Arrived %d count %d", multiThread_arrivedcount,
 					i);
-#if defined(WIN32)
+#if defined(_WIN32)
 			Sleep(1000);
 #else
 			usleep(1000000L);
@@ -417,7 +456,7 @@ void sendAndReceive(MQTTAsync* c, int qos, char* test_topic)
 		{
 			MyLog(LOGA_DEBUG, "Delivery Completed %d count %d",
 					multiThread_deliveryCompleted, i);
-#if defined(WIN32)
+#if defined(_WIN32)
 			Sleep(1000);
 #else
 			usleep(1000000L);
@@ -680,7 +719,7 @@ int test1(struct Options options)
 
 	/* wait for success or failure callback */
 	while (!test1Finished && ++count < 10000)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -735,7 +774,7 @@ int test2a(struct Options options)
 	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
 	global_start_time = start_clock();
 
-	MQTTAsync_create(&c, options.mutual_auth_connection, "test2a", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	rc = MQTTAsync_create(&c, options.mutual_auth_connection, "test2a", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
 	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 		goto exit;
@@ -786,7 +825,7 @@ int test2a(struct Options options)
 		goto exit;
 
 	while (!tc.subscribed && !tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -796,7 +835,7 @@ int test2a(struct Options options)
 		goto exit;
 
 	while (!tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -893,7 +932,7 @@ int test2b(struct Options options)
 		goto exit;
 
 	while (!test2bFinished && ++count < 10000)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -991,7 +1030,7 @@ int test2c(struct Options options)
 	}
 
 	while (!test2cFinished && ++count < 10000)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1100,7 +1139,7 @@ int test2d(struct Options options)
 #define TEST2D_COUNT 1000
 		while (!test2dFinished && ++count < TEST2D_COUNT)
 		{
-#if defined(WIN32)
+#if defined(_WIN32)
 			Sleep(100);
 #else
 			usleep(10000L);
@@ -1113,6 +1152,127 @@ int test2d(struct Options options)
 		}
 		MQTTAsync_destroy(&c);
 	}
+	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", testname, tests, failures);
+	write_test_result();
+	return failures;
+}
+
+/*********************************************************************
+
+ Test2e: Mutual SSL Authentication using serverURIs
+
+ *********************************************************************/
+
+void test2eOnConnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	AsyncTestClient* client = (AsyncTestClient*) context;
+	MyLog(LOGA_DEBUG, "In test2eOnConnectFailure callback, %s",
+			client->clientid);
+
+	assert("There should be no failures in this test. ", 0, "test2eOnConnectFailure callback was called\n", 0);
+	client->testFinished = 1;
+}
+
+void test2eOnPublishFailure(void* context, MQTTAsync_failureData* response)
+{
+	AsyncTestClient* client = (AsyncTestClient*) context;
+	MyLog(LOGA_DEBUG, "In test2eOnPublishFailure callback, %s",
+			client->clientid);
+
+	assert("There should be no failures in this test. ", 0, "test2eOnPublishFailure callback was called\n", 0);
+}
+
+int test2e(struct Options options)
+{
+	char* testname = "test2e";
+
+	AsyncTestClient tc =
+	AsyncTestClient_initializer;
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
+	char* uris[2] = {"rubbish", options.mutual_auth_connection};
+	int rc = 0;
+
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 2e - Mutual SSL authentication with serverURIs");
+	fprintf(xml, "<testcase classname=\"test5\" name=\"%s\"", testname);
+	global_start_time = start_clock();
+
+	rc = MQTTAsync_create(&c, "none", "test2e", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	tc.client = c;
+	sprintf(tc.clientid, "%s", testname);
+	sprintf(tc.topic, "C client SSL test2e");
+	tc.maxmsgs = MAXMSGS;
+	//tc.rcvdmsgs = 0;
+	tc.subscribed = 0;
+	tc.testFinished = 0;
+
+	opts.keepAliveInterval = 20;
+	opts.cleansession = 1;
+	opts.username = "testuser";
+	opts.password = "testpassword";
+
+	opts.will = &wopts;
+	opts.will->message = "will message";
+	opts.will->qos = 1;
+	opts.will->retained = 0;
+	opts.will->topicName = "will topic";
+	opts.will = NULL;
+	opts.onSuccess = asyncTestOnConnect;
+	opts.onFailure = test2eOnConnectFailure;
+	opts.context = &tc;
+	opts.serverURIs = uris;
+	opts.serverURIcount = 2;
+
+	opts.ssl = &sslopts;
+	if (options.server_key_file != NULL)
+		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
+	opts.ssl->keyStore = options.client_key_file; /*file of certificate for client to present to server*/
+	if (options.client_key_pass != NULL)
+		opts.ssl->privateKeyPassword = options.client_key_pass;
+	//opts.ssl->enabledCipherSuites = "DEFAULT";
+	//opts.ssl->enabledServerCertAuth = 1;
+	opts.ssl->verify = 1;
+	MyLog(LOGA_DEBUG, "enableServerCertAuth %d\n", opts.ssl->enableServerCertAuth);
+	MyLog(LOGA_DEBUG, "verify %d\n", opts.ssl->verify);
+
+	rc = MQTTAsync_setCallbacks(c, &tc, NULL, asyncTestMessageArrived,
+			asyncTestOnDeliveryComplete);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (!tc.subscribed && !tc.testFinished)
+#if defined(_WIN32)
+		Sleep(100);
+#else
+		usleep(10000L);
+#endif
+
+	if (tc.testFinished)
+		goto exit;
+
+	while (!tc.testFinished)
+#if defined(_WIN32)
+		Sleep(100);
+#else
+		usleep(10000L);
+#endif
+
+	MyLog(LOGA_DEBUG, "Stopping");
+
+	exit: MQTTAsync_destroy(&c);
 	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);
 	write_test_result();
@@ -1198,7 +1358,7 @@ int test3a(struct Options options)
 		goto exit;
 
 	while (!tc.subscribed && !tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1227,7 +1387,7 @@ int test3a(struct Options options)
 	}
 
 	while (!tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1321,7 +1481,7 @@ int test3b(struct Options options)
 		goto exit;
 
 	while (!test3bFinished && ++count < 10000)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1419,7 +1579,7 @@ int test4(struct Options options)
 		goto exit;
 
 	while (!tc.subscribed && !tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1448,7 +1608,7 @@ int test4(struct Options options)
 	}
 
 	while (!tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1552,7 +1712,7 @@ int test5a(struct Options options)
 		goto exit;
 
 	while (!tc.subscribed && !tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1581,7 +1741,7 @@ int test5a(struct Options options)
 	}
 
 	while (!tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1685,7 +1845,7 @@ int test5b(struct Options options)
 		goto exit;
 
 	while (!tc.subscribed && !tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1714,7 +1874,7 @@ int test5b(struct Options options)
 	}
 
 	while (!tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1806,7 +1966,7 @@ int test5c(struct Options options)
 		goto exit;
 
 	while (!test5cFinished && ++count < 10000)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -1912,7 +2072,7 @@ int test6(struct Options options)
 	{
 		MyLog(LOGA_DEBUG, "num_clients %d test_finished %d\n", num_clients,
 				test6finished);
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 
 #else
@@ -2003,7 +2163,7 @@ void test7OnUnsubscribe(void* context, MQTTAsync_successData* response)
 
 	test7OnUnsubscribed++;
 
-	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount == 3)
+	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount >= options.message_count)
 		rc = MQTTAsync_disconnect(tc->client, &opts);
 }
 
@@ -2044,7 +2204,7 @@ int test7MessageArrived(void* context, char* topicName, int topicLen,
 
 		rc = MQTTAsync_sendMessage(tc->client, tc->topic, &pubmsg, &opts);
 	}
-	else if (message_count == 2)
+	else if (message_count < options.message_count)
 	{
 		MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 		MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
@@ -2161,8 +2321,8 @@ int test7(struct Options options)
 
 	opts.keepAliveInterval = 20;
 	opts.cleansession = 1;
-	opts.username = "testuser";
-	opts.password = "testpassword";
+	//opts.username = "testuser";
+	//opts.password = "testpassword";
 
 	opts.will = &wopts;
 	opts.will->message = "will message";
@@ -2177,7 +2337,8 @@ int test7(struct Options options)
 	opts.ssl = &sslopts;
 	if (options.server_key_file != NULL)
 		opts.ssl->trustStore = options.server_key_file; /*file of certificates trusted by client*/
-	opts.ssl->keyStore = options.client_key_file; /*file of certificate for client to present to server*/
+	if (options.client_key_file != NULL)
+		opts.ssl->keyStore = options.client_key_file; /*file of certificate for client to present to server*/
 	if (options.client_key_pass != NULL)
 		opts.ssl->privateKeyPassword = options.client_key_pass;
 	//opts.ssl->enabledCipherSuites = "DEFAULT";
@@ -2191,7 +2352,7 @@ int test7(struct Options options)
 		goto exit;
 
 	while (!tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(1000L);
@@ -2283,7 +2444,7 @@ int test8(struct Options options)
 		goto exit;
 
 	while (!tc.subscribed && !tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -2293,7 +2454,7 @@ int test8(struct Options options)
 		goto exit;
 
 	while (!tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -2394,7 +2555,7 @@ int test9(struct Options options)
 		goto exit;
 
 	while (!tc.subscribed && !tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -2404,7 +2565,7 @@ int test9(struct Options options)
 		goto exit;
 
 	while (!tc.testFinished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -2515,7 +2676,7 @@ int test10(struct Options options)
 		goto exit;
 
 	while (!test10Finished)
-#if defined(WIN32)
+#if defined(_WIN32)
 		Sleep(100);
 #else
 		usleep(10000L);
@@ -2542,7 +2703,7 @@ int main(int argc, char** argv)
 	int rc = 0;
 	int (*tests[])() =
             { NULL, test1, test2a, test2b, test2c, test2d, test3a, test3b, test4, /* test5a,
-			test5b, test5c, */ test6, test7, test8, test9, test10 };
+			test5b, test5c, */ test6, test7, test8, test9, test10, test2e };
 
 	xml = fopen("TEST-test5.xml", "w");
 	fprintf(xml, "<testsuite name=\"test5\" tests=\"%d\">\n", (int)ARRAY_SIZE(tests) - 1);

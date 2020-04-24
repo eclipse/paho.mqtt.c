@@ -1,12 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -29,7 +29,7 @@
  * @cond MQTTAsync_main
  * @mainpage Asynchronous MQTT client library for C
  *
- * &copy; Copyright IBM Corp. 2009, 2018
+ * &copy; Copyright IBM Corp. 2009, 2020 and others
  *
  * @brief An Asynchronous MQTT client library for C.
  *
@@ -92,18 +92,12 @@
  extern "C" {
 #endif
 
-#if defined(WIN32) || defined(WIN64)
-  #define DLLImport __declspec(dllimport)
-  #define DLLExport __declspec(dllexport)
-#else
-  #define DLLImport extern
-  #define DLLExport  __attribute__ ((visibility ("default")))
-#endif
-
 #include <stdio.h>
 /*
 /// @endcond
 */
+
+#include "MQTTExportDeclarations.h"
 
 #include "MQTTProperties.h"
 #include "MQTTReasonCodes.h"
@@ -189,6 +183,10 @@
   * Return code: call not applicable to the client's version of MQTT
   */
  #define MQTTASYNC_WRONG_MQTT_VERSION -16
+ /**
+  *  Return code: 0 length will topic
+  */
+ #define MQTTASYNC_0_LEN_WILL_TOPIC -17
 
 
 /**
@@ -232,7 +230,7 @@ typedef struct
  * Global init of mqtt library. Call once on program start to set global behaviour.
  * handle_openssl_init - if mqtt library should handle openssl init (1) or rely on the caller to init it before using mqtt (0)
  */
-DLLExport void MQTTAsync_global_init(MQTTAsync_init_options* inits);
+LIBMQTT_API void MQTTAsync_global_init(MQTTAsync_init_options* inits);
 
 /**
  * A handle representing an MQTT client. A valid client handle is available
@@ -341,12 +339,16 @@ typedef struct
  * <i>topicLen</i>.
  * @param message The MQTTAsync_message structure for the received message.
  * This structure contains the message payload and attributes.
- * @return This function must return a boolean value indicating whether or not
- * the message has been safely received by the client application. Returning
- * true indicates that the message has been successfully handled.
- * Returning false indicates that there was a problem. In this
+ * @return This function must return 0 or 1 indicating whether or not
+ * the message has been safely received by the client application. <br>
+ * Returning 1 indicates that the message has been successfully handled.
+ * To free the message storage, ::MQTTAsync_freeMessage must be called.
+ * To free the topic name storage, ::MQTTAsync_free must be called.<br>
+ * Returning 0 indicates that there was a problem. In this
  * case, the client library will reinvoke MQTTAsync_messageArrived() to
  * attempt to deliver the message to the application again.
+ * Do not free the message and topic storage when returning 0, otherwise
+ * the redelivery will fail.
  */
 typedef int MQTTAsync_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* message);
 
@@ -441,7 +443,7 @@ typedef void MQTTAsync_disconnected(void* context, MQTTProperties* properties,
  * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
  * ::MQTTASYNC_FAILURE if an error occurred.
  */
-DLLExport int MQTTAsync_setDisconnected(MQTTAsync handle, void* context, MQTTAsync_disconnected* co);
+LIBMQTT_API int MQTTAsync_setDisconnected(MQTTAsync handle, void* context, MQTTAsync_disconnected* co);
 
 
 /** The data returned on completion of an unsuccessful API call in the response callback onFailure. */
@@ -487,22 +489,24 @@ typedef struct
 	/** A union of the different values that can be returned for subscribe, unsubscribe and publish. */
 	union
 	{
-		/** For subscribe, the granted QoS of the subscription returned by the server. */
+		/** For subscribe, the granted QoS of the subscription returned by the server.
+		 * Also for subscribeMany, if only 1 subscription was requested. */
 		int qos;
-		/** For subscribeMany, the list of granted QoSs of the subscriptions returned by the server. */
+		/** For subscribeMany, if more than one subscription was requested,
+		 * the list of granted QoSs of the subscriptions returned by the server. */
 		int* qosList;
 		/** For publish, the message being sent to the server. */
 		struct
 		{
-			MQTTAsync_message message;
-			char* destinationName;
+			MQTTAsync_message message; /**< the message being sent to the server */
+			char* destinationName;     /**< the topic destination for the message */
 		} pub;
 		/* For connect, the server connected to, MQTT version used, and sessionPresent flag */
 		struct
 		{
-			char* serverURI;
-			int MQTTVersion;
-			int sessionPresent;
+			char* serverURI; /**< the connection string of the server */
+			int MQTTVersion; /**< the version of MQTT being used */
+			int sessionPresent; /**< the session present flag returned from the server */
 		} connect;
 	} alt;
 } MQTTAsync_successData;
@@ -611,6 +615,11 @@ typedef void MQTTAsync_onFailure(void* context,  MQTTAsync_failureData* response
  */
 typedef void MQTTAsync_onFailure5(void* context,  MQTTAsync_failureData5* response);
 
+/** Structure to define call options.  For MQTT 5.0 there is input data as well as that
+ * describing the response method.  So there is now also a synonym ::MQTTAsync_callOptions
+ * to better reflect the use.  This responseOptions name is kept for backward
+ * compatibility.
+ */
 typedef struct MQTTAsync_responseOptions
 {
 	/** The eyecatcher for this structure.  Must be MQTR */
@@ -675,6 +684,7 @@ typedef struct MQTTAsync_responseOptions
 
 #define MQTTAsync_responseOptions_initializer { {'M', 'Q', 'T', 'R'}, 1, NULL, NULL, 0, 0, NULL, NULL, MQTTProperties_initializer, MQTTSubscribe_options_initializer, 0, NULL}
 
+/** A synonym for responseOptions to better reflect its usage since MQTT 5.0 */
 typedef struct MQTTAsync_responseOptions MQTTAsync_callOptions;
 #define MQTTAsync_callOptions_initializer MQTTAsync_responseOptions_initializer
 
@@ -706,7 +716,7 @@ typedef struct MQTTAsync_responseOptions MQTTAsync_callOptions;
  * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
  * ::MQTTASYNC_FAILURE if an error occurred.
  */
-DLLExport int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_connectionLost* cl,
+LIBMQTT_API int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_connectionLost* cl,
 									 MQTTAsync_messageArrived* ma, MQTTAsync_deliveryComplete* dc);
 
 /**
@@ -729,7 +739,7 @@ DLLExport int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_
  * ::MQTTASYNC_FAILURE if an error occurred.
  */
 
-DLLExport int MQTTAsync_setConnectionLostCallback(MQTTAsync handle, void* context, 
+LIBMQTT_API int MQTTAsync_setConnectionLostCallback(MQTTAsync handle, void* context,
 												  MQTTAsync_connectionLost* cl);
 
 /**
@@ -753,7 +763,7 @@ DLLExport int MQTTAsync_setConnectionLostCallback(MQTTAsync handle, void* contex
  * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
  * ::MQTTASYNC_FAILURE if an error occurred.
  */
-DLLExport int MQTTAsync_setMessageArrivedCallback(MQTTAsync handle, void* context, 
+LIBMQTT_API int MQTTAsync_setMessageArrivedCallback(MQTTAsync handle, void* context,
 												  MQTTAsync_messageArrived* ma);
 
 /**
@@ -775,7 +785,7 @@ DLLExport int MQTTAsync_setMessageArrivedCallback(MQTTAsync handle, void* contex
  * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
  * ::MQTTASYNC_FAILURE if an error occurred.
  */
-DLLExport int MQTTAsync_setDeliveryCompleteCallback(MQTTAsync handle, void* context, 
+LIBMQTT_API int MQTTAsync_setDeliveryCompleteCallback(MQTTAsync handle, void* context,
 													MQTTAsync_deliveryComplete* dc);
 
 /**
@@ -790,7 +800,7 @@ DLLExport int MQTTAsync_setDeliveryCompleteCallback(MQTTAsync handle, void* cont
  * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
  * ::MQTTASYNC_FAILURE if an error occurred.
  */
-DLLExport int MQTTAsync_setConnected(MQTTAsync handle, void* context, MQTTAsync_connected* co);
+LIBMQTT_API int MQTTAsync_setConnected(MQTTAsync handle, void* context, MQTTAsync_connected* co);
 
 
 /**
@@ -801,7 +811,7 @@ DLLExport int MQTTAsync_setConnected(MQTTAsync handle, void* context, MQTTAsync_
  * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
  * ::MQTTASYNC_FAILURE if an error occurred.
  */
-DLLExport int MQTTAsync_reconnect(MQTTAsync handle);
+LIBMQTT_API int MQTTAsync_reconnect(MQTTAsync handle);
 
 
 /**
@@ -845,9 +855,10 @@ DLLExport int MQTTAsync_reconnect(MQTTAsync handle);
  * @return ::MQTTASYNC_SUCCESS if the client is successfully created, otherwise
  * an error code is returned.
  */
-DLLExport int MQTTAsync_create(MQTTAsync* handle, const char* serverURI, const char* clientId,
+LIBMQTT_API int MQTTAsync_create(MQTTAsync* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context);
 
+/** Options for the ::MQTTAsync_createWithOptions call */
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQCO. */
@@ -873,7 +884,7 @@ typedef struct
 #define MQTTAsync_createOptions_initializer5 { {'M', 'Q', 'C', 'O'}, 1, 0, 100, MQTTVERSION_5 }
 
 
-DLLExport int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const char* clientId,
+LIBMQTT_API int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context, MQTTAsync_createOptions* options);
 
 /**
@@ -1027,6 +1038,13 @@ typedef struct
 
 #define MQTTAsync_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 4, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL, NULL, NULL, 0}
 
+/** Utility structure where name/value pairs are needed */
+typedef struct
+{
+	const char* name; /**< name string */
+	const char* value; /**< value string */
+} MQTTAsync_nameValue;
+
 /**
  * MQTTAsync_connectOptions defines several settings that control the way the
  * client connects to an MQTT server.  Default values are set in
@@ -1043,6 +1061,7 @@ typedef struct
     * 3 signifies no automatic reconnect options
     * 4 signifies no binary password option (just string)
     * 5 signifies no MQTTV5 properties
+    * 6 signifies no HTTP headers option
 	  */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -1174,6 +1193,10 @@ typedef struct
 		int len;            /**< binary password length */
 		const void* data;  /**< binary password data */
 	} binarypwd;
+	/**
+	 * httpHeaders
+	 */
+	const MQTTAsync_nameValue* httpHeaders;
 	/*
 	 * MQTT V5 clean start flag.  Only clears state at the beginning of the session.
 	 */
@@ -1201,11 +1224,11 @@ typedef struct
 } MQTTAsync_connectOptions;
 
 
-#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 6, 60, 1, 65535, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL}
+#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 7, 60, 1, 65535, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, NULL, 0, NULL, NULL, NULL, NULL}
 
-#define MQTTAsync_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 6, 60, 0, 65535, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL}
+#define MQTTAsync_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 7, 60, 0, 65535, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, NULL, 1, NULL, NULL, NULL, NULL}
 
 
 /**
@@ -1228,9 +1251,9 @@ NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NU
   * <b>5</b>: Connection refused: Not authorized<br>
   * <b>6-255</b>: Reserved for future use<br>
   */
-DLLExport int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options);
+LIBMQTT_API int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options);
 
-
+/** Options for the ::MQTTAsync_disconnect call */
 typedef struct
 {
 	/** The eyecatcher for this structure. Must be MQTD. */
@@ -1283,7 +1306,7 @@ typedef struct
 } MQTTAsync_disconnectOptions;
 
 #define MQTTAsync_disconnectOptions_initializer { {'M', 'Q', 'T', 'D'}, 0, 0, NULL, NULL, NULL,\
-	MQTTProperties_initializer, MQTTREASONCODE_SUCCESS }
+	MQTTProperties_initializer, MQTTREASONCODE_SUCCESS, NULL, NULL }
 
 #define MQTTAsync_disconnectOptions_initializer5 { {'M', 'Q', 'T', 'D'}, 1, 0, NULL, NULL, NULL,\
 	MQTTProperties_initializer, MQTTREASONCODE_SUCCESS, NULL, NULL }
@@ -1306,7 +1329,7 @@ typedef struct
   * the server. An error code is returned if the client was unable to disconnect
   * from the server
   */
-DLLExport int MQTTAsync_disconnect(MQTTAsync handle, const MQTTAsync_disconnectOptions* options);
+LIBMQTT_API int MQTTAsync_disconnect(MQTTAsync handle, const MQTTAsync_disconnectOptions* options);
 
 
 /**
@@ -1316,7 +1339,7 @@ DLLExport int MQTTAsync_disconnect(MQTTAsync handle, const MQTTAsync_disconnectO
   * MQTTAsync_create().
   * @return Boolean true if the client is connected, otherwise false.
   */
-DLLExport int MQTTAsync_isConnected(MQTTAsync handle);
+LIBMQTT_API int MQTTAsync_isConnected(MQTTAsync handle);
 
 
 /**
@@ -1333,7 +1356,7 @@ DLLExport int MQTTAsync_isConnected(MQTTAsync handle);
   * An error code is returned if there was a problem registering the
   * subscription.
   */
-DLLExport int MQTTAsync_subscribe(MQTTAsync handle, const char* topic, int qos, MQTTAsync_responseOptions* response);
+LIBMQTT_API int MQTTAsync_subscribe(MQTTAsync handle, const char* topic, int qos, MQTTAsync_responseOptions* response);
 
 
 /**
@@ -1353,7 +1376,7 @@ DLLExport int MQTTAsync_subscribe(MQTTAsync handle, const char* topic, int qos, 
   * An error code is returned if there was a problem registering the
   * subscriptions.
   */
-DLLExport int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int* qos, MQTTAsync_responseOptions* response);
+LIBMQTT_API int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int* qos, MQTTAsync_responseOptions* response);
 
 /**
   * This function attempts to remove an existing subscription made by the
@@ -1367,7 +1390,7 @@ DLLExport int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* 
   * An error code is returned if there was a problem removing the
   * subscription.
   */
-DLLExport int MQTTAsync_unsubscribe(MQTTAsync handle, const char* topic, MQTTAsync_responseOptions* response);
+LIBMQTT_API int MQTTAsync_unsubscribe(MQTTAsync handle, const char* topic, MQTTAsync_responseOptions* response);
 
 /**
   * This function attempts to remove existing subscriptions to a list of topics
@@ -1381,7 +1404,7 @@ DLLExport int MQTTAsync_unsubscribe(MQTTAsync handle, const char* topic, MQTTAsy
   * @return ::MQTTASYNC_SUCCESS if the subscriptions are removed.
   * An error code is returned if there was a problem removing the subscriptions.
   */
-DLLExport int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* const* topic, MQTTAsync_responseOptions* response);
+LIBMQTT_API int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* const* topic, MQTTAsync_responseOptions* response);
 
 
 /**
@@ -1402,9 +1425,8 @@ DLLExport int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* const
   * @return ::MQTTASYNC_SUCCESS if the message is accepted for publication.
   * An error code is returned if there was a problem accepting the message.
   */
-DLLExport int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen, const void* payload, int qos,
+LIBMQTT_API int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen, const void* payload, int qos,
 		int retained, MQTTAsync_responseOptions* response);
-
 
 /**
   * This function attempts to publish a message to a given topic (see also
@@ -1421,7 +1443,7 @@ DLLExport int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int 
   * @return ::MQTTASYNC_SUCCESS if the message is accepted for publication.
   * An error code is returned if there was a problem accepting the message.
   */
-DLLExport int MQTTAsync_sendMessage(MQTTAsync handle, const char* destinationName, const MQTTAsync_message* msg, MQTTAsync_responseOptions* response);
+LIBMQTT_API int MQTTAsync_sendMessage(MQTTAsync handle, const char* destinationName, const MQTTAsync_message* msg, MQTTAsync_responseOptions* response);
 
 
 /**
@@ -1442,7 +1464,7 @@ DLLExport int MQTTAsync_sendMessage(MQTTAsync handle, const char* destinationNam
   * An error code is returned if there was a problem obtaining the list of
   * pending tokens.
   */
-DLLExport int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens);
+LIBMQTT_API int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens);
 
 /**
  * Tests whether a request corresponding to a token is complete.
@@ -1453,7 +1475,7 @@ DLLExport int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tok
  * @return 1 if the request has been completed, 0 if not.
  */
 #define MQTTASYNC_TRUE 1
-DLLExport int MQTTAsync_isComplete(MQTTAsync handle, MQTTAsync_token token);
+LIBMQTT_API int MQTTAsync_isComplete(MQTTAsync handle, MQTTAsync_token token);
 
 
 /**
@@ -1466,7 +1488,7 @@ DLLExport int MQTTAsync_isComplete(MQTTAsync handle, MQTTAsync_token token);
  * @return ::MQTTASYNC_SUCCESS if the request has been completed in the time allocated,
  *  ::MQTTASYNC_FAILURE if not.
  */
-DLLExport int MQTTAsync_waitForCompletion(MQTTAsync handle, MQTTAsync_token token, unsigned long timeout);
+LIBMQTT_API int MQTTAsync_waitForCompletion(MQTTAsync handle, MQTTAsync_token token, unsigned long timeout);
 
 
 /**
@@ -1479,7 +1501,7 @@ DLLExport int MQTTAsync_waitForCompletion(MQTTAsync handle, MQTTAsync_token toke
   * @param msg The address of a pointer to the ::MQTTAsync_message structure
   * to be freed.
   */
-DLLExport void MQTTAsync_freeMessage(MQTTAsync_message** msg);
+LIBMQTT_API void MQTTAsync_freeMessage(MQTTAsync_message** msg);
 
 /**
   * This function frees memory allocated by the MQTT C client library, especially the
@@ -1489,7 +1511,7 @@ DLLExport void MQTTAsync_freeMessage(MQTTAsync_message** msg);
   * allocated memory.
   * @param ptr The pointer to the client library storage to be freed.
   */
-DLLExport void MQTTAsync_free(void* ptr);
+LIBMQTT_API void MQTTAsync_free(void* ptr);
 
 /**
   * This function frees the memory allocated to an MQTT client (see
@@ -1498,7 +1520,7 @@ DLLExport void MQTTAsync_free(void* ptr);
   * @param handle A pointer to the handle referring to the ::MQTTAsync
   * structure to be freed.
   */
-DLLExport void MQTTAsync_destroy(MQTTAsync* handle);
+LIBMQTT_API void MQTTAsync_destroy(MQTTAsync* handle);
 
 
 
@@ -1519,7 +1541,7 @@ enum MQTTASYNC_TRACE_LEVELS
   * returned in the trace callback.
   * @param level the trace level required
   */
-DLLExport void MQTTAsync_setTraceLevel(enum MQTTASYNC_TRACE_LEVELS level);
+LIBMQTT_API void MQTTAsync_setTraceLevel(enum MQTTASYNC_TRACE_LEVELS level);
 
 
 /**
@@ -1538,14 +1560,7 @@ typedef void MQTTAsync_traceCallback(enum MQTTASYNC_TRACE_LEVELS level, char* me
   * MQTTASYNC_TRACE_MINIMUM.
   * @param callback a pointer to the function which will handle the trace information
   */
-DLLExport void MQTTAsync_setTraceCallback(MQTTAsync_traceCallback* callback);
-
-
-typedef struct
-{
-	const char* name;
-	const char* value;
-} MQTTAsync_nameValue;
+LIBMQTT_API void MQTTAsync_setTraceCallback(MQTTAsync_traceCallback* callback);
 
 /**
   * This function returns version information about the library.
@@ -1553,7 +1568,7 @@ typedef struct
   * MQTTASYNC_TRACE_MINIMUM
   * @return an array of strings describing the library.  The last entry is a NULL pointer.
   */
-DLLExport MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void);
+LIBMQTT_API MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void);
 
 /**
  * Returns a pointer to a string representation of the error code, or NULL.
@@ -1561,7 +1576,7 @@ DLLExport MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void);
  * @param code the MQTTASYNC_ return code.
  * @return a static string representation of the error code.
  */
-DLLExport const char* MQTTAsync_strerror(int code);
+LIBMQTT_API const char* MQTTAsync_strerror(int code);
 
 
 /**
@@ -1696,8 +1711,6 @@ DLLExport const char* MQTTAsync_strerror(int code);
   * safest, but slowest mode of transfer. A more sophisticated handshaking
   * and acknowledgement sequence is used than for QoS1 to ensure no duplication
   * of messages occurs.
-
-
   * @page publish Publication example
 @code
 #include <stdio.h>
@@ -1705,14 +1718,22 @@ DLLExport const char* MQTTAsync_strerror(int code);
 #include <string.h>
 #include "MQTTAsync.h"
 
-#define ADDRESS     "tcp://localhost:1883"
+#if !defined(_WIN32)
+#include <unistd.h>
+#else
+#include <windows.h>
+#endif
+
+#if defined(_WRS_KERNEL)
+#include <OsWrapper.h>
+#endif
+
+#define ADDRESS     "tcp://mqtt.eclipse.org:1883"
 #define CLIENTID    "ExampleClientPub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
 #define QOS         1
 #define TIMEOUT     10000L
-
-volatile MQTTAsync_token deliveredtoken;
 
 int finished = 0;
 
@@ -1735,6 +1756,11 @@ void connlost(void *context, char *cause)
 	}
 }
 
+void onDisconnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	printf("Disconnect failed\n");
+	finished = 1;
+}
 
 void onDisconnect(void* context, MQTTAsync_successData* response)
 {
@@ -1742,6 +1768,22 @@ void onDisconnect(void* context, MQTTAsync_successData* response)
 	finished = 1;
 }
 
+void onSendFailure(void* context, MQTTAsync_failureData* response)
+{
+	MQTTAsync client = (MQTTAsync)context;
+	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
+	int rc;
+
+	printf("Message send failed token %d error code %d\n", response->token, response->code);
+	opts.onSuccess = onDisconnect;
+	opts.onFailure = onDisconnectFailure;
+	opts.context = client;
+	if ((rc = MQTTAsync_disconnect(client, &opts)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to start disconnect, return code %d\n", rc);
+		exit(EXIT_FAILURE);
+	}
+}
 
 void onSend(void* context, MQTTAsync_successData* response)
 {
@@ -1750,13 +1792,12 @@ void onSend(void* context, MQTTAsync_successData* response)
 	int rc;
 
 	printf("Message with token value %d delivery confirmed\n", response->token);
-
 	opts.onSuccess = onDisconnect;
+	opts.onFailure = onDisconnectFailure;
 	opts.context = client;
-
 	if ((rc = MQTTAsync_disconnect(client, &opts)) != MQTTASYNC_SUCCESS)
 	{
-		printf("Failed to start sendMessage, return code %d\n", rc);
+		printf("Failed to start disconnect, return code %d\n", rc);
 		exit(EXIT_FAILURE);
 	}
 }
@@ -1777,16 +1818,13 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	int rc;
 
 	printf("Successful connection\n");
-
 	opts.onSuccess = onSend;
+	opts.onFailure = onSendFailure;
 	opts.context = client;
-
 	pubmsg.payload = PAYLOAD;
-	pubmsg.payloadlen = strlen(PAYLOAD);
+	pubmsg.payloadlen = (int)strlen(PAYLOAD);
 	pubmsg.qos = QOS;
 	pubmsg.retained = 0;
-	deliveredtoken = 0;
-
 	if ((rc = MQTTAsync_sendMessage(client, TOPIC, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start sendMessage, return code %d\n", rc);
@@ -1794,18 +1832,29 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	}
 }
 
+int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* m)
+{
+	// not expecting any messages
+	return 1;
+}
 
 int main(int argc, char* argv[])
 {
 	MQTTAsync client;
 	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
-	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-	MQTTAsync_token token;
 	int rc;
 
-	MQTTAsync_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+	if ((rc = MQTTAsync_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to create client object, return code %d\n", rc);
+		exit(EXIT_FAILURE);
+	}
 
-	MQTTAsync_setCallbacks(client, NULL, connlost, NULL, NULL);
+	if ((rc = MQTTAsync_setCallbacks(client, NULL, connlost, messageArrived, NULL)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to set callback, return code %d\n", rc);
+		exit(EXIT_FAILURE);
+	}
 
 	conn_opts.keepAliveInterval = 20;
 	conn_opts.cleansession = 1;
@@ -1822,7 +1871,7 @@ int main(int argc, char* argv[])
          "on topic %s for client with ClientID: %s\n",
          PAYLOAD, TOPIC, CLIENTID);
 	while (!finished)
-		#if defined(WIN32) || defined(WIN64)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1840,14 +1889,22 @@ int main(int argc, char* argv[])
 #include <string.h>
 #include "MQTTAsync.h"
 
-#define ADDRESS     "tcp://localhost:1883"
+#if !defined(_WIN32)
+#include <unistd.h>
+#else
+#include <windows.h>
+#endif
+
+#if defined(_WRS_KERNEL)
+#include <OsWrapper.h>
+#endif
+
+#define ADDRESS     "tcp://mqtt.eclipse.org:1883"
 #define CLIENTID    "ExampleClientSub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
 #define QOS         1
 #define TIMEOUT     10000L
-
-volatile MQTTAsync_token deliveredtoken;
 
 int disc_finished = 0;
 int subscribed = 0;
@@ -1860,7 +1917,8 @@ void connlost(void *context, char *cause)
 	int rc;
 
 	printf("\nConnection lost\n");
-	printf("     cause: %s\n", cause);
+	if (cause)
+		printf("     cause: %s\n", cause);
 
 	printf("Reconnecting\n");
 	conn_opts.keepAliveInterval = 20;
@@ -1868,38 +1926,32 @@ void connlost(void *context, char *cause)
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-	    finished = 1;
+		finished = 1;
 	}
 }
 
 
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTAsync_message *message)
 {
-    int i;
-    char* payloadptr;
-
     printf("Message arrived\n");
     printf("     topic: %s\n", topicName);
-    printf("   message: ");
-
-    payloadptr = message->payload;
-    for(i=0; i<message->payloadlen; i++)
-    {
-        putchar(*payloadptr++);
-    }
-    putchar('\n');
+    printf("   message: %.*s\n", message->payloadlen, (char*)message->payload);
     MQTTAsync_freeMessage(&message);
     MQTTAsync_free(topicName);
     return 1;
 }
 
+void onDisconnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	printf("Disconnect failed, rc %d\n", response->code);
+	disc_finished = 1;
+}
 
 void onDisconnect(void* context, MQTTAsync_successData* response)
 {
 	printf("Successful disconnection\n");
 	disc_finished = 1;
 }
-
 
 void onSubscribe(void* context, MQTTAsync_successData* response)
 {
@@ -1909,14 +1961,14 @@ void onSubscribe(void* context, MQTTAsync_successData* response)
 
 void onSubscribeFailure(void* context, MQTTAsync_failureData* response)
 {
-	printf("Subscribe failed, rc %d\n", response ? response->code : 0);
+	printf("Subscribe failed, rc %d\n", response->code);
 	finished = 1;
 }
 
 
 void onConnectFailure(void* context, MQTTAsync_failureData* response)
 {
-	printf("Connect failed, rc %d\n", response ? response->code : 0);
+	printf("Connect failed, rc %d\n", response->code);
 	finished = 1;
 }
 
@@ -1925,7 +1977,6 @@ void onConnect(void* context, MQTTAsync_successData* response)
 {
 	MQTTAsync client = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	int rc;
 
 	printf("Successful connection\n");
@@ -1935,13 +1986,10 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	opts.onSuccess = onSubscribe;
 	opts.onFailure = onSubscribeFailure;
 	opts.context = client;
-
-	deliveredtoken = 0;
-
 	if ((rc = MQTTAsync_subscribe(client, TOPIC, QOS, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start subscribe, return code %d\n", rc);
-		exit(EXIT_FAILURE);
+		finished = 1;
 	}
 }
 
@@ -1951,14 +1999,23 @@ int main(int argc, char* argv[])
 	MQTTAsync client;
 	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
 	MQTTAsync_disconnectOptions disc_opts = MQTTAsync_disconnectOptions_initializer;
-	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-	MQTTAsync_token token;
 	int rc;
 	int ch;
 
-	MQTTAsync_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+	if ((rc = MQTTAsync_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL))
+			!= MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to create client, return code %d\n", rc);
+		rc = EXIT_FAILURE;
+		goto exit;
+	}
 
-	MQTTAsync_setCallbacks(client, NULL, connlost, msgarrvd, NULL);
+	if ((rc = MQTTAsync_setCallbacks(client, client, connlost, msgarrvd, NULL)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to set callbacks, return code %d\n", rc);
+		rc = EXIT_FAILURE;
+		goto destroy_exit;
+	}
 
 	conn_opts.keepAliveInterval = 20;
 	conn_opts.cleansession = 1;
@@ -1968,11 +2025,12 @@ int main(int argc, char* argv[])
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-		exit(EXIT_FAILURE);
+		rc = EXIT_FAILURE;
+		goto destroy_exit;
 	}
 
-	while	(!subscribed)
-		#if defined(WIN32) || defined(WIN64)
+	while (!subscribed && !finished)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1987,20 +2045,25 @@ int main(int argc, char* argv[])
 	} while (ch!='Q' && ch != 'q');
 
 	disc_opts.onSuccess = onDisconnect;
+	disc_opts.onFailure = onDisconnectFailure;
 	if ((rc = MQTTAsync_disconnect(client, &disc_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start disconnect, return code %d\n", rc);
-		exit(EXIT_FAILURE);
+		rc = EXIT_FAILURE;
+		goto destroy_exit;
 	}
- 	while	(!disc_finished)
-		#if defined(WIN32) || defined(WIN64)
+ 	while (!disc_finished)
+ 	{
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
 		#endif
+ 	}
 
-exit:
+destroy_exit:
 	MQTTAsync_destroy(&client);
+exit:
  	return rc;
 }
 

@@ -1,12 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2018 IBM Corp., and others
+ * Copyright (c) 2012, 2020 IBM Corp., and others
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *   http://www.eclipse.org/legal/epl-v10.html
+ *   https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -24,7 +24,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #include <windows.h>
 #define sleep Sleep
 #else
@@ -56,7 +56,7 @@ MQTTProperties props = MQTTProperties_initializer;
 
 void mysleep(int ms)
 {
-	#if defined(WIN32)
+	#if defined(_WIN32)
 		Sleep(ms);
 	#else
 		usleep(ms * 1000);
@@ -235,20 +235,20 @@ static unsigned int onPSKAuth(const char* hint,
 	int rc = 0;
 	struct pubsub_opts* opts = context;
 
-	printf("Trying TLS-PSK auth with hint: %s\n", hint);
+	/* printf("Trying TLS-PSK auth with hint: %s\n", hint);*/
 
 	if (opts->psk == NULL || opts->psk_identity == NULL)
 	{
-		printf("No PSK entered\n");
+		/* printf("No PSK entered\n"); */
 		goto exit;
 	}
 
 	/* psk should be array of bytes. This is a quick and dirty way to
 	 * convert hex to bytes without input validation */
-	psk_len = strlen(opts->psk) / 2;
+	psk_len = (int)strlen(opts->psk) / 2;
 	if (psk_len > max_psk_len)
 	{
-		printf("PSK too long\n");
+		fprintf(stderr, "PSK too long\n");
 		goto exit;
 	}
 	for (k=0, n=0; k < psk_len; k++, n += 2)
@@ -260,7 +260,7 @@ static unsigned int onPSKAuth(const char* hint,
 	strncpy(identity, opts->psk_identity, max_identity_len);
 	if (identity[max_identity_len - 1] != '\0')
 	{
-		printf("Identity too long\n");
+		fprintf(stderr, "Identity too long\n");
 		goto exit;
 	}
 
@@ -367,11 +367,12 @@ int main(int argc, char** argv)
 	MQTTAsync client;
 	char* buffer = NULL;
 	char* url = NULL;
+	int url_allocated = 0;
 	int rc = 0;
 	const char* version = NULL;
 	const char* program_name = "paho_c_pub";
 	MQTTAsync_nameValue* infos = MQTTAsync_getVersionInfo();
-#if !defined(WIN32)
+#if !defined(_WIN32)
     struct sigaction sa;
 #endif
 
@@ -386,6 +387,7 @@ int main(int argc, char** argv)
 	else
 	{
 		url = malloc(100);
+		url_allocated = 1;
 		sprintf(url, "%s:%s", opts.host, opts.port);
 	}
 	if (opts.verbose)
@@ -408,7 +410,7 @@ int main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 
-#if defined(WIN32)
+#if defined(_WIN32)
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
 #else
@@ -502,6 +504,9 @@ int main(int argc, char** argv)
 		mysleep(100);
 
 	MQTTAsync_destroy(&client);
+
+	if (url_allocated)
+		free(url);
 
 	return EXIT_SUCCESS;
 }

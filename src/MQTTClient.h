@@ -1,12 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution.
  *
  * The Eclipse Public License is available at
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -41,7 +41,7 @@
  * @endcond
  * @cond MQTTClient_main
  * @mainpage MQTT Client library for C
- * &copy; Copyright IBM Corp. 2009, 2018
+ * &copy; Copyright IBM Corp. 2009, 2020 and others
  *
  * @brief An MQTT client library in C.
  *
@@ -110,18 +110,12 @@
  extern "C" {
 #endif
 
-#if defined(WIN32) || defined(WIN64)
-  #define DLLImport __declspec(dllimport)
-  #define DLLExport __declspec(dllexport)
-#else
-  #define DLLImport extern
-  #define DLLExport __attribute__ ((visibility ("default")))
-#endif
-
 #include <stdio.h>
 /*
 /// @endcond
 */
+
+#include "MQTTExportDeclarations.h"
 
 #include "MQTTProperties.h"
 #include "MQTTReasonCodes.h"
@@ -197,6 +191,10 @@
   * Return code: call not applicable to the requested version of MQTT
   */
  #define MQTTCLIENT_WRONG_MQTT_VERSION -16
+ /**
+  * Return code: 0 length will topic on connect
+  */
+ #define MQTTCLIENT_0_LEN_WILL_TOPIC -17
 
 
 /**
@@ -239,7 +237,7 @@ typedef struct
  * Global init of mqtt library. Call once on program start to set global behaviour.
  * do_openssl_init - if mqtt library should initialize OpenSSL (1) or rely on the caller to do it before using the library (0)
  */
-DLLExport void MQTTClient_global_init(MQTTClient_init_options* inits);
+LIBMQTT_API void MQTTClient_global_init(MQTTClient_init_options* inits);
 
 /**
  * A handle representing an MQTT client. A valid client handle is available
@@ -347,12 +345,16 @@ typedef struct
  * <i>topicLen</i>.
  * @param message The MQTTClient_message structure for the received message.
  * This structure contains the message payload and attributes.
- * @return This function must return a boolean value indicating whether or not
- * the message has been safely received by the client application. Returning
- * true indicates that the message has been successfully handled.
- * Returning false indicates that there was a problem. In this
+ * @return This function must return 0 or 1 indicating whether or not
+ * the message has been safely received by the client application. <br>
+ * Returning 1 indicates that the message has been successfully handled.
+ * To free the message storage, ::MQTTClient_freeMessage must be called.
+ * To free the topic name storage, ::MQTTClient_free must be called.<br>
+ * Returning 0 indicates that there was a problem. In this
  * case, the client library will reinvoke MQTTClient_messageArrived() to
  * attempt to deliver the message to the application again.
+ * Do not free the message and topic storage when returning 0, otherwise
+ * the redelivery will fail.
  */
 typedef int MQTTClient_messageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* message);
 
@@ -422,7 +424,7 @@ typedef void MQTTClient_connectionLost(void* context, char* cause);
  * @return ::MQTTCLIENT_SUCCESS if the callbacks were correctly set,
  * ::MQTTCLIENT_FAILURE if an error occurred.
  */
-DLLExport int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTClient_connectionLost* cl,
+LIBMQTT_API int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTClient_connectionLost* cl,
 									MQTTClient_messageArrived* ma, MQTTClient_deliveryComplete* dc);
 
 
@@ -451,7 +453,7 @@ typedef void MQTTClient_disconnected(void* context, MQTTProperties* properties,
  * @return ::MQTTCLIENT_SUCCESS if the callbacks were correctly set,
  * ::MQTTCLIENT_FAILURE if an error occurred.
  */
-DLLExport int MQTTClient_setDisconnected(MQTTClient handle, void* context, MQTTClient_disconnected* co);
+LIBMQTT_API int MQTTClient_setDisconnected(MQTTClient handle, void* context, MQTTClient_disconnected* co);
 
 /**
  * This is a callback function, the MQTT V5 version of MQTTClient_deliveryComplete().
@@ -479,7 +481,7 @@ DLLExport int MQTTClient_setDisconnected(MQTTClient handle, void* context, MQTTC
 typedef void MQTTClient_published(void* context, int dt, int packet_type, MQTTProperties* properties,
 		enum MQTTReasonCodes reasonCode);
 
-DLLExport int MQTTClient_setPublished(MQTTClient handle, void* context, MQTTClient_published* co);
+LIBMQTT_API int MQTTClient_setPublished(MQTTClient handle, void* context, MQTTClient_published* co);
 
 /**
  * This function creates an MQTT client ready for connection to the
@@ -523,9 +525,10 @@ DLLExport int MQTTClient_setPublished(MQTTClient handle, void* context, MQTTClie
  * @return ::MQTTCLIENT_SUCCESS if the client is successfully created, otherwise
  * an error code is returned.
  */
-DLLExport int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* clientId,
+LIBMQTT_API int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context);
 
+/** Options for the ::MQTTClient_createWithOptions call */
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQCO. */
@@ -586,7 +589,7 @@ typedef struct
  * @return ::MQTTCLIENT_SUCCESS if the client is successfully created, otherwise
  * an error code is returned.
  */
-DLLExport int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, const char* clientId,
+LIBMQTT_API int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context, MQTTClient_createOptions* options);
 
 /**
@@ -741,6 +744,26 @@ typedef struct
 #define MQTTClient_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 4, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL, NULL, NULL, 0 }
 
 /**
+  * MQTTClient_libraryInfo is used to store details relating to the currently used
+  * library such as the version in use, the time it was built and relevant openSSL
+  * options.
+  * There is one static instance of this struct in MQTTClient.c
+  */
+
+typedef struct
+{
+	const char* name;
+	const char* value;
+} MQTTClient_nameValue;
+
+/**
+  * This function returns version information about the library.
+  * no trace information will be returned.
+  * @return an array of strings describing the library.  The last entry is a NULL pointer.
+  */
+LIBMQTT_API MQTTClient_nameValue* MQTTClient_getVersionInfo(void);
+
+/**
  * MQTTClient_connectOptions defines several settings that control the way the
  * client connects to an MQTT server.
  *
@@ -765,6 +788,7 @@ typedef struct
 	 * 3 signifies no returned values
 	 * 4 signifies no binary password option
 	 * 5 signifies no maxInflightMessages and cleanstart
+	 * 6 signifies no HTTP headers option
 	 */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -885,6 +909,10 @@ typedef struct
 		const void* data;  /**< binary password data */
 	} binarypwd;
 	/**
+	 * httpHeaders
+	 */
+	const MQTTClient_nameValue* httpHeaders;
+	/**
 	 * The maximum number of messages in flight
 	 */
 	int maxInflightMessages;
@@ -894,29 +922,9 @@ typedef struct
 	int cleanstart;
 } MQTTClient_connectOptions;
 
-#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 6, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL, 0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0}
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 7, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL, 0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, NULL, -1, 0}
 
-#define MQTTClient_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 6, 60, 0, 1, NULL, NULL, NULL, 30, 0, NULL, 0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1}
-
-/**
-  * MQTTClient_libraryInfo is used to store details relating to the currently used
-  * library such as the version in use, the time it was built and relevant openSSL
-  * options.
-  * There is one static instance of this struct in MQTTClient.c
-  */
-
-typedef struct
-{
-	const char* name;
-	const char* value;
-} MQTTClient_nameValue;
-
-/**
-  * This function returns version information about the library.
-  * no trace information will be returned.
-  * @return an array of strings describing the library.  The last entry is a NULL pointer.
-  */
-DLLExport MQTTClient_nameValue* MQTTClient_getVersionInfo(void);
+#define MQTTClient_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 7, 60, 0, 1, NULL, NULL, NULL, 30, 0, NULL, 0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, NULL, -1, 1}
 
 /**
   * This function attempts to connect a previously-created client (see
@@ -938,23 +946,39 @@ DLLExport MQTTClient_nameValue* MQTTClient_getVersionInfo(void);
   * <b>5</b>: Connection refused: Not authorized<br>
   * <b>6-255</b>: Reserved for future use<br>
   */
-DLLExport int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options);
+LIBMQTT_API int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options);
 
-
+/** MQTT version 5.0 response information */
 typedef struct MQTTResponse
 {
-	int version;
-	enum MQTTReasonCodes reasonCode;
-	int reasonCodeCount;	               /* used for subscribeMany5 and unsubscribeMany5 */
-	enum MQTTReasonCodes* reasonCodes;  /* used for subscribeMany5 and unsubscribeMany5 */
-	MQTTProperties* properties;         /* optional */
+	int version;                        /* the version number of this structure */
+	enum MQTTReasonCodes reasonCode;    /* the MQTT 5.0 reason code returned */
+	int reasonCodeCount;	            /* the number of reason codes.  Used for subscribeMany5 and unsubscribeMany5 */
+	enum MQTTReasonCodes* reasonCodes;  /* a list of reason codes.  Used for subscribeMany5 and unsubscribeMany5 */
+	MQTTProperties* properties;         /* optionally, the MQTT 5.0 properties returned */
 } MQTTResponse;
 
 #define MQTTResponse_initializer {1, MQTTREASONCODE_SUCCESS, 0, NULL, NULL}
 
-DLLExport void MQTTResponse_free(MQTTResponse response);
+/**
+ * Frees the storage associated with the MQTT response.
+ * @param response the response structure to be freed
+ */
+LIBMQTT_API void MQTTResponse_free(MQTTResponse response);
 
-DLLExport MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connectOptions* options,
+/**
+  * Attempts to connect a previously-created client (see
+  * MQTTClient_create()) to an MQTT server using MQTT version 5.0 and the specified options. If you
+  * want to enable asynchronous message and status notifications, you must call
+  * MQTTClient_setCallbacks() prior to MQTTClient_connect().
+  * @param handle A valid client handle from a successful call to
+  * MQTTClient_create().
+  * @param options A pointer to a valid MQTTClient_connectOptions
+  * structure.
+  * @param connectProperties the MQTT 5.0 connect properties to use
+  * @return the MQTT 5.0 response information: error codes and properties.
+  */
+LIBMQTT_API MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connectOptions* options,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties);
 
 /**
@@ -975,9 +999,9 @@ DLLExport MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connect
   * the server. An error code is returned if the client was unable to disconnect
   * from the server
   */
-DLLExport int MQTTClient_disconnect(MQTTClient handle, int timeout);
+LIBMQTT_API int MQTTClient_disconnect(MQTTClient handle, int timeout);
 
-DLLExport int MQTTClient_disconnect5(MQTTClient handle, int timeout, enum MQTTReasonCodes reason, MQTTProperties* props);
+LIBMQTT_API int MQTTClient_disconnect5(MQTTClient handle, int timeout, enum MQTTReasonCodes reason, MQTTProperties* props);
 
 /**
   * This function allows the client application to test whether or not a
@@ -986,7 +1010,7 @@ DLLExport int MQTTClient_disconnect5(MQTTClient handle, int timeout, enum MQTTRe
   * MQTTClient_create().
   * @return Boolean true if the client is connected, otherwise false.
   */
-DLLExport int MQTTClient_isConnected(MQTTClient handle);
+LIBMQTT_API int MQTTClient_isConnected(MQTTClient handle);
 
 
 /* Subscribe is synchronous.  QoS list parameter is changed on return to granted QoSs.
@@ -1005,10 +1029,22 @@ DLLExport int MQTTClient_isConnected(MQTTClient handle);
   * An error code is returned if there was a problem registering the
   * subscription.
   */
-DLLExport int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos);
+LIBMQTT_API int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos);
 
-
-DLLExport MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char* topic, int qos,
+/**
+  * This function attempts to subscribe an MQTT version 5.0 client to a single topic, which may
+  * contain wildcards (see @ref wildcard). This call also specifies the
+  * @ref qos requested for the subscription
+  * (see also MQTTClient_subscribeMany()).
+  * @param handle A valid client handle from a successful call to
+  * MQTTClient_create().
+  * @param topic The subscription topic, which may include wildcards.
+  * @param qos The requested quality of service for the subscription.
+  * @param opts the MQTT 5.0 subscribe options to be used
+  * @param props the MQTT 5.0 properties to be used
+  * @return the MQTT 5.0 response information: error codes and properties.
+  */
+LIBMQTT_API MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char* topic, int qos,
 		MQTTSubscribe_options* opts, MQTTProperties* props);
 
 /**
@@ -1027,9 +1063,25 @@ DLLExport MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char* topi
   * An error code is returned if there was a problem registering the
   * subscriptions.
   */
-DLLExport int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, int* qos);
+LIBMQTT_API int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, int* qos);
 
-DLLExport MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char* const* topic,
+/**
+  * This function attempts to subscribe an MQTT version 5.0 client to a list of topics, which may
+  * contain wildcards (see @ref wildcard). This call also specifies the
+  * @ref qos requested for each topic (see also MQTTClient_subscribe()).
+  * @param handle A valid client handle from a successful call to
+  * MQTTClient_create().
+  * @param count The number of topics for which the client is requesting
+  * subscriptions.
+  * @param topic An array (of length <i>count</i>) of pointers to
+  * topics, each of which may include wildcards.
+  * @param qos An array (of length <i>count</i>) of @ref qos
+  * values. qos[n] is the requested QoS for topic[n].
+  * @param opts the MQTT 5.0 subscribe options to be used
+  * @param props the MQTT 5.0 properties to be used
+  * @return the MQTT 5.0 response information: error codes and properties.
+  */
+LIBMQTT_API MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char* const* topic,
 		int* qos, MQTTSubscribe_options* opts, MQTTProperties* props);
 
 /**
@@ -1043,9 +1095,19 @@ DLLExport MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, c
   * An error code is returned if there was a problem removing the
   * subscription.
   */
-DLLExport int MQTTClient_unsubscribe(MQTTClient handle, const char* topic);
+LIBMQTT_API int MQTTClient_unsubscribe(MQTTClient handle, const char* topic);
 
-DLLExport MQTTResponse MQTTClient_unsubscribe5(MQTTClient handle, const char* topic, MQTTProperties* props);
+/**
+  * This function attempts to remove an existing subscription made by the
+  * specified client using MQTT 5.0.
+  * @param handle A valid client handle from a successful call to
+  * MQTTClient_create().
+  * @param topic The topic for the subscription to be removed, which may
+  * include wildcards (see @ref wildcard).
+  * @param props the MQTT 5.0 properties to be used
+  * @return the MQTT 5.0 response information: error codes and properties.
+  */
+LIBMQTT_API MQTTResponse MQTTClient_unsubscribe5(MQTTClient handle, const char* topic, MQTTProperties* props);
 
 /**
   * This function attempts to remove existing subscriptions to a list of topics
@@ -1058,9 +1120,20 @@ DLLExport MQTTResponse MQTTClient_unsubscribe5(MQTTClient handle, const char* to
   * @return ::MQTTCLIENT_SUCCESS if the subscriptions are removed.
   * An error code is returned if there was a problem removing the subscriptions.
   */
-DLLExport int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic);
+LIBMQTT_API int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic);
 
-DLLExport MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count, char* const* topic, MQTTProperties* props);
+/**
+  * This function attempts to remove existing subscriptions to a list of topics
+  * made by the specified client using MQTT version 5.0.
+  * @param handle A valid client handle from a successful call to
+  * MQTTClient_create().
+  * @param count The number subscriptions to be removed.
+  * @param topic An array (of length <i>count</i>) of pointers to the topics of
+  * the subscriptions to be removed, each of which may include wildcards.
+  * @param props the MQTT 5.0 properties to be used
+  * @return the MQTT 5.0 response information: error codes and properties.
+  */
+LIBMQTT_API MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count, char* const* topic, MQTTProperties* props);
 
 /**
   * This function attempts to publish a message to a given topic (see also
@@ -1083,10 +1156,31 @@ DLLExport MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count,
   * @return ::MQTTCLIENT_SUCCESS if the message is accepted for publication.
   * An error code is returned if there was a problem accepting the message.
   */
-DLLExport int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, const void* payload, int qos, int retained,
-																 MQTTClient_deliveryToken* dt);
+LIBMQTT_API int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, const void* payload, int qos, int retained,
+		MQTTClient_deliveryToken* dt);
 
-DLLExport MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int payloadlen, const void* payload,
+/**
+  * Attempts to publish a message to a given topic using MQTT version 5.0 (see also
+  * MQTTClient_publishMessage5()). An ::MQTTClient_deliveryToken is issued when
+  * this function returns successfully. If the client application needs to
+  * test for succesful delivery of QoS1 and QoS2 messages, this can be done
+  * either asynchronously or synchronously (see @ref async,
+  * ::MQTTClient_waitForCompletion and MQTTClient_deliveryComplete()).
+  * @param handle A valid client handle from a successful call to
+  * MQTTClient_create().
+  * @param topicName The topic associated with this message.
+  * @param payloadlen The length of the payload in bytes.
+  * @param payload A pointer to the byte array payload of the message.
+  * @param qos The @ref qos of the message.
+  * @param retained The retained flag for the message.
+  * @param properties the MQTT 5.0 properties to be used
+  * @param dt A pointer to an ::MQTTClient_deliveryToken. This is populated
+  * with a token representing the message when the function returns
+  * successfully. If your application does not use delivery tokens, set this
+  * argument to NULL.
+  * @return the MQTT 5.0 response information: error codes and properties.
+  */
+LIBMQTT_API MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int payloadlen, const void* payload,
 		int qos, int retained, MQTTProperties* properties, MQTTClient_deliveryToken* dt);
 /**
   * This function attempts to publish a message to a given topic (see also
@@ -1107,10 +1201,29 @@ DLLExport MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicN
   * @return ::MQTTCLIENT_SUCCESS if the message is accepted for publication.
   * An error code is returned if there was a problem accepting the message.
   */
-DLLExport int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClient_message* msg, MQTTClient_deliveryToken* dt);
+LIBMQTT_API int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClient_message* msg, MQTTClient_deliveryToken* dt);
 
 
-DLLExport MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char* topicName, MQTTClient_message* msg,
+/**
+  * Attempts to publish a message to the given topic using MQTT version 5.0
+  * (see also
+  * MQTTClient_publish5()). An ::MQTTClient_deliveryToken is issued when
+  * this function returns successfully. If the client application needs to
+  * test for succesful delivery of QoS1 and QoS2 messages, this can be done
+  * either asynchronously or synchronously (see @ref async,
+  * ::MQTTClient_waitForCompletion and MQTTClient_deliveryComplete()).
+  * @param handle A valid client handle from a successful call to
+  * MQTTClient_create().
+  * @param topicName The topic associated with this message.
+  * @param msg A pointer to a valid MQTTClient_message structure containing
+  * the payload and attributes of the message to be published.
+  * @param dt A pointer to an ::MQTTClient_deliveryToken. This is populated
+  * with a token representing the message when the function returns
+  * successfully. If your application does not use delivery tokens, set this
+  * argument to NULL.
+  * @return the MQTT 5.0 response information: error codes and properties.
+  */
+LIBMQTT_API MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char* topicName, MQTTClient_message* msg,
 		MQTTClient_deliveryToken* dt);
 
 /**
@@ -1128,7 +1241,7 @@ DLLExport MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char*
   * An error code is returned if the timeout expires or there was a problem
   * checking the token.
   */
-DLLExport int MQTTClient_waitForCompletion(MQTTClient handle, MQTTClient_deliveryToken dt, unsigned long timeout);
+LIBMQTT_API int MQTTClient_waitForCompletion(MQTTClient handle, MQTTClient_deliveryToken dt, unsigned long timeout);
 
 
 /**
@@ -1149,7 +1262,7 @@ DLLExport int MQTTClient_waitForCompletion(MQTTClient handle, MQTTClient_deliver
   * An error code is returned if there was a problem obtaining the list of
   * pending tokens.
   */
-DLLExport int MQTTClient_getPendingDeliveryTokens(MQTTClient handle, MQTTClient_deliveryToken **tokens);
+LIBMQTT_API int MQTTClient_getPendingDeliveryTokens(MQTTClient handle, MQTTClient_deliveryToken **tokens);
 
 /**
   * When implementing a single-threaded client, call this function periodically
@@ -1157,7 +1270,7 @@ DLLExport int MQTTClient_getPendingDeliveryTokens(MQTTClient handle, MQTTClient_
   * If the application is calling MQTTClient_receive() regularly, then it is
   * not necessary to call this function.
   */
-DLLExport void MQTTClient_yield(void);
+LIBMQTT_API void MQTTClient_yield(void);
 
 /**
   * This function performs a synchronous receive of incoming messages. It should
@@ -1190,7 +1303,7 @@ DLLExport void MQTTClient_yield(void);
   * timeout expired, in which case <i>message</i> is NULL. An error code is
   * returned if there was a problem trying to receive a message.
   */
-DLLExport int MQTTClient_receive(MQTTClient handle, char** topicName, int* topicLen, MQTTClient_message** message,
+LIBMQTT_API int MQTTClient_receive(MQTTClient handle, char** topicName, int* topicLen, MQTTClient_message** message,
 		unsigned long timeout);
 
 /**
@@ -1203,7 +1316,7 @@ DLLExport int MQTTClient_receive(MQTTClient handle, char** topicName, int* topic
   * @param msg The address of a pointer to the ::MQTTClient_message structure
   * to be freed.
   */
-DLLExport void MQTTClient_freeMessage(MQTTClient_message** msg);
+LIBMQTT_API void MQTTClient_freeMessage(MQTTClient_message** msg);
 
 /**
   * This function frees memory allocated by the MQTT C client library, especially the
@@ -1213,7 +1326,7 @@ DLLExport void MQTTClient_freeMessage(MQTTClient_message** msg);
   * allocated memory.
   * @param ptr The pointer to the client library storage to be freed.
   */
-DLLExport void MQTTClient_free(void* ptr);
+LIBMQTT_API void MQTTClient_free(void* ptr);
 
 /**
   * This function frees the memory allocated to an MQTT client (see
@@ -1222,7 +1335,7 @@ DLLExport void MQTTClient_free(void* ptr);
   * @param handle A pointer to the handle referring to the ::MQTTClient
   * structure to be freed.
   */
-DLLExport void MQTTClient_destroy(MQTTClient* handle);
+LIBMQTT_API void MQTTClient_destroy(MQTTClient* handle);
 
 
 enum MQTTCLIENT_TRACE_LEVELS
@@ -1242,7 +1355,7 @@ enum MQTTCLIENT_TRACE_LEVELS
   * returned in the trace callback.
   * @param level the trace level required
   */
-DLLExport void MQTTClient_setTraceLevel(enum MQTTCLIENT_TRACE_LEVELS level);
+LIBMQTT_API void MQTTClient_setTraceLevel(enum MQTTCLIENT_TRACE_LEVELS level);
 
 
 /**
@@ -1261,14 +1374,14 @@ typedef void MQTTClient_traceCallback(enum MQTTCLIENT_TRACE_LEVELS level, char* 
   * MQTTASYNC_TRACE_MINIMUM.
   * @param callback a pointer to the function which will handle the trace information
   */
-DLLExport void MQTTClient_setTraceCallback(MQTTClient_traceCallback* callback);
+LIBMQTT_API void MQTTClient_setTraceCallback(MQTTClient_traceCallback* callback);
 
 /**
  * Returns a pointer to the string representation of the error or NULL.
  *
  * Do not free after use. Returns NULL if the error code is unknown.
  */
-DLLExport const char* MQTTClient_strerror(int code);
+LIBMQTT_API const char* MQTTClient_strerror(int code);
 
 #ifdef __cplusplus
      }
@@ -1391,7 +1504,7 @@ DLLExport const char* MQTTClient_strerror(int code);
 #include <string.h>
 #include "MQTTClient.h"
 
-#define ADDRESS     "tcp://localhost:1883"
+#define ADDRESS     "tcp://mqtt.eclipse.org:1883"
 #define CLIENTID    "ExampleClientPub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
@@ -1406,27 +1519,39 @@ int main(int argc, char* argv[])
     MQTTClient_deliveryToken token;
     int rc;
 
-    MQTTClient_create(&client, ADDRESS, CLIENTID,
-        MQTTCLIENT_PERSISTENCE_NONE, NULL);
+    if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID,
+        MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
+    {
+         printf("Failed to create client, return code %d\n", rc);
+         exit(EXIT_FAILURE);
+    }
+
     conn_opts.keepAliveInterval = 20;
     conn_opts.cleansession = 1;
-
     if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to connect, return code %d\n", rc);
         exit(EXIT_FAILURE);
     }
+
     pubmsg.payload = PAYLOAD;
-    pubmsg.payloadlen = strlen(PAYLOAD);
+    pubmsg.payloadlen = (int)strlen(PAYLOAD);
     pubmsg.qos = QOS;
     pubmsg.retained = 0;
-    MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token);
+    if ((rc = MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
+    {
+         printf("Failed to publish message, return code %d\n", rc);
+         exit(EXIT_FAILURE);
+    }
+
     printf("Waiting for up to %d seconds for publication of %s\n"
             "on topic %s for client with ClientID: %s\n",
             (int)(TIMEOUT/1000), PAYLOAD, TOPIC, CLIENTID);
     rc = MQTTClient_waitForCompletion(client, token, TIMEOUT);
     printf("Message with delivery token %d delivered\n", token);
-    MQTTClient_disconnect(client, 10000);
+
+    if ((rc = MQTTClient_disconnect(client, 10000)) != MQTTCLIENT_SUCCESS)
+    	printf("Failed to disconnect, return code %d\n", rc);
     MQTTClient_destroy(&client);
     return rc;
 }
@@ -1440,14 +1565,20 @@ int main(int argc, char* argv[])
 #include <string.h>
 #include "MQTTClient.h"
 
-#define ADDRESS     "tcp://localhost:1883"
+#if !defined(_WIN32)
+#include <unistd.h>
+#else
+#include <windows.h>
+#endif
+
+#define ADDRESS     "tcp://mqtt.eclipse.org:1883"
 #define CLIENTID    "ExampleClientPub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
 #define QOS         1
 #define TIMEOUT     10000L
 
-volatile MQTTClient_deliveryToken deliveredtoken;
+MQTTClient_deliveryToken deliveredtoken;
 
 void delivered(void *context, MQTTClient_deliveryToken dt)
 {
@@ -1457,19 +1588,9 @@ void delivered(void *context, MQTTClient_deliveryToken dt)
 
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message)
 {
-    int i;
-    char* payloadptr;
-
     printf("Message arrived\n");
     printf("     topic: %s\n", topicName);
-    printf("   message: ");
-
-    payloadptr = message->payload;
-    for(i=0; i<message->payloadlen; i++)
-    {
-        putchar(*payloadptr++);
-    }
-    putchar('\n');
+    printf("   message: %.*s\n", message->payloadlen, (char*)message->payload);
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
     return 1;
@@ -1489,30 +1610,65 @@ int main(int argc, char* argv[])
     MQTTClient_deliveryToken token;
     int rc;
 
-    MQTTClient_create(&client, ADDRESS, CLIENTID,
-        MQTTCLIENT_PERSISTENCE_NONE, NULL);
+    if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID,
+        MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
+    {
+        printf("Failed to create client, return code %d\n", rc);
+        rc = EXIT_FAILURE;
+        goto exit;
+    }
+
+    if ((rc = MQTTClient_setCallbacks(client, NULL, connlost, msgarrvd, delivered)) != MQTTCLIENT_SUCCESS)
+    {
+        printf("Failed to set callbacks, return code %d\n", rc);
+        rc = EXIT_FAILURE;
+        goto destroy_exit;
+    }
+
     conn_opts.keepAliveInterval = 20;
     conn_opts.cleansession = 1;
-
-    MQTTClient_setCallbacks(client, NULL, connlost, msgarrvd, delivered);
-
     if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to connect, return code %d\n", rc);
-        exit(EXIT_FAILURE);
+        rc = EXIT_FAILURE;
+        goto destroy_exit;
     }
+
     pubmsg.payload = PAYLOAD;
-    pubmsg.payloadlen = strlen(PAYLOAD);
+    pubmsg.payloadlen = (int)strlen(PAYLOAD);
     pubmsg.qos = QOS;
     pubmsg.retained = 0;
     deliveredtoken = 0;
-    MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token);
-    printf("Waiting for publication of %s\n"
+    if ((rc = MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
+    {
+    	printf("Failed to publish message, return code %d\n", rc);
+    	rc = EXIT_FAILURE;
+    }
+    else
+    {
+    	printf("Waiting for publication of %s\n"
             "on topic %s for client with ClientID: %s\n",
             PAYLOAD, TOPIC, CLIENTID);
-    while(deliveredtoken != token);
-    MQTTClient_disconnect(client, 10000);
+    	while (deliveredtoken != token)
+    	{
+			#if defined(_WIN32)
+				Sleep(100);
+			#else
+				usleep(10000L);
+			#endif
+    	}
+    }
+
+    if ((rc = MQTTClient_disconnect(client, 10000)) != MQTTCLIENT_SUCCESS)
+    {
+    	printf("Failed to disconnect, return code %d\n", rc);
+    	rc = EXIT_FAILURE;
+    }
+
+destroy_exit:
     MQTTClient_destroy(&client);
+
+exit:
     return rc;
 }
 
@@ -1524,7 +1680,7 @@ int main(int argc, char* argv[])
 #include <string.h>
 #include "MQTTClient.h"
 
-#define ADDRESS     "tcp://localhost:1883"
+#define ADDRESS     "tcp://mqtt.eclipse.org:1883"
 #define CLIENTID    "ExampleClientSub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
@@ -1541,19 +1697,9 @@ void delivered(void *context, MQTTClient_deliveryToken dt)
 
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message)
 {
-    int i;
-    char* payloadptr;
-
     printf("Message arrived\n");
     printf("     topic: %s\n", topicName);
-    printf("   message: ");
-
-    payloadptr = message->payload;
-    for(i=0; i<message->payloadlen; i++)
-    {
-        putchar(*payloadptr++);
-    }
-    putchar('\n');
+    printf("   message: %.*s\n", message->payloadlen, (char*)message->payload);
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
     return 1;
@@ -1570,31 +1716,61 @@ int main(int argc, char* argv[])
     MQTTClient client;
     MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
     int rc;
-    int ch;
 
-    MQTTClient_create(&client, ADDRESS, CLIENTID,
-        MQTTCLIENT_PERSISTENCE_NONE, NULL);
+    if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID,
+        MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
+    {
+        printf("Failed to create client, return code %d\n", rc);
+        rc = EXIT_FAILURE;
+        goto exit;
+    }
+
+    if ((rc = MQTTClient_setCallbacks(client, NULL, connlost, msgarrvd, delivered)) != MQTTCLIENT_SUCCESS)
+    {
+        printf("Failed to set callbacks, return code %d\n", rc);
+        rc = EXIT_FAILURE;
+        goto destroy_exit;
+    }
+
     conn_opts.keepAliveInterval = 20;
     conn_opts.cleansession = 1;
-
-    MQTTClient_setCallbacks(client, NULL, connlost, msgarrvd, delivered);
-
     if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to connect, return code %d\n", rc);
-        exit(EXIT_FAILURE);
+        rc = EXIT_FAILURE;
+        goto destroy_exit;
     }
+
     printf("Subscribing to topic %s\nfor client %s using QoS%d\n\n"
            "Press Q<Enter> to quit\n\n", TOPIC, CLIENTID, QOS);
-    MQTTClient_subscribe(client, TOPIC, QOS);
-
-    do
+    if ((rc = MQTTClient_subscribe(client, TOPIC, QOS)) != MQTTCLIENT_SUCCESS)
     {
-        ch = getchar();
-    } while(ch!='Q' && ch != 'q');
+    	printf("Failed to subscribe, return code %d\n", rc);
+    	rc = EXIT_FAILURE;
+    }
+    else
+    {
+    	int ch;
+    	do
+    	{
+        	ch = getchar();
+    	} while (ch!='Q' && ch != 'q');
 
-    MQTTClient_disconnect(client, 10000);
+        if ((rc = MQTTClient_unsubscribe(client, TOPIC)) != MQTTCLIENT_SUCCESS)
+        {
+        	printf("Failed to unsubscribe, return code %d\n", rc);
+        	rc = EXIT_FAILURE;
+        }
+    }
+
+    if ((rc = MQTTClient_disconnect(client, 10000)) != MQTTCLIENT_SUCCESS)
+    {
+    	printf("Failed to disconnect, return code %d\n", rc);
+    	rc = EXIT_FAILURE;
+    }
+destroy_exit:
     MQTTClient_destroy(&client);
+exit:
     return rc;
 }
 

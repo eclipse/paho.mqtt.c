@@ -1,12 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * are made available under the terms of the Eclipse Public License v2.0
  * and Eclipse Distribution License v1.0 which accompany this distribution. 
  *
  * The Eclipse Public License is available at 
- *    http://www.eclipse.org/legal/epl-v10.html
+ *    https://www.eclipse.org/legal/epl-2.0/
  * and the Eclipse Distribution License is available at 
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
@@ -22,9 +22,9 @@
 #if !defined(CLIENTS_H)
 #define CLIENTS_H
 
-#include <time.h>
+#include "MQTTTime.h"
 #if defined(OPENSSL)
-#if defined(WIN32) || defined(WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 #include <winsock2.h>
 #endif
 #include <openssl/ssl.h>
@@ -32,7 +32,6 @@
 #include "MQTTClient.h"
 #include "LinkedList.h"
 #include "MQTTClientPersistence.h"
-
 
 /**
  * Stored publication data to minimize copying
@@ -57,7 +56,7 @@ typedef struct
 	int MQTTVersion;
 	MQTTProperties properties;
 	Publications *publish;
-	time_t lastTouch;		/**> used for retry and expiry */
+	START_TIME_TYPE lastTouch;		    /**> used for retry and expiry */
 	char nextMessageType;	/**> PUBREC, PUBREL, PUBCOMP */
 	int len;				/**> length of the whole structure+data */
 } Messages;
@@ -77,15 +76,20 @@ typedef struct
 typedef struct
 {
 	int socket;
-	time_t lastSent;
-	time_t lastReceived;
-	time_t lastPing;
+	START_TIME_TYPE lastSent;
+	START_TIME_TYPE lastReceived;
+	START_TIME_TYPE lastPing;
 #if defined(OPENSSL)
 	SSL* ssl;
 	SSL_CTX* ctx;
+	char *https_proxy;
+	char *https_proxy_auth;
 #endif
+	char *http_proxy;
+	char *http_proxy_auth;
 	int websocket; /**< socket has been upgraded to use web sockets */
 	char *websocket_key;
+	const MQTTClient_nameValue* httpHeaders;
 } networkHandles;
 
 
@@ -100,6 +104,8 @@ typedef struct
 #define WEBSOCKET_IN_PROGRESS   0x3
 /** TCP completed, waiting for MQTT ACK */
 #define WAIT_FOR_CONNACK 0x4
+/** Proxy connection in progress */
+#define PROXY_CONNECT_IN_PROGRESS 0x5
 /** Disconnecting */
 #define DISCONNECTING    -2
 

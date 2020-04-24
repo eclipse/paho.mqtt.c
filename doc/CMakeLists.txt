@@ -2,11 +2,11 @@
 #  Copyright (c) 2015 logi.cals GmbH
 # 
 #  All rights reserved. This program and the accompanying materials
-#  are made available under the terms of the Eclipse Public License v1.0
+#  are made available under the terms of the Eclipse Public License v2.0
 #  and Eclipse Distribution License v1.0 which accompany this distribution. 
 # 
 #  The Eclipse Public License is available at 
-#     http://www.eclipse.org/legal/epl-v10.html
+#     https://www.eclipse.org/legal/epl-2.0/
 #  and the Eclipse Distribution License is available at 
 #    http://www.eclipse.org/org/documents/edl-v10.php.
 # 
@@ -39,7 +39,7 @@ ENDFOREACH(DOXYFILE_SRC)
 
 ADD_CUSTOM_TARGET(doc ALL DEPENDS ${DOXYTARGETS})
 IF (PAHO_ENABLE_CPACK)
-    INSTALL(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc DESTINATION share)
+    INSTALL(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/ DESTINATION ${CMAKE_INSTALL_DOCDIR})
 ELSE()
     INSTALL(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc DESTINATION ${CMAKE_INSTALL_DOCDIR})
 ENDIF()

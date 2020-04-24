@@ -2961,8 +2961,12 @@ void Protocol_processPublication(Publish* publish, Clients* client, int allocate
 			MQTTPersistence_persistQueueEntry(client, (MQTTPersistence_qEntry*)qe);
 #endif
 	}
+	else
+	{
+		if (allocatePayload) { free(mm->payload); }
+		free(mm);
+	}
 exit:
-	publish->topic = NULL;
 	FUNC_EXIT;
 }
 

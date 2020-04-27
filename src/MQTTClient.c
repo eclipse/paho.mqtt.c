@@ -2069,7 +2069,7 @@ int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, i
 	MQTTResponse response = MQTTResponse_initializer;
 
 	if (m->c->MQTTVersion >= MQTTVERSION_5)
-		response.reasonCode = MQTTCLIENT_BAD_MQTT_VERSION;
+		response.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
 	else
 		response = MQTTClient_subscribeMany5(handle, count, topic, qos, NULL, NULL);
 
@@ -2098,7 +2098,7 @@ int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos)
 	MQTTResponse response = MQTTResponse_initializer;
 
 	if (m->c->MQTTVersion >= MQTTVERSION_5)
-		response.reasonCode = MQTTCLIENT_BAD_MQTT_VERSION;
+		response.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
 	else
 		response = MQTTClient_subscribe5(handle, topic, qos, NULL, NULL);
 
@@ -2381,7 +2381,7 @@ int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen,
 	MQTTResponse rc = MQTTResponse_initializer;
 
 	if (m->c->MQTTVersion >= MQTTVERSION_5)
-		rc.reasonCode = MQTTCLIENT_BAD_MQTT_VERSION;
+		rc.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
 	else
 		rc = MQTTClient_publish5(handle, topicName, payloadlen, payload, qos, retained, NULL, deliveryToken);
 	return rc.reasonCode;
@@ -2429,7 +2429,7 @@ int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClie
 			(message->struct_version != 0 && message->struct_version != 1))
 		rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
 	else if (m->c->MQTTVersion >= MQTTVERSION_5)
-		rc.reasonCode = MQTTCLIENT_BAD_MQTT_VERSION;
+		rc.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
 	else
 		rc = MQTTClient_publishMessage5(handle, topicName, message, deliveryToken);
 	return rc.reasonCode;
@@ -2915,6 +2915,8 @@ const char* MQTTClient_strerror(int code)
       return "Invalid QoS value";
     case MQTTCLIENT_SSL_NOT_SUPPORTED:
       return "SSL is not supported";
+    case MQTTCLIENT_BAD_MQTT_VERSION:
+      return "Unrecognized MQTT version";
     case MQTTCLIENT_BAD_PROTOCOL:
       return "Invalid protocol scheme";
     case MQTTCLIENT_BAD_MQTT_OPTION:

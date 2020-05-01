@@ -77,7 +77,7 @@ after_build:
 
     7z rn %ZIPNAME% MQTTVersion.exe bin\MQTTVersion.exe
 
-    7z a %ZIPNAME% src\MQTTClient.h src\MQTTAsync.h src\MQTTClientPersistence.h src\MQTTProperties.h src\MQTTReasonCodes.h src\MQTTSubscribeOpts.h
+    7z a %ZIPNAME% src\MQTTClient.h src\MQTTAsync.h src\MQTTClientPersistence.h src\MQTTProperties.h src\MQTTReasonCodes.h src\MQTTSubscribeOpts.h src\MQTTExportDeclarations.h
 
     7z rn %ZIPNAME% src include
 

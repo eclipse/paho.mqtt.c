@@ -25,6 +25,7 @@
 #define START_TIME_TYPE struct timespec
 #define START_TIME_ZERO {0, 0}
 #else
+#include <sys/time.h>
 #define START_TIME_TYPE struct timeval
 #define START_TIME_ZERO {0, 0}
 #endif

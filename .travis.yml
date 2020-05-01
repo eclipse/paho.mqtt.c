@@ -29,13 +29,9 @@ addons:
     build_command: make -j 4
     branch_pattern: coverity-.*
   apt:
-    sources:
-    - george-edison55-precise-backports
-    - sourceline: ppa:mosquitto-dev/mosquitto-ppa
     packages:
     - cmake
     - cmake-data
-    - mosquitto
     - doxygen
   ssh_known_hosts: build.eclipse.org
 after_success:

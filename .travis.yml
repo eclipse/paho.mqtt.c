@@ -1,13 +1,17 @@
-sudo: required
 language: c
 jobs:
   include:
     - os: linux
       compiler: gcc
-      env: OPENSSL_ROOT_DIR=
+      dist: bionic
+      env: OPENSSL_ROOT_DIR= PAHO_BUILD_STATIC=FALSE PAHO_BUILD_SHARED=TRUE
     - os: osx
       compiler: clang
-      env: OPENSSL_ROOT_DIR=/usr/local/opt/openssl
+      env: OPENSSL_ROOT_DIR=/usr/local/opt/openssl PAHO_BUILD_STATIC=FALSE PAHO_BUILD_SHARED=TRUE
+    - os: linux
+      compiler: gcc
+      dist: trusty
+      env: OPENSSL_ROOT_DIR= PAHO_BUILD_STATIC=TRUE PAHO_BUILD_SHARED=FALSE
 before_install:
 #- if [ "$DEPLOY" = "true" ]; then ./travis-setup-deploy.sh; fi
 - "./travis-install.sh"
@@ -46,5 +50,5 @@ deploy:
   on:
     repo: eclipse/paho.mqtt.c
     tags: true
-  skip_cleanup: true
+  cleanup: false
   draft: false

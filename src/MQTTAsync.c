@@ -3451,8 +3451,8 @@ static int cmdMessageIDCompare(void* a, void* b)
  */
 static int MQTTAsync_assignMsgId(MQTTAsyncs* m)
 {
-	int start_msgid = m->c->msgID;
-	int msgid = start_msgid;
+	int start_msgid;
+	int msgid;
 	thread_id_type thread_id = 0;
 	int locked = 0;
 
@@ -3465,6 +3465,10 @@ static int MQTTAsync_assignMsgId(MQTTAsyncs* m)
 		MQTTAsync_lock_mutex(mqttasync_mutex);
 		locked = 1;
 	}
+
+	/* Fetch last message ID in locked state */
+	start_msgid = m->c->msgID;
+	msgid = start_msgid;
 
 	msgid = (msgid == MAX_MSG_ID) ? 1 : msgid + 1;
 	while (ListFindItem(commands, &msgid, cmdMessageIDCompare) ||

@@ -224,21 +224,28 @@ size_t WebSocket_calculateFrameHeaderSize(networkHandles *net, int mask_data, si
  *
  * @return amount of data to write to socket
  */
-static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
+struct frameData {
+	char* wsbuf0;
+	size_t wsbuf0len;
+	uint8_t mask[4];
+};
+
+static struct frameData WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
 	char** pbuf0, size_t* pbuf0len, int count, char** buffers, size_t* buflens)
 {
 	int buf_len = 0u;
+	struct frameData rc;
 
 	FUNC_ENTRY;
+	memset(&rc, '\0', sizeof(rc));
 	if ( net->websocket )
 	{
 		size_t ws_header_size = 0u;
-		uint8_t mask[4];
+		size_t data_len = 0L;
 		int i;
-		size_t buf0len = *pbuf0len;
-		char* buf0 = NULL;
-		size_t data_len = buf0len;
 
+		/* Calculate total length of MQTT buffers */
+		data_len = *pbuf0len;
 		for (i = 0; i < count; ++i)
 			data_len += buflens[i];
 
@@ -246,54 +253,56 @@ static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
 		ws_header_size = WebSocket_calculateFrameHeaderSize(net, mask_data, data_len);
 		if (*pbuf0)
 		{
-			buf0 = *pbuf0 = realloc(*pbuf0, buf0len + ws_header_size);
-			memcpy(&buf0[ws_header_size], buf0, buf0len);
-			*pbuf0len = (buf0len += ws_header_size);
+			rc.wsbuf0len = *pbuf0len + ws_header_size;
+			rc.wsbuf0 = malloc(rc.wsbuf0len);
+			if (rc.wsbuf0 == NULL)
+				goto exit;
+			memcpy(&rc.wsbuf0[ws_header_size], *pbuf0, *pbuf0len);
 		}
 		else
 		{
-			buf0 = *pbuf0 = malloc(ws_header_size);
-			if (buf0 == NULL)
+			rc.wsbuf0 = malloc(ws_header_size);
+			if (rc.wsbuf0 == NULL)
 				goto exit;
-			*pbuf0len = buf0len = ws_header_size;
+			rc.wsbuf0len = ws_header_size;
 		}
 
 		/* generate mask, since we are a client */
 #if defined(OPENSSL)
-		RAND_bytes( &mask[0], sizeof(mask) );
+		RAND_bytes( &rc.mask[0], sizeof(rc.mask) );
 #else /* if defined(OPENSSL) */
-		mask[0] = (rand() % UINT8_MAX);
-		mask[1] = (rand() % UINT8_MAX);
-		mask[2] = (rand() % UINT8_MAX);
-		mask[3] = (rand() % UINT8_MAX);
+		rc.mask[0] = (rand() % UINT8_MAX);
+		rc.mask[1] = (rand() % UINT8_MAX);
+		rc.mask[2] = (rand() % UINT8_MAX);
+		rc.mask[3] = (rand() % UINT8_MAX);
 #endif /* else if defined(OPENSSL) */
 
 		/* 1st byte */
-		buf0[buf_len] = (char)(1 << 7); /* final flag */
+		rc.wsbuf0[buf_len] = (char)(1 << 7); /* final flag */
 		/* 3 bits reserved for negotiation of protocol */
-		buf0[buf_len] |= (char)(opcode & 0x0F); /* op code */
+		rc.wsbuf0[buf_len] |= (char)(opcode & 0x0F); /* op code */
 		++buf_len;
 
 		/* 2nd byte */
-		buf0[buf_len] = (char)((mask_data & 0x1) << 7); /* masking bit */
+		rc.wsbuf0[buf_len] = (char)((mask_data & 0x1) << 7); /* masking bit */
 
 		/* payload length */
 		if ( data_len < 126u )
-			buf0[buf_len++] |= data_len & 0x7F;
+			rc.wsbuf0[buf_len++] |= data_len & 0x7F;
 
 		/* 3rd byte & 4th bytes - extended payload length */
 		else if ( data_len < 65536u )
 		{
 			uint16_t len = htobe16((uint16_t)data_len);
-			buf0[buf_len++] |= (126u & 0x7F);
-			memcpy( &buf0[buf_len], &len, 2u );
+			rc.wsbuf0[buf_len++] |= (126u & 0x7F);
+			memcpy( &rc.wsbuf0[buf_len], &len, 2u );
 			buf_len += 2;
 		}
 		else if ( data_len < 0xFFFFFFFFFFFFFFFF )
 		{
 			uint64_t len = htobe64((uint64_t)data_len);
-			buf0[buf_len++] |= (127u & 0x7F);
-			memcpy( &buf0[buf_len], &len, 8 );
+			rc.wsbuf0[buf_len++] |= (127u & 0x7F);
+			memcpy( &rc.wsbuf0[buf_len], &len, 8 );
 			buf_len += 8;
 		}
 		else
@@ -305,7 +314,7 @@ static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
 		/* masking key */
 		if ( (mask_data & 0x1) && buf_len > 0 )
 		{
-			memcpy( &buf0[buf_len], &mask, sizeof(uint32_t));
+			memcpy( &rc.wsbuf0[buf_len], &rc.mask, sizeof(uint32_t));
 			buf_len += sizeof(uint32_t);
 		}
 
@@ -314,21 +323,34 @@ static int WebSocket_buildFrame(networkHandles* net, int opcode, int mask_data,
 			size_t idx = 0u;
 
 			/* packet fixed header */
-			for (i = (int)ws_header_size; i < (int)buf0len; ++i, ++idx)
-				buf0[i] ^= mask[idx % 4];
+			for (i = (int)ws_header_size; i < (int)rc.wsbuf0len; ++i, ++idx)
+				rc.wsbuf0[i] ^= rc.mask[idx % 4];
 
 			/* variable data buffers */
 			for (i = 0; i < count; ++i)
 			{
 				size_t j;
 				for ( j = 0u; j < buflens[i]; ++j, ++idx )
-					buffers[i][j] ^= mask[idx % 4];
+					buffers[i][j] ^= rc.mask[idx % 4];
 			}
 		}
 	}
 exit:
 	FUNC_EXIT_RC(buf_len);
-	return buf_len;
+	return rc;
+}
+
+
+static void WebSocket_unmaskData(uint8_t *mask, size_t idx, int count, char** buffers, size_t* buflens)
+{
+	int i;
+
+	for (i = 0; i < count; ++i)
+	{
+		size_t j;
+		for ( j = 0u; j < buflens[i]; ++j, ++idx )
+			buffers[i][j] ^= mask[idx % 4];
+	}
 }
 
 
@@ -872,25 +894,37 @@ void WebSocket_pong(networkHandles *net, char *app_data, size_t app_data_len)
 int WebSocket_putdatas(networkHandles* net, char** buf0, size_t* buf0len,
 	int count, char** buffers, size_t* buflens, int* freeData)
 {
+	const int mask_data = 1; /* must mask websocket data from client */
 	int rc;
 
 	FUNC_ENTRY;
-
-	if ( net->websocket )
+	if (net->websocket)
 	{
-		const int mask_data = 1; /* must mask websocket data from client */
+		struct frameData wsdata;
 
-		rc = WebSocket_buildFrame(
+		wsdata = WebSocket_buildFrame(
 			net, WebSocket_OP_BINARY, mask_data, buf0, buf0len,
 			count, buffers, buflens);
-	}
-
 #if defined(OPENSSL)
-	if (net->ssl)
-		rc = SSLSocket_putdatas(net->ssl, net->socket, *buf0, *buf0len, count, buffers, buflens, freeData);
-	else
+		if (net->ssl)
+			rc = SSLSocket_putdatas(net->ssl, net->socket, wsdata.wsbuf0, wsdata.wsbuf0len, count, buffers, buflens, freeData);
+		else
 #endif
-		rc = Socket_putdatas(net->socket, *buf0, *buf0len, count, buffers, buflens, freeData);
+			rc = Socket_putdatas(net->socket, wsdata.wsbuf0, wsdata.wsbuf0len, count, buffers, buflens, freeData);
+
+		if (mask_data)
+			WebSocket_unmaskData(wsdata.mask, *buf0len, count, buffers, buflens);
+		free(wsdata.wsbuf0); /* free temporary ws header */
+	}
+	else
+	{
+#if defined(OPENSSL)
+		if (net->ssl)
+			rc = SSLSocket_putdatas(net->ssl, net->socket, *buf0, *buf0len, count, buffers, buflens, freeData);
+		else
+#endif
+			rc = Socket_putdatas(net->socket, *buf0, *buf0len, count, buffers, buflens, freeData);
+	}
 
 	FUNC_EXIT_RC(rc);
 	return rc;

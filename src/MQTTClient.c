@@ -115,6 +115,7 @@ extern mutex_type log_mutex;
 int MQTTClient_init(void)
 {
 	DWORD rc = 0;
+
 	if (mqttclient_mutex == NULL)
 	{
 		if ((mqttclient_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
@@ -197,10 +198,9 @@ void MQTTClient_cleanup(void)
 #if defined(PAHO_MQTT_STATIC)
 /* Global variable for one-time initialization structure */
 static INIT_ONCE g_InitOnce = INIT_ONCE_STATIC_INIT; /* Static initialization */
-static PVOID lpContext; /* used by caller to InitOnceFunction */
 
 /* One time initialization function */
-BOOL InitOnceFunction (
+BOOL CALLBACK InitOnceFunction (
     PINIT_ONCE InitOnce,        /* Pointer to one-time initialization structure */
     PVOID Parameter,            /* Optional parameter passed by InitOnceExecuteOnce */
     PVOID *lpContext)           /* Receives pointer to event object */
@@ -265,13 +265,13 @@ int MQTTClient_init(void)
 #endif /* !defined(_WRS_KERNEL) */
 	if ((rc = pthread_mutex_init(mqttclient_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing client_mutex\n", rc);
-	if ((rc = pthread_mutex_init(socket_mutex, &attr)) != 0)
+	else if ((rc = pthread_mutex_init(socket_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing socket_mutex\n", rc);
-	if ((rc = pthread_mutex_init(subscribe_mutex, &attr)) != 0)
+	else if ((rc = pthread_mutex_init(subscribe_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing subscribe_mutex\n", rc);
-	if ((rc = pthread_mutex_init(unsubscribe_mutex, &attr)) != 0)
+	else if ((rc = pthread_mutex_init(unsubscribe_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing unsubscribe_mutex\n", rc);
-	if ((rc = pthread_mutex_init(connect_mutex, &attr)) != 0)
+	else if ((rc = pthread_mutex_init(connect_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing connect_mutex\n", rc);
 
 	return rc;
@@ -373,7 +373,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 
 #if (defined(_WIN32) || defined(_WIN64)) && defined(PAHO_MQTT_STATIC)
 	/* intializes mutexes once.  Must come before FUNC_ENTRY */
-	BOOL bStatus = InitOnceExecuteOnce(&g_InitOnce, InitOnceFunction, NULL, &lpContext);
+	BOOL bStatus = InitOnceExecuteOnce(&g_InitOnce, InitOnceFunction, NULL, NULL);
 #endif
 	FUNC_ENTRY;
 	if ((rc = Thread_lock_mutex(mqttclient_mutex)) != 0)
@@ -2069,7 +2069,7 @@ int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, i
 	MQTTResponse response = MQTTResponse_initializer;
 
 	if (m->c->MQTTVersion >= MQTTVERSION_5)
-		response.reasonCode = MQTTCLIENT_BAD_MQTT_VERSION;
+		response.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
 	else
 		response = MQTTClient_subscribeMany5(handle, count, topic, qos, NULL, NULL);
 
@@ -2098,7 +2098,7 @@ int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos)
 	MQTTResponse response = MQTTResponse_initializer;
 
 	if (m->c->MQTTVersion >= MQTTVERSION_5)
-		response.reasonCode = MQTTCLIENT_BAD_MQTT_VERSION;
+		response.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
 	else
 		response = MQTTClient_subscribe5(handle, topic, qos, NULL, NULL);
 
@@ -2381,7 +2381,7 @@ int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen,
 	MQTTResponse rc = MQTTResponse_initializer;
 
 	if (m->c->MQTTVersion >= MQTTVERSION_5)
-		rc.reasonCode = MQTTCLIENT_BAD_MQTT_VERSION;
+		rc.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
 	else
 		rc = MQTTClient_publish5(handle, topicName, payloadlen, payload, qos, retained, NULL, deliveryToken);
 	return rc.reasonCode;
@@ -2429,7 +2429,7 @@ int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClie
 			(message->struct_version != 0 && message->struct_version != 1))
 		rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
 	else if (m->c->MQTTVersion >= MQTTVERSION_5)
-		rc.reasonCode = MQTTCLIENT_BAD_MQTT_VERSION;
+		rc.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
 	else
 		rc = MQTTClient_publishMessage5(handle, topicName, message, deliveryToken);
 	return rc.reasonCode;
@@ -2915,6 +2915,8 @@ const char* MQTTClient_strerror(int code)
       return "Invalid QoS value";
     case MQTTCLIENT_SSL_NOT_SUPPORTED:
       return "SSL is not supported";
+    case MQTTCLIENT_BAD_MQTT_VERSION:
+      return "Unrecognized MQTT version";
     case MQTTCLIENT_BAD_PROTOCOL:
       return "Invalid protocol scheme";
     case MQTTCLIENT_BAD_MQTT_OPTION:

@@ -60,7 +60,13 @@ IF (WIN32)
     SET(LIBS_SYSTEM ws2_32 crypt32 RpcRT4)
 ELSEIF (UNIX)
     IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
-        SET(LIBS_SYSTEM c dl pthread anl rt)
+        SET(LIBS_SYSTEM c dl pthread rt)
+        # anl is only available with glibc so check if it is found before using
+        # it or build will fail on uclibc or musl
+        FIND_LIBRARY(LIB_ANL anl)
+        IF(LIB_ANL)
+            SET(LIBS_SYSTEM "${LIBS_SYSTEM} ${LIB_ANL}")
+        ENDIF()
         ADD_DEFINITIONS(-D_GNU_SOURCE -fvisibility=hidden)
     ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Android")
         SET(LIBS_SYSTEM c dl)
@@ -88,7 +94,6 @@ ADD_LIBRARY(common_obj_static OBJECT ${common_src})
 SET_TARGET_PROPERTIES(common_obj_static PROPERTIES
     POSITION_INDEPENDENT_CODE ON
     COMPILE_DEFINITIONS "PAHO_MQTT_STATIC=1")
-ADD_EXECUTABLE(MQTTVersion-static MQTTVersion.c)
 ENDIF()
 
 IF (PAHO_BUILD_SHARED)
@@ -166,7 +171,6 @@ IF (PAHO_BUILD_STATIC)
     ENDFOREACH()
 
     IF (NOT PAHO_BUILD_SHARED)
-        TARGET_LINK_LIBRARIES(MQTTVersion-static paho-mqtt3a-static paho-mqtt3c-static ${LIBS_SYSTEM})
         INSTALL(TARGETS paho-mqtt3c-static paho-mqtt3a-static
             EXPORT eclipse-paho-mqtt-cTargets
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

@@ -1711,8 +1711,6 @@ LIBMQTT_API const char* MQTTAsync_strerror(int code);
   * safest, but slowest mode of transfer. A more sophisticated handshaking
   * and acknowledgement sequence is used than for QoS1 to ensure no duplication
   * of messages occurs.
-
-
   * @page publish Publication example
 @code
 #include <stdio.h>
@@ -1720,14 +1718,22 @@ LIBMQTT_API const char* MQTTAsync_strerror(int code);
 #include <string.h>
 #include "MQTTAsync.h"
 
-#define ADDRESS     "tcp://localhost:1883"
+#if !defined(_WIN32)
+#include <unistd.h>
+#else
+#include <windows.h>
+#endif
+
+#if defined(_WRS_KERNEL)
+#include <OsWrapper.h>
+#endif
+
+#define ADDRESS     "tcp://mqtt.eclipse.org:1883"
 #define CLIENTID    "ExampleClientPub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
 #define QOS         1
 #define TIMEOUT     10000L
-
-volatile MQTTAsync_token deliveredtoken;
 
 int finished = 0;
 
@@ -1750,6 +1756,11 @@ void connlost(void *context, char *cause)
 	}
 }
 
+void onDisconnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	printf("Disconnect failed\n");
+	finished = 1;
+}
 
 void onDisconnect(void* context, MQTTAsync_successData* response)
 {
@@ -1757,6 +1768,22 @@ void onDisconnect(void* context, MQTTAsync_successData* response)
 	finished = 1;
 }
 
+void onSendFailure(void* context, MQTTAsync_failureData* response)
+{
+	MQTTAsync client = (MQTTAsync)context;
+	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
+	int rc;
+
+	printf("Message send failed token %d error code %d\n", response->token, response->code);
+	opts.onSuccess = onDisconnect;
+	opts.onFailure = onDisconnectFailure;
+	opts.context = client;
+	if ((rc = MQTTAsync_disconnect(client, &opts)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to start disconnect, return code %d\n", rc);
+		exit(EXIT_FAILURE);
+	}
+}
 
 void onSend(void* context, MQTTAsync_successData* response)
 {
@@ -1765,13 +1792,12 @@ void onSend(void* context, MQTTAsync_successData* response)
 	int rc;
 
 	printf("Message with token value %d delivery confirmed\n", response->token);
-
 	opts.onSuccess = onDisconnect;
+	opts.onFailure = onDisconnectFailure;
 	opts.context = client;
-
 	if ((rc = MQTTAsync_disconnect(client, &opts)) != MQTTASYNC_SUCCESS)
 	{
-		printf("Failed to start sendMessage, return code %d\n", rc);
+		printf("Failed to start disconnect, return code %d\n", rc);
 		exit(EXIT_FAILURE);
 	}
 }
@@ -1792,16 +1818,13 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	int rc;
 
 	printf("Successful connection\n");
-
 	opts.onSuccess = onSend;
+	opts.onFailure = onSendFailure;
 	opts.context = client;
-
 	pubmsg.payload = PAYLOAD;
-	pubmsg.payloadlen = strlen(PAYLOAD);
+	pubmsg.payloadlen = (int)strlen(PAYLOAD);
 	pubmsg.qos = QOS;
 	pubmsg.retained = 0;
-	deliveredtoken = 0;
-
 	if ((rc = MQTTAsync_sendMessage(client, TOPIC, &pubmsg, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start sendMessage, return code %d\n", rc);
@@ -1809,18 +1832,29 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	}
 }
 
+int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* m)
+{
+	// not expecting any messages
+	return 1;
+}
 
 int main(int argc, char* argv[])
 {
 	MQTTAsync client;
 	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
-	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-	MQTTAsync_token token;
 	int rc;
 
-	MQTTAsync_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+	if ((rc = MQTTAsync_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to create client object, return code %d\n", rc);
+		exit(EXIT_FAILURE);
+	}
 
-	MQTTAsync_setCallbacks(client, NULL, connlost, NULL, NULL);
+	if ((rc = MQTTAsync_setCallbacks(client, NULL, connlost, messageArrived, NULL)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to set callback, return code %d\n", rc);
+		exit(EXIT_FAILURE);
+	}
 
 	conn_opts.keepAliveInterval = 20;
 	conn_opts.cleansession = 1;
@@ -1837,7 +1871,7 @@ int main(int argc, char* argv[])
          "on topic %s for client with ClientID: %s\n",
          PAYLOAD, TOPIC, CLIENTID);
 	while (!finished)
-		#if defined(_WIN32) || defined(_WIN64)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -1855,14 +1889,22 @@ int main(int argc, char* argv[])
 #include <string.h>
 #include "MQTTAsync.h"
 
-#define ADDRESS     "tcp://localhost:1883"
+#if !defined(_WIN32)
+#include <unistd.h>
+#else
+#include <windows.h>
+#endif
+
+#if defined(_WRS_KERNEL)
+#include <OsWrapper.h>
+#endif
+
+#define ADDRESS     "tcp://mqtt.eclipse.org:1883"
 #define CLIENTID    "ExampleClientSub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
 #define QOS         1
 #define TIMEOUT     10000L
-
-volatile MQTTAsync_token deliveredtoken;
 
 int disc_finished = 0;
 int subscribed = 0;
@@ -1875,7 +1917,8 @@ void connlost(void *context, char *cause)
 	int rc;
 
 	printf("\nConnection lost\n");
-	printf("     cause: %s\n", cause);
+	if (cause)
+		printf("     cause: %s\n", cause);
 
 	printf("Reconnecting\n");
 	conn_opts.keepAliveInterval = 20;
@@ -1883,38 +1926,32 @@ void connlost(void *context, char *cause)
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-	    finished = 1;
+		finished = 1;
 	}
 }
 
 
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTAsync_message *message)
 {
-    int i;
-    char* payloadptr;
-
     printf("Message arrived\n");
     printf("     topic: %s\n", topicName);
-    printf("   message: ");
-
-    payloadptr = message->payload;
-    for(i=0; i<message->payloadlen; i++)
-    {
-        putchar(*payloadptr++);
-    }
-    putchar('\n');
+    printf("   message: %.*s\n", message->payloadlen, (char*)message->payload);
     MQTTAsync_freeMessage(&message);
     MQTTAsync_free(topicName);
     return 1;
 }
 
+void onDisconnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	printf("Disconnect failed, rc %d\n", response->code);
+	disc_finished = 1;
+}
 
 void onDisconnect(void* context, MQTTAsync_successData* response)
 {
 	printf("Successful disconnection\n");
 	disc_finished = 1;
 }
-
 
 void onSubscribe(void* context, MQTTAsync_successData* response)
 {
@@ -1924,14 +1961,14 @@ void onSubscribe(void* context, MQTTAsync_successData* response)
 
 void onSubscribeFailure(void* context, MQTTAsync_failureData* response)
 {
-	printf("Subscribe failed, rc %d\n", response ? response->code : 0);
+	printf("Subscribe failed, rc %d\n", response->code);
 	finished = 1;
 }
 
 
 void onConnectFailure(void* context, MQTTAsync_failureData* response)
 {
-	printf("Connect failed, rc %d\n", response ? response->code : 0);
+	printf("Connect failed, rc %d\n", response->code);
 	finished = 1;
 }
 
@@ -1940,7 +1977,6 @@ void onConnect(void* context, MQTTAsync_successData* response)
 {
 	MQTTAsync client = (MQTTAsync)context;
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	int rc;
 
 	printf("Successful connection\n");
@@ -1950,13 +1986,10 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	opts.onSuccess = onSubscribe;
 	opts.onFailure = onSubscribeFailure;
 	opts.context = client;
-
-	deliveredtoken = 0;
-
 	if ((rc = MQTTAsync_subscribe(client, TOPIC, QOS, &opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start subscribe, return code %d\n", rc);
-		exit(EXIT_FAILURE);
+		finished = 1;
 	}
 }
 
@@ -1966,14 +1999,23 @@ int main(int argc, char* argv[])
 	MQTTAsync client;
 	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
 	MQTTAsync_disconnectOptions disc_opts = MQTTAsync_disconnectOptions_initializer;
-	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-	MQTTAsync_token token;
 	int rc;
 	int ch;
 
-	MQTTAsync_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+	if ((rc = MQTTAsync_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL))
+			!= MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to create client, return code %d\n", rc);
+		rc = EXIT_FAILURE;
+		goto exit;
+	}
 
-	MQTTAsync_setCallbacks(client, NULL, connlost, msgarrvd, NULL);
+	if ((rc = MQTTAsync_setCallbacks(client, client, connlost, msgarrvd, NULL)) != MQTTASYNC_SUCCESS)
+	{
+		printf("Failed to set callbacks, return code %d\n", rc);
+		rc = EXIT_FAILURE;
+		goto destroy_exit;
+	}
 
 	conn_opts.keepAliveInterval = 20;
 	conn_opts.cleansession = 1;
@@ -1983,11 +2025,12 @@ int main(int argc, char* argv[])
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);
-		exit(EXIT_FAILURE);
+		rc = EXIT_FAILURE;
+		goto destroy_exit;
 	}
 
-	while	(!subscribed)
-		#if defined(_WIN32) || defined(_WIN64)
+	while (!subscribed && !finished)
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
@@ -2002,20 +2045,25 @@ int main(int argc, char* argv[])
 	} while (ch!='Q' && ch != 'q');
 
 	disc_opts.onSuccess = onDisconnect;
+	disc_opts.onFailure = onDisconnectFailure;
 	if ((rc = MQTTAsync_disconnect(client, &disc_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start disconnect, return code %d\n", rc);
-		exit(EXIT_FAILURE);
+		rc = EXIT_FAILURE;
+		goto destroy_exit;
 	}
- 	while	(!disc_finished)
-		#if defined(_WIN32) || defined(_WIN64)
+ 	while (!disc_finished)
+ 	{
+		#if defined(_WIN32)
 			Sleep(100);
 		#else
 			usleep(10000L);
 		#endif
+ 	}
 
-exit:
+destroy_exit:
 	MQTTAsync_destroy(&client);
+exit:
  	return rc;
 }
 

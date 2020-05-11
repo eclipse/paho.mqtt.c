@@ -1504,7 +1504,7 @@ LIBMQTT_API const char* MQTTClient_strerror(int code);
 #include <string.h>
 #include "MQTTClient.h"
 
-#define ADDRESS     "tcp://localhost:1883"
+#define ADDRESS     "tcp://mqtt.eclipse.org:1883"
 #define CLIENTID    "ExampleClientPub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
@@ -1519,27 +1519,39 @@ int main(int argc, char* argv[])
     MQTTClient_deliveryToken token;
     int rc;
 
-    MQTTClient_create(&client, ADDRESS, CLIENTID,
-        MQTTCLIENT_PERSISTENCE_NONE, NULL);
+    if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID,
+        MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
+    {
+         printf("Failed to create client, return code %d\n", rc);
+         exit(EXIT_FAILURE);
+    }
+
     conn_opts.keepAliveInterval = 20;
     conn_opts.cleansession = 1;
-
     if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to connect, return code %d\n", rc);
         exit(EXIT_FAILURE);
     }
+
     pubmsg.payload = PAYLOAD;
-    pubmsg.payloadlen = strlen(PAYLOAD);
+    pubmsg.payloadlen = (int)strlen(PAYLOAD);
     pubmsg.qos = QOS;
     pubmsg.retained = 0;
-    MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token);
+    if ((rc = MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
+    {
+         printf("Failed to publish message, return code %d\n", rc);
+         exit(EXIT_FAILURE);
+    }
+
     printf("Waiting for up to %d seconds for publication of %s\n"
             "on topic %s for client with ClientID: %s\n",
             (int)(TIMEOUT/1000), PAYLOAD, TOPIC, CLIENTID);
     rc = MQTTClient_waitForCompletion(client, token, TIMEOUT);
     printf("Message with delivery token %d delivered\n", token);
-    MQTTClient_disconnect(client, 10000);
+
+    if ((rc = MQTTClient_disconnect(client, 10000)) != MQTTCLIENT_SUCCESS)
+    	printf("Failed to disconnect, return code %d\n", rc);
     MQTTClient_destroy(&client);
     return rc;
 }
@@ -1553,14 +1565,20 @@ int main(int argc, char* argv[])
 #include <string.h>
 #include "MQTTClient.h"
 
-#define ADDRESS     "tcp://localhost:1883"
+#if !defined(_WIN32)
+#include <unistd.h>
+#else
+#include <windows.h>
+#endif
+
+#define ADDRESS     "tcp://mqtt.eclipse.org:1883"
 #define CLIENTID    "ExampleClientPub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
 #define QOS         1
 #define TIMEOUT     10000L
 
-volatile MQTTClient_deliveryToken deliveredtoken;
+MQTTClient_deliveryToken deliveredtoken;
 
 void delivered(void *context, MQTTClient_deliveryToken dt)
 {
@@ -1570,19 +1588,9 @@ void delivered(void *context, MQTTClient_deliveryToken dt)
 
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message)
 {
-    int i;
-    char* payloadptr;
-
     printf("Message arrived\n");
     printf("     topic: %s\n", topicName);
-    printf("   message: ");
-
-    payloadptr = message->payload;
-    for(i=0; i<message->payloadlen; i++)
-    {
-        putchar(*payloadptr++);
-    }
-    putchar('\n');
+    printf("   message: %.*s\n", message->payloadlen, (char*)message->payload);
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
     return 1;
@@ -1602,30 +1610,65 @@ int main(int argc, char* argv[])
     MQTTClient_deliveryToken token;
     int rc;
 
-    MQTTClient_create(&client, ADDRESS, CLIENTID,
-        MQTTCLIENT_PERSISTENCE_NONE, NULL);
+    if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID,
+        MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
+    {
+        printf("Failed to create client, return code %d\n", rc);
+        rc = EXIT_FAILURE;
+        goto exit;
+    }
+
+    if ((rc = MQTTClient_setCallbacks(client, NULL, connlost, msgarrvd, delivered)) != MQTTCLIENT_SUCCESS)
+    {
+        printf("Failed to set callbacks, return code %d\n", rc);
+        rc = EXIT_FAILURE;
+        goto destroy_exit;
+    }
+
     conn_opts.keepAliveInterval = 20;
     conn_opts.cleansession = 1;
-
-    MQTTClient_setCallbacks(client, NULL, connlost, msgarrvd, delivered);
-
     if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to connect, return code %d\n", rc);
-        exit(EXIT_FAILURE);
+        rc = EXIT_FAILURE;
+        goto destroy_exit;
     }
+
     pubmsg.payload = PAYLOAD;
-    pubmsg.payloadlen = strlen(PAYLOAD);
+    pubmsg.payloadlen = (int)strlen(PAYLOAD);
     pubmsg.qos = QOS;
     pubmsg.retained = 0;
     deliveredtoken = 0;
-    MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token);
-    printf("Waiting for publication of %s\n"
+    if ((rc = MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
+    {
+    	printf("Failed to publish message, return code %d\n", rc);
+    	rc = EXIT_FAILURE;
+    }
+    else
+    {
+    	printf("Waiting for publication of %s\n"
             "on topic %s for client with ClientID: %s\n",
             PAYLOAD, TOPIC, CLIENTID);
-    while(deliveredtoken != token);
-    MQTTClient_disconnect(client, 10000);
+    	while (deliveredtoken != token)
+    	{
+			#if defined(_WIN32)
+				Sleep(100);
+			#else
+				usleep(10000L);
+			#endif
+    	}
+    }
+
+    if ((rc = MQTTClient_disconnect(client, 10000)) != MQTTCLIENT_SUCCESS)
+    {
+    	printf("Failed to disconnect, return code %d\n", rc);
+    	rc = EXIT_FAILURE;
+    }
+
+destroy_exit:
     MQTTClient_destroy(&client);
+
+exit:
     return rc;
 }
 
@@ -1637,7 +1680,7 @@ int main(int argc, char* argv[])
 #include <string.h>
 #include "MQTTClient.h"
 
-#define ADDRESS     "tcp://localhost:1883"
+#define ADDRESS     "tcp://mqtt.eclipse.org:1883"
 #define CLIENTID    "ExampleClientSub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
@@ -1654,19 +1697,9 @@ void delivered(void *context, MQTTClient_deliveryToken dt)
 
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message)
 {
-    int i;
-    char* payloadptr;
-
     printf("Message arrived\n");
     printf("     topic: %s\n", topicName);
-    printf("   message: ");
-
-    payloadptr = message->payload;
-    for(i=0; i<message->payloadlen; i++)
-    {
-        putchar(*payloadptr++);
-    }
-    putchar('\n');
+    printf("   message: %.*s\n", message->payloadlen, (char*)message->payload);
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
     return 1;
@@ -1683,31 +1716,61 @@ int main(int argc, char* argv[])
     MQTTClient client;
     MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
     int rc;
-    int ch;
 
-    MQTTClient_create(&client, ADDRESS, CLIENTID,
-        MQTTCLIENT_PERSISTENCE_NONE, NULL);
+    if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID,
+        MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
+    {
+        printf("Failed to create client, return code %d\n", rc);
+        rc = EXIT_FAILURE;
+        goto exit;
+    }
+
+    if ((rc = MQTTClient_setCallbacks(client, NULL, connlost, msgarrvd, delivered)) != MQTTCLIENT_SUCCESS)
+    {
+        printf("Failed to set callbacks, return code %d\n", rc);
+        rc = EXIT_FAILURE;
+        goto destroy_exit;
+    }
+
     conn_opts.keepAliveInterval = 20;
     conn_opts.cleansession = 1;
-
-    MQTTClient_setCallbacks(client, NULL, connlost, msgarrvd, delivered);
-
     if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to connect, return code %d\n", rc);
-        exit(EXIT_FAILURE);
+        rc = EXIT_FAILURE;
+        goto destroy_exit;
     }
+
     printf("Subscribing to topic %s\nfor client %s using QoS%d\n\n"
            "Press Q<Enter> to quit\n\n", TOPIC, CLIENTID, QOS);
-    MQTTClient_subscribe(client, TOPIC, QOS);
-
-    do
+    if ((rc = MQTTClient_subscribe(client, TOPIC, QOS)) != MQTTCLIENT_SUCCESS)
     {
-        ch = getchar();
-    } while(ch!='Q' && ch != 'q');
+    	printf("Failed to subscribe, return code %d\n", rc);
+    	rc = EXIT_FAILURE;
+    }
+    else
+    {
+    	int ch;
+    	do
+    	{
+        	ch = getchar();
+    	} while (ch!='Q' && ch != 'q');
 
-    MQTTClient_disconnect(client, 10000);
+        if ((rc = MQTTClient_unsubscribe(client, TOPIC)) != MQTTCLIENT_SUCCESS)
+        {
+        	printf("Failed to unsubscribe, return code %d\n", rc);
+        	rc = EXIT_FAILURE;
+        }
+    }
+
+    if ((rc = MQTTClient_disconnect(client, 10000)) != MQTTCLIENT_SUCCESS)
+    {
+    	printf("Failed to disconnect, return code %d\n", rc);
+    	rc = EXIT_FAILURE;
+    }
+destroy_exit:
     MQTTClient_destroy(&client);
+exit:
     return rc;
 }
 

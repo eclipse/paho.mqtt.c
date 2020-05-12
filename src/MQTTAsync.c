@@ -3472,6 +3472,7 @@ static int MQTTAsync_assignMsgId(MQTTAsyncs* m)
 
 	msgid = (msgid == MAX_MSG_ID) ? 1 : msgid + 1;
 	while (ListFindItem(commands, &msgid, cmdMessageIDCompare) ||
+			ListFindItem(m->c->outboundMsgs, &msgid, messageIDCompare) ||
 			ListFindItem(m->responses, &msgid, cmdMessageIDCompare))
 	{
 		msgid = (msgid == MAX_MSG_ID) ? 1 : msgid + 1;

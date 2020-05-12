@@ -160,13 +160,14 @@ void* mymalloc(char* file, int line, size_t size)
 	storageElement* s = NULL;
 	size_t space = sizeof(storageElement);
 	size_t filenamelen = strlen(file)+1;
+	void* rc = NULL;
 
 	Thread_lock_mutex(heap_mutex);
 	size = Heap_roundup(size);
 	if ((s = malloc(sizeof(storageElement))) == NULL)
 	{
 		Log(LOG_ERROR, 13, errmsg);
-		return NULL;
+		goto exit;
 	}
 	memset(s, 0, sizeof(storageElement));
 
@@ -175,7 +176,7 @@ void* mymalloc(char* file, int line, size_t size)
 	{
 		Log(LOG_ERROR, 13, errmsg);
 		free(s);
-		return NULL;
+		goto exit;
 	}
 	memset(s->file, 0, sizeof(filenamelen));
 
@@ -188,7 +189,7 @@ void* mymalloc(char* file, int line, size_t size)
 		Log(LOG_ERROR, 13, errmsg);
 		free(s->file);
 		free(s);
-		return NULL;
+		goto exit;
 	}
 	memset(s->stack, 0, sizeof(filenamelen));
 	StackTrace_get(Thread_getid(), s->stack, STACK_LEN);
@@ -200,7 +201,7 @@ void* mymalloc(char* file, int line, size_t size)
 		Log(LOG_ERROR, 13, errmsg);
 		free(s->file);
 		free(s);
-		return NULL;
+		goto exit;
 	}
 	memset(s->ptr, 0, size + 2*sizeof(eyecatcherType));
 	space += size + 2*sizeof(eyecatcherType);
@@ -211,8 +212,10 @@ void* mymalloc(char* file, int line, size_t size)
 	state.current_size += size;
 	if (state.current_size > state.max_size)
 		state.max_size = state.current_size;
+	rc = ((eyecatcherType*)(s->ptr)) + 1;	/* skip start eyecatcher */
+exit:
 	Thread_unlock_mutex(heap_mutex);
-	return ((eyecatcherType*)(s->ptr)) + 1;	/* skip start eyecatcher */
+	return rc;
 }
 
 
@@ -336,7 +339,7 @@ void *myrealloc(char* file, int line, void* p, size_t size)
 		if ((s->ptr = realloc(s->ptr, size + 2*sizeof(eyecatcherType))) == NULL)
 		{
 			Log(LOG_ERROR, 13, errmsg);
-			return NULL;
+			goto exit;
 		}
 		space += size + 2*sizeof(eyecatcherType) - s->size;
 		*(eyecatcherType*)(s->ptr) = eyecatcher; /* start eyecatcher */
@@ -350,6 +353,7 @@ void *myrealloc(char* file, int line, void* p, size_t size)
 		rc = s->ptr;
 		TreeAdd(&heap, s, space);
 	}
+exit:
 	Thread_unlock_mutex(heap_mutex);
 	return (rc == NULL) ? NULL : ((eyecatcherType*)(rc)) + 1;	/* skip start eyecatcher */
 }

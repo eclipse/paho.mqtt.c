@@ -1264,7 +1264,7 @@ int WebSocket_upgrade( networkHandles *net )
 			goto exit;
 		}
 
-		if ( rcv > 0 && strncmp( read_buf, "HTTP/1.1", 8u ) == 0 )
+		if (strncmp( read_buf, "HTTP/1.1", 8u ) == 0)
 		{
 			if (strncmp( &read_buf[9], "101", 3u ) != 0)
 			{
@@ -1274,7 +1274,7 @@ int WebSocket_upgrade( networkHandles *net )
 			}
 		}
 
-		if ( rcv > 0 && strncmp( read_buf, "HTTP/1.1 101", 12u ) == 0 )
+		if (strncmp( read_buf, "HTTP/1.1 101", 12u ) == 0)
 		{
 			const char *p;
 

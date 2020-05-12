@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -124,24 +124,24 @@ typedef struct
 	unsigned int good : 1; 			  /**< if we have an error on the socket we turn this off */
 	unsigned int ping_outstanding : 1;
 	signed int connect_state : 4;
-	networkHandles net;
-	int msgID;
-	int keepAliveInterval;
+	networkHandles net;             /**< network info for this client */
+	int msgID;                      /**< the MQTT message id */
+	int keepAliveInterval;          /**< the MQTT keep alive interval */
 	int retryInterval;
-	int maxInflightMessages;
-	willMessages* will;
-	List* inboundMsgs;
-	List* outboundMsgs;				/**< in flight */
-	List* messageQueue;
+	int maxInflightMessages;        /**< the max number of inflight outbound messages we allow */
+	willMessages* will;             /**< the MQTT will message, if any */
+	List* inboundMsgs;              /**< inbound in flight messages */
+	List* outboundMsgs;				/**< outbound in flight messages */
+	List* messageQueue;             /**< inbound complete but undelivered messages */
 	unsigned int qentry_seqno;
-	void* phandle;  /* the persistence handle */
-	MQTTClient_persistence* persistence; /* a persistence implementation */
+	void* phandle;                  /**< the persistence handle */
+	MQTTClient_persistence* persistence; /**< a persistence implementation */
 	void* context; /* calling context - used when calling disconnect_internal */
-	int MQTTVersion;
-	int sessionExpiry; /**< MQTT 5 session expiry */
+	int MQTTVersion;                /**< the version of MQTT being used, 3, 4 or 5 */
+	int sessionExpiry;              /**< MQTT 5 session expiry */
 #if defined(OPENSSL)
-	MQTTClient_SSLOptions *sslopts;
-	SSL_SESSION* session;    /***< SSL session pointer for fast handhake */
+	MQTTClient_SSLOptions *sslopts; /**< the SSL/TLS connect options */
+	SSL_SESSION* session;           /**< SSL session pointer for fast handhake */
 #endif
 } Clients;
 

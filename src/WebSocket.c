@@ -345,12 +345,14 @@ static void WebSocket_unmaskData(uint8_t *mask, size_t idx, int count, char** bu
 {
 	int i;
 
+	FUNC_ENTRY;
 	for (i = 0; i < count; ++i)
 	{
 		size_t j;
 		for ( j = 0u; j < buflens[i]; ++j, ++idx )
 			buffers[i][j] ^= mask[idx % 4];
 	}
+	FUNC_EXIT;
 }
 
 
@@ -912,9 +914,12 @@ int WebSocket_putdatas(networkHandles* net, char** buf0, size_t* buf0len,
 #endif
 			rc = Socket_putdatas(net->socket, wsdata.wsbuf0, wsdata.wsbuf0len, count, buffers, buflens, freeData);
 
-		if (mask_data)
-			WebSocket_unmaskData(wsdata.mask, *buf0len, count, buffers, buflens);
-		free(wsdata.wsbuf0); /* free temporary ws header */
+		if (rc != TCPSOCKET_INTERRUPTED)
+		{
+			if (mask_data)
+				WebSocket_unmaskData(wsdata.mask, *buf0len, count, buffers, buflens);
+			free(wsdata.wsbuf0); /* free temporary ws header */
+		}
 	}
 	else
 	{
@@ -1259,7 +1264,7 @@ int WebSocket_upgrade( networkHandles *net )
 			goto exit;
 		}
 
-		if ( rcv > 0 && strncmp( read_buf, "HTTP/1.1", 8u ) == 0 )
+		if (strncmp( read_buf, "HTTP/1.1", 8u ) == 0)
 		{
 			if (strncmp( &read_buf[9], "101", 3u ) != 0)
 			{
@@ -1269,7 +1274,7 @@ int WebSocket_upgrade( networkHandles *net )
 			}
 		}
 
-		if ( rcv > 0 && strncmp( read_buf, "HTTP/1.1 101", 12u ) == 0 )
+		if (strncmp( read_buf, "HTTP/1.1 101", 12u ) == 0)
 		{
 			const char *p;
 

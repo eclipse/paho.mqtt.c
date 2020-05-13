@@ -705,8 +705,8 @@ int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 	memcpy( addr_mem, addr, addr_len );
 	addr_mem[addr_len] = '\0';
 
-//#if defined(__GNUC__) && defined(__linux__)
-#if 0
+#if defined(__GNUC__) && defined(__linux__)
+	/* set getaddrinfo timeout if available */
 	struct gaicb ar = {addr_mem, NULL, &hints, NULL};
 	struct gaicb *reqs[] = {&ar};
 

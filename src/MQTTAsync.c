@@ -3470,6 +3470,7 @@ static int MQTTAsync_assignMsgId(MQTTAsyncs* m)
 	start_msgid = m->c->msgID;
 	msgid = start_msgid;
 
+	MQTTAsync_lock_mutex(mqttcommand_mutex);
 	msgid = (msgid == MAX_MSG_ID) ? 1 : msgid + 1;
 	while (ListFindItem(commands, &msgid, cmdMessageIDCompare) ||
 			ListFindItem(m->c->outboundMsgs, &msgid, messageIDCompare) ||
@@ -3482,6 +3483,7 @@ static int MQTTAsync_assignMsgId(MQTTAsyncs* m)
 			break;
 		}
 	}
+	MQTTAsync_unlock_mutex(mqttcommand_mutex);
 	if (msgid != 0)
 		m->c->msgID = msgid;
 	if (locked)

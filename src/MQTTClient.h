@@ -781,7 +781,7 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1, 2, 3, 4, 5 or 6.
+	/** The version number of this structure.  Must be 0, 1, 2, 3, 4, 5, 6 or 7.
 	 * 0 signifies no SSL options and no serverURIs
 	 * 1 signifies no serverURIs
 	 * 2 signifies no MQTTVersion
@@ -909,10 +909,6 @@ typedef struct
 		const void* data;  /**< binary password data */
 	} binarypwd;
 	/**
-	 * httpHeaders
-	 */
-	const MQTTClient_nameValue* httpHeaders;
-	/**
 	 * The maximum number of messages in flight
 	 */
 	int maxInflightMessages;
@@ -920,11 +916,17 @@ typedef struct
 	 * MQTT V5 clean start flag.  Only clears state at the beginning of the session.
 	 */
 	int cleanstart;
+	/**
+	 * httpHeaders
+	 */
+	const MQTTClient_nameValue* httpHeaders;
 } MQTTClient_connectOptions;
 
-#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 7, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL, 0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, NULL, -1, 0}
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 7, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
+0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL}
 
-#define MQTTClient_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 7, 60, 0, 1, NULL, NULL, NULL, 30, 0, NULL, 0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, NULL, -1, 1}
+#define MQTTClient_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 7, 60, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
+0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL}
 
 /**
   * This function attempts to connect a previously-created client (see

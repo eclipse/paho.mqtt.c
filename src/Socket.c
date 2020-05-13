@@ -710,6 +710,12 @@ int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 	struct gaicb ar = {addr_mem, NULL, &hints, NULL};
 	struct gaicb *reqs[] = {&ar};
 
+	if (timeout < 100L)
+	{
+		printf("Timeout was %ld\n", timeout);
+		timeout = 100L;
+	}
+
 	unsigned long int seconds = timeout / 1000L;
 	unsigned long int nanos = (timeout - (seconds * 1000L)) * 1000000L;
 	struct timespec timeoutspec = {seconds, nanos};

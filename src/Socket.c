@@ -705,7 +705,10 @@ int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 	memcpy( addr_mem, addr, addr_len );
 	addr_mem[addr_len] = '\0';
 
-#if defined(__GNUC__) && defined(__linux__)
+#if 0 /*defined(__GNUC__) && defined(__linux__)*/
+	/* Commented out because the CI tests get intermittent ECONNABORTED return values
+	 * and I don't know why yet.
+	 */
 	/* set getaddrinfo timeout if available */
 	struct gaicb ar = {addr_mem, NULL, &hints, NULL};
 	struct gaicb *reqs[] = {&ar};
@@ -764,10 +767,6 @@ int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 	}
 	else
 	  	Log(LOG_ERROR, -1, "getaddrinfo failed for addr %s with rc %d", addr_mem, rc);
-	if (rc == -103)
-	{
-		Log(LOG_ERROR, -1, "On ECONNABORTED, timeout was %ld\n", timeout);
-	}
 
 	if (rc != 0)
 		Log(LOG_ERROR, -1, "%s is not a valid IP address", addr_mem);

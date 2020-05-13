@@ -723,11 +723,6 @@ int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 		rc = gai_error(reqs[0]);
 		result = ar.ar_result;
 	}
-
-	if (rc == ECONNABORTED)
-	{
-		printf("On ECONNABORTED, timeout was %ld\n", timeout);
-	}
 #else
 	rc = getaddrinfo(addr_mem, NULL, &hints, &result);
 #endif
@@ -769,6 +764,10 @@ int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 	}
 	else
 	  	Log(LOG_ERROR, -1, "getaddrinfo failed for addr %s with rc %d", addr_mem, rc);
+	if (rc == -103)
+	{
+		Log(LOG_ERROR, -1, "On ECONNABORTED, timeout was %ld\n", timeout);
+	}
 
 	if (rc != 0)
 		Log(LOG_ERROR, -1, "%s is not a valid IP address", addr_mem);

@@ -1054,7 +1054,7 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1, 2, 3 4 5 or 6.
+	/** The version number of this structure.  Must be 0, 1, 2, 3 4 5 6 or 7.
 	  * 0 signifies no SSL options and no serverURIs
 	  * 1 signifies no serverURIs
     * 2 signifies no MQTTVersion
@@ -1193,10 +1193,6 @@ typedef struct
 		int len;            /**< binary password length */
 		const void* data;  /**< binary password data */
 	} binarypwd;
-	/**
-	 * httpHeaders
-	 */
-	const MQTTAsync_nameValue* httpHeaders;
 	/*
 	 * MQTT V5 clean start flag.  Only clears state at the beginning of the session.
 	 */
@@ -1221,14 +1217,18 @@ typedef struct
       * completion will be received.
       */
 	MQTTAsync_onFailure5* onFailure5;
+	/**
+	 * httpHeaders
+	 */
+	const MQTTAsync_nameValue* httpHeaders;
 } MQTTAsync_connectOptions;
 
 
 #define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 7, 60, 1, 65535, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, NULL, 0, NULL, NULL, NULL, NULL}
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL}
 
 #define MQTTAsync_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 7, 60, 0, 65535, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, NULL, 1, NULL, NULL, NULL, NULL}
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL}
 
 
 /**

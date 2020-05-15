@@ -83,10 +83,10 @@ ADD_EXECUTABLE(paho_cs_sub_static paho_cs_sub.c pubsub_opts.c)
 
 
 
-TARGET_LINK_LIBRARIES(paho_c_pub_static paho-mqtt3as-static)
-TARGET_LINK_LIBRARIES(paho_c_sub_static paho-mqtt3as-static)
-TARGET_LINK_LIBRARIES(paho_cs_pub_static paho-mqtt3cs-static)
-TARGET_LINK_LIBRARIES(paho_cs_sub_static paho-mqtt3cs-static)
+TARGET_LINK_LIBRARIES(paho_c_pub_static paho-mqtt3a-static)
+TARGET_LINK_LIBRARIES(paho_c_sub_static paho-mqtt3a-static)
+TARGET_LINK_LIBRARIES(paho_cs_pub_static paho-mqtt3c-static)
+TARGET_LINK_LIBRARIES(paho_cs_sub_static paho-mqtt3c-static)
 
 ENDIF()
 

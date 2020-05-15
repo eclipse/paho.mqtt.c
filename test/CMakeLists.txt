@@ -326,7 +326,7 @@ IF (PAHO_WITH_SSL)
 		)
 		TARGET_LINK_LIBRARIES(
 			test3-static
-			paho-mqtt3cs-static
+			paho-mqtt3c-static
 		)
 		
 		ADD_TEST(
@@ -770,7 +770,7 @@ IF (PAHO_WITH_SSL)
 		
 		TARGET_LINK_LIBRARIES(
 			test5-static
-			paho-mqtt3as-static
+			paho-mqtt3a-static
 		)
 		
 		ADD_TEST(

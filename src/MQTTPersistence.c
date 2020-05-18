@@ -60,18 +60,15 @@ int MQTTPersistence_create(MQTTClient_persistence** persistence, int type, void*
 			per = malloc(sizeof(MQTTClient_persistence));
 			if ( per != NULL )
 			{
-				if ( pcontext != NULL )
+				if ( pcontext == NULL )
+					pcontext = "."; /* working directory */
+				if ((per->context = malloc(strlen(pcontext) + 1)) == NULL)
 				{
-					if ((per->context = malloc(strlen(pcontext) + 1)) == NULL)
-					{
-						free(per);
-						rc = PAHO_MEMORY_ERROR;
-						goto exit;
-					}
-					strcpy(per->context, pcontext);
+					free(per);
+					rc = PAHO_MEMORY_ERROR;
+					goto exit;
 				}
-				else
-					per->context = ".";  /* working directory */
+				strcpy(per->context, pcontext);
 				/* file system functions */
 				per->popen        = pstopen;
 				per->pclose       = pstclose;
@@ -145,6 +142,8 @@ int MQTTPersistence_close(Clients *c)
 #if !defined(NO_PERSISTENCE)
 		if ( c->persistence->popen == pstopen )
 			free(c->persistence);
+		if (c->persistence->context)
+			free(c->persistence->context);
 #endif
 		c->persistence = NULL;
 	}

@@ -1,7 +1,9 @@
 PROJECT(mqtt-tests C)
 
 SET(MQTT_TEST_BROKER "tcp://localhost:1883" CACHE STRING "Hostname of a test MQTT broker to use")
+SET(MQTT_WS_TEST_BROKER "ws://localhost:1883" CACHE STRING "WebSocket connection to a test MQTT broker")
 SET(MQTT_TEST_PROXY "tcp://localhost:1884" CACHE STRING "Hostname of the test proxy to use")
+SET(MQTT_WS_TEST_PROXY "tcp://localhost:1884" CACHE STRING "WebSocket connection of a test proxy to use")
 SET(MQTT_SSL_HOSTNAME "localhost" CACHE STRING "Hostname of a test SSL MQTT broker to use")
 
 SET(CERTDIR ${CMAKE_SOURCE_DIR}/test/ssl)
@@ -1399,6 +1401,46 @@ IF (PAHO_BUILD_SHARED)
 		test9-6-offline-buffering-max-buffered-binary-will
 		PROPERTIES TIMEOUT 540
 	)
+	
+	ADD_TEST(
+        NAME test9-1ws-offline-buffering-send-disconnected
+        COMMAND test9 "--test_no" "1" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test9-2ws-offline-buffering-send-disconnected-serverURIs
+        COMMAND test9 "--test_no" "2" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test9-3ws-offline-buffering-auto-reconnect
+        COMMAND test9 "--test_no" "3" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test9-4ws-offline-buffering-auto-reconnect-serverURIs
+        COMMAND test9 "--test_no" "4" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test9-5ws-offline-buffering-max-buffered
+        COMMAND test9 "--test_no" "5" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test9-6ws-offline-buffering-max-buffered-binary-will
+        COMMAND test9 "--test_no" "6" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    SET_TESTS_PROPERTIES(
+        test9-1ws-offline-buffering-send-disconnected
+        test9-2ws-offline-buffering-send-disconnected-serverURIs
+        test9-3ws-offline-buffering-auto-reconnect
+        test9-4ws-offline-buffering-auto-reconnect-serverURIs
+        test9-5ws-offline-buffering-max-buffered
+        test9-6ws-offline-buffering-max-buffered-binary-will
+        PROPERTIES TIMEOUT 540
+    )
 ENDIF()
 
 IF (PAHO_BUILD_STATIC)

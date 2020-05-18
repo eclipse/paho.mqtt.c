@@ -507,8 +507,9 @@ exit:
  */
 void WebSocket_close(networkHandles *net, int status_code, const char *reason)
 {
-	FUNC_ENTRY;
+	struct frameData fd;
 
+	FUNC_ENTRY;
 	if ( net->websocket )
 	{
 		char *buf0;
@@ -535,17 +536,19 @@ void WebSocket_close(networkHandles *net, int status_code, const char *reason)
 		if ( reason )
 			strcpy( &buf0[sizeof(uint16_t)], reason );
 
-		WebSocket_buildFrame( net, WebSocket_OP_CLOSE, mask_data,
+		fd = WebSocket_buildFrame( net, WebSocket_OP_CLOSE, mask_data,
 			&buf0, &buf0len, 0, NULL, NULL);
 
 #if defined(OPENSSL)
 		if (net->ssl)
 			SSLSocket_putdatas(net->ssl, net->socket,
-				buf0, buf0len, 0, NULL, NULL, NULL);
+				fd.wsbuf0, fd.wsbuf0len, 0, NULL, NULL, NULL);
 		else
 #endif
-			Socket_putdatas(net->socket, buf0, buf0len, 0,
+			Socket_putdatas(net->socket, fd.wsbuf0, fd.wsbuf0len, 0,
 				NULL, NULL, NULL);
+
+		free(fd.wsbuf0); /* free temporary ws header */
 
 		/* websocket connection is now closed */
 		net->websocket = 0;
@@ -849,26 +852,27 @@ void WebSocket_pong(networkHandles *net, char *app_data, size_t app_data_len)
 		char *buf0 = NULL;
 		size_t buf0len = 0;
 		int freeData = 0;
+		struct frameData fd;
 		const int mask_data = 1; /* all frames from client must be masked */
 
-		WebSocket_buildFrame( net, WebSocket_OP_PONG, mask_data,
+		fd = WebSocket_buildFrame( net, WebSocket_OP_PONG, mask_data,
 			&buf0, &buf0len, 1, &app_data, &app_data_len);
 
 		Log(TRACE_PROTOCOL, 1, "Sending WebSocket PONG" );
 
 #if defined(OPENSSL)
 		if (net->ssl)
-			SSLSocket_putdatas(net->ssl, net->socket, buf0,
-				buf0len /*header_len + app_data_len*/, 1,
+			SSLSocket_putdatas(net->ssl, net->socket, fd.wsbuf0,
+				fd.wsbuf0len /*header_len + app_data_len*/, 1,
 				&app_data, &app_data_len, &freeData);
 		else
 #endif
-			Socket_putdatas(net->socket, buf0,
-				buf0len /*header_len + app_data_len*/, 1,
+			Socket_putdatas(net->socket, fd.wsbuf0,
+				fd.wsbuf0len /*header_len + app_data_len*/, 1,
 				&app_data, &app_data_len, &freeData );
 
-		/* clean up memory */
-		free( buf0 );
+		free(fd.wsbuf0);
+		free(buf0);
 	}
 	FUNC_EXIT;
 }

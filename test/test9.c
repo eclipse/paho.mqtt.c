@@ -278,7 +278,7 @@ void assert3PendingTokens(MQTTAsync c)
 			++i;
 		MQTTAsync_free(tokens);
 	}
-	assert("Number of getPendingTokens should be 3", i == 3, "i was %d ", i);
+	assert("Number of getPendingTokens should be 3", i == 3, "i was %d\n", i);
 }
 
 /*********************************************************************
@@ -456,7 +456,7 @@ int test1(struct Options options)
 		goto exit;
 	}
 
-	opts.keepAliveInterval = 20;
+	opts.keepAliveInterval = 5;
 	opts.cleansession = 1;
 	//opts.username = "testuser";
 	//opts.password = "testpassword";
@@ -508,6 +508,9 @@ int test1(struct Options options)
 
 	/* wait for will message */
 	while (!test1_will_message_received && ++count < 10000)
+		MySleep(100);
+	/* ensure not connected */
+	while (MQTTAsync_isConnected(c) && ++count < 10000)
 		MySleep(100);
 
 	MyLog(LOGA_DEBUG, "Now we can send some messages to be buffered");
@@ -714,7 +717,7 @@ int test2(struct Options options)
 		goto exit;
 	}
 
-	opts.keepAliveInterval = 20;
+	opts.keepAliveInterval = 5;
 	opts.cleansession = 1;
 
 	rc = MQTTAsync_setCallbacks(d, d, NULL, test2_messageArrived, NULL);
@@ -766,6 +769,9 @@ int test2(struct Options options)
 
 	/* wait for will message */
 	while (!test2_will_message_received && ++count < 10000)
+		MySleep(100);
+	/* ensure not connected */
+	while (MQTTAsync_isConnected(c) && ++count < 10000)
 		MySleep(100);
 
 	MyLog(LOGA_DEBUG, "Now we can send some messages to be buffered");
@@ -971,7 +977,7 @@ int test3(struct Options options)
 		goto exit;
 	}
 
-	opts.keepAliveInterval = 20;
+	opts.keepAliveInterval = 5;
 	opts.cleansession = 1;
 	//opts.username = "testuser";
 	//opts.password = "testpassword";
@@ -1024,6 +1030,9 @@ int test3(struct Options options)
 
 	/* wait for will message */
 	while (!test3_will_message_received && ++count < 10000)
+		MySleep(100);
+	/* ensure not connected */
+	while (MQTTAsync_isConnected(c) && ++count < 10000)
 		MySleep(100);
 
 	MyLog(LOGA_DEBUG, "Now we can send some messages to be buffered");
@@ -1227,7 +1236,7 @@ int test4(struct Options options)
 		goto exit;
 	}
 
-	opts.keepAliveInterval = 20;
+	opts.keepAliveInterval = 5;
 	opts.cleansession = 1;
 
 	rc = MQTTAsync_setCallbacks(d, d, NULL, test4_messageArrived, NULL);
@@ -1280,6 +1289,9 @@ int test4(struct Options options)
 
 	/* wait for will message */
 	while (!test4_will_message_received && ++count < 10000)
+		MySleep(100);
+	/* ensure not connected */
+	while (MQTTAsync_isConnected(c) && ++count < 10000)
 		MySleep(100);
 
 	MyLog(LOGA_DEBUG, "Now we can send some messages to be buffered");
@@ -1481,7 +1493,7 @@ int test5(struct Options options)
 		goto exit;
 	}
 
-	opts.keepAliveInterval = 20;
+	opts.keepAliveInterval = 5;
 	opts.cleansession = 1;
 	//opts.username = "testuser";
 	//opts.password = "testpassword";
@@ -1533,6 +1545,9 @@ int test5(struct Options options)
 
 	/* wait for will message */
 	while (!test5_will_message_received && ++count < 10000)
+		MySleep(100);
+	/* ensure not connected */
+	while (MQTTAsync_isConnected(c) && ++count < 10000)
 		MySleep(100);
 
 	MyLog(LOGA_DEBUG, "Now we can send some messages to be buffered");
@@ -1639,7 +1654,7 @@ int test6(struct Options options)
 		goto exit;
 	}
 
-	opts.keepAliveInterval = 20;
+	opts.keepAliveInterval = 5;
 	opts.cleansession = 1;
 	//opts.username = "testuser";
 	//opts.password = "testpassword";
@@ -1692,6 +1707,9 @@ int test6(struct Options options)
 
 	/* wait for will message */
 	while (!test5_will_message_received && ++count < 10000)
+		MySleep(100);
+	/* ensure not connected */
+	while (MQTTAsync_isConnected(c) && ++count < 10000)
 		MySleep(100);
 
 	MyLog(LOGA_DEBUG, "Now we can send some messages to be buffered");
@@ -1893,7 +1911,7 @@ int test7(struct Options options)
 		goto exit;
 	}
 
-	opts.keepAliveInterval = 20;
+	opts.keepAliveInterval = 5;
 	opts.cleansession = 1;
 
 	rc = MQTTAsync_setCallbacks(d, d, NULL, test7_messageArrived, NULL);

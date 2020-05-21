@@ -12,16 +12,14 @@ Synchronous and various asynchronous programming models are supported.
 
 ## Libraries
 
-The Paho C client comprises four shared libraries:
+The Paho C client comprises four variant libraries, shared or static:
 
- * libmqttv3a.so - asynchronous (MQTTAsync)
- * libmqttv3as.so - asynchronous with SSL (MQTTAsync)
- * libmqttv3c.so - "classic" / synchronous (MQTTClient)
- * libmqttv3cs.so - "classic" / synchronous with SSL (MQTTClient)
+ * paho-mqtt3a - asynchronous (MQTTAsync)
+ * paho-mqtt3as - asynchronous with SSL (MQTTAsync)
+ * paho-mqtt3c - "classic" / synchronous (MQTTClient)
+ * paho-mqtt3cs - "classic" / synchronous with SSL (MQTTClient)
 
 [Which Paho C API to use, with some history, for context](https://modelbasedtesting.co.uk/2013/10/13/which-paho-mqtt-c-api-to-use-and-some-history/)
-
-Optionally, using the CMake build, you can build static versions of those libraries.
 
 ## Usage and API
 

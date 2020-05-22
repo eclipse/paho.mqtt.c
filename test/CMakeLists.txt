@@ -1349,6 +1349,46 @@ IF (PAHO_BUILD_STATIC)
 		test9-6-offline-buffering-max-buffered-binary-will-static
 		PROPERTIES TIMEOUT 540
 	)
+	
+	 ADD_TEST(
+        NAME test9-1ws-offline-buffering-send-disconnected-static
+        COMMAND test9-static "--test_no" "1" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test9-2ws-offline-buffering-send-disconnected-serverURIs-static
+        COMMAND test9-static "--test_no" "2" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test9-3ws-offline-buffering-auto-reconnect-static
+        COMMAND test9-static "--test_no" "3" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test9-4ws-offline-buffering-auto-reconnect-serverURIs-static
+        COMMAND test9-static "--test_no" "4" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test9-5ws-offline-buffering-max-buffered-static
+        COMMAND test9-static "--test_no" "5" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test9-6ws-offline-buffering-max-buffered-binary-will-static
+        COMMAND test9-static "--test_no" "6" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    SET_TESTS_PROPERTIES(
+        test9-1ws-offline-buffering-send-disconnected-static
+        test9-2ws-offline-buffering-send-disconnected-serverURIs-static
+        test9-3ws-offline-buffering-auto-reconnect-static
+        test9-4ws-offline-buffering-auto-reconnect-serverURIs-static
+        test9-5ws-offline-buffering-max-buffered-static
+        test9-6ws-offline-buffering-max-buffered-binary-will-static
+        PROPERTIES TIMEOUT 540
+    )
 ENDIF()
 	
 IF (PAHO_BUILD_SHARED)
@@ -1493,6 +1533,46 @@ IF (PAHO_BUILD_STATIC)
 		test95-6-offline-buffering-max-buffered-binary-will-static
 		PROPERTIES TIMEOUT 540
 	)
+	
+	ADD_TEST(
+        NAME test95-1ws-offline-buffering-send-disconnected-static
+        COMMAND test95-static "--test_no" "1" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test95-2ws-offline-buffering-send-disconnected-serverURIs-static
+        COMMAND test95-static "--test_no" "2" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test95-3ws-offline-buffering-auto-reconnect-static
+        COMMAND test95-static "--test_no" "3" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test95-4ws-offline-buffering-auto-reconnect-serverURIs-static
+        COMMAND test95-static "--test_no" "4" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test95-5ws-offline-buffering-max-buffered-static
+        COMMAND test95-static "--test_no" "5" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test95-6ws-offline-buffering-max-buffered-binary-will-static
+        COMMAND test95-static "--test_no" "6" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    SET_TESTS_PROPERTIES(
+        test95-1ws-offline-buffering-send-disconnected-static
+        test95-2ws-offline-buffering-send-disconnected-serverURIs-static
+        test95-3ws-offline-buffering-auto-reconnect-static
+        test95-4ws-offline-buffering-auto-reconnect-serverURIs-static
+        test95-5ws-offline-buffering-max-buffered-static
+        test95-6ws-offline-buffering-max-buffered-binary-will-static
+        PROPERTIES TIMEOUT 540
+    )
 ENDIF()
 
 IF (PAHO_BUILD_SHARED)
@@ -1545,6 +1625,46 @@ IF (PAHO_BUILD_SHARED)
 		test95-6-offline-buffering-max-buffered-binary-will
 		PROPERTIES TIMEOUT 540
 	)
+	
+	ADD_TEST(
+        NAME test95-1ws-offline-buffering-send-disconnected
+        COMMAND test95 "--test_no" "1" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test95-2ws-offline-buffering-send-disconnected-serverURIs
+        COMMAND test95 "--test_no" "2" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test95-3ws-offline-buffering-auto-reconnect
+        COMMAND test95 "--test_no" "3" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test95-4ws-offline-buffering-auto-reconnect-serverURIs
+        COMMAND test95 "--test_no" "4" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test95-5ws-offline-buffering-max-buffered
+        COMMAND test95 "--test_no" "5" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test95-6ws-offline-buffering-max-buffered-binary-will
+        COMMAND test95 "--test_no" "6" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    SET_TESTS_PROPERTIES(
+        test95-1ws-offline-buffering-send-disconnected
+        test95-2ws-offline-buffering-send-disconnected-serverURIs
+        test95-3ws-offline-buffering-auto-reconnect
+        test95-4ws-offline-buffering-auto-reconnect-serverURIs
+        test95-5ws-offline-buffering-max-buffered
+        test95-6ws-offline-buffering-max-buffered-binary-will
+        PROPERTIES TIMEOUT 540
+    )
 ENDIF()
 
 IF (PAHO_BUILD_STATIC)

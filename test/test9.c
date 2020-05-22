@@ -300,7 +300,10 @@ void assert3PendingTokens(MQTTAsync c)
 
  *********************************************************************/
 
-
+void handleTrace(enum MQTTASYNC_TRACE_LEVELS level, char* message)
+{
+	printf("%s\n", message);
+}
 
 
 /*********************************************************************
@@ -2036,9 +2039,235 @@ exit:
 
 
 
-void handleTrace(enum MQTTASYNC_TRACE_LEVELS level, char* message)
+/*********************************************************************
+
+Test8: send buffered messages before connect
+
+*********************************************************************/
+int test8_messages_received = 0;
+int test8Finished = 0;
+int test8OnFailureCalled = 0;
+int test8cConnected = 0;
+int test8dConnected = 0;
+int test8dSubscribed = 0;
+
+int test8_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* message)
 {
-	printf("%s\n", message);
+	MQTTAsync c = (MQTTAsync)context;
+	static int message_count = 0;
+
+	MyLog(LOGA_DEBUG, "Message received on topic %s, \"%.*s\"", topicName, message->payloadlen, message->payload);
+
+    test8_messages_received++;
+
+	MQTTAsync_freeMessage(&message);
+	MQTTAsync_free(topicName);
+
+	return 1;
+}
+
+void test8donSubscribe(void* context, MQTTAsync_successData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback for client d, %p granted qos %d", c, response->alt.qos);
+	test8dSubscribed = 1;
+}
+
+void test8dOnConnect(void* context, MQTTAsync_successData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	int rc;
+
+	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client c, context %p\n", context);
+	test8dConnected = 1;
+
+	opts.onSuccess = test8donSubscribe;
+	opts.context = c;
+
+	rc = MQTTAsync_subscribe(c, test_topic, 2, &opts);
+	assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		test8Finished = 1;
+}
+
+
+void test8OnFailure(void* context, MQTTAsync_failureData* response)
+{
+	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
+
+	test8OnFailureCalled++;
+	test8Finished = 1;
+}
+
+void test8cOnConnect(void* context, MQTTAsync_successData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	int rc;
+
+	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client c, context %p\n", context);
+	test8cConnected = 1;
+}
+
+
+int test8(struct Options options)
+{
+	char* testname = "test6";
+	int subsqos = 2;
+	MQTTAsync c, d;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
+	int rc = 0;
+	int count = 0;
+	char clientidc[50];
+	char clientidd[50];
+	int i = 0;
+
+	sprintf(willTopic, "paho-test9-8-%s", unique);
+	sprintf(clientidc, "paho-test9-8-c-%s", unique);
+	sprintf(clientidd, "paho-test9-8-d-%s", unique);
+	sprintf(test_topic, "paho-test9-8-test topic %s", unique);
+
+	test5Finished = 0;
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting Offline buffering 8 - send messages before successful connect");
+	fprintf(xml, "<testcase classname=\"test8\" name=\"%s\"", testname);
+	global_start_time = start_clock();
+
+	/* first check that by default we can't send messages before connect */
+	createOptions.sendWhileDisconnected = 1;
+	createOptions.maxBufferedMessages = 3;
+	rc = MQTTAsync_createWithOptions(&c, options.proxy_connection, clientidc, MQTTCLIENT_PERSISTENCE_DEFAULT,
+	      NULL, &createOptions);
+	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
+
+	/* check can't send messages */
+	for (i = 0; i < 5; ++i)
+	{
+	  char buf[50];
+
+	  MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	  MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	  sprintf(buf, "QoS %d message", i);
+	  pubmsg.payload = buf;
+	  pubmsg.payloadlen = (int)(strlen(pubmsg.payload) + 1);
+	  pubmsg.qos = i % 3;
+	  pubmsg.retained = 0;
+	  rc = MQTTAsync_sendMessage(c, test_topic, &pubmsg, &opts);
+	  assert("Good rc from sendMessage", rc == MQTTASYNC_DISCONNECTED, "rc was %d ", rc);
+	}
+
+	MQTTAsync_destroy(&c);
+	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+
+	/* client to check receipt of messages */
+	rc = MQTTAsync_create(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&d);
+		goto exit;
+	}
+
+	createOptions.allowDisconnectedSendAtAnyTime = 1;
+	rc = MQTTAsync_createWithOptions(&c, options.connection, clientidc, MQTTCLIENT_PERSISTENCE_DEFAULT,
+	      NULL, &createOptions);
+	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		MQTTAsync_destroy(&d);
+		goto exit;
+	}
+
+	rc = MQTTAsync_setCallbacks(d, d, NULL, test8_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+
+	/* let client d go and subscribe */
+	opts.onSuccess = test8dOnConnect;
+	opts.onFailure = test8OnFailure;
+	opts.context = d;
+	MyLog(LOGA_DEBUG, "Connecting client d");
+	rc = MQTTAsync_connect(d, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		MQTTAsync_destroy(&d);
+		goto exit;
+	}
+
+	count = 0;
+	while (!test8dSubscribed && ++count < 10000)
+		MySleep(100);
+	assert("Count should be less than 10000", count < 10000, "count was %d", count); /* wrong */
+
+	/* send some messages while disconnected */
+	for (i = 0; i < 5; ++i)
+	{
+	  char buf[50];
+
+	  MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	  MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	  sprintf(buf, "QoS %d message", i);
+	  pubmsg.payload = buf;
+	  pubmsg.payloadlen = (int)(strlen(pubmsg.payload) + 1);
+	  pubmsg.qos = i % 3;
+	  pubmsg.retained = 0;
+	  rc = MQTTAsync_sendMessage(c, test_topic, &pubmsg, &opts);
+	  if (i <= 2)
+	    assert("Good rc from sendMessage", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+	  else
+	    assert("Bad rc from sendMessage", rc == MQTTASYNC_MAX_BUFFERED_MESSAGES, "rc was %d ", rc);
+	}
+
+	assert3PendingTokens(c);
+
+	opts.onSuccess = test8cOnConnect;
+	opts.onFailure = test8OnFailure;
+	opts.context = c;
+	opts.cleansession = 0;
+
+	MyLog(LOGA_DEBUG, "Connecting client c");
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		failures++;
+		goto exit;
+	}
+
+	count = 0;
+	while (!test8cConnected && ++count < 10000)
+		MySleep(100);
+	assert("Count should be less than 10000", count < 10000, "count was %d", count); /* wrong */
+
+	/* after connect, those queued up messages should be delivered */
+	while (test8_messages_received < 3 && ++count < 10000)
+		MySleep(100);
+
+	waitForNoPendingTokens(c);
+
+	rc = MQTTAsync_disconnect(c, NULL);
+ 	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+
+	rc = MQTTAsync_disconnect(d, NULL);
+ 	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+
+exit:
+	MySleep(200);
+	MQTTAsync_destroy(&c);
+	MQTTAsync_destroy(&d);
+	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", testname, tests, failures);
+	write_test_result();
+	return failures;
 }
 
 
@@ -2046,7 +2275,7 @@ int main(int argc, char** argv)
 {
 	int* numtests = &tests;
 	int rc = 0;
-	int (*tests[])() = { NULL, test1, test2, test3, test4, test5, test6 };
+	int (*tests[])() = { NULL, test1, test2, test3, test4, test5, test6, test7, test8};
 	time_t randtime;
 
 	srand((unsigned) time(&randtime));

@@ -609,7 +609,7 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 	}
 
 	if (options && (strncmp(options->struct_id, "MQCO", 4) != 0 ||
-					options->struct_version < 0 || options->struct_version > 1))
+					options->struct_version < 0 || options->struct_version > 2))
 	{
 		rc = MQTTASYNC_BAD_STRUCTURE;
 		goto exit;
@@ -3737,10 +3737,20 @@ int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen
 	FUNC_ENTRY;
 	if (m == NULL || m->c == NULL)
 		rc = MQTTASYNC_FAILURE;
-	else if (m->c->connected == 0 && (m->createOptions == NULL ||
-		m->createOptions->sendWhileDisconnected == 0 || m->shouldBeConnected == 0))
-		rc = MQTTASYNC_DISCONNECTED;
-	else if (!UTF8_validateString(destinationName))
+	else if (m->c->connected == 0)
+	{
+		if (m->createOptions == NULL)
+			rc = MQTTASYNC_DISCONNECTED;
+		else if (m->createOptions->sendWhileDisconnected == 0)
+			rc = MQTTASYNC_DISCONNECTED;
+		else if (m->shouldBeConnected == 0 && (m->createOptions->struct_version < 2 || m->createOptions->allowDisconnectedSendAtAnyTime == 0))
+			rc = MQTTASYNC_DISCONNECTED;
+	}
+
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	if (!UTF8_validateString(destinationName))
 		rc = MQTTASYNC_BAD_UTF8_STRING;
 	else if (qos < 0 || qos > 2)
 		rc = MQTTASYNC_BAD_QOS;

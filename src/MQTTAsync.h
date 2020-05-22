@@ -863,13 +863,14 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQCO. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0 or 1
+	/** The version number of this structure.  Must be 0, 1 or 2
 	 * 0 means no MQTTVersion
+	 * 1 means no allowDisconnectedSendAtAnyTime
 	 */
 	int struct_version;
 	/** Whether to allow messages to be sent when the client library is not connected. */
 	int sendWhileDisconnected;
-	/** the maximum number of messages allowed to be buffered while not connected. */
+	/** The maximum number of messages allowed to be buffered while not connected. */
 	int maxBufferedMessages;
 	/** Whether the MQTT version is 3.1, 3.1.1, or 5.  To use V5, this must be set.
 	 *  MQTT V5 has to be chosen here, because during the create call the message persistence
@@ -877,11 +878,15 @@ typedef struct
 	 *  is appropriate for the MQTT version we are going to connect with.  Selecting 3.1 or
 	 *  3.1.1 and attempting to read 5.0 persisted messages will result in an error on create.  */
 	int MQTTVersion;
+	/**
+	 * Allow sending of messages while disconnected before a first successful connect.
+	 */
+	int allowDisconnectedSendAtAnyTime;
 } MQTTAsync_createOptions;
 
-#define MQTTAsync_createOptions_initializer  { {'M', 'Q', 'C', 'O'}, 1, 0, 100, MQTTVERSION_DEFAULT }
+#define MQTTAsync_createOptions_initializer  { {'M', 'Q', 'C', 'O'}, 2, 0, 100, MQTTVERSION_DEFAULT, 0 }
 
-#define MQTTAsync_createOptions_initializer5 { {'M', 'Q', 'C', 'O'}, 1, 0, 100, MQTTVERSION_5 }
+#define MQTTAsync_createOptions_initializer5 { {'M', 'Q', 'C', 'O'}, 2, 0, 100, MQTTVERSION_5, 0 }
 
 
 LIBMQTT_API int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const char* clientId,

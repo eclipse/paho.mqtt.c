@@ -1342,7 +1342,7 @@ IF (PAHO_BUILD_STATIC)
 	
 	ADD_TEST(
         NAME test9-8-offline-buffering-before-connect-static
-        COMMAND test9 "--test_no" "8" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+        COMMAND test9-static "--test_no" "8" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
     )
 	
 	SET_TESTS_PROPERTIES(
@@ -1388,7 +1388,7 @@ IF (PAHO_BUILD_STATIC)
     
     ADD_TEST(
         NAME test9-8ws-offline-buffering-before-connect-static
-        COMMAND test9 "--test_no" "8" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+        COMMAND test9-static "--test_no" "8" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
     )
     
     SET_TESTS_PROPERTIES(

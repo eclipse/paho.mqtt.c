@@ -1168,7 +1168,29 @@ static int MQTTAsync_restoreCommands(MQTTAsyncs* client)
 }
 #endif
 
-
+/**
+ * List callback function for comparing client handles and command types being CONNECT or DISCONNECT 
+ * @param a first MQTTAsync_queuedCommand pointer
+ * @param b second MQTTAsync_queuedCommand pointer
+ * @return boolean indicating whether a and b are equal
+ */
+static int clientCompareConnectCommand(void* a, void* b)
+{
+	MQTTAsync_queuedCommand* cmd1 = (MQTTAsync_queuedCommand*)a;
+	MQTTAsync_queuedCommand* cmd2 = (MQTTAsync_queuedCommand*)b;
+	if (cmd1->client == cmd2->client)
+	{
+		if (cmd1->command.type == cmd2->command.type)
+		{
+			if (cmd1->command.type == CONNECT || cmd1->command.type == DISCONNECT)
+			{
+				return 1; //Item found in the list
+			}
+		}
+	}
+	return 0;	//Item NOT found in the list
+}								   
+ 
 static int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 {
 	int rc = MQTTASYNC_SUCCESS;
@@ -1189,7 +1211,10 @@ static int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_si
 		if (head != NULL && head->client == command->client && head->command.type == command->command.type)
 			MQTTAsync_freeCommand(command); /* ignore duplicate connect or disconnect command */
 		else
+		{ 
+			ListRemoveItem(commands, command, clientCompareConnectCommand); /* remove command from the list if already there */
 			ListInsert(commands, command, command_size, commands->first); /* add to the head of the list */
+		}
 	}
 	else
 	{

@@ -2129,7 +2129,7 @@ int test8(struct Options options)
 	sprintf(clientidd, "paho-test9-8-d-%s", unique);
 	sprintf(test_topic, "paho-test9-8-test topic %s", unique);
 
-	test5Finished = 0;
+	test8Finished = 0;
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting Offline buffering 8 - send messages before successful connect");
 	fprintf(xml, "<testcase classname=\"test8\" name=\"%s\"", testname);
@@ -2271,11 +2271,137 @@ exit:
 }
 
 
+/*********************************************************************
+
+Test9: large nos of messages on create
+
+*********************************************************************/
+int test9_messages_received = 0;
+int test9Finished = 0;
+int test9OnFailureCalled = 0;
+int test9cConnected = 0;
+
+void test9OnFailure(void* context, MQTTAsync_failureData* response)
+{
+	MyLog(LOGA_DEBUG, "In connect onFailure callback, context %p", context);
+
+	test9OnFailureCalled++;
+	test9Finished = 1;
+}
+
+void test9cOnConnect(void* context, MQTTAsync_successData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+
+	MyLog(LOGA_DEBUG, "In connect onSuccess callback for client c, context %p\n", context);
+	test9cConnected = 1;
+}
+
+
+int test9(struct Options options)
+{
+	char* testname = "test6";
+	int subsqos = 2;
+	MQTTAsync c;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
+	int rc = 0;
+	int count = 0;
+	char clientidc[50];
+	int i = 0;
+	START_TIME_TYPE start;
+	int no_buffered_messages = 50000;
+
+	sprintf(willTopic, "paho-test9-9-%s", unique);
+	sprintf(clientidc, "paho-test9-9-c-%s", unique);
+	sprintf(test_topic, "paho-test9-9-test topic %s", unique);
+
+	test9Finished = 0;
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting Offline buffering  - large nos messages on create");
+	fprintf(xml, "<testcase classname=\"test\" name=\"%s\"", testname);
+	global_start_time = start_clock();
+
+	createOptions.allowDisconnectedSendAtAnyTime = 1;
+	createOptions.sendWhileDisconnected = 1;
+	createOptions.maxBufferedMessages = no_buffered_messages;
+	rc = MQTTAsync_createWithOptions(&c, options.connection, clientidc, MQTTCLIENT_PERSISTENCE_DEFAULT,
+	      NULL, &createOptions);
+	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
+
+	/* send some messages while disconnected */
+	for (i = 0; i < no_buffered_messages; ++i)
+	{
+	  char buf[50];
+
+	  MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	  MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	  sprintf(buf, "QoS %d message", i);
+	  pubmsg.payload = buf;
+	  pubmsg.payloadlen = (int)(strlen(pubmsg.payload) + 1);
+	  pubmsg.qos = i % 3;
+	  pubmsg.retained = 0;
+	  rc = MQTTAsync_sendMessage(c, test_topic, &pubmsg, &opts);
+	  assert("Good rc from sendMessage", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+	}
+
+	MQTTAsync_destroy(&c);
+	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+
+	MyLog(LOGA_INFO, "Create starting with %d messages", no_buffered_messages);
+	start = start_clock();
+	rc = MQTTAsync_createWithOptions(&c, options.connection, clientidc, MQTTCLIENT_PERSISTENCE_DEFAULT,
+		      NULL, &createOptions);
+	assert("good rc from create", rc == MQTTASYNC_SUCCESS, "rc was %d \n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
+	long used = elapsed(start);
+	MyLog(LOGA_INFO, "Time taken for create %ld ms", used);
+
+	opts.onSuccess = test9cOnConnect;
+	opts.onFailure = test9OnFailure;
+	opts.context = c;
+	opts.cleansession = 1;
+
+	MyLog(LOGA_DEBUG, "Connecting client c");
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	count = 0;
+	while (!test9cConnected && ++count < 10000)
+		MySleep(100);
+	assert("Count should be less than 10000", count < 10000, "count was %d", count); /* wrong */
+
+	rc = MQTTAsync_disconnect(c, NULL);
+ 	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
+
+exit:
+	MySleep(200);
+	MQTTAsync_destroy(&c);
+	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", testname, tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
+
 int main(int argc, char** argv)
 {
 	int* numtests = &tests;
 	int rc = 0;
-	int (*tests[])() = { NULL, test1, test2, test3, test4, test5, test6, test7, test8};
+	int (*tests[])() = { NULL, test1, test2, test3, test4, test5, test6, test7, test8, test9};
 	time_t randtime;
 
 	srand((unsigned) time(&randtime));

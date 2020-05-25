@@ -245,7 +245,7 @@ int pstget(void* handle, char* key, char** buffer, int* buflen)
 	int rc = 0;
 	FILE *fp = NULL;
 	char *clientDir = handle;
-	char *file = NULL;
+	char *filename = NULL;
 	char *buf = NULL;
 	unsigned long fileLen = 0;
 	unsigned long bytesRead = 0;
@@ -258,16 +258,16 @@ int pstget(void* handle, char* key, char** buffer, int* buflen)
 	}
 
 	/* consider '/' + '\0' */
-	file = malloc(strlen(clientDir) + strlen(key) + strlen(MESSAGE_FILENAME_EXTENSION) + 2);
-	if (!file)
+	filename = malloc(strlen(clientDir) + strlen(key) + strlen(MESSAGE_FILENAME_EXTENSION) + 2);
+	if (!filename)
 	{
 		rc = PAHO_MEMORY_ERROR;
 		goto exit;
 	}
-	sprintf(file, "%s/%s%s", clientDir, key, MESSAGE_FILENAME_EXTENSION);
-
-	fp = fopen(file, "rb");
-	if ( fp != NULL )
+	sprintf(filename, "%s/%s%s", clientDir, key, MESSAGE_FILENAME_EXTENSION);
+	fp = fopen(filename, "rb");
+	free(filename);
+	if (fp != NULL)
 	{
 		fseek(fp, 0, SEEK_END);
 		fileLen = ftell(fp);
@@ -282,15 +282,12 @@ int pstget(void* handle, char* key, char** buffer, int* buflen)
 		*buflen = bytesRead;
 		if ( bytesRead != fileLen )
 			rc = MQTTCLIENT_PERSISTENCE_ERROR;
+		fclose(fp);
 	} else
 		rc = MQTTCLIENT_PERSISTENCE_ERROR;
 
 	/* the caller must free buf */
 exit:
-	if (file)
-		free(file);
-	if (fp)
-		fclose(fp);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -590,8 +587,7 @@ int clearUnix(char *dirname)
 	{
 		while((dir_entry = readdir(dp)) != NULL && rc == 0)
 		{
-			lstat(dir_entry->d_name, &stat_info);
-			if(S_ISREG(stat_info.st_mode))
+			if (lstat(dir_entry->d_name, &stat_info) == 0 && S_ISREG(stat_info.st_mode))
 			{
 				if (remove(dir_entry->d_name) != 0 && errno != ENOENT)
 					rc = MQTTCLIENT_PERSISTENCE_ERROR;

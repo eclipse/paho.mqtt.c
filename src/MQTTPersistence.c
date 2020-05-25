@@ -132,22 +132,23 @@ int MQTTPersistence_initialize(Clients *c, const char *serverURI)
  */
 int MQTTPersistence_close(Clients *c)
 {
-	int rc =0;
+	int rc = 0;
 
 	FUNC_ENTRY;
+#if !defined(NO_PERSISTENCE)
 	if (c->persistence != NULL)
 	{
 		rc = c->persistence->pclose(c->phandle);
-		c->phandle = NULL;
-#if !defined(NO_PERSISTENCE)
-		if ( c->persistence->popen == pstopen )
-			free(c->persistence);
+
 		if (c->persistence->context)
 			free(c->persistence->context);
-#endif
+		if (c->persistence->popen == pstopen)
+			free(c->persistence);
+
+		c->phandle = NULL;
 		c->persistence = NULL;
 	}
-
+#endif
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -207,7 +208,7 @@ int MQTTPersistence_restore(Clients *c)
 				char* cur_key = msgkeys[i];
 				MQTTPacket* pack = NULL;
 
-				if (	strncmp(cur_key, PERSISTENCE_V5_PUBLISH_RECEIVED,
+				if (strncmp(cur_key, PERSISTENCE_V5_PUBLISH_RECEIVED,
 							strlen(PERSISTENCE_V5_PUBLISH_RECEIVED)) == 0)
 				{
 					data_MQTTVersion = MQTTVERSION_5;

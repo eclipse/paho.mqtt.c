@@ -29,6 +29,8 @@
 #include <stdlib.h>
 #include "Thread.h"
 
+#include "kissdb.h"
+
 #if !defined(_WINDOWS)
 	#include <sys/time.h>
   #include <sys/socket.h>
@@ -2300,7 +2302,7 @@ void test9cOnConnect(void* context, MQTTAsync_successData* response)
 
 int test9(struct Options options)
 {
-	char* testname = "test6";
+	char* testname = "test9";
 	int subsqos = 2;
 	MQTTAsync c;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;

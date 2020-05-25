@@ -29,8 +29,6 @@
 #include <stdlib.h>
 #include "Thread.h"
 
-#include "kissdb.h"
-
 #if !defined(_WINDOWS)
 	#include <sys/time.h>
   #include <sys/socket.h>

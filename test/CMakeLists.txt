@@ -1344,6 +1344,11 @@ IF (PAHO_BUILD_STATIC)
         NAME test9-8-offline-buffering-before-connect-static
         COMMAND test9-static "--test_no" "8" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
     )
+      
+    ADD_TEST(
+        NAME test9-10-offline-buffering-delete-oldest-messages-static
+        COMMAND test9-static "--test_no" "10" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+    )
 	
 	SET_TESTS_PROPERTIES(
 		test9-1-offline-buffering-send-disconnected-static
@@ -1353,6 +1358,7 @@ IF (PAHO_BUILD_STATIC)
 		test9-5-offline-buffering-max-buffered-static
 		test9-6-offline-buffering-max-buffered-binary-will-static
 		test9-8-offline-buffering-before-connect-static
+		test9-10-offline-buffering-delete-oldest-messages-static
 		PROPERTIES TIMEOUT 540
 	)
 	
@@ -1391,6 +1397,11 @@ IF (PAHO_BUILD_STATIC)
         COMMAND test9-static "--test_no" "8" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
     )
     
+    ADD_TEST(
+        NAME test9-10ws-offline-buffering-delete-oldest-messages-static
+        COMMAND test9-static "--test_no" "10" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
     SET_TESTS_PROPERTIES(
         test9-1ws-offline-buffering-send-disconnected-static
         test9-2ws-offline-buffering-send-disconnected-serverURIs-static
@@ -1399,6 +1410,7 @@ IF (PAHO_BUILD_STATIC)
         test9-5ws-offline-buffering-max-buffered-static
         test9-6ws-offline-buffering-max-buffered-binary-will-static
         test9-8ws-offline-buffering-before-connect-static
+        test9-10ws-offline-buffering-delete-oldest-messages-static
         PROPERTIES TIMEOUT 540
     )
 ENDIF()
@@ -1448,6 +1460,11 @@ IF (PAHO_BUILD_SHARED)
         NAME test9-8-offline-buffering-before-connect
         COMMAND test9 "--test_no" "8" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
     )
+    
+    ADD_TEST(
+        NAME test9-10-offline-buffering-delete-oldest-messages
+        COMMAND test9 "--test_no" "10" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+    )
 	
 	SET_TESTS_PROPERTIES(
 		test9-1-offline-buffering-send-disconnected
@@ -1457,6 +1474,7 @@ IF (PAHO_BUILD_SHARED)
 		test9-5-offline-buffering-max-buffered
 		test9-6-offline-buffering-max-buffered-binary-will
 		test9-8-offline-buffering-before-connect
+		test9-10-offline-buffering-delete-oldest-messages
 		PROPERTIES TIMEOUT 540
 	)
 	
@@ -1495,6 +1513,11 @@ IF (PAHO_BUILD_SHARED)
         COMMAND test9 "--test_no" "8" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
     )
     
+    ADD_TEST(
+        NAME test9-10ws-offline-buffering-delete-oldest-messages
+        COMMAND test9 "--test_no" "10" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
     SET_TESTS_PROPERTIES(
         test9-1ws-offline-buffering-send-disconnected
         test9-2ws-offline-buffering-send-disconnected-serverURIs
@@ -1503,6 +1526,7 @@ IF (PAHO_BUILD_SHARED)
         test9-5ws-offline-buffering-max-buffered
         test9-6ws-offline-buffering-max-buffered-binary-will
         test9-8ws-offline-buffering-before-connect
+        test9-10ws-offline-buffering-delete-oldest-messages
         PROPERTIES TIMEOUT 540
     )
 ENDIF()

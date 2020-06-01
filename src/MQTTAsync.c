@@ -399,6 +399,7 @@ typedef struct MQTTAsync_struct
 	/* added for offline buffering */
 	MQTTAsync_createOptions* createOptions;
 	int shouldBeConnected;
+	int noBufferedMessages; /* the current number of buffered (publish) messages for this client */
 
 	/* added for automatic reconnect */
 	int automaticReconnect;
@@ -466,7 +467,7 @@ static int MQTTAsync_disconnect1(MQTTAsync handle, const MQTTAsync_disconnectOpt
 static int MQTTAsync_disconnect_internal(MQTTAsync handle, int timeout);
 static int cmdMessageIDCompare(void* a, void* b);
 static int MQTTAsync_assignMsgId(MQTTAsyncs* m);
-static int MQTTAsync_countBufferedMessages(MQTTAsyncs* m);
+static int MQTTAsync_getNoBufferedMessages(MQTTAsyncs* m);
 static void MQTTAsync_retry(void);
 static int MQTTAsync_connecting(MQTTAsyncs* m);
 static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc);
@@ -1098,7 +1099,13 @@ exit:
 	return qcommand;
 }
 
-/*
+
+/**
+ * Inserts the specified message into the list, maintaining command sequence no order.
+ * @param list the list to insert the message into.
+ * @param content the message to add.
+ * @param size size of the message.
+ */
 static void MQTTAsync_insertInOrder(List* list, void* content, int size)
 {
 	ListElement* index = NULL;
@@ -1113,7 +1120,7 @@ static void MQTTAsync_insertInOrder(List* list, void* content, int size)
 
 	ListInsert(list, content, size, index);
 	FUNC_EXIT;
-}*/
+}
 
 
 static int MQTTAsync_restoreCommands(MQTTAsyncs* client)
@@ -1149,10 +1156,12 @@ static int MQTTAsync_restoreCommands(MQTTAsyncs* client)
 				{
 					cmd->client = client;
 					cmd->seqno = atoi(strchr(msgkeys[i], '-')+1); /* key format is tag'-'seqno */
-					MQTTPersistence_insertInOrder(commands, cmd, sizeof(MQTTAsync_queuedCommand));
+					MQTTAsync_insertInOrder(commands, cmd, sizeof(MQTTAsync_queuedCommand));
 					free(buffer);
 					client->command_seqno = max(client->command_seqno, cmd->seqno);
 					commands_restored++;
+					if (cmd->command.type == PUBLISH)
+						client->noBufferedMessages++;
 				}
 			}
 			if (msgkeys[i])
@@ -1223,6 +1232,38 @@ static int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_si
 		if (command->client->c->persistence)
 			MQTTAsync_persistCommand(command);
 #endif
+		if (command->command.type == PUBLISH)
+		{
+			if (command->client->createOptions && (command->client->noBufferedMessages >= command->client->createOptions->maxBufferedMessages))
+			{
+				MQTTAsync_queuedCommand* first_publish = NULL;
+				ListElement* current = NULL;
+
+				/* Find first publish command for this client and detach it */
+				while (ListNextElement(commands, &current))
+				{
+					MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)(current->content);
+
+					if (cmd->client == command->client && cmd->command.type == PUBLISH)
+					{
+						first_publish = cmd;
+						break;
+					}
+				}
+				if (first_publish)
+				{
+					ListDetach(commands, first_publish);
+
+					MQTTAsync_freeCommand(first_publish);
+	#if !defined(NO_PERSISTENCE)
+					if (command->client->c->persistence)
+						MQTTAsync_unpersistCommand(first_publish);
+	#endif
+				}
+			}
+			else
+				command->client->noBufferedMessages++;
+		}
 	}
 	MQTTAsync_unlock_mutex(mqttcommand_mutex);
 #if !defined(_WIN32) && !defined(_WIN64)
@@ -1597,6 +1638,8 @@ static int MQTTAsync_processCommand(void)
 	ListFreeNoContent(ignored_clients);
 	if (command)
 	{
+		if (command->command.type == PUBLISH)
+			command->client->noBufferedMessages--;
 		ListDetach(commands, command);
 #if !defined(NO_PERSISTENCE)
 		if (command->client->c->persistence)
@@ -3733,19 +3776,20 @@ int MQTTAsync_unsubscribe(MQTTAsync handle, const char* topic, MQTTAsync_respons
 }
 
 
-static int MQTTAsync_countBufferedMessages(MQTTAsyncs* m)
+static int MQTTAsync_getNoBufferedMessages(MQTTAsyncs* m)
 {
 	ListElement* current = NULL;
 	int count = 0;
 
 	MQTTAsync_lock_mutex(mqttcommand_mutex);
-	while (ListNextElement(commands, &current))
+	/*while (ListNextElement(commands, &current))
 	{
 		MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)(current->content);
 
 		if (cmd->client == m && cmd->command.type == PUBLISH)
 			count++;
-	}
+	}*/
+	count = m->noBufferedMessages;
 	MQTTAsync_unlock_mutex(mqttcommand_mutex);
 	return count;
 }
@@ -3781,7 +3825,9 @@ int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen
 		rc = MQTTASYNC_BAD_QOS;
 	else if (qos > 0 && (msgid = MQTTAsync_assignMsgId(m)) == 0)
 		rc = MQTTASYNC_NO_MORE_MSGIDS;
-	else if (m->createOptions && (MQTTAsync_countBufferedMessages(m) >= m->createOptions->maxBufferedMessages))
+	else if (m->createOptions &&
+			(m->createOptions->struct_version < 2 || m->createOptions->deleteOldestMessages == 0) &&
+			(MQTTAsync_getNoBufferedMessages(m) >= m->createOptions->maxBufferedMessages))
 		rc = MQTTASYNC_MAX_BUFFERED_MESSAGES;
 	else if (response)
 	{

@@ -416,8 +416,9 @@ typedef void MQTTClient_connectionLost(void* context, char* cause);
  * function. You can set this to NULL if your application doesn't handle
  * disconnections.
  * @param ma A pointer to an MQTTClient_messageArrived() callback
- * function. This callback function must be specified when you call
- * MQTTClient_setCallbacks().
+ * function. This callback function must be set when you call
+ * MQTTClient_setCallbacks(), as otherwise there would be nowhere to deliver
+ * any incoming messages.
  * @param dc A pointer to an MQTTClient_deliveryComplete() callback
  * function. You can set this to NULL if your application publishes
  * synchronously or if you do not want to check for successful delivery.
@@ -492,7 +493,7 @@ LIBMQTT_API int MQTTClient_setPublished(MQTTClient handle, void* context, MQTTCl
  * this function.
  * @param serverURI A null-terminated string specifying the server to
  * which the client will connect. It takes the form <i>protocol://host:port</i>.
- * Currently, <i>protocol</i> must be <i>tcp</i> or <i>ssl</i>.
+ * Currently, <i>protocol</i> must be <i>tcp</i>, <i>ssl</i>, <i>ws</i> or <i>wss</i>,.
  * For <i>host</i>, you can
  * specify either an IP address or a host name. For instance, to connect to
  * a server running on the local machines with the default MQTT port, specify
@@ -875,7 +876,8 @@ typedef struct
 	/**
    * An optional array of null-terminated strings specifying the servers to
    * which the client will connect. Each string takes the form <i>protocol://host:port</i>.
-   * <i>protocol</i> must be <i>tcp</i> or <i>ssl</i>. For <i>host</i>, you can
+   * <i>protocol</i> must be <i>tcp</i>, <i>ssl</i>, <i>ws</i> or <i>wss</i>.
+   * For <i>host</i>, you can
    * specify either an IP address or a host name. For instance, to connect to
    * a server running on the local machines with the default MQTT port, specify
    * <i>tcp://localhost:1883</i>.

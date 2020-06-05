@@ -743,6 +743,7 @@ int SSLSocket_connect(SSL* ssl, int sock, const char* hostname, int verify, int 
 
 	FUNC_ENTRY;
 
+	ERR_clear_error();
 	rc = SSL_connect(ssl);
 	if (rc != 1)
 	{
@@ -818,6 +819,7 @@ int SSLSocket_getch(SSL* ssl, int socket, char* c)
 	if ((rc = SocketBuffer_getQueuedChar(socket, c)) != SOCKETBUFFER_INTERRUPTED)
 		goto exit;
 
+	ERR_clear_error();
 	if ((rc = SSL_read(ssl, c, (size_t)1)) < 0)
 	{
 		int err = SSLSocket_error("SSL_read - getch", ssl, socket, rc, NULL, NULL);
@@ -863,6 +865,7 @@ char *SSLSocket_getdata(SSL* ssl, int socket, size_t bytes, size_t* actual_len)
 
 	buf = SocketBuffer_getQueuedData(socket, bytes, actual_len);
 
+	ERR_clear_error();
 	if ((rc = SSL_read(ssl, buf + (*actual_len), (int)(bytes - (*actual_len)))) < 0)
 	{
 		rc = SSLSocket_error("SSL_read - getdata", ssl, socket, rc, NULL, NULL);
@@ -922,6 +925,7 @@ int SSLSocket_close(networkHandles* net)
 
 	if (net->ssl)
 	{
+		ERR_clear_error();
 		rc = SSL_shutdown(net->ssl);
 		SSL_free(net->ssl);
 		net->ssl = NULL;
@@ -964,6 +968,7 @@ int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int cou
 	}
 
 	SSL_lock_mutex(&sslCoreMutex);
+	ERR_clear_error();
 	if ((rc = SSL_write(ssl, iovec.iov_base, iovec.iov_len)) == iovec.iov_len)
 		rc = TCPSOCKET_COMPLETE;
 	else
@@ -1052,6 +1057,7 @@ int SSLSocket_continueWrite(pending_writes* pw)
 	int rc = 0;
 
 	FUNC_ENTRY;
+	ERR_clear_error();
 	if ((rc = SSL_write(pw->ssl, pw->iovecs[0].iov_base, pw->iovecs[0].iov_len)) == pw->iovecs[0].iov_len)
 	{
 		/* topic and payload buffers are freed elsewhere, when all references to them have been removed */

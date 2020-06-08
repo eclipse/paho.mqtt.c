@@ -1608,12 +1608,30 @@ int test8(struct Options options)
  	assert("getPendingTokens rc == 0", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	assert("should get no tokens back", tokens == NULL, "tokens was %p", tokens);
 
+	assert("test8_publishFailures == 0", test8_publishFailures == 0,
+		   "test8_publishFailures = %d", test8_publishFailures);
+
+	MQTTAsync_destroy(&c);
+
 	assert("test8_publishFailures > 0", test8_publishFailures > 0,
 		   "test8_publishFailures = %d", test8_publishFailures);
 
 	/* Now elicit failure callbacks on destroy */
 
 	test8_subscribed = test8_publishFailures = 0;
+
+	MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+	rc = MQTTAsync_create(&c, options.connection, "async_test8",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
+
+	rc = MQTTAsync_setCallbacks(c, c, NULL, test8_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	MyLog(LOGA_DEBUG, "Connecting");
 	opts.cleansession = 0;

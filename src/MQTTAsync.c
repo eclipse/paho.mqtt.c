@@ -2928,7 +2928,7 @@ static int clientStructCompare(void* a, void* b)
 static int MQTTAsync_cleanSession(Clients* client)
 {
 	int rc = 0;
-	ListElement* found = NULL;
+	/*ListElement* found = NULL;*/
 
 	FUNC_ENTRY;
 #if !defined(NO_PERSISTENCE)
@@ -2936,16 +2936,22 @@ static int MQTTAsync_cleanSession(Clients* client)
 #endif
 	MQTTProtocol_emptyMessageList(client->inboundMsgs);
 	MQTTProtocol_emptyMessageList(client->outboundMsgs);
-	MQTTAsync_emptyMessageQueue(client);
+	/* We used to remove complete incoming messages, but that seems to be unnecesary as they are
+	 * no longer part of the MQTT session.
+	 */
+	/*MQTTAsync_emptyMessageQueue(client);*/
 	client->msgID = 0;
 
-	if ((found = ListFindItem(handles, client, clientStructCompare)) != NULL)
+	/* We used to remove commands and their responses, but that seems to be unnecessary as commands that
+	 * have never been sent are not part of the MQTT session as yet.
+	 */
+	/*if ((found = ListFindItem(handles, client, clientStructCompare)) != NULL)
 	{
 		MQTTAsyncs* m = (MQTTAsyncs*)(found->content);
 		MQTTAsync_removeResponsesAndCommands(m);
 	}
 	else
-		Log(LOG_ERROR, -1, "cleanSession: did not find client structure in handles list");
+		Log(LOG_ERROR, -1, "cleanSession: did not find client structure in handles list");*/
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -3778,17 +3784,9 @@ int MQTTAsync_unsubscribe(MQTTAsync handle, const char* topic, MQTTAsync_respons
 
 static int MQTTAsync_getNoBufferedMessages(MQTTAsyncs* m)
 {
-	ListElement* current = NULL;
 	int count = 0;
 
 	MQTTAsync_lock_mutex(mqttcommand_mutex);
-	/*while (ListNextElement(commands, &current))
-	{
-		MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)(current->content);
-
-		if (cmd->client == m && cmd->command.type == PUBLISH)
-			count++;
-	}*/
 	count = m->noBufferedMessages;
 	MQTTAsync_unlock_mutex(mqttcommand_mutex);
 	return count;

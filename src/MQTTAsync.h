@@ -825,6 +825,8 @@ LIBMQTT_API int MQTTAsync_reconnect(MQTTAsync handle);
  * @param serverURI A null-terminated string specifying the server to
  * which the client will connect. It takes the form <i>protocol://host:port</i>.
  * <i>protocol</i> must be <i>tcp</i>, <i>ssl</i>, <i>ws</i> or <i>wss</i>.
+ * The TLS enabled prefixes (ssl, wss) are only valid if a TLS version of
+ * the library is linked with.
  * For <i>host</i>, you can
  * specify either an IP address or a host name. For instance, to connect to
  * a server running on the local machines with the default MQTT port, specify
@@ -1173,6 +1175,8 @@ typedef struct
 	  * An array of null-terminated strings specifying the servers to
       * which the client will connect. Each string takes the form <i>protocol://host:port</i>.
       * <i>protocol</i> must be <i>tcp</i>, <i>ssl</i>, <i>ws</i> or <i>wss</i>.
+      * The TLS enabled prefixes (ssl, wss) are only valid if a TLS version of the library
+      * is linked with.
       * For <i>host</i>, you can
       * specify either an IP address or a domain name. For instance, to connect to
       * a server running on the local machines with the default MQTT port, specify

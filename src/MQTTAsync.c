@@ -454,7 +454,9 @@ static int MQTTAsync_processCommand(void);
 static void MQTTAsync_checkTimeouts(void);
 static thread_return_type WINAPI MQTTAsync_sendThread(void* n);
 static void MQTTAsync_emptyMessageQueue(Clients* client);
-static void MQTTAsync_removeResponsesAndCommands(MQTTAsyncs* m);
+static void MQTTAsync_freeResponses(MQTTAsyncs* m);
+static void MQTTAsync_freeCommands(MQTTAsyncs* m);
+static int MQTTAsync_unpersistCommandsAndMessages(Clients* c);
 static int MQTTAsync_completeConnection(MQTTAsyncs* m, Connack* connack);
 static thread_return_type WINAPI MQTTAsync_receiveThread(void* n);
 static void MQTTAsync_stop(void);
@@ -703,11 +705,16 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 	rc = MQTTPersistence_create(&(m->c->persistence), persistence_type, persistence_context);
 	if (rc == 0)
 	{
-		rc = MQTTPersistence_initialize(m->c, m->serverURI);
+		rc = MQTTPersistence_initialize(m->c, m->serverURI); /* inflight messages restored here */
 		if (rc == 0)
 		{
-			MQTTAsync_restoreCommands(m);
-			MQTTPersistence_restoreMessageQueue(m->c);
+			if (m->createOptions && m->createOptions->struct_version >= 2 && m->createOptions->restoreMessages == 0)
+				MQTTAsync_unpersistCommandsAndMessages(m->c);
+			else
+			{
+				MQTTAsync_restoreCommands(m);
+				MQTTPersistence_restoreMessageQueue(m->c);
+			}
 		}
 	}
 #endif
@@ -1172,6 +1179,80 @@ static int MQTTAsync_restoreCommands(MQTTAsyncs* client)
 			free(msgkeys);
 	}
 	Log(TRACE_MINIMUM, -1, "%d commands restored for client %s", commands_restored, c->clientID);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+static int MQTTAsync_unpersistCommandsAndMessages(Clients* c)
+{
+	int rc = 0;
+	char **msgkeys;
+	int nkeys;
+	int i = 0;
+	int messages_deleted = 0;
+
+	FUNC_ENTRY;
+	if (c->persistence && (rc = c->persistence->pkeys(c->phandle, &msgkeys, &nkeys)) == 0)
+	{
+		while (rc == 0 && i < nkeys)
+		{
+			if (strncmp(msgkeys[i], PERSISTENCE_COMMAND_KEY, strlen(PERSISTENCE_COMMAND_KEY)) == 0 ||
+				strncmp(msgkeys[i], PERSISTENCE_V5_COMMAND_KEY, strlen(PERSISTENCE_V5_COMMAND_KEY)) == 0 ||
+				strncmp(msgkeys[i], PERSISTENCE_QUEUE_KEY, strlen(PERSISTENCE_QUEUE_KEY)) == 0 ||
+				strncmp(msgkeys[i], PERSISTENCE_V5_QUEUE_KEY, strlen(PERSISTENCE_V5_QUEUE_KEY)) == 0)
+			{
+				if ((rc = c->persistence->premove(c->phandle, msgkeys[i])) == 0)
+					messages_deleted++;
+				else
+					Log(LOG_ERROR, 0, "Error %d removing queued message from persistence", rc);
+			}
+			if (msgkeys[i])
+				free(msgkeys[i]);
+			i++;
+		}
+		if (msgkeys != NULL)
+			free(msgkeys);
+	}
+	Log(TRACE_MINIMUM, -1, "%d queued messages deleted for client %s", messages_deleted, c->clientID);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+static int MQTTAsync_unpersistInflightMessages(Clients* c)
+{
+	int rc = 0;
+	char **msgkeys;
+	int nkeys;
+	int i = 0;
+	int messages_deleted = 0;
+
+	FUNC_ENTRY;
+	if (c->persistence && (rc = c->persistence->pkeys(c->phandle, &msgkeys, &nkeys)) == 0)
+	{
+		while (rc == 0 && i < nkeys)
+		{
+			if (strncmp(msgkeys[i], PERSISTENCE_PUBLISH_SENT, strlen(PERSISTENCE_PUBLISH_SENT)) == 0 ||
+				strncmp(msgkeys[i], PERSISTENCE_V5_PUBLISH_SENT, strlen(PERSISTENCE_V5_PUBLISH_SENT)) == 0 ||
+				strncmp(msgkeys[i], PERSISTENCE_PUBREL, strlen(PERSISTENCE_PUBREL)) == 0 ||
+				strncmp(msgkeys[i], PERSISTENCE_V5_PUBREL, strlen(PERSISTENCE_V5_PUBREL)) == 0 ||
+				strncmp(msgkeys[i], PERSISTENCE_PUBLISH_RECEIVED, strlen(PERSISTENCE_PUBLISH_RECEIVED)) == 0 ||
+				strncmp(msgkeys[i], PERSISTENCE_V5_PUBLISH_RECEIVED, strlen(PERSISTENCE_V5_PUBLISH_RECEIVED)) == 0)
+			{
+				if ((rc = c->persistence->premove(c->phandle, msgkeys[i])) == 0)
+					messages_deleted++;
+				else
+					Log(LOG_ERROR, 0, "Error %d removing inflight message from persistence", rc);
+			}
+			if (msgkeys[i])
+				free(msgkeys[i]);
+			i++;
+		}
+		if (msgkeys != NULL)
+			free(msgkeys);
+	}
+	Log(TRACE_MINIMUM, -1, "%d inflight messages deleted for client %s", messages_deleted, c->clientID);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -2135,11 +2216,9 @@ static void MQTTAsync_emptyMessageQueue(Clients* client)
 }
 
 
-static void MQTTAsync_removeResponsesAndCommands(MQTTAsyncs* m)
+static void MQTTAsync_freeResponses(MQTTAsyncs* m)
 {
 	int count = 0;
-	ListElement* current = NULL;
-	ListElement *next = NULL;
 
 	FUNC_ENTRY;
 	if (m->responses)
@@ -2181,9 +2260,18 @@ static void MQTTAsync_removeResponsesAndCommands(MQTTAsyncs* m)
 		ListEmpty(m->responses);
 	}
 	Log(TRACE_MINIMUM, -1, "%d responses removed for client %s", count, m->c->clientID);
+	FUNC_EXIT;
+}
 
+
+static void MQTTAsync_freeCommands(MQTTAsyncs* m)
+{
+	int count = 0;
+	ListElement* current = NULL;
+	ListElement *next = NULL;
+
+	FUNC_ENTRY;
 	/* remove commands in the command queue relating to this client */
-	count = 0;
 	current = ListNextElement(commands, &next);
 	ListNextElement(commands, &next);
 	while (current)
@@ -2242,7 +2330,8 @@ void MQTTAsync_destroy(MQTTAsync* handle)
 
 	MQTTAsync_closeSession(m->c, MQTTREASONCODE_SUCCESS, NULL);
 
-	MQTTAsync_removeResponsesAndCommands(m);
+	MQTTAsync_freeResponses(m);
+	MQTTAsync_freeCommands(m);
 	ListFree(m->responses);
 
 	if (m->c)
@@ -2925,36 +3014,55 @@ static int clientStructCompare(void* a, void* b)
 }
 
 
+/**
+ * Clean the MQTT session data.  This includes the MQTT inflight messages, because
+ * that is part of the MQTT state that will be cleared by the MQTT broker too.
+ * However, queued up messages, outgoing or incoming, need (should?) not be cleared
+ * as they are outside the scope of the MQTT session.
+ */
 static int MQTTAsync_cleanSession(Clients* client)
 {
 	int rc = 0;
-	/*ListElement* found = NULL;*/
+	ListElement* found = NULL;
 
 	FUNC_ENTRY;
 #if !defined(NO_PERSISTENCE)
-	rc = MQTTPersistence_clear(client);
+	rc = MQTTAsync_unpersistInflightMessages(client);
 #endif
 	MQTTProtocol_emptyMessageList(client->inboundMsgs);
 	MQTTProtocol_emptyMessageList(client->outboundMsgs);
-	/* We used to remove complete incoming messages, but that seems to be unnecesary as they are
-	 * no longer part of the MQTT session.
-	 */
-	/*MQTTAsync_emptyMessageQueue(client);*/
 	client->msgID = 0;
-
-	/* We used to remove commands and their responses, but that seems to be unnecessary as commands that
-	 * have never been sent are not part of the MQTT session as yet.
-	 */
-	/*if ((found = ListFindItem(handles, client, clientStructCompare)) != NULL)
+	if ((found = ListFindItem(handles, client, clientStructCompare)) != NULL)
 	{
 		MQTTAsyncs* m = (MQTTAsyncs*)(found->content);
-		MQTTAsync_removeResponsesAndCommands(m);
+		MQTTAsync_freeResponses(m);
 	}
 	else
-		Log(LOG_ERROR, -1, "cleanSession: did not find client structure in handles list");*/
+		Log(LOG_ERROR, -1, "cleanSession: did not find client structure in handles list");
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
+
+
+/*
+static int MQTTAsync_freeSession(Clients* client)
+{
+	int rc = 0;
+	ListElement* found = NULL;
+
+	FUNC_ENTRY;
+	MQTTAsync_emptyMessageQueue(client);
+
+	if ((found = ListFindItem(handles, client, clientStructCompare)) != NULL)
+	{
+		MQTTAsyncs* m = (MQTTAsyncs*)(found->content);
+		MQTTAsync_freeCommands(m);
+	}
+	else
+		Log(LOG_ERROR, -1, "freeSession: did not find client structure in handles list");
+	FUNC_EXIT_RC(rc);
+	return rc;
+}*/
 
 
 static int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, size_t topicLen, MQTTAsync_message* mm)

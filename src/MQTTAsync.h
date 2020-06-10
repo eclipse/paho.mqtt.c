@@ -869,7 +869,7 @@ typedef struct
 	char struct_id[4];
 	/** The version number of this structure.  Must be 0, 1 or 2
 	 * 0 means no MQTTVersion
-	 * 1 means no allowDisconnectedSendAtAnyTime, deleteOldestMessages
+	 * 1 means no allowDisconnectedSendAtAnyTime, deleteOldestMessages, restoreMessages
 	 */
 	int struct_version;
 	/** Whether to allow messages to be sent when the client library is not connected. */
@@ -890,11 +890,15 @@ typedef struct
 	 * When the maximum number of buffered messages is reached, delete the oldest rather than the newest.
 	 */
 	int deleteOldestMessages;
+	/*
+	 * Restore messages from persistence on create - or clear it.
+	 */
+	int restoreMessages;
 } MQTTAsync_createOptions;
 
-#define MQTTAsync_createOptions_initializer  { {'M', 'Q', 'C', 'O'}, 2, 0, 100, MQTTVERSION_DEFAULT, 0, 0 }
+#define MQTTAsync_createOptions_initializer  { {'M', 'Q', 'C', 'O'}, 2, 0, 100, MQTTVERSION_DEFAULT, 0, 0, 1}
 
-#define MQTTAsync_createOptions_initializer5 { {'M', 'Q', 'C', 'O'}, 2, 0, 100, MQTTVERSION_5, 0, 0 }
+#define MQTTAsync_createOptions_initializer5 { {'M', 'Q', 'C', 'O'}, 2, 0, 100, MQTTVERSION_5, 0, 0, 1}
 
 
 LIBMQTT_API int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const char* clientId,

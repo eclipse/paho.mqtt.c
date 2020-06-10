@@ -1501,7 +1501,7 @@ void test8_onConnect(void* context, MQTTAsync_successData* response)
 	opts.context = c;
 
 	rc = MQTTAsync_subscribe(c, test8_topic, 2, &opts);
-	assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 		test_finished = 1;
 }
@@ -1687,6 +1687,7 @@ int test8(struct Options options)
 
 	test8_subscribed = 0;
 	opts.cleansession = 1;
+	opts.context = c;
 
 	rc = MQTTAsync_connect(c, &opts);
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -1701,6 +1702,7 @@ int test8(struct Options options)
 #endif
 
 	test_finished = 0;
+	dopts.context = c;
 	rc = MQTTAsync_disconnect(c, &dopts);
 	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 

@@ -1997,6 +1997,7 @@ int test8(struct Options options)
 	test8_subscribed = 0;
 	opts.connectProperties = NULL;
 	opts.cleanstart = 1;
+	opts.context = c;
 
 	rc = MQTTAsync_connect(c, &opts);
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -2007,6 +2008,7 @@ int test8(struct Options options)
 		MySleep(100);
 
 	test_finished = 0;
+	dopts.context = c;
 	rc = MQTTAsync_disconnect(c, &dopts);
 	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 

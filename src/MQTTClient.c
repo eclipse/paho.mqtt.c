@@ -840,7 +840,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 		}
 		else
 		{
-			if (m->c->messageQueue->count > 0)
+			if (m->c->messageQueue->count > 0 && m->ma)
 			{
 				qEntry* qe = (qEntry*)(m->c->messageQueue->first->content);
 				int topicLen = qe->topicLen;

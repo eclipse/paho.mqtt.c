@@ -2497,7 +2497,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 		}
 		else
 		{
-			if (m->c->messageQueue->count > 0)
+			if (m->c->messageQueue->count > 0 && m->ma)
 			{
 				qEntry* qe = (qEntry*)(m->c->messageQueue->first->content);
 				int topicLen = qe->topicLen;
@@ -2505,12 +2505,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 				if (strlen(qe->topicName) == topicLen)
 					topicLen = 0;
 
-				if (m->ma)
-					rc = MQTTAsync_deliverMessage(m, qe->topicName, topicLen, qe->msg);
-				else
-					rc = 1;
-
-				if (rc)
+				if (MQTTAsync_deliverMessage(m, qe->topicName, topicLen, qe->msg))
 				{
 #if !defined(NO_PERSISTENCE)
 					if (m->c->persistence)
@@ -3066,6 +3061,14 @@ static int MQTTAsync_freeSession(Clients* client)
 }*/
 
 
+/*
+* Deliver a message to the messageArrived callback
+* @param m a client structure
+* @param topicName the name of the topic on which the message is being delivered
+* @param topicLen the length of the topic name string
+* @param mm the message to be delivered
+* @return boolean 1 means message has been delivered, 0 that it has not
+*/
 static int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, size_t topicLen, MQTTAsync_message* mm)
 {
 	int rc;

@@ -543,7 +543,10 @@ static void MQTTAsync_lock_mutex(mutex_type amutex)
 {
 	int rc = Thread_lock_mutex(amutex);
 	if (rc != 0)
+	{
 		Log(LOG_ERROR, 0, "Error %s locking mutex", strerror(rc));
+		StackTrace_printStack(stdout);
+	}
 }
 
 
@@ -3173,6 +3176,8 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	MQTTAsyncs* m = handle;
 	int rc = MQTTASYNC_SUCCESS;
 	MQTTAsync_queuedCommand* conn;
+	thread_id_type thread_id = 0;
+	int locked = 0;
 
 	FUNC_ENTRY;
 	if (options == NULL)
@@ -3267,20 +3272,26 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	m->connectTimeout = options->connectTimeout;
 
 	tostop = 0;
-	if (sendThread_state != STARTING && sendThread_state != RUNNING)
+
+	/* don't lock async mutex if we are being called from a callback */
+	thread_id = Thread_getid();
+	if (thread_id != sendThread_id && thread_id != receiveThread_id)
 	{
 		MQTTAsync_lock_mutex(mqttasync_mutex);
+		locked = 1;
+	}
+	if (sendThread_state != STARTING && sendThread_state != RUNNING)
+	{
 		sendThread_state = STARTING;
 		Thread_start(MQTTAsync_sendThread, NULL);
-		MQTTAsync_unlock_mutex(mqttasync_mutex);
 	}
 	if (receiveThread_state != STARTING && receiveThread_state != RUNNING)
 	{
-		MQTTAsync_lock_mutex(mqttasync_mutex);
 		receiveThread_state = STARTING;
 		Thread_start(MQTTAsync_receiveThread, handle);
-		MQTTAsync_unlock_mutex(mqttasync_mutex);
 	}
+	if (locked)
+		MQTTAsync_unlock_mutex(mqttasync_mutex);
 
 	m->c->keepAliveInterval = options->keepAliveInterval;
 	setRetryLoopInterval(options->keepAliveInterval);

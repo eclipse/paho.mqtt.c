@@ -169,8 +169,7 @@ static void WebSocket_rewindData( void );
 static void WebSocket_pong(
 	networkHandles *net, char *app_data, size_t app_data_len);
 
-static int WebSocket_receiveFrame(networkHandles *net,
-	size_t bytes, size_t *actual_len );
+static int WebSocket_receiveFrame(networkHandles *net, size_t *actual_len);
 
 
 /**
@@ -590,7 +589,7 @@ int WebSocket_getch(networkHandles *net, char* c)
 		if ( !frame  || frame->len == frame->pos )
 		{
 			size_t actual_len = 0u;
-			rc =  WebSocket_receiveFrame( net, 1u, &actual_len );
+			rc =  WebSocket_receiveFrame( net, &actual_len );
 			if ( rc != TCPSOCKET_COMPLETE )
 				goto exit;
 
@@ -692,7 +691,7 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 		if ( !frame )
 		{
 			const int rc =
-				WebSocket_receiveFrame( net, bytes, actual_len );
+				WebSocket_receiveFrame( net, actual_len );
 
 			if ( rc == TCPSOCKET_COMPLETE && in_frames && in_frames->first)
 				frame = in_frames->first->content;
@@ -705,7 +704,7 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 
 
 			while (*actual_len < bytes) {
-				const int rc = WebSocket_receiveFrame(net, bytes, actual_len);
+				const int rc = WebSocket_receiveFrame(net, actual_len);
 
 				if (rc != TCPSOCKET_COMPLETE) {
 					goto exit;
@@ -969,14 +968,13 @@ int WebSocket_putdatas(networkHandles* net, char** buf0, size_t* buf0len,
  * SocketBuffer mechanism.
  *
  * @param[in]      net                 network connection
- * @param[in]      bytes               amount of data to receive
  * @param[out]     actual_len          amount of data actually read
  *
  * @retval TCPSOCKET_COMPLETE          packet received
  * @retval TCPSOCKET_INTERRUPTED       incomplete packet received
  * @retval SOCKET_ERROR                an error was encountered
  */
-int WebSocket_receiveFrame(networkHandles *net, size_t bytes, size_t *actual_len)
+int WebSocket_receiveFrame(networkHandles *net, size_t *actual_len)
 {
 	struct ws_frame *res = NULL;
 	int rc = TCPSOCKET_COMPLETE;

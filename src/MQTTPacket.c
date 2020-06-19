@@ -112,6 +112,8 @@ void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
 	FUNC_ENTRY;
 	*error = SOCKET_ERROR;  /* indicate whether an error occurred, or not */
 
+	const size_t headerWsFramePos = WebSocket_framePos();
+
 	/* read the packet data from the socket */
 	*error = WebSocket_getch(net, &header.byte);
 	if (*error != TCPSOCKET_COMPLETE)   /* first byte is the header byte */
@@ -123,13 +125,13 @@ void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
 
 	/* now read the rest, the variable header and payload */
 	data = WebSocket_getdata(net, remaining_length, &actual_len);
-	if (data == NULL)
+	if (remaining_length && data == NULL)
 	{
 		*error = SOCKET_ERROR;
 		goto exit; /* socket error */
 	}
 
-	if (actual_len != remaining_length)
+	if (actual_len < remaining_length)
 		*error = TCPSOCKET_INTERRUPTED;
 	else
 	{
@@ -168,6 +170,9 @@ void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
 	if (pack)
 		net->lastReceived = MQTTTime_now();
 exit:
+	if (*error == TCPSOCKET_INTERRUPTED)
+		WebSocket_framePosSeekTo(headerWsFramePos);
+
 	FUNC_EXIT_RC(*error);
 	return pack;
 }

@@ -620,6 +620,28 @@ exit:
 	return rc;
 }
 
+size_t WebSocket_framePos()
+{
+	if ( in_frames && in_frames->first )
+	{
+		struct ws_frame *frame = in_frames->first->content;
+		return frame->pos;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+void WebSocket_framePosSeekTo(size_t pos)
+{
+	if ( in_frames && in_frames->first )
+	{
+		struct ws_frame *frame = in_frames->first->content;
+		frame->pos = pos;
+	}
+}
+
 /**
  * @brief receives data from a socket.
  * It should receive all data from the socket that is immediately available.

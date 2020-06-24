@@ -543,10 +543,7 @@ static void MQTTAsync_lock_mutex(mutex_type amutex)
 {
 	int rc = Thread_lock_mutex(amutex);
 	if (rc != 0)
-	{
 		Log(LOG_ERROR, 0, "Error %s locking mutex", strerror(rc));
-		StackTrace_printStack(stdout);
-	}
 }
 
 

@@ -49,7 +49,10 @@
 #define PERSISTENCE_QUEUE_KEY "q-"
 /** Stem of the key for an MQTT V5 incoming message queue */
 #define PERSISTENCE_V5_QUEUE_KEY "q5-"
-#define PERSISTENCE_MAX_KEY_LENGTH 8
+/** Maximum length of a stem for a persistence key */
+#define PERSISTENCE_MAX_STEM_LENGTH 3
+/** Maximum allowed length of a persistence key */
+#define PERSISTENCE_MAX_KEY_LENGTH 9
 
 int MQTTPersistence_create(MQTTClient_persistence** per, int type, void* pcontext);
 int MQTTPersistence_initialize(Clients* c, const char* serverURI);

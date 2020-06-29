@@ -169,8 +169,7 @@ static void WebSocket_rewindData( void );
 static void WebSocket_pong(
 	networkHandles *net, char *app_data, size_t app_data_len);
 
-static int WebSocket_receiveFrame(networkHandles *net,
-	size_t bytes, size_t *actual_len );
+static int WebSocket_receiveFrame(networkHandles *net, size_t *actual_len);
 
 
 /**
@@ -587,10 +586,10 @@ int WebSocket_getch(networkHandles *net, char* c)
 		if ( in_frames && in_frames->first )
 			frame = in_frames->first->content;
 
-		if ( !frame )
+		if ( !frame  || frame->len == frame->pos )
 		{
 			size_t actual_len = 0u;
-			rc =  WebSocket_receiveFrame( net, 1u, &actual_len );
+			rc =  WebSocket_receiveFrame( net, &actual_len );
 			if ( rc != TCPSOCKET_COMPLETE )
 				goto exit;
 
@@ -618,6 +617,28 @@ int WebSocket_getch(networkHandles *net, char* c)
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
+}
+
+size_t WebSocket_framePos()
+{
+	if ( in_frames && in_frames->first )
+	{
+		struct ws_frame *frame = in_frames->first->content;
+		return frame->pos;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+void WebSocket_framePosSeekTo(size_t pos)
+{
+	if ( in_frames && in_frames->first )
+	{
+		struct ws_frame *frame = in_frames->first->content;
+		frame->pos = pos;
+	}
 }
 
 /**
@@ -649,7 +670,7 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 				frame = in_frames->first->content;
 
 			/* return the data from the next frame, if we have one */
-			if ( frame )
+			if ( frame  && frame->pos == frame->len )
 			{
 				rv = (char *)frame +
 					sizeof(struct ws_frame) + frame->pos;
@@ -670,7 +691,7 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 		if ( !frame )
 		{
 			const int rc =
-				WebSocket_receiveFrame( net, bytes, actual_len );
+				WebSocket_receiveFrame( net, actual_len );
 
 			if ( rc == TCPSOCKET_COMPLETE && in_frames && in_frames->first)
 				frame = in_frames->first->content;
@@ -683,11 +704,10 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 
 
 			while (*actual_len < bytes) {
-				const int rc = WebSocket_receiveFrame(net, bytes, actual_len);
+				const int rc = WebSocket_receiveFrame(net, actual_len);
 
 				if (rc != TCPSOCKET_COMPLETE) {
-					frame->pos = 0;
-					break;
+					goto exit;
 				}
 
 				/* refresh pointers */
@@ -697,8 +717,11 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 
 			} /* end while */
 
-
-			if (*actual_len == bytes && in_frames)
+			if (*actual_len > bytes)
+			{
+				frame->pos += bytes;
+			}
+			else if (*actual_len == bytes && in_frames)
 			{
 				if ( last_frame )
 					free( last_frame );
@@ -945,14 +968,13 @@ int WebSocket_putdatas(networkHandles* net, char** buf0, size_t* buf0len,
  * SocketBuffer mechanism.
  *
  * @param[in]      net                 network connection
- * @param[in]      bytes               amount of data to receive
  * @param[out]     actual_len          amount of data actually read
  *
  * @retval TCPSOCKET_COMPLETE          packet received
  * @retval TCPSOCKET_INTERRUPTED       incomplete packet received
  * @retval SOCKET_ERROR                an error was encountered
  */
-int WebSocket_receiveFrame(networkHandles *net, size_t bytes, size_t *actual_len)
+int WebSocket_receiveFrame(networkHandles *net, size_t *actual_len)
 {
 	struct ws_frame *res = NULL;
 	int rc = TCPSOCKET_COMPLETE;

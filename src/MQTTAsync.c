@@ -2968,7 +2968,8 @@ static void MQTTAsync_closeOnly(Clients* client, enum MQTTReasonCodes reasonCode
 		Thread_lock_mutex(socket_mutex);
 		WebSocket_close(&client->net, WebSocket_CLOSE_NORMAL, NULL);
 #if defined(OPENSSL)
-		SSL_SESSION_free(client->session);
+		SSL_SESSION_free(client->session); /* is a no-op if session is NULL */
+		client->session = NULL; /* show the session has been freed */
 		SSLSocket_close(&client->net);
 #endif
 		Socket_close(client->net.socket);

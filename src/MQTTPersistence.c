@@ -641,6 +641,9 @@ int MQTTPersistence_persistQueueEntry(Clients* aclient, MQTTPersistence_qEntry* 
 	bufs[bufindex] = &qe->topicLen;
 	lens[bufindex++] = sizeof(qe->topicLen);
 
+	if (++aclient->qentry_seqno == PERSISTENCE_SEQNO_LIMIT)
+		aclient->qentry_seqno = 0;
+
 	if (aclient->MQTTVersion >= MQTTVERSION_5)  		/* persist properties */
 	{
 		MQTTProperties no_props = MQTTProperties_initializer;
@@ -662,10 +665,10 @@ int MQTTPersistence_persistQueueEntry(Clients* aclient, MQTTPersistence_qEntry* 
 		rc = MQTTProperties_write(&ptr, props);
 		lens[bufindex++] = temp_len;
 
-		sprintf(key, "%s%u", PERSISTENCE_V5_QUEUE_KEY, ++aclient->qentry_seqno);
+		sprintf(key, "%s%u", PERSISTENCE_V5_QUEUE_KEY, aclient->qentry_seqno);
 	}
 	else
-		sprintf(key, "%s%u", PERSISTENCE_QUEUE_KEY, ++aclient->qentry_seqno);
+		sprintf(key, "%s%u", PERSISTENCE_QUEUE_KEY, aclient->qentry_seqno);
 
 	qe->seqno = aclient->qentry_seqno;
 

@@ -53,6 +53,8 @@
 #define PERSISTENCE_MAX_STEM_LENGTH 3
 /** Maximum allowed length of a persistence key */
 #define PERSISTENCE_MAX_KEY_LENGTH 9
+/** Maximum size of an integer sequence number appended to a persistence key */
+#define PERSISTENCE_SEQNO_LIMIT 1000000 /*10^(PERSISTENCE_MAX_KEY_LENGTH - PERSISTENCE_MAX_STEM_LENGTH)*/
 
 int MQTTPersistence_create(MQTTClient_persistence** per, int type, void* pcontext);
 int MQTTPersistence_initialize(Clients* c, const char* serverURI);

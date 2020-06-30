@@ -779,20 +779,6 @@ static int MQTTAsync_unpersistCommand(MQTTAsync_queuedCommand* qcmd)
 }
 
 
-/*
- * Increment the command sequence number.  Don't exceed the maximum value allowed
- * by the value PERSISTENCE_MAX_KEY_LENGTH minus the max prefix string length
- */
-static unsigned int MQTTAsync_nextCommandSeqno(unsigned int seqno)
-{
-	const int limit = 1000000;  /*10^(PERSISTENCE_MAX_KEY_LENGTH - PERSISTENCE_MAX_STEM_LENGTH)*/
-
-	if (++seqno == limit)
-		seqno = 0;
-	return seqno;
-}
-
-
 static int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 {
 	int rc = 0;
@@ -916,7 +902,15 @@ static int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 			process = 0;
 			break;
 	}
-	aclient->command_seqno = MQTTAsync_nextCommandSeqno(aclient->command_seqno);
+
+	/*
+	 * Increment the command sequence number.  Don't exceed the maximum value allowed
+	 * by the value PERSISTENCE_MAX_KEY_LENGTH minus the max prefix string length
+	 */
+	if (++aclient->command_seqno == PERSISTENCE_SEQNO_LIMIT)
+		aclient->command_seqno = 0;
+
+
 	if (aclient->c->MQTTVersion >= MQTTVERSION_5 && process) 	/* persist properties */
 	{
 		int temp_len = 0;

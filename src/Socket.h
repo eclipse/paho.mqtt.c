@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -129,7 +129,7 @@ void Socket_outInitialize(void);
 void Socket_outTerminate(void);
 int Socket_getReadySocket(int more_work, struct timeval *tp, mutex_type mutex);
 int Socket_getch(int socket, char* c);
-char *Socket_getdata(int socket, size_t bytes, size_t* actual_len);
+char *Socket_getdata(int socket, size_t bytes, size_t* actual_len, int* rc);
 int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens, int* frees);
 void Socket_close(int socket);
 #if defined(__GNUC__) && defined(__linux__)

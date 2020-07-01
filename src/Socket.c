@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -367,9 +367,8 @@ exit:
  *  @param actual_len the actual number of bytes read
  *  @return completion code
  */
-char *Socket_getdata(int socket, size_t bytes, size_t* actual_len)
+char *Socket_getdata(int socket, size_t bytes, size_t* actual_len, int *rc)
 {
-	int rc;
 	char* buf;
 
 	FUNC_ENTRY;
@@ -381,22 +380,22 @@ char *Socket_getdata(int socket, size_t bytes, size_t* actual_len)
 
 	buf = SocketBuffer_getQueuedData(socket, bytes, actual_len);
 
-	if ((rc = recv(socket, buf + (*actual_len), (int)(bytes - (*actual_len)), 0)) == SOCKET_ERROR)
+	if ((*rc = recv(socket, buf + (*actual_len), (int)(bytes - (*actual_len)), 0)) == SOCKET_ERROR)
 	{
-		rc = Socket_error("recv - getdata", socket);
-		if (rc != EAGAIN && rc != EWOULDBLOCK)
+		*rc = Socket_error("recv - getdata", socket);
+		if (*rc != EAGAIN && *rc != EWOULDBLOCK)
 		{
 			buf = NULL;
 			goto exit;
 		}
 	}
-	else if (rc == 0) /* rc 0 means the other end closed the socket, albeit "gracefully" */
+	else if (*rc == 0) /* rc 0 means the other end closed the socket, albeit "gracefully" */
 	{
 		buf = NULL;
 		goto exit;
 	}
 	else
-		*actual_len += rc;
+		*actual_len += *rc;
 
 	if (*actual_len == bytes)
 		SocketBuffer_complete(socket);

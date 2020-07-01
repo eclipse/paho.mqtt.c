@@ -162,7 +162,7 @@ static const char *WebSocket_strcasefind(
 	const char *buf, const char *str, size_t len);
 
 static char *WebSocket_getRawSocketData(
-	networkHandles *net, size_t bytes, size_t* actual_len);
+	networkHandles *net, size_t bytes, size_t* actual_len, int* rc);
 
 static void WebSocket_rewindData( void );
 
@@ -589,7 +589,7 @@ int WebSocket_getch(networkHandles *net, char* c)
 		if ( !frame  || frame->len == frame->pos )
 		{
 			size_t actual_len = 0u;
-			rc =  WebSocket_receiveFrame( net, &actual_len );
+			rc = WebSocket_receiveFrame( net, &actual_len);
 			if ( rc != TCPSOCKET_COMPLETE )
 				goto exit;
 
@@ -657,6 +657,7 @@ void WebSocket_framePosSeekTo(size_t pos)
 char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 {
 	char *rv = NULL;
+	int rc;
 
 	FUNC_ENTRY;
 	if ( net->websocket )
@@ -734,7 +735,7 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 		rv = SSLSocket_getdata(net->ssl, net->socket, bytes, actual_len);
 #endif
 	else
-		rv = Socket_getdata(net->socket, bytes, actual_len);
+		rv = Socket_getdata(net->socket, bytes, actual_len, &rc);
 
 exit:
 	FUNC_EXIT_RC(rv);
@@ -755,7 +756,7 @@ void WebSocket_rewindData( void )
  *
  * @return a buffer containing raw data
  */
-char *WebSocket_getRawSocketData(networkHandles *net, size_t bytes, size_t* actual_len)
+char *WebSocket_getRawSocketData(networkHandles *net, size_t bytes, size_t* actual_len, int* rc)
 {
 	char *rv = NULL;
 
@@ -786,7 +787,13 @@ char *WebSocket_getRawSocketData(networkHandles *net, size_t bytes, size_t* actu
 		rv = SSLSocket_getdata(net->ssl, net->socket, bytes, actual_len);
 	else
 #endif
-		rv = Socket_getdata(net->socket, bytes, actual_len);
+		rv = Socket_getdata(net->socket, bytes, actual_len, rc);
+
+	if (*rc == 0)
+	{
+		*rc = SOCKET_ERROR;
+		goto exit;
+	}
 
 	// clear buffer
 	if (bytes == 0)
@@ -1004,8 +1011,14 @@ int WebSocket_receiveFrame(networkHandles *net, size_t *actual_len)
 				size_t cur_len = 0u;
 				uint8_t mask[4] = { 0u, 0u, 0u, 0u };
 				size_t payload_len;
+				int rcs; /* socket return code */
 
-				b = WebSocket_getRawSocketData(net, 2u, &len);
+				b = WebSocket_getRawSocketData(net, 2u, &len, &rcs);
+				if (rcs == SOCKET_ERROR)
+				{
+					rc = rcs;
+					goto exit;
+				}
 				if ( !b )
 				{
 					rc = TCPSOCKET_INTERRUPTED;
@@ -1043,7 +1056,12 @@ int WebSocket_receiveFrame(networkHandles *net, size_t *actual_len)
 				{
 					/* If 126, the following 2 bytes interpreted as a
 					      16-bit unsigned integer are the payload length. */
-					b = WebSocket_getRawSocketData(net, 2u, &len);
+					b = WebSocket_getRawSocketData(net, 2u, &len, &rcs);
+					if (rcs == SOCKET_ERROR)
+					{
+						rc = rcs;
+						goto exit;
+					}
 					if ( !b )
 					{
 						rc = SOCKET_ERROR;
@@ -1061,7 +1079,12 @@ int WebSocket_receiveFrame(networkHandles *net, size_t *actual_len)
 				{
 					 /* If 127, the following 8 bytes interpreted as a 64-bit unsigned integer (the
 					      most significant bit MUST be 0) are the payload length */
-					b = WebSocket_getRawSocketData(net, 8u, &len);
+					b = WebSocket_getRawSocketData(net, 8u, &len, &rcs);
+					if (rcs == SOCKET_ERROR)
+					{
+						rc = rcs;
+						goto exit;
+					}
 					if ( !b )
 					{
 						rc = SOCKET_ERROR;
@@ -1079,13 +1102,18 @@ int WebSocket_receiveFrame(networkHandles *net, size_t *actual_len)
 				if ( has_mask )
 				{
 					uint8_t mask[4];
-					b = WebSocket_getRawSocketData(net, 4u, &len);
+					b = WebSocket_getRawSocketData(net, 4u, &len, &rcs);
+					if (rcs == SOCKET_ERROR)
+					{
+						rc = rcs;
+						goto exit;
+					}
 					if ( !b )
 					{
 						rc = SOCKET_ERROR;
 						goto exit;
-					} 
-					else if (len < 4u )
+					}
+					if (len < 4u )
 					{
 						rc = TCPSOCKET_INTERRUPTED;
 						goto exit;
@@ -1094,14 +1122,18 @@ int WebSocket_receiveFrame(networkHandles *net, size_t *actual_len)
 				}
 
 				/* use the socket buffer to read in the whole websocket frame */
-				b = WebSocket_getRawSocketData(net, payload_len, &len);
-
-				if ( !b )
+				b = WebSocket_getRawSocketData(net, payload_len, &len, &rcs);
+				if (rcs == SOCKET_ERROR)
+				{
+					rc = rcs;
+					goto exit;
+				}
+				if (!b)
 				{
 					rc = SOCKET_ERROR;
 					goto exit;
 				} 
-				else if (len < payload_len )
+				if (len < payload_len )
 				{
 					rc = TCPSOCKET_INTERRUPTED;
 					goto exit;
@@ -1139,7 +1171,12 @@ int WebSocket_receiveFrame(networkHandles *net, size_t *actual_len)
 				memcpy( (unsigned char *)res + sizeof(struct ws_frame) + cur_len, b, len );
 				res->len = cur_len + len;
 
-				WebSocket_getRawSocketData(net, 0u, &len);
+				WebSocket_getRawSocketData(net, 0u, &len, &rcs);
+				if (rcs == SOCKET_ERROR)
+				{
+					rc = rcs;
+					goto exit;
+				}
 			}
 
 			if ( opcode == WebSocket_OP_PING || opcode == WebSocket_OP_PONG )
@@ -1283,7 +1320,9 @@ int WebSocket_upgrade( networkHandles *net )
 		Base64_encode( ws_key, sizeof(ws_key), sha_hash, SHA1_DIGEST_LENGTH );
 
 		rc = TCPSOCKET_INTERRUPTED;
-		read_buf = WebSocket_getRawSocketData( net, 12u, &rcv );
+		read_buf = WebSocket_getRawSocketData( net, 12u, &rcv, &rc);
+		if (rc == SOCKET_ERROR)
+			goto exit;
 
 		if ((read_buf == NULL) || rcv < 12u) {
 			Log(TRACE_PROTOCOL, 1, "WebSocket upgrade read not complete %lu", rcv );
@@ -1304,7 +1343,9 @@ int WebSocket_upgrade( networkHandles *net )
 		{
 			const char *p;
 
-			read_buf = WebSocket_getRawSocketData(net, 1024u, &rcv );
+			read_buf = WebSocket_getRawSocketData(net, 1024u, &rcv, &rc);
+			if (rc == SOCKET_ERROR)
+				goto exit;
 
 			/* Did we read the whole response? */
 			if (read_buf && rcv > 4 && memcmp(&read_buf[rcv-4], "\r\n\r\n", 4) != 0)
@@ -1375,7 +1416,7 @@ int WebSocket_upgrade( networkHandles *net )
 			}
 
 			/* indicate that we done with the packet */
-			WebSocket_getRawSocketData( net, 0u, &rcv );
+			WebSocket_getRawSocketData( net, 0u, &rcv, &rc);
 		}
 	}
 
@@ -1462,7 +1503,7 @@ int WebSocket_proxy_connect( networkHandles *net, int ssl, const char *hostname)
 	timeout += (time_t)10;
 
 	while(1) {
-		buf = Socket_getdata(net->socket, (size_t)12, &actual_len);
+		buf = Socket_getdata(net->socket, (size_t)12, &actual_len, &rc);
 		if(actual_len) {
 			if ( (strncmp( buf, "HTTP/1.0 200", 12 ) != 0) &&  (strncmp( buf, "HTTP/1.1 200", 12 ) != 0) )
 				rc = SOCKET_ERROR;
@@ -1482,10 +1523,15 @@ int WebSocket_proxy_connect( networkHandles *net, int ssl, const char *hostname)
 		}
 	}
 
-	/* flash the SocketBuffer */
+	/* flush the SocketBuffer */
 	actual_len = 1;
-	while(actual_len)
-		buf = Socket_getdata(net->socket, (size_t)1, &actual_len);
+	while (actual_len)
+	{
+		int rc1;
+
+		buf = Socket_getdata(net->socket, (size_t)1, &actual_len, &rc1);
+	}
+
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;

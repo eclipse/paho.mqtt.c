@@ -1008,7 +1008,7 @@ void test6_onConnectFailure(void* context, MQTTAsync_failureData* response)
 	if (response)
 		MyLog(LOGA_INFO, "Connack rc is %d", response->code);
 
-	assert("Should fail to connect", cinfo.should_fail, "should_fail was %d", cinfo.should_fail);
+	assert("Should fail to connect", cinfo.should_fail, "should_fail was %d\n", cinfo.should_fail);
 
 	test_finished = 1;
 }
@@ -1020,8 +1020,17 @@ void test6_onConnect(void* context, MQTTAsync_successData* response)
 
 	MyLog(LOGA_DEBUG, "In connect success callback, context %p", context);
 
-	assert("Should connect correctly", !cinfo.should_fail, "should_fail was %d", cinfo.should_fail);
+	assert("Should connect correctly", !cinfo.should_fail, "should_fail was %d\n", cinfo.should_fail);
 
+	test_finished = 1;
+}
+
+
+void test6_onDisconnect(void* context, MQTTAsync_successData* response)
+{
+	test6_client_info cinfo = *(test6_client_info*)context;
+
+	MyLog(LOGA_DEBUG, "In onDisconnect callback %p", cinfo.c);
 	test_finished = 1;
 }
 
@@ -1037,6 +1046,7 @@ int test6(struct Options options)
 	test6_client_info cinfo;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
+	MQTTAsync_disconnectOptions dopts = MQTTAsync_disconnectOptions_initializer;
 	int rc = 0;
 	char* test_topic = "C client test1";
 	char* uris[2] = {options.connection, options.connection};
@@ -1080,19 +1090,7 @@ int test6(struct Options options)
 		#endif
 
 	test_finished = 0;
-	cinfo.should_fail = 0; /* should connect */
-	rc = MQTTAsync_create(&cinfo.c, "tcp://rubbish:1883", "async ha connection",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
-	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
-	if (rc != MQTTASYNC_SUCCESS)
-	{
-		MQTTAsync_destroy(&cinfo.c);
-		goto exit;
-	}
-
-	rc = MQTTAsync_setCallbacks(cinfo.c, cinfo.c, NULL, test1_messageArrived, NULL);
-	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
-
+	cinfo.should_fail = 0; /* should connect through the serverURIs in connect options*/
 	opts.onSuccess = test6_onConnect;
 	opts.onFailure = test6_onConnectFailure;
 	opts.context = &cinfo;
@@ -1105,6 +1103,19 @@ int test6(struct Options options)
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 		goto exit;
+
+	while (!test_finished)
+		#if defined(_WIN32)
+			Sleep(100);
+		#else
+			usleep(10000L);
+		#endif
+
+	test_finished = 0;
+	dopts.timeout = 0;
+	dopts.onSuccess = test6_onDisconnect;
+	dopts.context = &cinfo;
+	MQTTAsync_disconnect(cinfo.c, &dopts);
 
 	while (!test_finished)
 		#if defined(_WIN32)

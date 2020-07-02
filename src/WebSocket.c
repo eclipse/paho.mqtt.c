@@ -732,7 +732,7 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t* actual_len)
 	}
 #if defined(OPENSSL)
 	else if ( net->ssl )
-		rv = SSLSocket_getdata(net->ssl, net->socket, bytes, actual_len);
+		rv = SSLSocket_getdata(net->ssl, net->socket, bytes, actual_len, &rc);
 #endif
 	else
 		rv = Socket_getdata(net->socket, bytes, actual_len, &rc);
@@ -784,7 +784,7 @@ char *WebSocket_getRawSocketData(networkHandles *net, size_t bytes, size_t* actu
 	// not enough data in the buffer, get data from socket
 #if defined(OPENSSL)
 	if ( net->ssl )
-		rv = SSLSocket_getdata(net->ssl, net->socket, bytes, actual_len);
+		rv = SSLSocket_getdata(net->ssl, net->socket, bytes, actual_len, rc);
 	else
 #endif
 		rv = Socket_getdata(net->socket, bytes, actual_len, rc);

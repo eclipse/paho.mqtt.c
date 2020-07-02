@@ -851,9 +851,8 @@ exit:
  *  @param actual_len the actual number of bytes read
  *  @return completion code
  */
-char *SSLSocket_getdata(SSL* ssl, int socket, size_t bytes, size_t* actual_len)
+char *SSLSocket_getdata(SSL* ssl, int socket, size_t bytes, size_t* actual_len, int* rc)
 {
-	int rc;
 	char* buf;
 
 	FUNC_ENTRY;
@@ -866,22 +865,22 @@ char *SSLSocket_getdata(SSL* ssl, int socket, size_t bytes, size_t* actual_len)
 	buf = SocketBuffer_getQueuedData(socket, bytes, actual_len);
 
 	ERR_clear_error();
-	if ((rc = SSL_read(ssl, buf + (*actual_len), (int)(bytes - (*actual_len)))) < 0)
+	if ((*rc = SSL_read(ssl, buf + (*actual_len), (int)(bytes - (*actual_len)))) < 0)
 	{
-		rc = SSLSocket_error("SSL_read - getdata", ssl, socket, rc, NULL, NULL);
-		if (rc != SSL_ERROR_WANT_READ && rc != SSL_ERROR_WANT_WRITE)
+		*rc = SSLSocket_error("SSL_read - getdata", ssl, socket, *rc, NULL, NULL);
+		if (*rc != SSL_ERROR_WANT_READ && *rc != SSL_ERROR_WANT_WRITE)
 		{
 			buf = NULL;
 			goto exit;
 		}
 	}
-	else if (rc == 0) /* rc 0 means the other end closed the socket */
+	else if (*rc == 0) /* rc 0 means the other end closed the socket */
 	{
 		buf = NULL;
 		goto exit;
 	}
 	else
-		*actual_len += rc;
+		*actual_len += *rc;
 
 	if (*actual_len == bytes)
 	{

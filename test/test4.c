@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -1077,7 +1077,6 @@ int test6(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Connecting");
 	rc = MQTTAsync_connect(cinfo.c, &opts);
-	rc = 0;
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 		goto exit;
@@ -1099,7 +1098,6 @@ int test6(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Connecting");
 	rc = MQTTAsync_connect(cinfo.c, &opts);
-	rc = 0;
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 		goto exit;

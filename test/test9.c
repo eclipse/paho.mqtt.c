@@ -760,6 +760,7 @@ int test2(struct Options options)
 	opts.cleansession = 0;
 	opts.serverURIs = URIs;
 	opts.serverURIcount = 2;
+	opts.MQTTVersion = MQTTVERSION_3_1_1;
 
 	MyLog(LOGA_DEBUG, "Connecting client c");
 	rc = MQTTAsync_connect(c, &opts);

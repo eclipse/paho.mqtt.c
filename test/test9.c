@@ -741,9 +741,9 @@ int test2(struct Options options)
 
 	/* wait until d is ready: connected and subscribed */
 	count = 0;
-	while (!test2dReady && ++count < 10000)
+	while (!test2dReady && ++count < 300)
 		MySleep(100);
-	assert("Count should be less than 10000", count < 10000, "count was %d", count); /* wrong */
+	assert("Count should be less than 300", count < 300, "count was %d", count); /* wrong */
 
 	rc = MQTTAsync_setConnected(c, c, test2cConnected);
 	assert("Good rc from setConnectedCallback", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -771,11 +771,15 @@ int test2(struct Options options)
 	}
 
 	/* wait for will message */
-	while (!test2_will_message_received && ++count < 10000)
+	count = 0;
+	while (!test2_will_message_received && ++count < 300)
 		MySleep(100);
+	assert("Count should be less than 300", count < 300, "count was %d", count); /* wrong */
 	/* ensure not connected */
-	while (MQTTAsync_isConnected(c) && ++count < 10000)
+	count = 0;
+	while (MQTTAsync_isConnected(c) && ++count < 300)
 		MySleep(100);
+	assert("Count should be less than 300", count < 300, "count was %d", count); /* wrong */
 
 	MyLog(LOGA_DEBUG, "Now we can send some messages to be buffered");
 
@@ -802,12 +806,16 @@ int test2(struct Options options)
  	assert("Good rc from reconnect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
 
 	/* wait for client to be reconnected */
-	while (!test2c_connected && ++count < 10000)
+ 	count = 0;
+	while (!test2c_connected && ++count < 300)
 		MySleep(100);
+	assert("Count should be less than 300", count < 300, "count was %d", count); /* wrong */
 
 	/* wait for success or failure callback */
-	while (test2_messages_received < 3 && ++count < 10000)
+	count = 0;
+	while (test2_messages_received < 3 && ++count < 300)
 		MySleep(100);
+	assert("Count should be less than 300", count < 300, "count was %d", count); /* wrong */
 
 	waitForNoPendingTokens(c);
 

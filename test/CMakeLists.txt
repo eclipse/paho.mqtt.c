@@ -1369,7 +1369,7 @@ IF (PAHO_BUILD_STATIC)
     
     ADD_TEST(
         NAME test9-2ws-offline-buffering-send-disconnected-serverURIs-static
-        COMMAND test9-static "--test_no" "2" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+        COMMAND test9-static "--test_no" "2" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY} --verbose
     )
     
     ADD_TEST(

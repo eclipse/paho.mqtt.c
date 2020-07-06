@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -1202,6 +1202,15 @@ void test6_onConnect(void* context, MQTTAsync_successData5* response)
 }
 
 
+void test6_onDisconnect5(void* context, MQTTAsync_successData5* response)
+{
+	test6_client_info cinfo = *(test6_client_info*)context;
+
+	MyLog(LOGA_DEBUG, "In onDisconnect5 callback %p", cinfo.c);
+	test_finished = 1;
+}
+
+
 /********************************************************************
 
 Test6: HA connections
@@ -1217,6 +1226,7 @@ int test6(struct Options options)
 	char* test_topic = "C client test1";
 	char* uris[2] = {options.connection, options.connection};
 	MQTTAsync_createOptions createOpts = MQTTAsync_createOptions_initializer;
+	MQTTAsync_disconnectOptions dopts = MQTTAsync_disconnectOptions_initializer;
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 6 - HA connections");
@@ -1245,7 +1255,6 @@ int test6(struct Options options)
 
 	MyLog(LOGA_DEBUG, "Connecting");
 	rc = MQTTAsync_connect(cinfo.c, &opts);
-	rc = 0;
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 		goto exit;
@@ -1254,22 +1263,7 @@ int test6(struct Options options)
 		MySleep(100);
 
 	test_finished = 0;
-	cinfo.should_fail = 0; /* should connect */
-	rc = MQTTAsync_createWithOptions(&cinfo.c, "tcp://rubbish:1883", "async ha connection",
-			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL, &createOpts);
-	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
-	if (rc != MQTTASYNC_SUCCESS)
-	{
-		MQTTAsync_destroy(&cinfo.c);
-		goto exit;
-	}
-
-	rc = MQTTAsync_setCallbacks(cinfo.c, cinfo.c, NULL, test1_messageArrived, NULL);
-	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
-
-	opts.onSuccess5 = test6_onConnect;
-	opts.onFailure5 = test6_onConnectFailure;
-	opts.context = &cinfo;
+	cinfo.should_fail = 0; /* should connect through the serverURIs in connect options*/
 	opts.serverURIs = uris;
 	opts.serverURIcount = 2;
 
@@ -1278,6 +1272,16 @@ int test6(struct Options options)
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	if (rc != MQTTASYNC_SUCCESS)
 		goto exit;
+
+	while (!test_finished)
+		MySleep(100);
+
+	test_finished = 0;
+	dopts.timeout = 0;
+	dopts.onSuccess5 = test6_onDisconnect5;
+	dopts.context = cinfo.c;
+	dopts.timeout = 0;
+	MQTTAsync_disconnect(cinfo.c, &dopts);
 
 	while (!test_finished)
 		MySleep(100);

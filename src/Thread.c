@@ -419,9 +419,16 @@ int Thread_wait_cond(cond_type condvar, int timeout)
 	struct timespec cond_timeout;
 
 	FUNC_ENTRY;
+#if defined(__APPLE__) && __MAC_OS_X_VERSION_MIN_REQUIRED < 101200 /* for older versions of MacOS */
+	struct timeval cur_time;
+    gettimeofday(&cur_time, NULL);
+    cond_timeout.tv_sec = cur_time.tv_sec + timeout;
+    cond_timeout.tv_nsec = cur_time.tv_usec * 1000;
+#else
 	clock_gettime(CLOCK_REALTIME, &cond_timeout);
 
 	cond_timeout.tv_sec += timeout;
+#endif
 	pthread_mutex_lock(&condvar->mutex);
 	rc = pthread_cond_timedwait(&condvar->cond, &condvar->mutex, &cond_timeout);
 	pthread_mutex_unlock(&condvar->mutex);

@@ -51,7 +51,7 @@ extern ClientStates* bstate;
  * @param[out] topic optional topic portion of the address starting with '/'
  * @return the address string
  */
-size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic)
+size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic, int default_port)
 {
 	char* colon_pos = strrchr(uri, ':'); /* reverse find to allow for ':' in IPv6 addresses */
 	char* buf = (char*)uri;
@@ -72,7 +72,7 @@ size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic)
 	else
 	{
 		len = strlen(buf);
-		*port = DEFAULT_PORT;
+		*port = default_port;
 	}
 
 	/* try and find topic portion */
@@ -230,7 +230,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 #else
 	if (websocket && aClient->net.http_proxy) {
 #endif
-		addr_len = MQTTProtocol_addressPort(aClient->net.http_proxy, &port, NULL);
+		addr_len = MQTTProtocol_addressPort(aClient->net.http_proxy, &port, NULL, WS_DEFAULT_PORT);
 #if defined(__GNUC__) && defined(__linux__)
 		if (timeout < 0)
 			rc = -1;
@@ -242,7 +242,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 	}
 #if defined(OPENSSL)
 	else if (ssl && websocket && aClient->net.https_proxy) {
-		addr_len = MQTTProtocol_addressPort(aClient->net.https_proxy, &port, NULL);
+		addr_len = MQTTProtocol_addressPort(aClient->net.https_proxy, &port, NULL, WS_DEFAULT_PORT);
 #if defined(__GNUC__) && defined(__linux__)
 		if (timeout < 0)
 			rc = -1;
@@ -254,7 +254,11 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 	}
 #endif
 	else {
-		addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL);
+#if defined(OPENSSL)
+		addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL, ssl ? SECURE_MQTT_DEFAULT_PORT : MQTT_DEFAULT_PORT);
+#else
+		addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL, MQTT_DEFAULT_PORT);
+#endif
 #if defined(__GNUC__) && defined(__linux__)
 		if (timeout < 0)
 			rc = -1;

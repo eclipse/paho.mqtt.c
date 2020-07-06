@@ -371,7 +371,7 @@ static void WebSocket_unmaskData(uint8_t *mask, size_t idx, int count, char** bu
  *
  * @see WebSocket_upgrade
  */
-int WebSocket_connect( networkHandles *net, const char *uri )
+int WebSocket_connect( networkHandles *net, const char *uri)
 {
 	int rc;
 	char *buf = NULL;
@@ -408,7 +408,7 @@ int WebSocket_connect( networkHandles *net, const char *uri )
 	Base64_encode( net->websocket_key, 25u, uuid, sizeof(uuid_t) );
 #endif /* else if defined(_WIN32) || defined(_WIN64) */
 
-	hostname_len = MQTTProtocol_addressPort(uri, &port, &topic);
+	hostname_len = MQTTProtocol_addressPort(uri, &port, &topic, WS_DEFAULT_PORT);
 
 	/* if no topic, use default */
 	if ( !topic )
@@ -1449,7 +1449,7 @@ int WebSocket_proxy_connect( networkHandles *net, int ssl, const char *hostname)
 	time_t current, timeout;
 	FUNC_ENTRY;
  
-	hostname_len = MQTTProtocol_addressPort(hostname, &port, NULL);
+	hostname_len = MQTTProtocol_addressPort(hostname, &port, NULL, WS_DEFAULT_PORT);
 	for ( i = 0; i < 2; ++i ) {
 #if defined(OPENSSL)
 		if(ssl) {

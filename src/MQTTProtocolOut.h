@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -29,9 +29,11 @@
 #include "MQTTProtocol.h"
 #include "MQTTProtocolClient.h"
 
-#define DEFAULT_PORT 1883
+#define MQTT_DEFAULT_PORT 1883
+#define SECURE_MQTT_DEFAULT_PORT 8883
+#define WS_DEFAULT_PORT 80
 
-size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic);
+size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic, int default_port);
 void MQTTProtocol_reconnect(const char* ip_address, Clients* client);
 #if defined(OPENSSL)
 #if defined(__GNUC__) && defined(__linux__)

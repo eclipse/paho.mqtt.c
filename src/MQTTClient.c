@@ -1218,7 +1218,7 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 #if defined(OPENSSL)
 		if (m->ssl)
 		{
-			int port;
+			int port1;
 			size_t hostname_len;
 			const char *topic;
 			int setSocketForSSLrc = 0;
@@ -1229,7 +1229,7 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 					goto exit;
 			}
 
-			hostname_len = MQTTProtocol_addressPort(serverURI, &port, &topic);
+			hostname_len = MQTTProtocol_addressPort(serverURI, &port1, &topic, MQTT_DEFAULT_PORT);
 			setSocketForSSLrc = SSLSocket_setSocketForSSL(&m->c->net, m->c->sslopts,
 				serverURI, hostname_len);
 

@@ -4069,6 +4069,7 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 {
 	int rc = -1;
 	char* serverURI = m->serverURI;
+	int default_port = MQTT_DEFAULT_PORT;
 
 	FUNC_ENTRY;
 	if (m->serverURIcount > 0)
@@ -4079,12 +4080,21 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 		if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
 			serverURI += strlen(URI_TCP);
 		else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
+		{
 			serverURI += strlen(URI_WS);
+			default_port = WS_DEFAULT_PORT;
+		}
 #if defined(OPENSSL)
 		else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
+		{
 			serverURI += strlen(URI_SSL);
+			default_port = SECURE_MQTT_DEFAULT_PORT;
+		}
 		else if (strncmp(URI_WSS, serverURI, strlen(URI_WSS)) == 0)
+		{
 			serverURI += strlen(URI_WSS);
+			default_port = WS_DEFAULT_PORT;
+		}
 #endif
 	}
 
@@ -4114,7 +4124,7 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 					goto exit;
 			}
 
-			hostname_len = MQTTProtocol_addressPort(serverURI, &port, NULL);
+			hostname_len = MQTTProtocol_addressPort(serverURI, &port, NULL, default_port);
 			setSocketForSSLrc = SSLSocket_setSocketForSSL(&m->c->net, m->c->sslopts,
 					serverURI, hostname_len);
 

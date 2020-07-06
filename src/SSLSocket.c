@@ -762,7 +762,7 @@ int SSLSocket_connect(SSL* ssl, int sock, const char* hostname, int verify, int 
 		size_t hostname_len;
 
 		X509* cert = SSL_get_peer_certificate(ssl);
-		hostname_len = MQTTProtocol_addressPort(hostname, &port, NULL);
+		hostname_len = MQTTProtocol_addressPort(hostname, &port, NULL, MQTT_DEFAULT_PORT);
 
 		rc = X509_check_host(cert, hostname, hostname_len, 0, &peername);
 		if (rc == 1)
@@ -774,11 +774,11 @@ int SSLSocket_connect(SSL* ssl, int sock, const char* hostname, int verify, int 
 		if (peername != NULL)
 			OPENSSL_free(peername);
 
-		// 0 == fail, -1 == SSL internal error, -2 == mailformed input
+		/* 0 == fail, -1 == SSL internal error, -2 == malformed input */
 		if (rc == 0 || rc == -1 || rc == -2)
 		{
 			char* ip_addr = malloc(hostname_len + 1);
-			// cannot use = strndup(hostname, hostname_len); here because of custom Heap
+			/* cannot use = strndup(hostname, hostname_len); here because of custom Heap */
 			if (ip_addr)
 			{
 				strncpy(ip_addr, hostname, hostname_len);

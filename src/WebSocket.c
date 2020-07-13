@@ -1447,8 +1447,8 @@ int WebSocket_proxy_connect( networkHandles *net, int ssl, const char *hostname)
 	char *buf = NULL;
 	size_t hostname_len, actual_len = 0; 
 	time_t current, timeout;
+
 	FUNC_ENTRY;
- 
 	hostname_len = MQTTProtocol_addressPort(hostname, &port, NULL, WS_DEFAULT_PORT);
 	for ( i = 0; i < 2; ++i ) {
 #if defined(OPENSSL)
@@ -1499,6 +1499,7 @@ int WebSocket_proxy_connect( networkHandles *net, int ssl, const char *hostname)
 
 		}  
 	}
+	Log(TRACE_PROTOCOL, -1, "WebSocket_proxy_connect: \"%s\"", buf);
 
 	Socket_putdatas( net->socket, buf, buf_len, 0, NULL, NULL, NULL );
 	free(buf);

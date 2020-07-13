@@ -159,7 +159,6 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 
 	FUNC_ENTRY;
 	aClient->good = 1;
-
 	aClient->net.http_proxy = NULL;
 	aClient->net.http_proxy_auth = NULL;
 	if ((p0 = getenv("http_proxy")))
@@ -192,6 +191,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 		else {
 			aClient->net.http_proxy = strchr(p0, ':') + 3;
 		}
+		Log(TRACE_PROTOCOL, -1, "MQTTProtocol_connect: setting http proxy to %s", aClient->net.http_proxy);
 	}
 #if defined(OPENSSL)
 	aClient->net.https_proxy = NULL;

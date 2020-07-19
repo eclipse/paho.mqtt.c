@@ -181,7 +181,7 @@ int main(int argc, char* argv[])
 		int64_t t = getTime();
 
 		char buf[256];
-		int n = snprintf(buf, sizeof(buf), "%lld", t);
+		int n = snprintf(buf, sizeof(buf), "%lld", (long long) t);
 		printf("%s\n", buf);
 
 		pub_opts.onSuccess = onSend;

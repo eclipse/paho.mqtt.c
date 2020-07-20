@@ -31,6 +31,7 @@
 #include <unistd.h>
 #else
 #include <windows.h>
+#include <Minwinbase.h>
 #endif
 
 #if defined(_WRS_KERNEL)
@@ -39,6 +40,7 @@
 
 // Better not to flood a public broker. Test against localhost.
 #define ADDRESS         "tcp://localhost:1883"
+
 #define CLIENTID        "ExampleClientTimePub"
 #define TOPIC           "data/time"
 #define QOS             1
@@ -124,7 +126,7 @@ int messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_messa
 int64_t getTime(void)
 {
 	#if defined(_WIN32)
-		struct FILETIME ft;
+		FILETIME ft;
 		GetSystemTimeAsFileTime(&ft);
 		return ((((int64_t) ft.dwHighDateTime) << 8) + ft.dwLowDateTime) / 10000;
 	#else
@@ -179,7 +181,7 @@ int main(int argc, char* argv[])
 		int64_t t = getTime();
 
 		char buf[256];
-		int n = snprintf(buf, sizeof(buf), "%ld", t);
+		int n = snprintf(buf, sizeof(buf), "%lld", t);
 		printf("%s\n", buf);
 
 		pub_opts.onSuccess = onSend;

@@ -89,24 +89,17 @@
 
 #include "LinkedList.h"
 
-/*BE
-def FD_SET
+/*
+ * Network write buffers for an MQTT packet
+ */
+typedef struct
 {
-   128 n8 "data"
-}
-
-def SOCKETS
-{
-	FD_SET "rset"
-	FD_SET "rset_saved"
-	n32 dec "maxfdp1"
-	n32 ptr INTList "clientsds"
-	n32 ptr INTItem "cur_clientsds"
-	n32 ptr INTList "connect_pending"
-	n32 ptr INTList "write_pending"
-	FD_SET "pending_wset"
-}
-BE*/
+	int count;         /**> number of buffers/buflens/frees */
+	char** buffers;    /**> array of byte buffers */
+	size_t* buflens;   /**> array of lengths of buffers */
+	int* frees;        /**> array of flags indicating whether each buffer needs to be freed */
+	uint8_t mask[4];   /**> websocket mask used to mask the buffer data, if any */
+} PacketBuffers;
 
 
 /**
@@ -130,7 +123,7 @@ void Socket_outTerminate(void);
 int Socket_getReadySocket(int more_work, struct timeval *tp, mutex_type mutex);
 int Socket_getch(int socket, char* c);
 char *Socket_getdata(int socket, size_t bytes, size_t* actual_len, int* rc);
-int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens, int* frees);
+int Socket_putdatas(int socket, char* buf0, size_t buf0len, PacketBuffers bufs);
 void Socket_close(int socket);
 #if defined(__GNUC__) && defined(__linux__)
 /* able to use GNU's getaddrinfo_a to make timeouts possible */

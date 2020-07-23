@@ -17,7 +17,7 @@
 #if !defined(WEBSOCKET_H)
 #define WEBSOCKET_H
 
-#include "Clients.h"
+#include "MQTTPacket.h"
 
 /**
  * WebSocket op codes
@@ -63,8 +63,7 @@ size_t WebSocket_framePos();
 void WebSocket_framePosSeekTo(size_t);
 
 /* send data out, in websocket format only if required */
-int WebSocket_putdatas(networkHandles* net, char** buf0, size_t* buf0len,
-	int count, char** buffers, size_t* buflens, int* freeData);
+int WebSocket_putdatas(networkHandles* net, char** buf0, size_t* buf0len, PacketBuffers* bufs);
 
 /* releases any resources used by the websocket system */
 void WebSocket_terminate(void);

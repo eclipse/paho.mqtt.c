@@ -22,6 +22,7 @@
 #if !defined(CLIENTS_H)
 #define CLIENTS_H
 
+#include <stdint.h>
 #include "MQTTTime.h"
 #if defined(OPENSSL)
 #if defined(_WIN32) || defined(_WIN64)
@@ -43,6 +44,7 @@ typedef struct
 	char* payload;
 	int payloadlen;
 	int refcount;
+	uint8_t mask[4];
 } Publications;
 
 /**

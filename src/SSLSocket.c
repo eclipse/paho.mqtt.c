@@ -936,7 +936,7 @@ int SSLSocket_close(networkHandles* net)
 
 
 /* No SSL_writev() provided by OpenSSL. Boo. */
-int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens, int* frees)
+int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, PacketBuffers bufs)
 {
 	int rc = 0;
 	int i;
@@ -946,8 +946,8 @@ int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int cou
 
 	FUNC_ENTRY;
 	iovec.iov_len = (ULONG)buf0len;
-	for (i = 0; i < count; i++)
-		iovec.iov_len += (ULONG)buflens[i];
+	for (i = 0; i < bufs.count; i++)
+		iovec.iov_len += (ULONG)bufs.buflens[i];
 
 	ptr = iovec.iov_base = (char *)malloc(iovec.iov_len);
 	if (!ptr)
@@ -957,12 +957,12 @@ int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int cou
 	}
 	memcpy(ptr, buf0, buf0len);
 	ptr += buf0len;
-	for (i = 0; i < count; i++)
+	for (i = 0; i < bufs.count; i++)
 	{
-		if (buffers[i] != NULL && buflens[i] > 0)
+		if (bufs.buffers[i] != NULL && bufs.buflens[i] > 0)
 		{
-			memcpy(ptr, buffers[i], buflens[i]);
-			ptr += buflens[i];
+			memcpy(ptr, bufs.buffers[i], bufs.buflens[i]);
+			ptr += bufs.buflens[i];
 		}
 	}
 
@@ -1004,12 +1004,12 @@ int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, int cou
 	{
 		int i;
 		free(buf0);
-		for (i = 0; i < count; ++i)
+		for (i = 0; i < bufs.count; ++i)
 		{
-		    if (frees[i])
+		    if (bufs.frees[i])
 		    {
-		    	free(buffers[i]);
-		    	buffers[i] = NULL;
+		    	free(bufs.buffers[i]);
+		    	bufs.buffers[i] = NULL;
 		    }
 		}	
 	}

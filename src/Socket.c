@@ -502,7 +502,7 @@ for testing purposes only!
  *  @param buflens an array of corresponding buffer lengths
  *  @return completion code, especially TCPSOCKET_INTERRUPTED
  */
-int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** buffers, size_t* buflens, int* frees)
+int Socket_putdatas(int socket, char* buf0, size_t buf0len, PacketBuffers bufs)
 {
 	unsigned long bytes = 0L;
 	iobuf iovecs[5];
@@ -518,20 +518,20 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 		goto exit;
 	}
 
-	for (i = 0; i < count; i++)
-		total += buflens[i];
+	for (i = 0; i < bufs.count; i++)
+		total += bufs.buflens[i];
 
 	iovecs[0].iov_base = buf0;
 	iovecs[0].iov_len = (ULONG)buf0len;
 	frees1[0] = 1; /* this buffer should be freed by SocketBuffer if the write is interrupted */
-	for (i = 0; i < count; i++)
+	for (i = 0; i < bufs.count; i++)
 	{
-		iovecs[i+1].iov_base = buffers[i];
-		iovecs[i+1].iov_len = (ULONG)buflens[i];
-		frees1[i+1] = frees[i];
+		iovecs[i+1].iov_base = bufs.buffers[i];
+		iovecs[i+1].iov_len = (ULONG)bufs.buflens[i];
+		frees1[i+1] = bufs.frees[i];
 	}
 
-	if ((rc = Socket_writev(socket, iovecs, count+1, &bytes)) != SOCKET_ERROR)
+	if ((rc = Socket_writev(socket, iovecs, bufs.count+1, &bytes)) != SOCKET_ERROR)
 	{
 		if (bytes == total)
 			rc = TCPSOCKET_COMPLETE;
@@ -547,9 +547,9 @@ int Socket_putdatas(int socket, char* buf0, size_t buf0len, int count, char** bu
 			Log(TRACE_MIN, -1, "Partial write: %lu bytes of %lu actually written on socket %d",
 					bytes, total, socket);
 #if defined(OPENSSL)
-			SocketBuffer_pendingWrite(socket, NULL, count+1, iovecs, frees1, total, bytes);
+			SocketBuffer_pendingWrite(socket, NULL, bufs.count+1, iovecs, frees1, total, bytes);
 #else
-			SocketBuffer_pendingWrite(socket, count+1, iovecs, frees1, total, bytes);
+			SocketBuffer_pendingWrite(socket, bufs.count+1, iovecs, frees1, total, bytes);
 #endif
 			*sockmem = socket;
 			if (!ListAppend(s.write_pending, sockmem, sizeof(int)))
@@ -908,10 +908,10 @@ int Socket_continueWrite(int socket)
 			for (i = 0; i < pw->count; i++)
 			{
 				if (pw->frees[i])
-                                {
+                {
 					free(pw->iovecs[i].iov_base);
-                                        pw->iovecs[i].iov_base = NULL;
-                                }
+                    pw->iovecs[i].iov_base = NULL;
+                }
 			}
 			rc = 1; /* signal complete */
 			Log(TRACE_MIN, -1, "ContinueWrite: partial write now complete for socket %d", socket);
@@ -927,10 +927,10 @@ int Socket_continueWrite(int socket)
 		for (i = 0; i < pw->count; i++)
 		{
 			if (pw->frees[i])
-                        {
+            {
 				free(pw->iovecs[i].iov_base);
-                                pw->iovecs[i].iov_base = NULL;
-                        }
+                pw->iovecs[i].iov_base = NULL;
+            }
 		}
 	}
 #if defined(OPENSSL)

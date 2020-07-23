@@ -176,6 +176,8 @@ int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int
 		p.MQTTVersion = (*mm)->MQTTVersion;
 	}
 	rc = MQTTProtocol_startPublishCommon(pubclient, &p, qos, retained);
+	if (qos > 0)
+		memcpy((*mm)->publish->mask, p.mask, sizeof((*mm)->publish->mask));
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -727,7 +729,9 @@ static void MQTTProtocol_retries(START_TIME_TYPE now, Clients* client, int regar
 				publish.payloadlen = m->publish->payloadlen;
 				publish.properties = m->properties;
 				publish.MQTTVersion = m->MQTTVersion;
+				memcpy(publish.mask, m->publish->mask, sizeof(publish.mask));
 				rc = MQTTPacket_send_publish(&publish, 1, m->qos, m->retain, &client->net, client->clientID);
+				memcpy(m->publish->mask, publish.mask, sizeof(m->publish->mask)); /* store websocket mask used in send */
 				if (rc == SOCKET_ERROR)
 				{
 					client->good = 0;

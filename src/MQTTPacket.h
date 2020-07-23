@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -204,6 +204,7 @@ typedef struct
 	int payloadlen;	/**< payload length */
 	int MQTTVersion;  /**< the version of MQTT */
 	MQTTProperties properties; /**< MQTT 5.0 properties.  Not used for MQTT < 5.0 */
+	uint8_t mask[4]; /**< the websockets mask the payload is masked with, if any */
 } Publish;
 
 
@@ -238,7 +239,7 @@ const char* MQTTPacket_name(int ptype);
 
 void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error);
 int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buflen, int free, int MQTTVersion);
-int MQTTPacket_sends(networkHandles* net, Header header, int count, char** buffers, size_t* buflens, int* frees, int MQTTVersion);
+int MQTTPacket_sends(networkHandles* net, Header header, PacketBuffers* buffers, int MQTTVersion);
 
 void* MQTTPacket_header_only(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen);
 int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQTTProperties* props);

@@ -18,6 +18,7 @@
  *    Ian Craggs - fix for bug #480363, issue 13
  *    Ian Craggs - SNI support
  *    Ian Craggs - fix for issues #155, #160
+ *    Kilian von Pflugk - load Windows CA
  *******************************************************************************/
 
 /**
@@ -43,6 +44,9 @@
 #include <openssl/err.h>
 #include <openssl/crypto.h>
 #include <openssl/x509v3.h>
+#if defined(_WIN32) || defined(_WIN64)
+#include <wincrypt.h>
+#endif
 
 extern Sockets mod_s;
 
@@ -83,6 +87,47 @@ static int tls_ex_index_ssl_opts;
 #define iov_len len
 #define iov_base buf
 #define snprintf _snprintf
+#endif
+
+#if defined(_WIN32) || defined(_WIN64)
+/* Loads the Certs from Windows cert store */
+int cryptoapi_ca_cert(SSL_CTX *ssl_ctx)
+{
+	HCERTSTORE cs;
+	PCCERT_CONTEXT ctx = NULL;
+	X509 *cert;
+	char buf[128];
+
+	cs = CertOpenSystemStore(0, "ROOT");
+	if (cs == NULL)
+	{
+		Log(TRACE_PROTOCOL, -1, "CryptoAPI: failed to open system cert store 'ROOT': error=%d", (int)GetLastError());
+		return -1;
+	}
+
+	while ((ctx = CertEnumCertificatesInStore(cs, ctx)))
+	{
+		cert = d2i_X509(NULL, (const unsigned char **)&ctx->pbCertEncoded, ctx->cbCertEncoded);
+		if (cert == NULL)
+		{
+			Log(TRACE_PROTOCOL, -1, "CryptoAPI: Could not process X509 DER encoding for CA cert");
+			continue;
+		}
+
+		X509_NAME_oneline(X509_get_subject_name(cert), buf, sizeof(buf));
+		Log(TRACE_PROTOCOL, 1, "OpenSSL: Loaded CA certificate for system certificate store: subject='%s'", buf);
+
+		if (!X509_STORE_add_cert(SSL_CTX_get_cert_store(ssl_ctx), cert))
+			Log(TRACE_PROTOCOL, -1, "Failed to add ca_cert to OpenSSL certificate store");
+
+		X509_free(cert);
+	}
+
+	if (!CertCloseStore(cs, 0))
+		Log(TRACE_PROTOCOL, -1, "failed to close system cert store 'ROOT': error = %d", (int)GetLastError());
+
+	return 0;
+}
 #endif
 
 /**
@@ -598,6 +643,13 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	SSL_CTX_set_security_level(net->ctx, 1);
 #endif
 */
+
+#if defined(_WIN32) || defined(_WIN64)
+	if(cryptoapi_ca_cert(net->ctx) == 0)
+		Log(TRACE_PROTOCOL, 1, "Windows CA certificates loaded");
+	else
+		Log(TRACE_PROTOCOL, -1, "Windows CA certificates not loaded");
+#endif
 
 	if (opts->keyStore)
 	{

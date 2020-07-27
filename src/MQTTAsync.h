@@ -1250,6 +1250,12 @@ NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NU
 #define MQTTAsync_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 7, 60, 0, 65535, NULL, NULL, NULL, 30, 0,\
 NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL}
 
+#define MQTTAsync_connectOptions_initializer_ws { {'M', 'Q', 'T', 'C'}, 7, 45, 1, 65535, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL}
+
+#define MQTTAsync_connectOptions_initializer5_ws { {'M', 'Q', 'T', 'C'}, 7, 45, 0, 65535, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL}
+
 
 /**
   * This function attempts to connect a previously-created client (see

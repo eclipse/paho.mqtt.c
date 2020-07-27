@@ -934,6 +934,12 @@ typedef struct
 #define MQTTClient_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 7, 60, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
 0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL}
 
+#define MQTTClient_connectOptions_initializer_ws { {'M', 'Q', 'T', 'C'}, 7, 45, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
+0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL}
+
+#define MQTTClient_connectOptions_initializer5_ws { {'M', 'Q', 'T', 'C'}, 7, 45, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
+0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL}
+
 /**
   * This function attempts to connect a previously-created client (see
   * MQTTClient_create()) to an MQTT server using the specified options. If you

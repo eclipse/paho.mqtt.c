@@ -19,7 +19,7 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
-#define START_TIME_TYPE DWORD
+#define START_TIME_TYPE ULONGLONG
 #define START_TIME_ZERO 0
 #elif defined(AIX)
 #define START_TIME_TYPE struct timespec
@@ -33,7 +33,12 @@
 void MQTTTime_sleep(long milliseconds);
 START_TIME_TYPE MQTTTime_start_clock(void);
 START_TIME_TYPE MQTTTime_now(void);
+#if defined(_WIN32) || defined(_WIN64)
+ULONGLONG MQTTTime_elapsed(START_TIME_TYPE milliseconds);
+ULONGLONG MQTTTime_difftime(START_TIME_TYPE new, START_TIME_TYPE old);
+#else
 long MQTTTime_elapsed(START_TIME_TYPE milliseconds);
 long MQTTTime_difftime(START_TIME_TYPE new, START_TIME_TYPE old);
+#endif
 
 #endif

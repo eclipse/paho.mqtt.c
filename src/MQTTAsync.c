@@ -92,7 +92,7 @@ void MQTTAsync_global_init(MQTTAsync_init_options* inits)
 void MQTTAsync_init_rand(void)
 {
 	START_TIME_TYPE now = MQTTTime_start_clock();
-	srand(now);
+	srand((UINT)now);
 }
 #elif defined(AIX)
 void MQTTAsync_init_rand(void)
@@ -4320,7 +4320,11 @@ int MQTTAsync_waitForCompletion(MQTTAsync handle, MQTTAsync_token dt, unsigned l
 {
 	int rc = MQTTASYNC_FAILURE;
 	START_TIME_TYPE start = MQTTTime_start_clock();
+#if defined(_WIN32) || defined(_WIN64)
+	ULONGLONG elapsed = 0L;
+#else
 	unsigned long elapsed = 0L;
+#endif
 	MQTTAsyncs* m = handle;
 
 	FUNC_ENTRY;

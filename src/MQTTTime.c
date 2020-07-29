@@ -38,7 +38,7 @@ void MQTTTime_sleep(long milliseconds)
 #if defined(_WIN32) || defined(_WIN64)
 START_TIME_TYPE MQTTTime_start_clock(void)
 {
-	return GetTickCount();
+	return GetTickCount64();
 }
 #elif defined(AIX)
 START_TIME_TYPE MQTTTime_start_clock(void)
@@ -66,9 +66,9 @@ START_TIME_TYPE MQTTTime_now(void)
 
 
 #if defined(_WIN32) || defined(_WIN64)
-long MQTTTime_elapsed(DWORD milliseconds)
+ULONGLONG MQTTTime_elapsed(ULONGLONG milliseconds)
 {
-	return GetTickCount() - milliseconds;
+	return GetTickCount64() - milliseconds;
 }
 #elif defined(AIX)
 #define assert(a)
@@ -96,11 +96,11 @@ long MQTTTime_elapsed(struct timeval start)
 
 #if defined(_WIN32) || defined(_WIN64)
 /*
- * @param new most recent time in milliseconds from GetTickCount()
- * @param old older time in milliseconds from GetTickCount()
+ * @param new most recent time in milliseconds from GetTickCount64()
+ * @param old older time in milliseconds from GetTickCount64()
  * @return difference in milliseconds
  */
-long MQTTTime_difftime(DWORD new, DWORD old)
+ULONGLONG MQTTTime_difftime(ULONGLONG new, ULONGLONG old)
 {
 	return new - old;
 }

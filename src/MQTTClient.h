@@ -124,6 +124,12 @@
 #include "MQTTClientPersistence.h"
 #endif
 
+#if defined(_WIN32) || defined(_WIN64)
+#define TIME_OUT_TYPE ULONGLONG
+#else
+#define TIME_OUT_TYPE unsigned long 
+#endif
+
 /**
  * Return code: No error. Indicates successful completion of an MQTT client
  * operation.

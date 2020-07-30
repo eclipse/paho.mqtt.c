@@ -156,6 +156,52 @@ IF (PAHO_BUILD_SHARED)
 		test1-7-connlost-binary-will-message
 		PROPERTIES TIMEOUT 540
 	)
+	
+	ADD_TEST(
+        NAME test1-1-ws-single-thread-client
+        COMMAND "test1" "--test_no" "1" "--connection" ${MQTT_WS_TEST_BROKER}
+    )
+    
+    ADD_TEST(
+        NAME test1-2-ws-multithread-callbacks
+        COMMAND "test1" "--test_no" "2" "--connection" ${MQTT_WS_TEST_BROKER}
+    )
+    
+    ADD_TEST(
+        NAME test1-3-ws-connack-return-codes
+        COMMAND "test1" "--test_no" "3" "--connection" ${MQTT_WS_TEST_BROKER}
+    )
+    
+    ADD_TEST(
+        NAME test1-4-ws-client-persistence
+        COMMAND "test1" "--test_no" "4" "--connection" ${MQTT_WS_TEST_BROKER}
+    )
+    
+    ADD_TEST(
+        NAME test1-5-ws-disconnect-with-quiesce
+        COMMAND "test1" "--test_no" "5" "--connection" ${MQTT_WS_TEST_BROKER}
+    )
+    
+    ADD_TEST(
+        NAME test1-6-ws-connlost-will-message
+        COMMAND "test1" "--test_no" "6" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test1-7-ws-connlost-binary-will-message
+        COMMAND "test1" "--test_no" "7" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    SET_TESTS_PROPERTIES(
+        test1-1-ws-single-thread-client
+        test1-2-ws-multithread-callbacks
+        test1-3-ws-connack-return-codes
+        test1-4-ws-client-persistence
+        test1-5-ws-disconnect-with-quiesce
+        test1-6-ws-connlost-will-message
+        test1-7-ws-connlost-binary-will-message
+        PROPERTIES TIMEOUT 540
+    )
 ENDIF()
 
 
@@ -272,6 +318,52 @@ IF (PAHO_BUILD_SHARED)
 		test15-7-connlost-binary-will-message
 		PROPERTIES TIMEOUT 540
 	)
+	
+	ADD_TEST(
+        NAME test15-1-ws-single-thread-client
+        COMMAND "test15" "--test_no" "1" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test15-2-ws-multithread-callbacks
+        COMMAND "test15" "--test_no" "2" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test15-3-ws-connack-return-codes
+        COMMAND "test15" "--test_no" "3" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test15-4-ws-client-persistence
+        COMMAND "test15" "--test_no" "4" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test15-5-ws-disconnect-with-quiesce
+        COMMAND "test15" "--test_no" "5" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test15-6-ws-connlost-will-message
+        COMMAND "test15" "--test_no" "6" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+    
+    ADD_TEST(
+        NAME test15-7-ws-connlost-binary-will-message
+        COMMAND "test15" "--test_no" "7" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
+    )
+
+    SET_TESTS_PROPERTIES(
+        test15-1-ws-single-thread-client
+        test15-2-ws-multithread-callbacks
+        test15-3-ws-connack-return-codes
+        test15-4-ws-client-persistence
+        test15-5-ws-disconnect-with-quiesce
+        test15-6-ws-connlost-will-message
+        test15-7-ws-connlost-binary-will-message
+        PROPERTIES TIMEOUT 540
+    )
 ENDIF()
 
 IF (PAHO_BUILD_STATIC)
@@ -306,14 +398,20 @@ IF (PAHO_BUILD_SHARED)
 		test2
 		paho-mqtt3c
 	)
+	
+	ADD_TEST(
+        NAME test2-1-multiple-threads-single-client
+        COMMAND test2 "--connection" ${MQTT_TEST_BROKER}
+    )
 
 	ADD_TEST(
-		NAME test2-1-multiple-threads-single-client
-		COMMAND test2 "--connection" ${MQTT_TEST_BROKER}
+		NAME test2-1-ws-multiple-threads-single-client
+		COMMAND test2 "--connection" ${MQTT_WS_TEST_BROKER}
 	)
 	
 	SET_TESTS_PROPERTIES(
-		test2-1-multiple-threads-single-client
+	    test2-1-multiple-threads-single-client
+		test2-1-ws-multiple-threads-single-client
 		PROPERTIES TIMEOUT 540
 	)
 ENDIF()
@@ -453,12 +551,7 @@ IF (PAHO_WITH_SSL)
             NAME test3-2e-ssl-with-ha
             COMMAND test3 "--test_no" "12" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"   "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
         )
-        
-        ADD_TEST(
-            NAME test3-2e-ws-ssl-with-ha
-            COMMAND test3 "--test_no" "12" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"   "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
-        )
-		
+        	
 		ADD_TEST(
 			NAME test3-3as-broker-auth-server-cert-in-client-store-single-thread
 			COMMAND test3 "--test_no" "6" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	"${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
@@ -496,7 +589,6 @@ IF (PAHO_WITH_SSL)
 			test3-2b-mutual-ssl-broker-missing-client-cert
 			test3-2c-mutual-ssl-client-missing-broker-cert
 			test3-2e-ssl-with-ha
-			test3-2e-ws-ssl-with-ha
 			test3-3as-broker-auth-server-cert-in-client-store-single-thread
 			test3-3am-broker-auth-server-cert-in-client-store-multi-thread
 			test3-3b-broker-auth-client-missing-broker-cert
@@ -505,6 +597,82 @@ IF (PAHO_WITH_SSL)
 		#	test3-6-psk-ssl-auth
 			PROPERTIES TIMEOUT 540
 		)
+		
+		ADD_TEST(
+            NAME test3-1-ws-ssl-conn-to-non-SSL-broker
+            COMMAND test3 "--test_no" "1" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"  "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
+        )
+        
+        ADD_TEST(
+            NAME test3-2as-ws-mutual-ssl-auth-single-thread
+            COMMAND test3 "--test_no" "2" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"  "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
+        )
+        
+        ADD_TEST(
+            NAME test3-2am-ws-mutual-ssl-auth-multi-thread
+            COMMAND test3 "--test_no" "3" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"  "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
+        )
+        
+        ADD_TEST(
+            NAME test3-2b-ws-mutual-ssl-broker-missing-client-cert
+            COMMAND test3 "--test_no" "4" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"  "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
+        )
+        
+        ADD_TEST(
+            NAME test3-2c-ws-mutual-ssl-client-missing-broker-cert
+            COMMAND test3 "--test_no" "5" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"  "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
+        )
+               
+        ADD_TEST(
+            NAME test3-2e-ws-ssl-with-ha
+            COMMAND test3 "--test_no" "12" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"   "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
+        )
+        
+        ADD_TEST(
+            NAME test3-3as-ws-broker-auth-server-cert-in-client-store-single-thread
+            COMMAND test3 "--test_no" "6" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"  "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
+        )
+        
+        ADD_TEST(
+            NAME test3-3am-ws-broker-auth-server-cert-in-client-store-multi-thread
+            COMMAND test3 "--test_no" "7" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"  "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
+        )
+        
+        ADD_TEST(
+            NAME test3-3b-ws-broker-auth-client-missing-broker-cert
+            COMMAND test3 "--test_no" "8" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"  "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
+        )
+        
+        ADD_TEST(
+            NAME test3-4s-ws-broker-auth-accept-invalid-certificate-single-thread
+            COMMAND test3 "--test_no" "9" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"  "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
+        )
+        
+        ADD_TEST(
+            NAME test3-4m-ws-broker-auth-accept-invalid-certificate-multi-thread
+            COMMAND test3 "--test_no" "10" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key" "${CERTDIR}/client.pem" "--server_key"  "${CERTDIR}/test-root-ca.crt"
+        )
+        
+        #ADD_TEST(
+        #   NAME test3-6-ws-psk-ssl-auth
+        #   COMMAND test3 "--test_no" "11" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME}
+        #)
+        
+        SET_TESTS_PROPERTIES(
+            test3-1-ws-ssl-conn-to-non-SSL-broker
+            test3-2as-ws-mutual-ssl-auth-single-thread
+            test3-2am-ws-mutual-ssl-auth-multi-thread
+            test3-2b-ws-mutual-ssl-broker-missing-client-cert
+            test3-2c-ws-mutual-ssl-client-missing-broker-cert
+            test3-2e-ws-ssl-with-ha
+            test3-3as-ws-broker-auth-server-cert-in-client-store-single-thread
+            test3-3am-ws-broker-auth-server-cert-in-client-store-multi-thread
+            test3-3b-ws-broker-auth-client-missing-broker-cert
+            test3-4s-ws-broker-auth-accept-invalid-certificate-single-thread
+            test3-4m-ws-broker-auth-accept-invalid-certificate-multi-thread
+        #   test3-6-psk-ssl-auth
+            PROPERTIES TIMEOUT 540
+        )
 	ENDIF()
 
 ENDIF()
@@ -1479,54 +1647,54 @@ IF (PAHO_BUILD_SHARED)
 	)
 	
 	ADD_TEST(
-        NAME test9-1ws-offline-buffering-send-disconnected
+        NAME test9-1-ws-offline-buffering-send-disconnected
         COMMAND test9 "--test_no" "1" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
     )
     
     ADD_TEST(
-        NAME test9-2ws-offline-buffering-send-disconnected-serverURIs
+        NAME test9-2-ws-offline-buffering-send-disconnected-serverURIs
         COMMAND test9 "--test_no" "2" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
     )
     
     ADD_TEST(
-        NAME test9-3ws-offline-buffering-auto-reconnect
+        NAME test9-3-ws-offline-buffering-auto-reconnect
         COMMAND test9 "--test_no" "3" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
     )
     
     ADD_TEST(
-        NAME test9-4ws-offline-buffering-auto-reconnect-serverURIs
+        NAME test9-4-ws-offline-buffering-auto-reconnect-serverURIs
         COMMAND test9 "--test_no" "4" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
     )
     
     ADD_TEST(
-        NAME test9-5ws-offline-buffering-max-buffered
+        NAME test9-5-ws-offline-buffering-max-buffered
         COMMAND test9 "--test_no" "5" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
     )
     
     ADD_TEST(
-        NAME test9-6ws-offline-buffering-max-buffered-binary-will
+        NAME test9-6-ws-offline-buffering-max-buffered-binary-will
         COMMAND test9 "--test_no" "6" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
     )
     
     ADD_TEST(
-        NAME test9-8ws-offline-buffering-before-connect
+        NAME test9-8-ws-offline-buffering-before-connect
         COMMAND test9 "--test_no" "8" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
     )
     
     ADD_TEST(
-        NAME test9-10ws-offline-buffering-delete-oldest-messages
+        NAME test9-10-ws-offline-buffering-delete-oldest-messages
         COMMAND test9 "--test_no" "10" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY}
     )
     
     SET_TESTS_PROPERTIES(
-        test9-1ws-offline-buffering-send-disconnected
-        test9-2ws-offline-buffering-send-disconnected-serverURIs
-        test9-3ws-offline-buffering-auto-reconnect
-        test9-4ws-offline-buffering-auto-reconnect-serverURIs
-        test9-5ws-offline-buffering-max-buffered
-        test9-6ws-offline-buffering-max-buffered-binary-will
-        test9-8ws-offline-buffering-before-connect
-        test9-10ws-offline-buffering-delete-oldest-messages
+        test9-1-ws-offline-buffering-send-disconnected
+        test9-2-ws-offline-buffering-send-disconnected-serverURIs
+        test9-3-ws-offline-buffering-auto-reconnect
+        test9-4-ws-offline-buffering-auto-reconnect-serverURIs
+        test9-5-ws-offline-buffering-max-buffered
+        test9-6-ws-offline-buffering-max-buffered-binary-will
+        test9-8-ws-offline-buffering-before-connect
+        test9-10-ws-offline-buffering-delete-oldest-messages
         PROPERTIES TIMEOUT 540
     )
 ENDIF()

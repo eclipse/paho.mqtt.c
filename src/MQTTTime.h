@@ -20,20 +20,23 @@
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #define START_TIME_TYPE DWORD
+#define MQTT_TIME_TPYE DWORD
 #define START_TIME_ZERO 0
 #elif defined(AIX)
 #define START_TIME_TYPE struct timespec
+#define MQTT_TIME_TPYE long
 #define START_TIME_ZERO {0, 0}
 #else
 #include <sys/time.h>
 #define START_TIME_TYPE struct timeval
+#define MQTT_TIME_TPYE long
 #define START_TIME_ZERO {0, 0}
 #endif
 
-void MQTTTime_sleep(long milliseconds);
+void MQTTTime_sleep(MQTT_TIME_TPYE milliseconds);
 START_TIME_TYPE MQTTTime_start_clock(void);
 START_TIME_TYPE MQTTTime_now(void);
-long MQTTTime_elapsed(START_TIME_TYPE milliseconds);
-long MQTTTime_difftime(START_TIME_TYPE new, START_TIME_TYPE old);
+MQTT_TIME_TPYE MQTTTime_elapsed(START_TIME_TYPE milliseconds);
+MQTT_TIME_TPYE MQTTTime_difftime(START_TIME_TYPE new, START_TIME_TYPE old);
 
 #endif

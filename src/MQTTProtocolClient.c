@@ -665,14 +665,14 @@ void MQTTProtocol_keepalive(START_TIME_TYPE now)
 
 		if (client->ping_outstanding == 1)
 		{
-			if (MQTTTime_difftime(now, client->net.lastPing) >= (long)(client->keepAliveInterval * 1000))
+			if (MQTTTime_difftime(now, client->net.lastPing) >= (MQTT_TIME_TPYE)(client->keepAliveInterval * 1000))
 			{
 				Log(TRACE_PROTOCOL, -1, "PINGRESP not received in keepalive interval for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
 				MQTTProtocol_closeSession(client, 1);
 			}
 		}
-		else if (MQTTTime_difftime(now, client->net.lastSent) >= (long)(client->keepAliveInterval * 1000) ||
-					MQTTTime_difftime(now, client->net.lastReceived) >= (long)(client->keepAliveInterval * 1000))
+		else if (MQTTTime_difftime(now, client->net.lastSent) >= (MQTT_TIME_TPYE)(client->keepAliveInterval * 1000) ||
+					MQTTTime_difftime(now, client->net.lastReceived) >= (MQTT_TIME_TPYE)(client->keepAliveInterval * 1000))
 		{
 			if (Socket_noPendingWrites(client->net.socket))
 			{
@@ -713,7 +713,7 @@ static void MQTTProtocol_retries(START_TIME_TYPE now, Clients* client, int regar
 		   Socket_noPendingWrites(client->net.socket)) /* there aren't any previous packets still stacked up on the socket */
 	{
 		Messages* m = (Messages*)(outcurrent->content);
-		if (regardless || MQTTTime_difftime(now, m->lastTouch) > (long)(max(client->retryInterval, 10) * 1000))
+		if (regardless || MQTTTime_difftime(now, m->lastTouch) > (MQTT_TIME_TPYE)(max(client->retryInterval, 10) * 1000))
 		{
 			if (m->qos == 1 || (m->qos == 2 && m->nextMessageType == PUBREC))
 			{

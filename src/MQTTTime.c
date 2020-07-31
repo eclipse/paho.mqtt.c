@@ -36,12 +36,12 @@ void MQTTTime_sleep(long milliseconds)
 }
 
 #if defined(_WIN32) || defined(_WIN64)
-START_TIME_TYPE MQTTTime_start_clock(void)
+MQTT_TIME_TPYE MQTTTime_start_clock(void)
 {
 	return GetTickCount();
 }
 #elif defined(AIX)
-START_TIME_TYPE MQTTTime_start_clock(void)
+MQTT_TIME_TPYE MQTTTime_start_clock(void)
 {
 	static struct timespec start;
 	clock_gettime(CLOCK_MONOTONIC, &start);
@@ -66,13 +66,13 @@ START_TIME_TYPE MQTTTime_now(void)
 
 
 #if defined(_WIN32) || defined(_WIN64)
-long MQTTTime_elapsed(DWORD milliseconds)
+MQTT_TIME_TPYE MQTTTime_elapsed(DWORD milliseconds)
 {
 	return GetTickCount() - milliseconds;
 }
 #elif defined(AIX)
 #define assert(a)
-long MQTTTime_elapsed(struct timespec start)
+MQTT_TIME_TPYE MQTTTime_elapsed(struct timespec start)
 {
 	struct timespec now, res;
 
@@ -81,7 +81,7 @@ long MQTTTime_elapsed(struct timespec start)
 	return (res.tv_sec)*1000L + (res.tv_nsec)/1000000L;
 }
 #else
-long MQTTTime_elapsed(struct timeval start)
+MQTT_TIME_TPYE MQTTTime_elapsed(struct timeval start)
 {
 	struct timeval now, res;
 	static struct timespec now_ts;
@@ -100,13 +100,13 @@ long MQTTTime_elapsed(struct timeval start)
  * @param old older time in milliseconds from GetTickCount()
  * @return difference in milliseconds
  */
-long MQTTTime_difftime(DWORD new, DWORD old)
+MQTT_TIME_TPYE MQTTTime_difftime(DWORD new, DWORD old)
 {
 	return new - old;
 }
 #elif defined(AIX)
 #define assert(a)
-long MQTTTime_difftime(struct timespec new, struct timespec old)
+MQTT_TIME_TPYE MQTTTime_difftime(struct timespec new, struct timespec old)
 {
 	struct timespec result;
 
@@ -114,7 +114,7 @@ long MQTTTime_difftime(struct timespec new, struct timespec old)
 	return (result.tv_sec)*1000L + (result.tv_nsec)/1000000L; /* convert to milliseconds */
 }
 #else
-long MQTTTime_difftime(struct timeval new, struct timeval old)
+MQTT_TIME_TPYE MQTTTime_difftime(struct timeval new, struct timeval old)
 {
 	struct timeval result;
 

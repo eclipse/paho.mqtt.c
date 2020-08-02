@@ -38,7 +38,11 @@ void MQTTTime_sleep(long milliseconds)
 #if defined(_WIN32) || defined(_WIN64)
 START_TIME_TYPE MQTTTime_start_clock(void)
 {
+#if WINVER >= _WIN32_WINNT_VISTA
+	return GetTickCount64();
+#else
 	return GetTickCount();
+#endif
 }
 #elif defined(AIX)
 START_TIME_TYPE MQTTTime_start_clock(void)
@@ -66,59 +70,43 @@ START_TIME_TYPE MQTTTime_now(void)
 
 
 #if defined(_WIN32) || defined(_WIN64)
-long MQTTTime_elapsed(DWORD milliseconds)
-{
-	return GetTickCount() - milliseconds;
-}
-#elif defined(AIX)
-#define assert(a)
-long MQTTTime_elapsed(struct timespec start)
-{
-	struct timespec now, res;
-
-	clock_gettime(CLOCK_MONOTONIC, &now);
-	ntimersub(now, start, res);
-	return (res.tv_sec)*1000L + (res.tv_nsec)/1000000L;
-}
-#else
-long MQTTTime_elapsed(struct timeval start)
-{
-	struct timeval now, res;
-	static struct timespec now_ts;
-
-	clock_gettime(CLOCK_MONOTONIC, &now_ts);
-	now.tv_sec = now_ts.tv_sec;
-	now.tv_usec = now_ts.tv_nsec / 1000;
-	timersub(&now, &start, &res);
-	return (res.tv_sec)*1000 + (res.tv_usec)/1000;
-}
-#endif
-
-#if defined(_WIN32) || defined(_WIN64)
 /*
  * @param new most recent time in milliseconds from GetTickCount()
  * @param old older time in milliseconds from GetTickCount()
  * @return difference in milliseconds
  */
-long MQTTTime_difftime(DWORD new, DWORD old)
+DIFF_TIME_TYPE MQTTTime_difftime(START_TIME_TYPE new, START_TIME_TYPE old)
 {
-	return new - old;
+#if WINVER >= _WIN32_WINNT_VISTA
+	return (DIFF_TIME_TYPE )(new - old);
+#else
+	if (old < new)       /* check for wrap around condition in GetTickCount */
+		return (DIFF_TIME_TYPE)(new - old);
+	else
+	    return (DIFF_TIME_TYPE)((0xFFFFFFFFL - old) + 1 + new);
+#endif
 }
 #elif defined(AIX)
 #define assert(a)
-long MQTTTime_difftime(struct timespec new, struct timespec old)
+DIFF_TIME_TYPE MQTTTime_difftime(START_TIME_TYPE new, START_TIME_TYPE old)
 {
 	struct timespec result;
 
 	ntimersub(new, old, result);
-	return (result.tv_sec)*1000L + (result.tv_nsec)/1000000L; /* convert to milliseconds */
+	return (DIFF_TIME_TYPE)((result.tv_sec)*1000L + (result.tv_nsec)/1000000L); /* convert to milliseconds */
 }
 #else
-long MQTTTime_difftime(struct timeval new, struct timeval old)
+DIFF_TIME_TYPE MQTTTime_difftime(START_TIME_TYPE new, START_TIME_TYPE old)
 {
 	struct timeval result;
 
 	timersub(&new, &old, &result);
-	return (result.tv_sec)*1000 + (result.tv_usec)/1000; /* convert to milliseconds */
+	return (DIFF_TIME_TYPE)((result.tv_sec)*1000 + (result.tv_usec)/1000); /* convert to milliseconds */
 }
 #endif
+
+
+ELAPSED_TIME_TYPE MQTTTime_elapsed(START_TIME_TYPE milliseconds)
+{
+	return (ELAPSED_TIME_TYPE)MQTTTime_difftime(MQTTTime_now(), milliseconds);
+}

@@ -1440,7 +1440,7 @@ static void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* comma
 
 	FUNC_ENTRY;
 	/* wait for all inflight message flows to finish, up to timeout */;
-	if (m->c->outboundMsgs->count == 0 || MQTTTime_elapsed(command->start_time) >= command->details.dis.timeout)
+	if (m->c->outboundMsgs->count == 0 || MQTTTime_elapsed(command->start_time) >= (ELAPSED_TIME_TYPE)command->details.dis.timeout)
 	{
 		int was_connected = m->c->connected;
 		MQTTAsync_closeSession(m->c, command->details.dis.reasonCode, &command->properties);
@@ -2116,7 +2116,7 @@ static void MQTTAsync_checkTimeouts(void)
 	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttasync_mutex);
 	now = MQTTTime_now();
-	if (MQTTTime_difftime(now, last) < 3000)
+	if (MQTTTime_difftime(now, last) < (DIFF_TIME_TYPE)3000)
 		goto exit;
 	last = now;
 	while (ListNextElement(handles, &current))		/* for each client */
@@ -2128,7 +2128,7 @@ static void MQTTAsync_checkTimeouts(void)
 			MQTTAsync_checkDisconnect(m, &m->disconnect);
 
 		/* check connect timeout */
-		if (m->c->connect_state != NOT_IN_PROGRESS && MQTTTime_elapsed(m->connect.start_time) > (m->connectTimeout * 1000))
+		if (m->c->connect_state != NOT_IN_PROGRESS && MQTTTime_elapsed(m->connect.start_time) > (ELAPSED_TIME_TYPE)(m->connectTimeout * 1000))
 		{
 			nextOrClose(m, MQTTASYNC_FAILURE, "TCP connect timeout");
 			continue;
@@ -2142,7 +2142,7 @@ static void MQTTAsync_checkTimeouts(void)
 
 		if (m->automaticReconnect && m->retrying)
 		{
-			if (m->reconnectNow || MQTTTime_elapsed(m->lastConnectionFailedTime) > (m->currentInterval * 1000))
+			if (m->reconnectNow || MQTTTime_elapsed(m->lastConnectionFailedTime) > (ELAPSED_TIME_TYPE)(m->currentInterval * 1000))
 			{
 				/* to reconnect put the connect command to the head of the command queue */
 				MQTTAsync_queuedCommand* conn = malloc(sizeof(MQTTAsync_queuedCommand));
@@ -4053,7 +4053,7 @@ static void MQTTAsync_retry(void)
 
 	FUNC_ENTRY;
 	now = MQTTTime_now();
-	if (MQTTTime_difftime(now, last) > (retryLoopInterval * 1000))
+	if (MQTTTime_difftime(now, last) > (DIFF_TIME_TYPE)(retryLoopInterval * 1000))
 	{
 		last = MQTTTime_now();
 		MQTTProtocol_keepalive(now);
@@ -4536,7 +4536,7 @@ int MQTTAsync_waitForCompletion(MQTTAsync handle, MQTTAsync_token dt, unsigned l
 {
 	int rc = MQTTASYNC_FAILURE;
 	START_TIME_TYPE start = MQTTTime_start_clock();
-	unsigned long elapsed = 0L;
+	ELAPSED_TIME_TYPE elapsed = 0L;
 	MQTTAsyncs* m = handle;
 
 	FUNC_ENTRY;

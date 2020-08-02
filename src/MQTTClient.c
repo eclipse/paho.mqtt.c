@@ -351,7 +351,7 @@ static int MQTTClient_cleanSession(Clients* client);
 static MQTTResponse MQTTClient_connectURIVersion(
 	MQTTClient handle, MQTTClient_connectOptions* options,
 	const char* serverURI, int MQTTVersion,
-	START_TIME_TYPE start, long millisecsTimeout,
+	START_TIME_TYPE start, ELAPSED_TIME_TYPE millisecsTimeout,
 	MQTTProperties* connectProperties, MQTTProperties* willProperties);
 static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options, const char* serverURI,
 	MQTTProperties* connectProperties, MQTTProperties* willProperties);
@@ -1160,7 +1160,7 @@ exit:
 
 
 static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* options, const char* serverURI, int MQTTVersion,
-	START_TIME_TYPE start, long millisecsTimeout, MQTTProperties* connectProperties, MQTTProperties* willProperties)
+	START_TIME_TYPE start, ELAPSED_TIME_TYPE millisecsTimeout, MQTTProperties* connectProperties, MQTTProperties* willProperties)
 {
 	MQTTClients* m = handle;
 	int rc = SOCKET_ERROR;
@@ -1443,7 +1443,7 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 {
 	MQTTClients* m = handle;
 	START_TIME_TYPE start;
-	long millisecsTimeout = 30000L;
+	ELAPSED_TIME_TYPE millisecsTimeout = 30000L;
 	MQTTResponse rc = MQTTResponse_initializer;
 	int MQTTVersion = 0;
 
@@ -1857,7 +1857,7 @@ static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int call_conne
 		m->c->connect_state = DISCONNECTING; /* indicate disconnecting */
 		while (m->c->inboundMsgs->count > 0 || m->c->outboundMsgs->count > 0)
 		{ /* wait for all inflight message flows to finish, up to timeout */
-			if (MQTTTime_elapsed(start) >= timeout)
+			if (MQTTTime_elapsed(start) >= (ELAPSED_TIME_TYPE)timeout)
 				break;
 			Thread_unlock_mutex(mqttclient_mutex);
 			MQTTClient_yield();
@@ -2649,7 +2649,7 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 					}
 				}
 			}
-			if (MQTTTime_elapsed(start) > timeout)
+			if (MQTTTime_elapsed(start) > (ELAPSED_TIME_TYPE)timeout)
 			{
 				pack = NULL;
 				break;
@@ -2668,7 +2668,7 @@ int MQTTClient_receive(MQTTClient handle, char** topicName, int* topicLen, MQTTC
 {
 	int rc = TCPSOCKET_COMPLETE;
 	START_TIME_TYPE start = MQTTTime_start_clock();
-	unsigned long elapsed = 0L;
+	ELAPSED_TIME_TYPE elapsed = 0L;
 	MQTTClients* m = handle;
 
 	FUNC_ENTRY;
@@ -2722,8 +2722,8 @@ exit:
 void MQTTClient_yield(void)
 {
 	START_TIME_TYPE start = MQTTTime_start_clock();
-	unsigned long elapsed = 0L;
-	unsigned long timeout = 100L;
+	ELAPSED_TIME_TYPE elapsed = 0L;
+	ELAPSED_TIME_TYPE timeout = 100L;
 	int rc = 0;
 
 	FUNC_ENTRY;
@@ -2765,7 +2765,7 @@ int MQTTClient_waitForCompletion(MQTTClient handle, MQTTClient_deliveryToken mdt
 {
 	int rc = MQTTCLIENT_FAILURE;
 	START_TIME_TYPE start = MQTTTime_start_clock();
-	unsigned long elapsed = 0L;
+	ELAPSED_TIME_TYPE elapsed = 0L;
 	MQTTClients* m = handle;
 
 	FUNC_ENTRY;

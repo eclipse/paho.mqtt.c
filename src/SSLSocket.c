@@ -44,7 +44,7 @@
 #include <openssl/crypto.h>
 #include <openssl/x509v3.h>
 
-extern Sockets s;
+extern Sockets mod_s;
 
 static int SSLSocket_error(char* aString, SSL* ssl, int sock, int rc, int (*cb)(const char *str, size_t len, void *u), void* u);
 char* SSL_get_verify_result_string(int rc);
@@ -989,8 +989,8 @@ int SSLSocket_putdatas(SSL* ssl, int socket, char* buf0, size_t buf0len, PacketB
 				iovec.iov_len, socket);
 			SocketBuffer_pendingWrite(socket, ssl, 1, &iovec, &free, iovec.iov_len, 0);
 			*sockmem = socket;
-			ListAppend(s.write_pending, sockmem, sizeof(int));
-			FD_SET(socket, &(s.pending_wset));
+			ListAppend(mod_s.write_pending, sockmem, sizeof(int));
+			FD_SET(socket, &(mod_s.pending_wset));
 			rc = TCPSOCKET_INTERRUPTED;
 		}
 		else

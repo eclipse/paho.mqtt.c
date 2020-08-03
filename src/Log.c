@@ -115,9 +115,9 @@ static int Log_compareEntries(const char *entry1, const char *entry2);
 
 static int sametime_count = 0;
 #if defined(GETTIMEOFDAY)
-struct timeval ts, last_ts;
+struct timeval now_ts, last_ts;
 #else
-struct timeb ts, last_ts;
+struct timeb now_ts, last_ts;
 #endif
 static char msg_buf[512];
 
@@ -263,15 +263,15 @@ static traceEntry* Log_pretrace(void)
 	if (++sametime_count % 20 == 0)
 	{
 #if defined(GETTIMEOFDAY)
-		gettimeofday(&ts, NULL);
-		if (ts.tv_sec != last_ts.tv_sec || ts.tv_usec != last_ts.tv_usec)
+		gettimeofday(&now_ts, NULL);
+		if (now_ts.tv_sec != last_ts.tv_sec || now_ts.tv_usec != last_ts.tv_usec)
 #else
 		ftime(&ts);
 		if (ts.time != last_ts.time || ts.millitm != last_ts.millitm)
 #endif
 		{
 			sametime_count = 0;
-			last_ts = ts;
+			last_ts = now_ts;
 		}
 	}
 
@@ -394,7 +394,7 @@ static void Log_trace(enum LOG_LEVELS log_level, const char *buf)
 
 	cur_entry = Log_pretrace();
 
-	memcpy(&(cur_entry->ts), &ts, sizeof(ts));
+	memcpy(&(cur_entry->ts), &now_ts, sizeof(now_ts));
 	cur_entry->sametime_count = sametime_count;
 
 	cur_entry->has_rc = 2;
@@ -458,7 +458,7 @@ void Log_stackTrace(enum LOG_LEVELS log_level, int msgno, int thread_id, int cur
 	Thread_lock_mutex(log_mutex);
 	cur_entry = Log_pretrace();
 
-	memcpy(&(cur_entry->ts), &ts, sizeof(ts));
+	memcpy(&(cur_entry->ts), &now_ts, sizeof(now_ts));
 	cur_entry->sametime_count = sametime_count;
 	cur_entry->number = msgno;
 	cur_entry->thread_id = thread_id;

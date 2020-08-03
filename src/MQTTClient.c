@@ -358,8 +358,8 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal, int stop, enum MQTTReasonCodes, MQTTProperties*);
 static int MQTTClient_disconnect_internal(MQTTClient handle, int timeout);
 static void MQTTClient_retry(void);
-static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc);
-static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long timeout);
+static MQTTPacket* MQTTClient_cycle(int* sock, ELAPSED_TIME_TYPE timeout, int* rc);
+static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, ELAPSED_TIME_TYPE timeout);
 /*static int pubCompare(void* a, void* b); */
 static void MQTTProtocol_checkPendingWrites(void);
 static void MQTTClient_writeComplete(int socket, int rc);
@@ -2457,7 +2457,7 @@ static void MQTTClient_retry(void)
 }
 
 
-static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
+static MQTTPacket* MQTTClient_cycle(int* sock, ELAPSED_TIME_TYPE timeout, int* rc)
 {
 	struct timeval tp = {0L, 0L};
 	static Ack ack;
@@ -2466,8 +2466,8 @@ static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
 	FUNC_ENTRY;
 	if (timeout > 0L)
 	{
-		tp.tv_sec = timeout / 1000;
-		tp.tv_usec = (timeout % 1000) * 1000; /* this field is microseconds! */
+		tp.tv_sec = (long)(timeout / 1000);
+		tp.tv_usec = (long)((timeout % 1000) * 1000); /* this field is microseconds! */
 	}
 
 #if defined(OPENSSL)
@@ -2554,7 +2554,7 @@ static MQTTPacket* MQTTClient_cycle(int* sock, unsigned long timeout, int* rc)
 }
 
 
-static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, long timeout)
+static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, ELAPSED_TIME_TYPE timeout)
 {
 	MQTTPacket* pack = NULL;
 	MQTTClients* m = handle;
@@ -2571,15 +2571,15 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 	{
 		if (packet_type == CONNECT)
 		{
-			if ((*rc = Thread_wait_sem(m->connect_sem, timeout)) == 0)
+			if ((*rc = Thread_wait_sem(m->connect_sem, (int)timeout)) == 0)
 				*rc = m->rc;
 		}
 		else if (packet_type == CONNACK)
-			*rc = Thread_wait_sem(m->connack_sem, timeout);
+			*rc = Thread_wait_sem(m->connack_sem, (int)timeout);
 		else if (packet_type == SUBACK)
-			*rc = Thread_wait_sem(m->suback_sem, timeout);
+			*rc = Thread_wait_sem(m->suback_sem, (int)timeout);
 		else if (packet_type == UNSUBACK)
-			*rc = Thread_wait_sem(m->unsuback_sem, timeout);
+			*rc = Thread_wait_sem(m->unsuback_sem, (int)timeout);
 		if (*rc == 0 && packet_type != CONNECT && m->pack == NULL)
 			Log(LOG_ERROR, -1, "waitfor unexpectedly is NULL for client %s, packet_type %d, timeout %ld", m->c->clientID, packet_type, timeout);
 		pack = m->pack;

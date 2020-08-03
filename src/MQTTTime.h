@@ -22,10 +22,10 @@
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #if WINVER >= _WIN32_WINNT_VISTA
-#define START_TIME_TYPE DWORD
+#define START_TIME_TYPE ULONGLONG
 #define START_TIME_ZERO 0
 #else
-#define START_TIME_TYPE ULONGLONG
+#define START_TIME_TYPE DWORD
 #define START_TIME_ZERO 0
 #endif
 #elif defined(AIX)
@@ -40,7 +40,7 @@
 #define ELAPSED_TIME_TYPE uint64_t
 #define DIFF_TIME_TYPE int64_t
 
-void MQTTTime_sleep(long milliseconds);
+void MQTTTime_sleep(ELAPSED_TIME_TYPE milliseconds);
 START_TIME_TYPE MQTTTime_start_clock(void);
 START_TIME_TYPE MQTTTime_now(void);
 ELAPSED_TIME_TYPE MQTTTime_elapsed(START_TIME_TYPE milliseconds);

@@ -24,13 +24,13 @@
 #include <sys/time.h>
 #endif
 
-void MQTTTime_sleep(long milliseconds)
+void MQTTTime_sleep(ELAPSED_TIME_TYPE milliseconds)
 {
 	FUNC_ENTRY;
 #if defined(_WIN32) || defined(_WIN64)
-	Sleep(milliseconds);
+	Sleep((DWORD)milliseconds);
 #else
-	usleep(milliseconds*1000);
+	usleep((useconds_t)(milliseconds*1000));
 #endif
 	FUNC_EXIT;
 }

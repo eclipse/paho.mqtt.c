@@ -2,13 +2,21 @@
 [![Total Alerts](https://img.shields.io/lgtm/alerts/g/eclipse/paho.mqtt.c.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/eclipse/paho.mqtt.c/alerts/)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/2339/badge.svg)](https://scan.coverity.com/projects/paho-c)
 
-# Eclipse Paho MQTT C client
+# Eclipse Paho C Client Library for the MQTT Protocol
 
 This repository contains the source code for the [Eclipse Paho](http://eclipse.org/paho) MQTT C client library.
 
 This code builds libraries which enable applications to connect to an [MQTT](http://mqtt.org) broker to publish messages, and to subscribe to topics and receive published messages.
 
 Synchronous and various asynchronous programming models are supported.
+
+## Information About MQTT
+
+* [MQTT website](http://mqtt.org)
+* [The MQTT 3.1.1 standard](http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html)
+* [The MQTT 5.0 standard](https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html)
+* [HiveMQ introduction to MQTT](https://www.hivemq.com/mqtt/)
+* [OASIS Introduction to MQTT presentation](https://www.oasis-open.org/committees/download.php/49205/MQTT-OASIS-Webinar.pdf)
 
 ## Libraries
 
@@ -230,7 +238,5 @@ As is normal for C programs on Windows, the calling convention is __cdecl.  See 
 https://docs.microsoft.com/en-us/cpp/cpp/cdecl?view=vs-2019
 
 If you call this library from another language, you may need to take this into account.
-
-
 
 

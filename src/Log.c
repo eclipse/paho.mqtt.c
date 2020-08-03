@@ -266,8 +266,8 @@ static traceEntry* Log_pretrace(void)
 		gettimeofday(&now_ts, NULL);
 		if (now_ts.tv_sec != last_ts.tv_sec || now_ts.tv_usec != last_ts.tv_usec)
 #else
-		ftime(&ts);
-		if (ts.time != last_ts.time || ts.millitm != last_ts.millitm)
+		ftime(&now_ts);
+		if (now_ts.time != last_ts.time || now_ts.millitm != last_ts.millitm)
 #endif
 		{
 			sametime_count = 0;

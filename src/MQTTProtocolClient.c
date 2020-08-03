@@ -266,6 +266,7 @@ Publications* MQTTProtocol_storePublication(Publish* publish, int* len)
 	p->payload = publish->payload;
 	publish->payload = NULL;
 	*len += publish->payloadlen;
+	memcpy(p->mask, publish->mask, sizeof(p->mask));
 
 	if ((ListAppend(&(state.publications), p, *len)) == NULL)
 	{

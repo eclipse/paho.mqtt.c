@@ -474,9 +474,9 @@ void sendAndReceive(MQTTAsync* c, int qos, char* test_topic)
 
  *********************************************************************/
 
-//static mutex_type client_mutex = NULL;
+/*static mutex_type client_mutex = NULL;
 static pthread_mutex_t client_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-static mutex_type client_mutex = &client_mutex_store;
+static mutex_type client_mutex = &client_mutex_store;*/
 
 void asyncTestOnDisconnect(void* context, MQTTAsync_successData* response)
 {

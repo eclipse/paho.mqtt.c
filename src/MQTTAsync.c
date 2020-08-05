@@ -1661,6 +1661,11 @@ static void MQTTAsync_writeComplete(int socket, int rc)
 					}
 					else
 						com = NULL; /* Don't delete response we haven't acknowledged */
+					/* QoS 0 payloads are freed elsewhere after a write complete,
+					 * so we should indicate that.
+					 */
+					if (command->details.pub.qos == 0)
+						command->details.pub.payload = NULL;
 				}
 				if (com)
 				{

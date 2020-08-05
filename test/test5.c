@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2019 IBM Corp.
+ * Copyright (c) 2012, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -475,8 +475,8 @@ void sendAndReceive(MQTTAsync* c, int qos, char* test_topic)
  *********************************************************************/
 
 //static mutex_type client_mutex = NULL;
-//static pthread_mutex_t client_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-//static mutex_type client_mutex = &client_mutex_store;
+static pthread_mutex_t client_mutex_store = PTHREAD_MUTEX_INITIALIZER;
+static mutex_type client_mutex = &client_mutex_store;
 
 void asyncTestOnDisconnect(void* context, MQTTAsync_successData* response)
 {
@@ -562,8 +562,7 @@ int asyncTestMessageArrived(void* context, char* topicName, int topicLen,
 
 	//printf("Received messages: %d\n", tc->rcvdmsgs[m->qos]);
 
-	MyLog(
-			LOGA_DEBUG,
+	MyLog(LOGA_DEBUG,
 			"In asyncTestMessageArrived callback, %s total to exit %d, total received %d,%d,%d",
 			tc->clientid, (tc->maxmsgs * 3), tc->rcvdmsgs[0], tc->rcvdmsgs[1],
 			tc->rcvdmsgs[2]);
@@ -589,8 +588,7 @@ int asyncTestMessageArrived(void* context, char* topicName, int topicLen,
 				tc->sentmsgs[1], tc->sentmsgs[2]);
 		tc->sentmsgs[m->qos]++;
 	}
-	if ((tc->rcvdmsgs[0] + tc->rcvdmsgs[1] + tc->rcvdmsgs[2]) == (tc->maxmsgs
-			* 3))
+	if ((tc->rcvdmsgs[0] + tc->rcvdmsgs[1] + tc->rcvdmsgs[2]) == (tc->maxmsgs* 3))
 	{
 		MyLog(LOGA_DEBUG, "Ready to unsubscribe");
 		MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
@@ -1588,25 +1586,6 @@ int test4(struct Options options)
 	if (tc.testFinished)
 		goto exit;
 
-	for (i = 0; i < 3; i++)
-	{
-		MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
-
-		pubmsg.payload
-				= "a much longer message that we can shorten to the extent that we need to payload up to 11";
-		pubmsg.payloadlen = 11;
-		pubmsg.qos = i;
-		pubmsg.retained = 0;
-
-		MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-		opts.onSuccess = asyncTestOnSend;
-		opts.context = &tc;
-
-		rc = MQTTAsync_send(c, tc.topic, pubmsg.payloadlen, pubmsg.payload,
-				pubmsg.qos, pubmsg.retained, &opts);
-		assert("Good rc from publish", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
-	}
-
 	while (!tc.testFinished)
 #if defined(_WIN32)
 		Sleep(100);
@@ -2129,16 +2108,6 @@ void test7OnPublishSuccess(void* context, MQTTAsync_successData* response)
 				response->alt.pub.message.qos);
 
 	test7OnPublishSuccessCount++;
-
-	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount == 3)
-	{
-		MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
-		int rc;
-
-		opts.onSuccess = asyncTestOnDisconnect;
-		opts.context = tc;
-		rc = MQTTAsync_disconnect(tc->client, &opts);
-	}
 }
 
 void test7OnPublishFailure(void* context, MQTTAsync_failureData* response)
@@ -2153,18 +2122,12 @@ void test7OnPublishFailure(void* context, MQTTAsync_failureData* response)
 void test7OnUnsubscribe(void* context, MQTTAsync_successData* response)
 {
 	AsyncTestClient* tc = (AsyncTestClient*) context;
-	MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
 	int rc;
 
 	MyLog(LOGA_DEBUG, "In test7OnUnsubscribe callback, %s %d %d", tc->clientid,
 			test7OnUnsubscribed, test7OnPublishSuccessCount);
-	opts.onSuccess = asyncTestOnDisconnect;
-	opts.context = tc;
 
 	test7OnUnsubscribed++;
-
-	if (test7OnUnsubscribed == 1 && test7OnPublishSuccessCount >= options.message_count)
-		rc = MQTTAsync_disconnect(tc->client, &opts);
 }
 
 int test7MessageArrived(void* context, char* topicName, int topicLen,
@@ -2289,6 +2252,7 @@ int test7(struct Options options)
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
 	MQTTAsync_willOptions wopts = MQTTAsync_willOptions_initializer;
 	MQTTAsync_SSLOptions sslopts = MQTTAsync_SSLOptions_initializer;
+	MQTTAsync_disconnectOptions dopts = MQTTAsync_disconnectOptions_initializer;
 	int rc = 0;
 	char* test_topic = "C client test7";
 	int test_finished;
@@ -2351,6 +2315,17 @@ int test7(struct Options options)
 	if (rc != MQTTASYNC_SUCCESS)
 		goto exit;
 
+	while (test7OnUnsubscribed == 0 && test7OnPublishSuccessCount < options.message_count)
+#if defined(_WIN32)
+		Sleep(100);
+#else
+		usleep(1000L);
+#endif
+
+	dopts.onSuccess = asyncTestOnDisconnect;
+	dopts.context = &tc;
+	rc = MQTTAsync_disconnect(c, &dopts);
+
 	while (!tc.testFinished)
 #if defined(_WIN32)
 		Sleep(100);
@@ -2359,6 +2334,12 @@ int test7(struct Options options)
 #endif
 
 	MQTTAsync_destroy(&c);
+
+	if (test7_payload)
+	{
+		free(test7_payload);
+		test7_payload = NULL;
+	}
 
 	exit: MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", testname, tests, failures);

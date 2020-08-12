@@ -151,7 +151,8 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 #endif
 #endif
 {
-	int rc, port;
+	int rc = 0,
+		port;
 	size_t addr_len;
 	b64_size_t basic_auth_in_len, basic_auth_out_len;
 	char *p0, *p1;
@@ -189,7 +190,9 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 			free(basic_auth);
 		}
 		else {
-			aClient->net.http_proxy = strchr(p0, ':') + 3;
+			p1 = strchr(p0, ':');
+			if (p1)
+				aClient->net.http_proxy = p1 + 3;
 		}
 		Log(TRACE_PROTOCOL, -1, "MQTTProtocol_connect: setting http proxy to %s", aClient->net.http_proxy);
 	}
@@ -222,7 +225,9 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 			free(basic_auth);
 		}
 		else {
-			aClient->net.https_proxy = strchr(p0, ':') + 3;
+			p1 = strchr(p0, ':');
+			if (p1)
+				aClient->net.https_proxy = p1 + 3;
 		}
 	}
 

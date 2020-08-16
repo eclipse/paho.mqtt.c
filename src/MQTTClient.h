@@ -742,9 +742,21 @@ typedef struct
 	 */
 	int disableDefaultTrustStore;
 
+	/**
+	 * The protocol-lists must be in wire-format, which is defined as a vector of non-empty, 8-bit length-prefixed, byte strings.
+	 * The length-prefix byte is not included in the length. Each string is limited to 255 bytes. A byte-string length of 0 is invalid.
+	 * A truncated byte-string is invalid.
+	 * Check documentation for SSL_CTX_set_alpn_protos
+	 */
+	const unsigned char *protos;
+
+	/**
+	 * The length of the vector protos vector
+	 */
+	unsigned int protos_len;
 } MQTTClient_SSLOptions;
 
-#define MQTTClient_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 4, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL, NULL, NULL, 0 }
+#define MQTTClient_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 5, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL, NULL, NULL, 0, NULL, 0 }
 
 /**
   * MQTTClient_libraryInfo is used to store details relating to the currently used

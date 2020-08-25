@@ -445,6 +445,43 @@ typedef void MQTTAsync_disconnected(void* context, MQTTProperties* properties,
  */
 LIBMQTT_API int MQTTAsync_setDisconnected(MQTTAsync handle, void* context, MQTTAsync_disconnected* co);
 
+/** The connect options that can be updated before an automatic reconnect. */
+typedef struct
+{
+	/** The eyecatcher for this structure.  Will be MQCD. */
+	char struct_id[4];
+	/** The version number of this structure.  Will be 0 */
+	int struct_version;
+	/**
+      * MQTT servers that support the MQTT v3.1 protocol provide authentication
+      * and authorisation by user name and password. This is the user name
+      * parameter.
+      */
+	const char* username;
+	/**
+	 * Optional binary password.  Only checked and used if the password option is NULL
+	 */
+	struct {
+		int len;           /**< binary password length */
+		const void* data;  /**< binary password data */
+	} binarypwd;
+} MQTTAsync_connectData;
+
+#define MQTTAsync_connectData_initializer {{'M', 'Q', 'C', 'D'}, 0, NULL, {0, NULL}}
+
+typedef int MQTTAsync_updateConnectOptions(void* context, MQTTAsync_connectData* data);
+
+/**
+ * Sets the MQTTAsync_updateConnectOptions() callback function for a client.
+ * @param handle A valid client handle from a successful call to MQTTAsync_create().
+ * @param context A pointer to any application-specific context. The
+ * the <i>context</i> pointer is passed to each of the callback functions to
+ * provide access to the context information in the callback.
+ * @param co A pointer to an MQTTAsync_updateConnectOptions() callback
+ * function.  NULL removes the callback setting.
+ */
+LIBMQTT_API int MQTTAsync_setUpdateConnectOptions(MQTTAsync handle, void* context, MQTTAsync_updateConnectOptions* co);
+
 
 /** The data returned on completion of an unsuccessful API call in the response callback onFailure. */
 typedef struct

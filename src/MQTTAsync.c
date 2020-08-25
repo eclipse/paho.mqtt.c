@@ -385,6 +385,9 @@ typedef struct MQTTAsync_struct
 	MQTTAsync_disconnected* disconnected;
 	void* disconnected_context; /* the context to be associated with the disconnected callback*/
 
+	MQTTAsync_updateConnectOptions* updateConnectOptions;
+	void* updateConnectOptions_context;
+
 	/* Each time connect is called, we store the options that were used.  These are reused in
 	   any call to reconnect, or an automatic reconnect attempt */
 	MQTTAsync_command connect;		/* Connect operation properties */
@@ -2159,6 +2162,35 @@ static void MQTTAsync_checkTimeouts(void)
 	  			/* make sure that the version attempts are restarted */
 				if (m->c->MQTTVersion == MQTTVERSION_DEFAULT)
 					conn->command.details.conn.MQTTVersion = 0;
+				if (m->updateConnectOptions)
+				{
+					MQTTAsync_connectData connectData = MQTTAsync_connectData_initializer;
+					int callback_rc = MQTTASYNC_SUCCESS;
+
+					connectData.username = m->c->username;
+					connectData.binarypwd.data = m->c->password;
+					connectData.binarypwd.len = m->c->passwordlen;
+					Log(TRACE_MIN, -1, "Calling updateConnectOptions for client %s", m->c->clientID);
+					callback_rc = (*(m->updateConnectOptions))(m->updateConnectOptions_context, &connectData);
+
+					if (callback_rc == 1)
+					{
+						if (connectData.username != m->c->username)
+						{
+							if (m->c->username)
+								free((void*)m->c->username);
+							m->c->username = MQTTStrdup(connectData.username);
+						}
+						if (connectData.binarypwd.data != m->c->password)
+						{
+							if (m->c->password)
+								free((void*)m->c->password);
+							m->c->passwordlen = connectData.binarypwd.len;
+							if ((m->c->password = malloc(m->c->passwordlen)))
+								memcpy((void*)m->c->password, connectData.binarypwd.data, m->c->passwordlen);
+						}
+					}
+				}
 				Log(TRACE_MIN, -1, "Automatically attempting to reconnect");
 				MQTTAsync_addCommand(conn, sizeof(m->connect));
 				m->reconnectNow = 0;
@@ -2919,7 +2951,6 @@ int MQTTAsync_setDeliveryCompleteCallback(MQTTAsync handle, void* context,
 }
 
 
-
 int MQTTAsync_setDisconnected(MQTTAsync handle, void* context, MQTTAsync_disconnected* disconnected)
 {
 	int rc = MQTTASYNC_SUCCESS;
@@ -2956,6 +2987,28 @@ int MQTTAsync_setConnected(MQTTAsync handle, void* context, MQTTAsync_connected*
 	{
 		m->connected_context = context;
 		m->connected = connected;
+	}
+
+	MQTTAsync_unlock_mutex(mqttasync_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+int MQTTAsync_setUpdateConnectOptions(MQTTAsync handle, void* context, MQTTAsync_updateConnectOptions* updateOptions)
+{
+	int rc = MQTTASYNC_SUCCESS;
+	MQTTAsyncs* m = handle;
+
+	FUNC_ENTRY;
+	MQTTAsync_lock_mutex(mqttasync_mutex);
+
+	if (m == NULL || m->c->connect_state != NOT_IN_PROGRESS)
+		rc = MQTTASYNC_FAILURE;
+	else
+	{
+		m->updateConnectOptions_context = context;
+		m->updateConnectOptions = updateOptions;
 	}
 
 	MQTTAsync_unlock_mutex(mqttasync_mutex);

@@ -2179,15 +2179,26 @@ static void MQTTAsync_checkTimeouts(void)
 						{
 							if (m->c->username)
 								free((void*)m->c->username);
-							m->c->username = MQTTStrdup(connectData.username);
+							if (connectData.username)
+								m->c->username = MQTTStrdup(connectData.username);
+							else
+								m->c->username = NULL;
 						}
 						if (connectData.binarypwd.data != m->c->password)
 						{
 							if (m->c->password)
 								free((void*)m->c->password);
-							m->c->passwordlen = connectData.binarypwd.len;
-							if ((m->c->password = malloc(m->c->passwordlen)))
-								memcpy((void*)m->c->password, connectData.binarypwd.data, m->c->passwordlen);
+							if (connectData.binarypwd.data)
+							{
+								m->c->passwordlen = connectData.binarypwd.len;
+								if ((m->c->password = malloc(m->c->passwordlen)))
+									memcpy((void*)m->c->password, connectData.binarypwd.data, m->c->passwordlen);
+							}
+							else
+							{
+								m->c->password = NULL;
+								m->c->passwordlen = 0;
+							}
 						}
 					}
 				}
@@ -3003,7 +3014,7 @@ int MQTTAsync_setUpdateConnectOptions(MQTTAsync handle, void* context, MQTTAsync
 	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttasync_mutex);
 
-	if (m == NULL || m->c->connect_state != NOT_IN_PROGRESS)
+	if (m == NULL)
 		rc = MQTTASYNC_FAILURE;
 	else
 	{

@@ -668,6 +668,19 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	}
 #endif
 
+#if (OPENSSL_VERSION_NUMBER >= 0x010002000) /* 1.0.2 and later */
+	if (opts->protos != NULL && opts->protos_len > 0) {
+        if ((rc = SSL_CTX_set_alpn_protos(net->ctx, opts->protos, opts->protos_len)) != 0)
+        {
+            if (opts->struct_version >= 3)
+                SSLSocket_error("SSL_CTX_set_alpn_protos", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
+            else
+                SSLSocket_error("SSL_CTX_set_alpn_protos", NULL, net->socket, rc, NULL, NULL);
+            goto free_ctx;
+        }
+	}
+#endif
+
 	SSL_CTX_set_mode(net->ctx, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 
 	goto exit;

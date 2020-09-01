@@ -91,7 +91,6 @@ IF (PAHO_ENABLE_CPACK)
         CONFIGURE_FILE(${CMAKE_SCRIPTS}/CPackDebConfig.cmake.in
                 ${CMAKE_BINARY_DIR}/CPackDebConfig.cmake @ONLY)
         SET(CPACK_PROJECT_CONFIG_FILE ${CMAKE_BINARY_DIR}/CPackDebConfig.cmake)
-        ADD_SUBDIRECTORY(debian)
     ELSE()
             SET(CPACK_GENERATOR "TGZ")
     ENDIF()

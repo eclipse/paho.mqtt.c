@@ -904,9 +904,10 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQCO. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1 or 2
+	/** The version number of this structure.  Must be 0, 1, 2 or 3
 	 * 0 means no MQTTVersion
 	 * 1 means no allowDisconnectedSendAtAnyTime, deleteOldestMessages, restoreMessages
+	 * 2 means no persistQoS0
 	 */
 	int struct_version;
 	/** Whether to allow messages to be sent when the client library is not connected. */
@@ -931,11 +932,15 @@ typedef struct
 	 * Restore messages from persistence on create - or clear it.
 	 */
 	int restoreMessages;
+	/*
+	 * Persist QoS0 publish commands - an option to not persist them.
+	 */
+	int persistQoS0;
 } MQTTAsync_createOptions;
 
-#define MQTTAsync_createOptions_initializer  { {'M', 'Q', 'C', 'O'}, 2, 0, 100, MQTTVERSION_DEFAULT, 0, 0, 1}
+#define MQTTAsync_createOptions_initializer  { {'M', 'Q', 'C', 'O'}, 2, 0, 100, MQTTVERSION_DEFAULT, 0, 0, 1, 1}
 
-#define MQTTAsync_createOptions_initializer5 { {'M', 'Q', 'C', 'O'}, 2, 0, 100, MQTTVERSION_5, 0, 0, 1}
+#define MQTTAsync_createOptions_initializer5 { {'M', 'Q', 'C', 'O'}, 2, 0, 100, MQTTVERSION_5, 0, 0, 1, 1}
 
 
 LIBMQTT_API int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const char* clientId,

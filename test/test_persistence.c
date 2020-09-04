@@ -376,6 +376,7 @@ int test7(struct Options options)
 	createOpts.allowDisconnectedSendAtAnyTime = 1;
 	createOpts.sendWhileDisconnected = 1;
 	createOpts.maxBufferedMessages = 64000;
+	createOpts.persistQoS0 = 1;
 	printf("Create starting\n");
 	START_TIME_TYPE start = start_clock();
 	rc = MQTTAsync_createWithOptions(&c, options.proxy_connection, clientidc, MQTTCLIENT_PERSISTENCE_DEFAULT,
@@ -388,16 +389,20 @@ int test7(struct Options options)
 		goto exit;
 	}
 	printf("Create finished after %ld ms\n", duration);
-	MQTTAsync_token *tokens;
+	MQTTAsync_token *tokens, *cur_token;
 	MQTTAsync_getPendingTokens(c, &tokens);
 	int token_count = 0;
-	while (*tokens != -1)
+	if ((cur_token = tokens) != NULL)
 	{
-		tokens++;
-		token_count++;
+		while (*cur_token != -1)
+		{
+			cur_token++;
+			token_count++;
+		}
 	}
 	printf("%d messages restored\n", token_count);
-	MQTTAsync_free(tokens);
+	if (tokens)
+		MQTTAsync_free(tokens);
 
 	opts.keepAliveInterval = 20;
 	opts.cleansession = 1;

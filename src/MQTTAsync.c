@@ -3056,6 +3056,18 @@ static void MQTTAsync_closeOnly(Clients* client, enum MQTTReasonCodes reasonCode
 		client->net.socket = 0;
 #if defined(OPENSSL)
 		client->net.ssl = NULL;
+#if PKCS11_HSM
+        /* release all allocated resources */
+        if(client->sslopts->pkcs11_slots) {
+            PKCS11_release_all_slots(client->sslopts->pkcs11_ctx,
+                                     client->sslopts->pkcs11_slots,
+                                     client->sslopts->pkcs11_slot_num);
+        }
+        if(client->sslopts->pkcs11_ctx) {
+            PKCS11_CTX_unload(client->sslopts->pkcs11_ctx);
+            PKCS11_CTX_free(client->sslopts->pkcs11_ctx);
+        }
+#endif /* PKCS11_HSM */
 #endif
 		Thread_unlock_mutex(socket_mutex);
 	}
@@ -3449,6 +3461,18 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 			free((void*)m->c->sslopts->privateKeyPassword);
 		if (m->c->sslopts->enabledCipherSuites)
 			free((void*)m->c->sslopts->enabledCipherSuites);
+#ifdef PKCS11_HSM
+        if (m->c->sslopts->hsmModule)
+            free((void*)m->c->sslopts->hsmModule);
+        if (m->c->sslopts->caLabel)
+            free((void*)m->c->sslopts->caLabel);
+        if (m->c->sslopts->keyLabel)
+            free((void*)m->c->sslopts->keyLabel);
+        if (m->c->sslopts->tokenLabel)
+            free((void*)m->c->sslopts->tokenLabel);
+        if (m->c->sslopts->pinValue)
+            free((void*)m->c->sslopts->pinValue);
+#endif /* PKCS11_HSM */
 		if (m->c->sslopts->struct_version >= 2)
 		{
 			if (m->c->sslopts->CApath)
@@ -3478,6 +3502,18 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		if (options->ssl->enabledCipherSuites)
 			m->c->sslopts->enabledCipherSuites = MQTTStrdup(options->ssl->enabledCipherSuites);
 		m->c->sslopts->enableServerCertAuth = options->ssl->enableServerCertAuth;
+#ifdef PKCS11_HSM
+        if (options->ssl->hsmModule)
+            m->c->sslopts->hsmModule = MQTTStrdup(options->ssl->hsmModule);
+        if (options->ssl->caLabel)
+            m->c->sslopts->caLabel = MQTTStrdup(options->ssl->caLabel);
+        if (options->ssl->keyLabel)
+            m->c->sslopts->keyLabel = MQTTStrdup(options->ssl->keyLabel);
+        if (options->ssl->tokenLabel)
+            m->c->sslopts->tokenLabel = MQTTStrdup(options->ssl->tokenLabel);
+        if (options->ssl->pinValue)
+            m->c->sslopts->pinValue = MQTTStrdup(options->ssl->pinValue);
+#endif /* PKCS11_HSM */
 		if (m->c->sslopts->struct_version >= 1)
 			m->c->sslopts->sslVersion = options->ssl->sslVersion;
 		if (m->c->sslopts->struct_version >= 2)

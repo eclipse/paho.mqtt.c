@@ -159,6 +159,32 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 	b64_data_t *basic_auth;
 
 	FUNC_ENTRY;
+
+#if defined(OPENSSL) && defined(PKCS11_HSM)
+    MQTTClient_SSLOptions *sslopts = aClient->sslopts;
+    if(sslopts->hsmModule) {
+        /* load pkcs11 ctx */
+        if(!sslopts->pkcs11_ctx) {
+            sslopts->pkcs11_ctx = PKCS11_CTX_new();
+            if(!sslopts->pkcs11_ctx ||
+               (PKCS11_CTX_load(sslopts->pkcs11_ctx, sslopts->hsmModule) < 0)) {
+                fprintf(stderr, "fail in PKCS11_CTX_load()\n");
+                rc = PAHO_MEMORY_ERROR;
+                goto exit;
+            }
+        }
+        if(!sslopts->pkcs11_slots) {
+            if(PKCS11_enumerate_slots(sslopts->pkcs11_ctx,
+                                      &sslopts->pkcs11_slots,
+                                      &sslopts->pkcs11_slot_num) < 0) {
+                fprintf(stderr, "fail in PKCS11_enumerate_slots()\n");
+                rc = PAHO_MEMORY_ERROR;
+                goto exit;
+            }
+        }
+    }
+#endif /* OPENSSL && PKCS11_HSM */
+
 	aClient->good = 1;
 	aClient->net.http_proxy = NULL;
 	aClient->net.http_proxy_auth = NULL;
@@ -321,6 +347,12 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 	}
 
 exit:
+#if defined(OPENSSL) && defined(PKCS11_HSM)
+    /* All allocated resources regarding to PKCS11 interface
+     * at the beginning of this function will be released when
+     * MQTTClient_disconnect() function is called.
+     */
+#endif /* OPENSSL && PKCS11_HSM */
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

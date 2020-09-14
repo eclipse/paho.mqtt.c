@@ -124,6 +124,10 @@
 #include "MQTTClientPersistence.h"
 #endif
 
+#if defined(OPENSSL) && defined(PKCS11_HSM)
+#include "libp11.h"
+#endif /* OPENSSL && PKCS11_HSM */
+
 /**
  * Return code: No error. Indicates successful completion of an MQTT client
  * operation.
@@ -710,6 +714,19 @@ typedef struct
 	 */
 	const char* CApath;
 
+#if defined(OPENSSL) && defined(PKCS11_HSM)
+    /* parameters passed from the application */
+    const char* hsmModule;
+    const char* caLabel;
+    const char* keyLabel;
+    const char* tokenLabel;
+    const char* pinValue;
+    /* parameters to access the HSM */
+    PKCS11_CTX *pkcs11_ctx;
+    PKCS11_SLOT *pkcs11_slots;
+    unsigned int pkcs11_slot_num;
+#endif /* OPENSSL && PKCS11_HSM */
+
     /**
      * Callback function for OpenSSL error handler ERR_print_errors_cb
      * Exists only if struct_version >= 3
@@ -756,7 +773,11 @@ typedef struct
 	unsigned int protos_len;
 } MQTTClient_SSLOptions;
 
-#define MQTTClient_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 5, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL, NULL, NULL, 0, NULL, 0 }
+#if defined(OPENSSL) && defined(PKCS11_HSM)
+#define MQTTClient_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 4, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0 }
+#else
+#define MQTTClient_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 4, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL, NULL, NULL, 0 }
+#endif /* OPENSSL && PKCS11_HSM */
 
 /**
   * MQTTClient_libraryInfo is used to store details relating to the currently used

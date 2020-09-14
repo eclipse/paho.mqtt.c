@@ -69,6 +69,14 @@ struct pubsub_opts
 		char *name;
 		char *value;
 	} user_property;
+#ifdef PKCS11_HSM
+    /* PKCS11 HSM options */
+    char* hsmmodule;
+    char* calabel;
+    char* keylabel;
+    char* tokenlabel;
+    char* pin;
+#endif /* PKCS11_HSM */
 };
 
 typedef struct

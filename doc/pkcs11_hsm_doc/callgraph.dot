@@ -1,0 +1,149 @@
+digraph {
+    rankdir = LR
+
+    subgraph cluster_paho_cs_pubsub {
+        label = "paho_cs_{pub/sub}";
+        
+        myconnect [fontcolor = blue];
+
+        main -> myconnect;
+    }
+
+    subgraph cluster_paho_async_apps {
+        label = "paho_c_{pub/sub}";
+
+        async_main [label = "main"];
+        async_myconnect [label = "myconnect", fontcolor = blue];
+
+        async_main -> async_myconnect;
+    }
+
+    subgraph cluster_libpaho_mqtt3cs {
+        label = "libpaho-mqtt3cs.so";
+
+        MQTTClient_connectURI [fontcolor = blue];
+        MQTTClient_closeSession [fontcolor = blue];
+        MQTTProtocol_connect [fontcolor = blue];
+        SSLSocket_createContext [fontcolor = blue];
+
+        pkcs11_hsm_load_pkey_from_hsm [shape = box, fontcolor = blue];
+        pkcs11_hsm_load_verifiy_locations [shape = box, fontcolor = blue];
+
+        myconnect -> MQTTClient_connect;
+        myconnect -> MQTTClient_connect5;
+        MQTTClient_connect5 -> MQTTClient_connectAll;
+        MQTTClient_connect -> MQTTClient_connectAll;
+        MQTTClient_connectAll -> MQTTClient_connectURI;
+        MQTTClient_connectURI -> MQTTClient_connectURIVersion;
+        MQTTClient_connectURIVersion -> MQTTProtocol_connect;
+        MQTTProtocol_connect -> SSLSocket_setSocketForSSL;
+        SSLSocket_setSocketForSSL -> SSLSocket_createContext;
+        MQTTProtocol_connect -> SSLSocket_connect;
+        MQTTProtocol_connect -> MQTTPacket_send_connect;
+
+        SSLSocket_createContext -> pkcs11_hsm_load_pkey_from_hsm;
+        SSLSocket_createContext -> pkcs11_hsm_load_verifiy_locations;
+
+        MQTTClient_connectURIVersion -> MQTTClient_run [style = "dashed", label = "thread"];
+        MQTTClient_run -> MQTTClient_cycle;
+        MQTTClient_run -> MQTTClient_disconnect_internal;
+        MQTTClient_run -> MQTTClient_disconnect1;
+        MQTTClient_run -> SSLSocket_connect;
+
+        MQTTClient_cycle -> SSLSocket_getPendingRead;
+        MQTTClient_cycle -> Socket_getReadySocket;
+
+        MQTTClient_receive -> MQTTClient_waitfor;
+        MQTTClient_yield -> MQTTClient_waitfor;
+
+        MQTTClient_waitfor -> MQTTClient_cycle;
+        MQTTClient_waitfor -> SSLSocket_connect;
+
+        MQTTClient_connectURIVersion -> MQTTClient_waitfor;
+        MQTTClient_subscribeMany5 -> MQTTClient_waitfor;
+        MQTTClient_unsubscribeMany5 -> MQTTClient_waitfor;
+
+        MQTTClient_connectURIVersion -> MQTTPacket_send_connect;
+
+        MQTTProtocol_closeSession -> MQTTClient_disconnect_internal;
+        MQTTClient_subscribeMany5 -> MQTTClient_disconnect_internal;
+        MQTTClient_unsubscribeMany5 -> MQTTClient_disconnect_internal;
+        MQTTClient_publish5 -> MQTTClient_disconnect_internal;
+        MQTTClient_receive -> MQTTClient_disconnect_internal;
+        MQTTClient_yield -> MQTTClient_disconnect_internal;
+        MQTTClient_disconnect5 -> MQTTClient_disconnect1;
+        MQTTClient_disconnect -> MQTTClient_disconnect1;
+        MQTTClient_disconnect_internal -> MQTTClient_disconnect1;
+        MQTTClient_connectURIVersion -> MQTTClient_disconnect1;
+        MQTTClient_disconnect1 -> MQTTClient_closeSession;
+        MQTTClient_closeSession -> MQTTClient_stop;
+    }
+
+    subgraph cluster_libpaho_mqtt3as {
+        label = "libpaho-mqtt3as.so";
+
+        MQTTAsync_connect [fontcolor = blue];
+        MQTTAsync_closeOnly [fontcolor = blue];
+
+        async_myconnect -> MQTTAsync_connect;
+
+        MQTTAsync_connect -> MQTTAsync_sendThread [style = "dashed", label = "thread"];
+        MQTTAsync_connect -> MQTTAsync_receiveThread [style = "dashed", label = "thread"];
+        MQTTAsync_connect -> MQTTAsync_addCommand;
+
+        MQTTAsync_sendThread -> MQTTAsync_processCommand;
+        MQTTAsync_processCommand -> MQTTProtocol_connect;
+        MQTTAsync_processCommand -> MQTTProtocol_subscribe;
+        MQTTAsync_processCommand -> MQTTProtocol_unsubscribe;
+        MQTTAsync_processCommand -> MQTTProtocol_startPublish;
+        MQTTAsync_processCommand -> MQTTAsync_checkDisconnect;
+        MQTTAsync_processCommand -> MQTTAsync_freeCommand;
+        MQTTAsync_processCommand -> MQTTAsync_disconnect;
+
+        MQTTAsync_receiveThread -> MQTTAsync_cycle;
+        MQTTAsync_receiveThread -> MQTTAsync_disconnect_internal;
+        MQTTAsync_receiveThread -> MQTTAsync_closeOnly;
+        MQTTAsync_receiveThread -> MQTTAsync_deliverMessage;
+        MQTTAsync_receiveThread -> MQTTAsync_completeConnection;
+
+        nextOrClose -> MQTTAsync_closeOnly;
+        nextOrClose -> MQTTAsync_closeSession;
+        MQTTAsync_closeSession -> MQTTAsync_closeOnly;
+        MQTTAsync_closeOnly -> MQTTProtocol_checkPendingWrites -> MQTTProtocol_removePublication;
+        MQTTAsync_closeOnly -> MQTTPacket_send_disconnect -> MQTTPacket_send;
+        MQTTAsync_closeOnly -> SSLSocket_close -> SSLSocket_destroyContext;
+        MQTTAsync_closeOnly -> Socket_close;
+
+        MQTTAsync_cycle -> MQTTAsync_connecting;
+        MQTTAsync_cycle -> SSLSocket_getPendingRead;
+        MQTTAsync_cycle -> Socket_getReadySocket;
+
+        MQTTAsync_connecting -> SSLSocket_setSocketForSSL;
+        MQTTAsync_connecting -> SSLSocket_connect;
+        MQTTAsync_connecting -> MQTTPacket_send_connect;
+
+        MQTTAsync_disconnect -> MQTTAsync_disconnect1;
+        MQTTAsync_disconnect1 -> MQTTAsync_addCommand;
+
+        MQTTAsync_checkDisconnect -> MQTTAsync_closeSession;
+        MQTTAsync_destroy -> MQTTAsync_closeSession;
+
+    }
+
+    subgraph cluster_libssl {
+        label = "libssl.so"; 
+
+        SSL_CTX_use_PrivateKey_file;
+        SSLSocket_connect -> SSL_connect;
+        SSLSocket_connect -> SSL_get_peer_certificate;
+        SSLSocket_createContext -> SSL_CTX_use_PrivateKey_file;
+        SSLSocket_createContext -> SSL_CTX_load_verify_locations;
+    }
+
+    subgraph cluster_libcrypto {
+        label = "libcrypto.so";
+
+        SSLSocket_connect -> X509_check_host;
+        SSLSocket_connect -> X509_check_ip_asc;
+    }
+}

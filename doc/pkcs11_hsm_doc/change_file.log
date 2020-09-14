@@ -1,0 +1,13 @@
+Makefile
+src/MQTTAsync.c
+src/MQTTAsync.h
+src/MQTTClient.c
+src/MQTTClient.h
+src/MQTTProtocolOut.c
+src/samples/paho_c_pub.c
+src/samples/paho_c_sub.c
+src/samples/paho_cs_pub.c
+src/samples/paho_cs_sub.c
+src/samples/pubsub_opts.c
+src/samples/pubsub_opts.h
+src/SSLSocket.c

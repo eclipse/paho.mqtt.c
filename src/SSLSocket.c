@@ -44,6 +44,10 @@
 #include <openssl/crypto.h>
 #include <openssl/x509v3.h>
 
+#ifdef PKCS11_HSM
+#include "libp11.h"
+#endif /* PKCS11_HSM */
+
 extern Sockets mod_s;
 
 static int SSLSocket_error(char* aString, SSL* ssl, int sock, int rc, int (*cb)(const char *str, size_t len, void *u), void* u);
@@ -264,12 +268,18 @@ char* SSLSocket_get_version_string(int version)
 	{
 		{ SSL2_VERSION, "SSL 2.0" },
 		{ SSL3_VERSION, "SSL 3.0" },
+/* These definitions are revised to align with the Openssl code */
+#if defined(TLS1_VERSION)
 		{ TLS1_VERSION, "TLS 1.0" },
-#if defined(TLS2_VERSION)
-		{ TLS2_VERSION, "TLS 1.1" },
 #endif
-#if defined(TLS3_VERSION)
-		{ TLS3_VERSION, "TLS 1.2" },
+#if defined(TLS1_1_VERSION)
+		{ TLS1_1_VERSION, "TLS 1.1" },
+#endif
+#if defined(TLS1_2_VERSION)
+		{ TLS1_2_VERSION, "TLS 1.2" },
+#endif
+#if defined(TLS1_3_VERSION)
+		{ TLS1_3_VERSION, "TLS 1.3" },
 #endif
 	};
 
@@ -541,6 +551,188 @@ exit:
 	return rc;
 }
 
+#ifdef PKCS11_HSM
+int pkcs11_hsm_load_pkey_from_hsm(SSL_CTX *ssl_ctx, MQTTClient_SSLOptions *sslopts)
+{
+    PKCS11_CTX *pkcs11_ctx;
+	PKCS11_SLOT *slots, *slot;
+    PKCS11_KEY *keys;
+	unsigned int nslots, nkeys;
+    EVP_PKEY *found_pkey = NULL;
+    const char *tokenlabel, *keylabel, *pinvalue;
+    int rc = 0;
+
+
+	pkcs11_ctx = sslopts->pkcs11_ctx;
+    slots = sslopts->pkcs11_slots;
+    nslots = sslopts->pkcs11_slot_num;
+    tokenlabel = sslopts->tokenLabel;
+    keylabel = sslopts->keyLabel;
+    pinvalue = sslopts->pinValue;
+
+	slot = PKCS11_find_token(pkcs11_ctx, slots, nslots);
+    for (unsigned int i = 1; i <= nslots; i++) {
+        if (slot == NULL || slot->token == NULL) {
+            fprintf(stderr, "no token!\n");
+            rc = 0;
+            goto failed;
+        }
+        int len = strlen(tokenlabel);
+        if ((strlen(slot->token->label) != len) ||
+            (memcmp(slot->token->label, tokenlabel, len) != 0)) {
+            slot = PKCS11_find_next_token(pkcs11_ctx, slots, nslots, slot);
+            continue;
+        }
+
+        /* perform pkcs #11 login */
+        rc = PKCS11_login(slot, 0, pinvalue);
+        if (rc < 0) {
+            fprintf(stderr, "PKCS11_login failed\n");
+            rc = 0;
+            goto failed;
+        }
+
+        /* get all private keys */
+        rc = PKCS11_enumerate_keys(slot->token, &keys, &nkeys);
+        if (rc < 0) {
+            fprintf(stderr, "PKCS11_enumerate_keys failed\n");
+            rc = 0;
+            goto failed;
+        }
+        if (nkeys == 0) {
+            fprintf(stderr, "no private key found\n");
+            rc = 0;
+            goto failed;
+        }
+        for (unsigned int j = 1; j <= nkeys; j++) {
+            PKCS11_KEY *key = &keys[j-1];
+            if ((strlen(key->label) == strlen(keylabel)) &&
+                (memcmp(key->label, keylabel, strlen(keylabel)) == 0)) {
+                /* found the key */
+                found_pkey = PKCS11_get_private_key(key);
+                fprintf(stdout, "<DEBUG> private key found: label(%s)\n", key->label);
+                break;
+            }
+        }
+        if (found_pkey) {
+            /* key is found */
+            break;
+        }
+
+        slot = PKCS11_find_next_token(pkcs11_ctx, slots, nslots, slot);
+    }
+
+    if (!found_pkey) {
+        printf("no private key found!\n");
+        rc = 0;
+        goto failed;
+    }
+
+    /* load private key to ssl_ctx */
+    rc = SSL_CTX_use_PrivateKey(ssl_ctx, found_pkey);
+
+failed:
+	if (rc != 1)
+		ERR_print_errors_fp(stderr);
+
+    return rc;
+}
+
+int pkcs11_hsm_load_verifiy_locations(SSL_CTX *ssl_ctx, MQTTClient_SSLOptions *sslopts)
+{
+    X509_STORE *x509_store = SSL_CTX_get_cert_store(ssl_ctx);
+
+    PKCS11_CTX *pkcs11_ctx;
+	PKCS11_SLOT *slots, *slot;
+    PKCS11_CERT *certs;
+	unsigned int nslots, ncerts;
+    X509 *found_cert = NULL;
+    const char *tokenlabel, *calabel;
+    int rc = 0;
+
+
+	pkcs11_ctx = sslopts->pkcs11_ctx;
+    slots = sslopts->pkcs11_slots;
+    nslots = sslopts->pkcs11_slot_num;
+    tokenlabel = sslopts->tokenLabel;
+    calabel = sslopts->caLabel;
+
+	slot = PKCS11_find_token(pkcs11_ctx, slots, nslots);
+    for (unsigned int i = 1; i <= nslots; i++) {
+        if (slot == NULL || slot->token == NULL) {
+            fprintf(stderr, "no token!\n");
+            rc = 0;
+            goto failed;
+        }
+        int len = strlen(tokenlabel);
+        if ((strlen(slot->token->label) != len) ||
+            (memcmp(slot->token->label, tokenlabel, len) != 0)) {
+            slot = PKCS11_find_next_token(pkcs11_ctx, slots, nslots, slot);
+            continue;
+        }
+
+        /* get all certs */
+        rc = PKCS11_enumerate_certs(slot->token, &certs, &ncerts);
+        if (rc < 0) {
+            fprintf(stderr, "PKCS11_enumerate_certs failed\n");
+            rc = 0;
+            goto failed;
+        }
+        if (ncerts <= 0) {
+            fprintf(stderr, "no certificates found\n");
+            rc = 0;
+            goto failed;
+        }
+        for (unsigned int j = 1; j <= ncerts; j++) {
+            PKCS11_CERT *cert = &certs[j-1];
+            if ((strlen(cert->label) == strlen(calabel)) &&
+                (memcmp(cert->label, calabel, strlen(calabel)) == 0)) {
+                /* found the cert */
+                found_cert = cert->x509;
+                fprintf(stdout, "<DEBUG> certificate found: label(%s)\n", cert->label);
+                break;
+            }
+        }
+        if (found_cert) {
+            /* certificate is found */
+            break;
+        }
+
+        slot = PKCS11_find_next_token(pkcs11_ctx, slots, nslots, slot);
+    }
+
+    if (!found_cert) {
+        fprintf(stderr, "no cert found!\n");
+        rc = 0;
+        goto failed;
+    }
+
+    /* load the found certificate into ctx */
+    X509_LOOKUP *lookup;
+
+    lookup = X509_STORE_add_lookup(x509_store, X509_LOOKUP_file());
+    if (!lookup) {
+        fprintf(stderr, "fail to add lookup to x509_store_ctx.\n");
+        rc = 0;
+        goto failed;
+    }
+    if (!X509_STORE_add_cert(X509_LOOKUP_get_store(lookup), found_cert)) {
+        fprintf(stderr, "fail to add cert to x509_store_ctx.\n");
+        rc = 0;
+        goto failed;
+    }
+
+    /* sucess return code */
+    rc = 1;
+
+failed:
+	if (rc != 1)
+		ERR_print_errors_fp(stderr);
+
+    return rc;
+}
+#endif /* PKCS11_HSM */
+
 int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 {
 	int rc = 1;
@@ -611,6 +803,25 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 			SSL_CTX_set_default_passwd_cb_userdata(net->ctx, (void*)opts->privateKeyPassword);
 		}
 
+#ifdef PKCS11_HSM
+        if (opts->keyLabel)
+        {
+            /* opts->privateKey is the private key signing the certificate and
+             * this needs to be pulled from the HSM instead of file.
+             */
+            rc = pkcs11_hsm_load_pkey_from_hsm(net->ctx, opts);
+            if (rc != 1)
+            {
+                if (opts->struct_version >= 3)
+                    SSLSocket_error("pkcs11_hsm_load_pkey_from_hsm", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
+                else
+                    SSLSocket_error("pkcs11_hsm_load_pkey_from_hsm", NULL, net->socket, rc, NULL, NULL);
+                goto free_ctx;
+            }
+        }
+        else
+        {
+#endif /* PKCS11_HSM */
 		/* support for ASN.1 == DER format? DER can contain only one certificate? */
 		rc = SSL_CTX_use_PrivateKey_file(net->ctx, opts->privateKey, SSL_FILETYPE_PEM);
 		if (opts->privateKey == opts->keyStore)
@@ -623,8 +834,29 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 				SSLSocket_error("SSL_CTX_use_PrivateKey_file", NULL, net->socket, rc, NULL, NULL);
 			goto free_ctx;
 		}
+#ifdef PKCS11_HSM
+        }
+#endif /* PKCS11_HSM */
 	}
 
+#ifdef PKCS11_HSM
+	if (opts->caLabel)
+	{
+        /* opts->trustStore is the CA certificate and
+         * this needs to be pulled from the HSM instead of file.
+         */
+        rc = pkcs11_hsm_load_verifiy_locations(net->ctx, opts);
+        if (rc != 1)
+        {
+			if (opts->struct_version >= 3)
+				SSLSocket_error("pkcs11_hsm_load_verify_locations", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
+			else
+				SSLSocket_error("pkcs11_hsm_load_verify_locations", NULL, net->socket, rc, NULL, NULL);
+			goto free_ctx;
+		}
+    }
+    else
+#endif /* PKCS11_HSM */
 	if (opts->trustStore || opts->CApath)
 	{
 		if ((rc = SSL_CTX_load_verify_locations(net->ctx, opts->trustStore, opts->CApath)) != 1)

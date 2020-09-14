@@ -55,7 +55,9 @@ void usage(struct pubsub_opts* opts, pubsub_opts_nameValue* name_values, const c
 		printf("       [-R] [--no-delimiter]\n");
 	printf("       [--will-topic topic] [--will-payload message] [--will-qos qos] [--will-retain]\n");
 	printf("       [--cafile filename] [--capath dirname] [--cert filename] [--key filename]\n"
-		   "       [--keypass string] [--ciphers string] [--insecure]");
+		   "       [--keypass string] [--ciphers string] [--insecure]\n"
+		   "       [--hsmmodule string] [--calabel string] [--keylabel string]\n"
+           "       [--tokenlabel string] [--pin string]");
 
 	printf(
 	"\n\n  -t (--topic)        : MQTT topic to %s to\n"
@@ -118,6 +120,16 @@ void usage(struct pubsub_opts* opts, pubsub_opts_nameValue* name_values, const c
 	"  --psk               : pre-shared-key in hexadecimal (no leading 0x) \n"
 	"  --psk-identity      : client identity string for TLS-PSK mode.\n"
 	);
+
+#ifdef PKCS11_HSM
+    printf(
+    "  --hsmmodule         : path of HSM library.\n"
+    "  --calabel           : ca label to retrive from HSM.\n"
+    "  --keylabel          : client private key label to retrieve from HSM.\n"
+    "  --tokenlabel        : token label where ca and key are stored.\n"
+    "  --pin               : pin value to retrieve from HSM.\n"
+    );
+#endif /* PKCS11_HSM */
 
 	printf("\nSee http://eclipse.org/paho for more information about the Eclipse Paho project.\n");
 	exit(EXIT_FAILURE);
@@ -294,6 +306,43 @@ int getopts(int argc, char** argv, struct pubsub_opts* opts)
 			else
 				return 1;
 		}
+#ifdef PKCS11_HSM
+		else if (strcmp(argv[count], "--hsmmodule") == 0)
+		{
+			if (++count < argc)
+				opts->hsmmodule = argv[count];
+			else
+				return 1;
+		}
+		else if (strcmp(argv[count], "--calabel") == 0)
+		{
+			if (++count < argc)
+				opts->calabel = argv[count];
+			else
+				return 1;
+		}
+		else if (strcmp(argv[count], "--keylabel") == 0)
+		{
+			if (++count < argc)
+				opts->keylabel = argv[count];
+			else
+				return 1;
+		}
+		else if (strcmp(argv[count], "--tokenlabel") == 0)
+		{
+			if (++count < argc)
+				opts->tokenlabel = argv[count];
+			else
+				return 1;
+		}
+		else if (strcmp(argv[count], "--pin") == 0)
+		{
+			if (++count < argc)
+				opts->pin = argv[count];
+			else
+				return 1;
+		}
+#endif /* PKCS11_HSM */
 		else if (strcmp(argv[count], "--ciphers") == 0)
 		{
 			if (++count < argc)

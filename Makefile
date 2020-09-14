@@ -158,6 +158,14 @@ PAHO_CS_SUB_TARGET = ${blddir}/samples/${PAHO_CS_SUB_NAME}
 #FLAGS_EXE = $(LDFLAGS) -I ${srcdir} -lpthread -L ${blddir}
 #FLAGS_EXES = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread -lssl -lcrypto ${END_GROUP} -L ${blddir}
 
+# PKCS11_HSM Configuration
+# - the following flags should be adjusted to build with PKCS11_HSM support
+# - leaving blank will disable PKCS11_HSM support
+PKCS11_ENABLED = 
+#
+
+ifeq ($(PKCS11_ENABLED),)
+
 CCFLAGS_SO = -g -fPIC $(CFLAGS) -D_GNU_SOURCE -Os -Wall -fvisibility=hidden -I$(blddir_work) -DPAHO_MQTT_EXPORTS=1
 FLAGS_EXE = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread ${GAI_LIB} ${END_GROUP} -L ${blddir}
 FLAGS_EXES = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread ${GAI_LIB} -lssl -lcrypto ${END_GROUP} -L ${blddir}
@@ -167,6 +175,23 @@ LDFLAGS_C = $(LDFLAGS) -shared -Wl,-init,$(MQTTCLIENT_INIT) $(START_GROUP) -lpth
 LDFLAGS_CS = $(LDFLAGS) -shared $(START_GROUP) -lpthread $(GAI_LIB) $(EXTRA_LIB) -lssl -lcrypto $(END_GROUP) -Wl,-init,$(MQTTCLIENT_INIT)
 LDFLAGS_A = $(LDFLAGS) -shared -Wl,-init,$(MQTTASYNC_INIT) $(START_GROUP) -lpthread $(GAI_LIB) $(END_GROUP)
 LDFLAGS_AS = $(LDFLAGS) -shared $(START_GROUP) -lpthread $(GAI_LIB) $(EXTRA_LIB) -lssl -lcrypto $(END_GROUP) -Wl,-init,$(MQTTASYNC_INIT)
+
+else
+
+CCFLAGS_SO = -g -fPIC $(CFLAGS) -D_GNU_SOURCE -DPKCS11_HSM -Os -Wall -fvisibility=hidden -I$(blddir_work) -DPAHO_MQTT_EXPORTS=1
+
+FLAGS_EXE = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread ${GAI_LIB} ${END_GROUP} -L ${blddir}
+
+FLAGS_EXES = $(LDFLAGS) -DOPENSSL -DPKCS11_HSM -I ${srcdir} ${START_GROUP} -lpthread ${GAI_LIB} -lssl -lcrypto -lp11 ${END_GROUP} -L ${blddir}
+
+LDCONFIG ?= /sbin/ldconfig
+LDFLAGS_C = $(LDFLAGS) -shared -Wl,-init,$(MQTTCLIENT_INIT) $(START_GROUP) -lpthread $(GAI_LIB) $(END_GROUP)
+LDFLAGS_CS = $(LDFLAGS) -shared $(START_GROUP) -lpthread $(GAI_LIB) $(EXTRA_LIB) -lssl -lcrypto -lp11 $(END_GROUP) -Wl,-init,$(MQTTCLIENT_INIT)
+
+LDFLAGS_A = $(LDFLAGS) -shared -Wl,-init,$(MQTTASYNC_INIT) $(START_GROUP) -lpthread $(GAI_LIB) $(END_GROUP)
+LDFLAGS_AS = $(LDFLAGS) -shared $(START_GROUP) -lpthread $(GAI_LIB) $(EXTRA_LIB) -lssl -lcrypto -lp11 $(END_GROUP) -Wl,-init,$(MQTTASYNC_INIT)
+
+endif
 
 SED_COMMAND = sed \
     -e "s/@CLIENT_VERSION@/${release.version}/g" \

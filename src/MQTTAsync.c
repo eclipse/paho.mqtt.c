@@ -2736,7 +2736,8 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 			Log(TRACE_MINIMUM, -1, "Error from MQTTAsync_cycle() - removing socket %d", sock);
 			if (m->c->connected == 1)
 				MQTTAsync_disconnect_internal(m, 0);
-			nextOrClose(m, rc, "socket error");
+			else
+				nextOrClose(m, rc, "socket error");
 		}
 		else
 		{
@@ -4578,19 +4579,21 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 		tp.tv_usec = (timeout % 1000) * 1000; /* this field is microseconds! */
 	}
 
+	int rc1 = 0;
 #if defined(OPENSSL)
 	if ((*sock = SSLSocket_getPendingRead()) == -1)
 	{
 #endif
-		/* 0 from getReadySocket indicates no work to do, -1 == error, but can happen normally */
-		*sock = Socket_getReadySocket(0, &tp,socket_mutex);
+		/* 0 from getReadySocket indicates no work to do, rc -1 == error */
+		*sock = Socket_getReadySocket(0, &tp,socket_mutex, &rc1);
+		*rc = rc1;
 		if (!tostop && *sock == 0 && (tp.tv_sec > 0L || tp.tv_usec > 0L))
 			MQTTAsync_sleep(100L);
 #if defined(OPENSSL)
 	}
 #endif
 	MQTTAsync_lock_mutex(mqttasync_mutex);
-	if (*sock > 0)
+	if (*sock > 0 && rc1 == 0)
 	{
 		MQTTAsyncs* m = NULL;
 		if (ListFindItem(handles, sock, clientSockCompare) != NULL)

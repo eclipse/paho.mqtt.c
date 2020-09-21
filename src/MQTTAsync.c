@@ -241,17 +241,13 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 	switch (ul_reason_for_call)
 	{
 		case DLL_PROCESS_ATTACH:
-			Log(TRACE_MAX, -1, "DLL process attach");
 			MQTTAsync_init();
 			break;
 		case DLL_THREAD_ATTACH:
-			Log(TRACE_MAX, -1, "DLL thread attach");
 			break;
 		case DLL_THREAD_DETACH:
-			Log(TRACE_MAX, -1, "DLL thread detach");
 			break;
 		case DLL_PROCESS_DETACH:
-			Log(TRACE_MAX, -1, "DLL process detach");
 			if (lpReserved)
 				MQTTAsync_cleanup();
 		break;

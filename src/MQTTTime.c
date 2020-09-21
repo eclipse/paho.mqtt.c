@@ -101,7 +101,7 @@ DIFF_TIME_TYPE MQTTTime_difftime(START_TIME_TYPE new, START_TIME_TYPE old)
 	struct timeval result;
 
 	timersub(&new, &old, &result);
-	return (DIFF_TIME_TYPE)((result.tv_sec)*1000 + (result.tv_usec)/1000); /* convert to milliseconds */
+	return (DIFF_TIME_TYPE)(((DIFF_TIME_TYPE)result.tv_sec)*1000 + ((DIFF_TIME_TYPE)result.tv_usec)/1000); /* convert to milliseconds */
 }
 #endif
 

@@ -60,10 +60,10 @@ int MQTTPersistence_create(MQTTClient_persistence** per, int type, void* pcontex
 int MQTTPersistence_initialize(Clients* c, const char* serverURI);
 int MQTTPersistence_close(Clients* c);
 int MQTTPersistence_clear(Clients* c);
-int MQTTPersistence_restore(Clients* c);
+int MQTTPersistence_restorePackets(Clients* c);
 void* MQTTPersistence_restorePacket(int MQTTVersion, char* buffer, size_t buflen);
 void MQTTPersistence_insertInOrder(List* list, void* content, size_t size);
-int MQTTPersistence_put(int socket, char* buf0, size_t buf0len, int count, 
+int MQTTPersistence_putPacket(int socket, char* buf0, size_t buf0len, int count,
 						char** buffers, size_t* buflens, int htype, int msgId, int scr, int MQTTVersion);
 int MQTTPersistence_remove(Clients* c, char* type, int qos, int msgId);
 void MQTTPersistence_wrapMsgID(Clients *c);

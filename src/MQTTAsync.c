@@ -932,6 +932,9 @@ static int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 
 	if (nbufs > 0)
 	{
+		if (aclient->c->beforeWrite)
+			rc = aclient->c->beforeWrite(aclient->c->beforeWrite_context, nbufs, (char**)bufs, lens);
+
 		if ((rc = aclient->c->persistence->pput(aclient->c->phandle, key, nbufs, (char**)bufs, lens)) != 0)
 			Log(LOG_ERROR, 0, "Error persisting command, rc %d", rc);
 		qcmd->seqno = aclient->command_seqno;
@@ -1264,7 +1267,8 @@ static int MQTTAsync_restoreCommands(MQTTAsyncs* client)
 			else
 			{
 				MQTTAsync_queuedCommand* cmd = NULL;
-				if ((rc = c->persistence->pget(c->phandle, msgkeys[i], &buffer, &buflen)) == 0)
+				if ((rc = c->persistence->pget(c->phandle, msgkeys[i], &buffer, &buflen)) == 0 &&
+					(c->afterRead == NULL || (rc = c->afterRead(c->afterRead_context, &buffer, &buflen)) == 0))
 				{
 					int MQTTVersion = (strncmp(msgkeys[i], PERSISTENCE_V5_COMMAND_KEY, strlen(PERSISTENCE_V5_COMMAND_KEY)) == 0)
 										? MQTTVERSION_5 : MQTTVERSION_3_1_1;
@@ -1872,7 +1876,9 @@ static int MQTTAsync_processCommand(void)
 				int buflen = 0;
 
 				if ((rc = command->client->c->persistence->pget(command->client->c->phandle,
-						command->command.context, &buffer, &buflen)) == 0)
+						command->command.context, &buffer, &buflen)) == 0 &&
+					(command->client->c->afterRead == NULL ||
+					(rc = command->client->c->afterRead(command->client->c->afterRead_context, &buffer, &buflen)) == 0))
 				{
 					int MQTTVersion = (strncmp(command->command.context, PERSISTENCE_V5_COMMAND_KEY, strlen(PERSISTENCE_V5_COMMAND_KEY)) == 0)
 									? MQTTVERSION_5 : MQTTVERSION_3_1_1;
@@ -2600,6 +2606,19 @@ void MQTTAsync_free(void* memory)
 }
 
 
+void* MQTTAsync_malloc(size_t size)
+{
+	void* val;
+	int rc = 0;
+
+	FUNC_ENTRY;
+	val = malloc(size);
+	rc = (val != NULL);
+	FUNC_EXIT_RC(rc);
+	return val;
+}
+
+
 static int MQTTAsync_completeConnection(MQTTAsyncs* m, Connack* connack)
 {
 	int rc = MQTTASYNC_FAILURE;
@@ -3165,6 +3184,50 @@ int MQTTAsync_setUpdateConnectOptions(MQTTAsync handle, void* context, MQTTAsync
 	{
 		m->updateConnectOptions_context = context;
 		m->updateConnectOptions = updateOptions;
+	}
+
+	MQTTAsync_unlock_mutex(mqttasync_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+int MQTTAsync_setBeforePersistenceWrite(MQTTAsync handle, void* context, MQTTPersistence_beforeWrite* co)
+{
+	int rc = MQTTASYNC_SUCCESS;
+	MQTTAsyncs* m = handle;
+
+	FUNC_ENTRY;
+	MQTTAsync_lock_mutex(mqttasync_mutex);
+
+	if (m == NULL)
+		rc = MQTTASYNC_FAILURE;
+	else
+	{
+		m->c->beforeWrite = co;
+		m->c->beforeWrite_context = context;
+	}
+
+	MQTTAsync_unlock_mutex(mqttasync_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+int MQTTAsync_setAfterPersistenceRead(MQTTAsync handle, void* context, MQTTPersistence_afterRead* co)
+{
+	int rc = MQTTASYNC_SUCCESS;
+	MQTTAsyncs* m = handle;
+
+	FUNC_ENTRY;
+	MQTTAsync_lock_mutex(mqttasync_mutex);
+
+	if (m == NULL)
+		rc = MQTTASYNC_FAILURE;
+	else
+	{
+		m->c->afterRead = co;
+		m->c->afterRead_context = context;
 	}
 
 	MQTTAsync_unlock_mutex(mqttasync_mutex);

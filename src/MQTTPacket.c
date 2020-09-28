@@ -160,7 +160,7 @@ void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
 				}
 				buf[0] = header.byte;
 				buf0len = 1 + MQTTPacket_encode(&buf[1], remaining_length);
-				*error = MQTTPersistence_put(net->socket, buf, buf0len, 1,
+				*error = MQTTPersistence_putPacket(net->socket, buf, buf0len, 1,
 					&data, &remaining_length, header.bits.type, ((Publish *)pack)->msgId, 1, MQTTVersion);
 				free(buf);
 			}
@@ -212,7 +212,7 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 		char* ptraux = buffer;
 		int msgId = readInt(&ptraux);
 
-		rc = MQTTPersistence_put(net->socket, buf, buf0len, 1, &buffer, &buflen,
+		rc = MQTTPersistence_putPacket(net->socket, buf, buf0len, 1, &buffer, &buflen,
 			header.bits.type, msgId, 0, MQTTVersion);
 	}
 #endif
@@ -271,7 +271,7 @@ int MQTTPacket_sends(networkHandles* net, Header header, PacketBuffers* bufs, in
 	{   /* persist PUBLISH QoS1 and Qo2 */
 		char *ptraux = bufs->buffers[2];
 		int msgId = readInt(&ptraux);
-		rc = MQTTPersistence_put(net->socket, buf, buf0len, bufs->count, bufs->buffers, bufs->buflens,
+		rc = MQTTPersistence_putPacket(net->socket, buf, buf0len, bufs->count, bufs->buffers, bufs->buflens,
 			header.bits.type, msgId, 0, MQTTVersion);
 	}
 #endif

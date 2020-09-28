@@ -482,6 +482,29 @@ typedef int MQTTAsync_updateConnectOptions(void* context, MQTTAsync_connectData*
  */
 LIBMQTT_API int MQTTAsync_setUpdateConnectOptions(MQTTAsync handle, void* context, MQTTAsync_updateConnectOptions* co);
 
+/**
+ * Sets the MQTTPersistence_beforeWrite() callback function for a client.
+ * @param handle A valid client handle from a successful call to MQTTAsync_create().
+ * @param context A pointer to any application-specific context. The
+ * the <i>context</i> pointer is passed to the callback function to
+ * provide access to the context information in the callback.
+ * @param co A pointer to an MQTTPersistence_beforeWrite() callback
+ * function.  NULL removes the callback setting.
+ */
+LIBMQTT_API int MQTTAsync_setBeforePersistenceWrite(MQTTAsync handle, void* context, MQTTPersistence_beforeWrite* co);
+
+
+/**
+ * Sets the MQTTPersistence_afterRead() callback function for a client.
+ * @param handle A valid client handle from a successful call to MQTTAsync_create().
+ * @param context A pointer to any application-specific context. The
+ * the <i>context</i> pointer is passed to the callback function to
+ * provide access to the context information in the callback.
+ * @param co A pointer to an MQTTPersistence_beforeWrite() callback
+ * function.  NULL removes the callback setting.
+ */
+LIBMQTT_API int MQTTAsync_setAfterPersistenceRead(MQTTAsync handle, void* context, MQTTPersistence_afterRead* co);
+
 
 /** The data returned on completion of an unsuccessful API call in the response callback onFailure. */
 typedef struct
@@ -1585,13 +1608,22 @@ LIBMQTT_API void MQTTAsync_freeMessage(MQTTAsync_message** msg);
 
 /**
   * This function frees memory allocated by the MQTT C client library, especially the
-  * topic name. This is needed on Windows when the client libary and application
+  * topic name. This is needed on Windows when the client library and application
   * program have been compiled with different versions of the C compiler.  It is
   * thus good policy to always use this function when freeing any MQTT C client-
   * allocated memory.
   * @param ptr The pointer to the client library storage to be freed.
   */
 LIBMQTT_API void MQTTAsync_free(void* ptr);
+
+/**
+  * This function is used to allocate memory to be used or freed by the MQTT C client library,
+  * especially the data in the ::MQTTPersistence_afterRead and ::MQTTPersistence_beforeWrite
+  * callbacks. This is needed on Windows when the client library and application
+  * program have been compiled with different versions of the C compiler.
+  * @param size The size of the memory to be allocated.
+  */
+LIBMQTT_API void* MQTTAsync_malloc(size_t size);
 
 /**
   * This function frees the memory allocated to an MQTT client (see

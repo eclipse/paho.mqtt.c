@@ -138,7 +138,11 @@ typedef struct
 	unsigned int qentry_seqno;
 	void* phandle;                  /**< the persistence handle */
 	MQTTClient_persistence* persistence; /**< a persistence implementation */
-	void* context; /* calling context - used when calling disconnect_internal */
+    MQTTPersistence_beforeWrite* beforeWrite; /**< persistence write callback */
+    MQTTPersistence_afterRead* afterRead; /**< persistence read callback */
+    void* beforeWrite_context;      /**< context to be used with the persistence beforeWrite callbacks */
+    void* afterRead_context;        /**< context to be used with the persistence afterRead callback */
+	void* context;                  /**< calling context - used when calling disconnect_internal */
 	int MQTTVersion;                /**< the version of MQTT being used, 3, 4 or 5 */
 	int sessionExpiry;              /**< MQTT 5 session expiry */
 #if defined(OPENSSL)

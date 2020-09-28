@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2012 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -250,5 +250,32 @@ typedef struct {
     */
 	Persistence_containskey pcontainskey;
 } MQTTClient_persistence;
+
+
+/**
+ * A callback which is invoked just before a write to persistence.  This can be
+ * used to transform the data, for instance to encrypt it.  If the buffers are
+ * changed in size, then the MQTTAsync_malloc and MQTTAsync_free calls must be
+ * used to reallocate them.
+ * @param context The context as set in ::MQTTAsync_setBeforePersistenceWrite
+ * @param bufcount The number of buffers to write to the persistence store.
+ * @param buffers An array of pointers to the data buffers.
+ * @param buflens An array of lengths of the data buffers.
+ * @return Return 0 if the function completes successfully, otherwise non 0.
+ */
+typedef int MQTTPersistence_beforeWrite(void* context, int bufcount, char* buffers[], int buflens[]);
+
+
+/**
+ * A callback which is invoked just after a read from persistence.  This can be
+ * used to transform the data, for instance to decrypt it.  If the buffers are
+ * changed in size, then the MQTTAsync_malloc and MQTTAsync_free calls must be
+ * used to reallocate them.
+ * @param context The context as set in ::MQTTAsync_setAfterPersistenceRead
+ * @param buffer The address of a pointer to a buffer.
+ * @param buflen The address of an int that is the length of the buffer.
+ * @return Return 0 if the function completes successfully, otherwise non 0.
+ */
+typedef int MQTTPersistence_afterRead(void* context, char** buffer, int* buflen);
 
 #endif

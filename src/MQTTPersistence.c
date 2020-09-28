@@ -117,7 +117,7 @@ int MQTTPersistence_initialize(Clients *c, const char *serverURI)
 	{
 		rc = c->persistence->popen(&(c->phandle), c->clientID, serverURI, c->persistence->context);
 		if ( rc == 0 )
-			rc = MQTTPersistence_restore(c);
+			rc = MQTTPersistence_restorePackets(c);
 	}
 
 	FUNC_EXIT_RC(rc);
@@ -177,7 +177,7 @@ int MQTTPersistence_clear(Clients *c)
  * @param client the client as ::Clients.
  * @return 0 if success, #MQTTCLIENT_PERSISTENCE_ERROR otherwise.
  */
-int MQTTPersistence_restore(Clients *c)
+int MQTTPersistence_restorePackets(Clients *c)
 {
 	int rc = 0;
 	char **msgkeys = NULL,
@@ -202,7 +202,8 @@ int MQTTPersistence_restore(Clients *c)
 			{
 				;
 			}
-			else if ((rc = c->persistence->pget(c->phandle, msgkeys[i], &buffer, &buflen)) == 0)
+			else if ((rc = c->persistence->pget(c->phandle, msgkeys[i], &buffer, &buflen)) == 0 &&
+					(c->afterRead == NULL || (rc = c->afterRead(c->afterRead_context, &buffer, &buflen)) == 0))
 			{
 				int data_MQTTVersion = MQTTVERSION_3_1_1;
 				char* cur_key = msgkeys[i];
@@ -408,7 +409,7 @@ void MQTTPersistence_insertInOrder(List* list, void* content, size_t size)
  * @param the MQTT version being used (>= MQTTVERSION_5 means properties included)
  * @return 0 if success, #MQTTCLIENT_PERSISTENCE_ERROR otherwise.
  */
-int MQTTPersistence_put(int socket, char* buf0, size_t buf0len, int count,
+int MQTTPersistence_putPacket(int socket, char* buf0, size_t buf0len, int count,
 						char** buffers, size_t* buflens, int htype, int msgId, int scr, int MQTTVersion)
 {
 	int rc = 0;
@@ -478,7 +479,11 @@ int MQTTPersistence_put(int socket, char* buf0, size_t buf0len, int count,
 			sprintf(key, "%s%d", key_id, msgId);
 		}
 
-		rc = client->persistence->pput(client->phandle, key, nbufs, bufs, lens);
+		if (client->beforeWrite)
+			rc = client->beforeWrite(client->beforeWrite_context, nbufs, bufs, lens);
+
+		if (rc == 0)
+			rc = client->persistence->pput(client->phandle, key, nbufs, bufs, lens);
 
 		free(key);
 		free(lens);
@@ -672,7 +677,10 @@ int MQTTPersistence_persistQueueEntry(Clients* aclient, MQTTPersistence_qEntry* 
 
 	qe->seqno = aclient->qentry_seqno;
 
-	if ((rc = aclient->persistence->pput(aclient->phandle, key, bufindex, (char**)bufs, lens)) != 0)
+	if (aclient->beforeWrite)
+		rc = aclient->beforeWrite(aclient->beforeWrite_context, bufindex, (char**)bufs, lens);
+
+	if (rc == 0 && (rc = aclient->persistence->pput(aclient->phandle, key, bufindex, (char**)bufs, lens)) != 0)
 		Log(LOG_ERROR, 0, "Error persisting queue entry, rc %d", rc);
 
 	if (props_allocated != 0)
@@ -798,7 +806,8 @@ int MQTTPersistence_restoreMessageQueue(Clients* c)
 			{
 				; /* ignore if not a queue entry key */
 			}
-			else if ((rc = c->persistence->pget(c->phandle, msgkeys[i], &buffer, &buflen)) == 0)
+			else if ((rc = c->persistence->pget(c->phandle, msgkeys[i], &buffer, &buflen)) == 0 &&
+				(c->afterRead == NULL || (rc = c->afterRead(c->afterRead_context, &buffer, &buflen)) == 0))
 			{
 				int MQTTVersion =
 					(strncmp(msgkeys[i], PERSISTENCE_V5_QUEUE_KEY, strlen(PERSISTENCE_V5_QUEUE_KEY)) == 0)

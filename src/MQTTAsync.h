@@ -305,8 +305,9 @@ typedef struct
       * duplicate message.
       */
 	int dup;
-	/** The message identifier is normally reserved for internal use by the
-      * MQTT client and server.
+	/** The message identifier is reserved for internal use by the
+      * MQTT client and server.  It is an output parameter only - writing
+      * to it will serve no purpose.
       */
 	int msgid;
 	/**

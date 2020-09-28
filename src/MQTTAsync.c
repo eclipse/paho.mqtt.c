@@ -3635,6 +3635,11 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 			m->c->sslopts->ssl_psk_context = options->ssl->ssl_psk_context;
 			m->c->sslopts->disableDefaultTrustStore = options->ssl->disableDefaultTrustStore;
 		}
+		if (m->c->sslopts->struct_version >= 5)
+		{
+			m->c->sslopts->protos = options->ssl->protos;
+			m->c->sslopts->protos_len = options->ssl->protos_len;
+		}
 	}
 #else
 	if (options->struct_version != 0 && options->ssl)

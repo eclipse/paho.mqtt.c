@@ -2209,7 +2209,6 @@ exit:
 static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 {
 	FUNC_ENTRY;
-
 	if (MQTTAsync_checkConn(&m->connect, m))
 	{
 		MQTTAsync_queuedCommand* conn;
@@ -2709,6 +2708,8 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 		if (rc == SOCKET_ERROR)
 		{
 			Log(TRACE_MINIMUM, -1, "Error from MQTTAsync_cycle() - removing socket %d", sock);
+			if (m->c->connected == 1)
+				MQTTAsync_disconnect_internal(m, 0);
 			nextOrClose(m, rc, "socket error");
 		}
 		else

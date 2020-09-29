@@ -387,6 +387,12 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 		goto exit;
 	}
 
+	if (strlen(clientId) == 0 && persistence_type == MQTTCLIENT_PERSISTENCE_DEFAULT)
+	{
+		rc = MQTTCLIENT_PERSISTENCE_ERROR;
+		goto exit;
+	}
+
 	if (strstr(serverURI, "://") != NULL)
 	{
 		if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) != 0

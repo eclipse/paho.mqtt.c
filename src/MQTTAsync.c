@@ -596,6 +596,12 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 		goto exit;
 	}
 
+	if (strlen(clientId) == 0 && persistence_type == MQTTCLIENT_PERSISTENCE_DEFAULT)
+	{
+		rc = MQTTASYNC_PERSISTENCE_ERROR;
+		goto exit;
+	}
+
 	if (strstr(serverURI, "://") != NULL)
 	{
 		if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) != 0

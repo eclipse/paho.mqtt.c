@@ -56,7 +56,7 @@
 #  include <sys/endian.h>
 #elif defined(_WIN32) || defined(_WIN64)
 #  pragma comment(lib, "rpcrt4.lib")
-#  include <Rpc.h>
+#  include <rpc.h>
 #  define strncasecmp(s1,s2,c) _strnicmp(s1,s2,c)
 #  define htonll(x) _byteswap_uint64(x)
 #  define ntohll(x) _byteswap_uint64(x)

@@ -614,10 +614,10 @@ void MQTTClient_free(void* memory)
 void MQTTResponse_free(MQTTResponse response)
 {
 	FUNC_ENTRY;
+	if (response.reasonCodeCount > 0 && response.reasonCodes)
+		free(response.reasonCodes);
 	if (response.properties)
 	{
-		if (response.reasonCodeCount > 0 && response.reasonCodes)
-			free(response.reasonCodes);
 		MQTTProperties_free(response.properties);
 		free(response.properties);
 	}

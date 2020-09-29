@@ -1590,7 +1590,7 @@ LIBMQTT_API int MQTTAsync_isComplete(MQTTAsync handle, MQTTAsync_token token);
  * @param token An ::MQTTAsync_token associated with a request.
  * @param timeout the maximum time to wait for completion, in milliseconds
  * @return ::MQTTASYNC_SUCCESS if the request has been completed in the time allocated,
- *  ::MQTTASYNC_FAILURE if not.
+ *  ::MQTTASYNC_FAILURE or ::MQTTASYNC_DISCONNECTED if not.
  */
 LIBMQTT_API int MQTTAsync_waitForCompletion(MQTTAsync handle, MQTTAsync_token token, unsigned long timeout);
 

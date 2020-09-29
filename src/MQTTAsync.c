@@ -4846,14 +4846,15 @@ int MQTTAsync_waitForCompletion(MQTTAsync handle, MQTTAsync_token dt, unsigned l
 	}
 
 	elapsed = MQTTTime_elapsed(start);
-	while (elapsed < timeout)
+	while (elapsed < timeout && rc == MQTTASYNC_FAILURE)
 	{
 		MQTTTime_sleep(100);
 		if (MQTTAsync_isComplete(handle, dt) == 1)
-		{
 			rc = MQTTASYNC_SUCCESS; /* well we couldn't find it */
-			goto exit;
-		}
+		MQTTAsync_lock_mutex(mqttasync_mutex);
+		if (m->c->connected == 0)
+			rc = MQTTASYNC_DISCONNECTED;
+		MQTTAsync_unlock_mutex(mqttasync_mutex);
 		elapsed = MQTTTime_elapsed(start);
 	}
 exit:

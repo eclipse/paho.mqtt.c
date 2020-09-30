@@ -427,6 +427,7 @@ typedef struct
 	MQTTAsyncs* client;
 	unsigned int seqno; /* only used on restore */
 	int not_restored;
+	char* key; /* if not_restored, this holds the key */
 } MQTTAsync_queuedCommand;
 
 
@@ -1282,8 +1283,8 @@ static int MQTTAsync_restoreCommands(MQTTAsyncs* client)
 					/* As the entire command is not restored on the first read to save memory, we temporarily store
 					 * the filename of the persisted command to be used when restoreCommand is called the second time.
 					 */
-					cmd->command.context = malloc(strlen(msgkeys[i])+1);
-					strcpy(cmd->command.context, msgkeys[i]);
+					cmd->key = malloc(strlen(msgkeys[i])+1);
+					strcpy(cmd->key, msgkeys[i]);
 				}
 
 				if (cmd)
@@ -1452,11 +1453,32 @@ static int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_si
 				command->client->createOptions->persistQoS0 == 0 && command->command.details.pub.qos == 0)
 				; /* don't persist QoS0 if that create option is set to 0 */
 			else
-				MQTTAsync_persistCommand(command);
+			{
+				int rc = MQTTAsync_persistCommand(command);
+				if (command->command.type == PUBLISH && rc == 0)
+				{
+					char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
+
+					command->not_restored = 1;
+					if (command->client->c->MQTTVersion >= MQTTVERSION_5)
+						sprintf(key, "%s%u", PERSISTENCE_V5_COMMAND_KEY, command->seqno);
+					else
+						sprintf(key, "%s%u", PERSISTENCE_COMMAND_KEY, command->seqno);
+					command->key = malloc(strlen(key+1));
+					strcpy(command->key, key);
+
+					free(command->command.details.pub.payload);
+					command->command.details.pub.payload = NULL;
+					free(command->command.details.pub.destinationName);
+					command->command.details.pub.destinationName = NULL;
+					MQTTProperties_free(&command->command.properties);
+				}
+			}
 		}
 #endif
 		if (command->command.type == PUBLISH)
 		{
+			/* delete oldest message if buffer is full.  We wouldn't be here if delete newest was in operation */
 			if (command->client->createOptions && (command->client->noBufferedMessages >= command->client->createOptions->maxBufferedMessages))
 			{
 				MQTTAsync_queuedCommand* first_publish = NULL;
@@ -1694,8 +1716,8 @@ static void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command)
 		command->command.details.pub.payload = NULL;
 	}
 	MQTTProperties_free(&command->command.properties);
-	if (command->not_restored && command->command.context)
-		free(command->command.context);
+	if (command->not_restored && command->key)
+		free(command->key);
 }
 
 static void MQTTAsync_freeCommand(MQTTAsync_queuedCommand *command)
@@ -1881,15 +1903,14 @@ static int MQTTAsync_processCommand(void)
 				char* buffer = NULL;
 				int buflen = 0;
 
-				if ((rc = command->client->c->persistence->pget(command->client->c->phandle,
-						command->command.context, &buffer, &buflen)) == 0 &&
-					(command->client->c->afterRead == NULL ||
+				if ((rc = command->client->c->persistence->pget(command->client->c->phandle, command->key, &buffer, &buflen)) == 0
+						&& (command->client->c->afterRead == NULL ||
 					(rc = command->client->c->afterRead(command->client->c->afterRead_context, &buffer, &buflen)) == 0))
 				{
-					int MQTTVersion = (strncmp(command->command.context, PERSISTENCE_V5_COMMAND_KEY, strlen(PERSISTENCE_V5_COMMAND_KEY)) == 0)
+					int MQTTVersion = (strncmp(command->key, PERSISTENCE_V5_COMMAND_KEY, strlen(PERSISTENCE_V5_COMMAND_KEY)) == 0)
 									? MQTTVERSION_5 : MQTTVERSION_3_1_1;
-					free(command->command.context);
-					command->command.context = NULL;
+					free(command->key);
+					command->key = NULL;
 					command = MQTTAsync_restoreCommand(buffer, buflen, MQTTVersion, command);
 					if (buffer)
 						free(buffer);

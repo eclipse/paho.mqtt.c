@@ -659,7 +659,14 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  Must be MQTS */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0, or 1 to enable TLS version selection. */
+
+	/** The version number of this structure. Must be 0, 1, 2, 3, 4 or 5.
+	 * 0 means no sslVersion
+	 * 1 means no verify, CApath
+	 * 2 means no ssl_error_context, ssl_error_cb
+	 * 3 means no ssl_psk_cb, ssl_psk_context, disableDefaultTrustStore
+	 * 4 means no protos, protos_len
+	 */
 	int struct_version;
 
 	/** The file in PEM format containing the public digital certificates trusted by the client. */
@@ -674,6 +681,7 @@ typedef struct
 	* the client's private key.
 	*/
 	const char* privateKey;
+
 	/** The password to load the client's privateKey if encrypted. */
 	const char* privateKeyPassword;
 
@@ -747,11 +755,13 @@ typedef struct
 	 * The length-prefix byte is not included in the length. Each string is limited to 255 bytes. A byte-string length of 0 is invalid.
 	 * A truncated byte-string is invalid.
 	 * Check documentation for SSL_CTX_set_alpn_protos
+	 * Exists only if struct_version >= 5
 	 */
 	const unsigned char *protos;
 
 	/**
 	 * The length of the vector protos vector
+	 * Exists only if struct_version >= 5
 	 */
 	unsigned int protos_len;
 } MQTTClient_SSLOptions;

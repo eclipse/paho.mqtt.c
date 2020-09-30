@@ -4379,7 +4379,9 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 {
 	int rc = -1;
 	char* serverURI = m->serverURI;
+#if defined(OPENSSL)
 	int default_port = MQTT_DEFAULT_PORT;
+#endif
 
 	FUNC_ENTRY;
 	if (m->serverURIcount > 0)
@@ -4392,7 +4394,9 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 		else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
 		{
 			serverURI += strlen(URI_WS);
+#if defined(OPENSSL)
 			default_port = WS_DEFAULT_PORT;
+#endif
 		}
 #if defined(OPENSSL)
 		else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)

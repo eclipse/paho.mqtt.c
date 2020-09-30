@@ -1871,8 +1871,7 @@ static int MQTTAsync_processCommand(void)
 			{
 				; /* no more message ids available */
 			}
-			else if (cmd->client->c->MQTTVersion >= MQTTVERSION_5 &&
-				((cmd->command.type == PUBLISH && cmd->command.details.pub.qos > 0) ||
+			else if (((cmd->command.type == PUBLISH && cmd->command.details.pub.qos > 0) ||
 						cmd->command.type == SUBSCRIBE || cmd->command.type == UNSUBSCRIBE) &&
 				(cmd->client->c->outboundMsgs->count >= cmd->client->c->maxInflightMessages))
 			{

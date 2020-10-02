@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2020 IBM Corp.
+ * Copyright (c) 2011, 2020 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -173,24 +173,34 @@ void getopts(int argc, char** argv)
 #include <stdarg.h>
 #include <time.h>
 #include <sys/timeb.h>
-void MyLog(int log_level, char* format, ...)
+void MyLog(int LOGA_level, char* format, ...)
 {
 	static char msg_buf[256];
 	va_list args;
+#if defined(_WIN32) || defined(_WINDOWS)
 	struct timeb ts;
+#else
+	struct timeval ts;
+#endif
+	struct tm timeinfo;
 
-	struct tm *timeinfo;
-
-	if (log_level == LOGA_DEBUG && opts.verbose == 0)
+	if (LOGA_level == LOGA_DEBUG && opts.verbose == 0)
 	  return;
 
+#if defined(_WIN32) || defined(_WINDOWS)
 	ftime(&ts);
-	timeinfo = localtime(&ts.time);
-	strftime(msg_buf, 80, "%Y%m%d %H%M%S", timeinfo);
+	localtime_s(&timeinfo, &ts.time);
+#else
+	gettimeofday(&ts, NULL);
+	localtime_r(&ts.tv_sec, &timeinfo);
+#endif
+	strftime(msg_buf, 80, "%Y%m%d %H%M%S", &timeinfo);
 
+#if defined(_WIN32) || defined(_WINDOWS)
 	sprintf(&msg_buf[strlen(msg_buf)], ".%.3hu ", ts.millitm);
-
-	sprintf(&msg_buf[strlen(msg_buf)], "%s ", opts.clientid);
+#else
+	sprintf(&msg_buf[strlen(msg_buf)], ".%.3lu ", ts.tv_usec / 1000);
+#endif
 
 	va_start(args, format);
 	vsnprintf(&msg_buf[strlen(msg_buf)], sizeof(msg_buf) - strlen(msg_buf), format, args);

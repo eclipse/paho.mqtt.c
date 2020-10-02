@@ -140,18 +140,30 @@ void MyLog(int LOGA_level, char* format, ...)
 {
 	static char msg_buf[256];
 	va_list args;
+#if defined(_WIN32) || defined(_WINDOWS)
 	struct timeb ts;
-
-	struct tm *timeinfo;
+#else
+	struct timeval ts;
+#endif
+	struct tm timeinfo;
 
 	if (LOGA_level == LOGA_DEBUG && options.verbose == 0)
 	  return;
 
+#if defined(_WIN32) || defined(_WINDOWS)
 	ftime(&ts);
-	timeinfo = localtime(&ts.time);
-	strftime(msg_buf, 80, "%Y%m%d %H%M%S", timeinfo);
+	localtime_s(&timeinfo, &ts.time);
+#else
+	gettimeofday(&ts, NULL);
+	localtime_r(&ts.tv_sec, &timeinfo);
+#endif
+	strftime(msg_buf, 80, "%Y%m%d %H%M%S", &timeinfo);
 
+#if defined(_WIN32) || defined(_WINDOWS)
 	sprintf(&msg_buf[strlen(msg_buf)], ".%.3hu ", ts.millitm);
+#else
+	sprintf(&msg_buf[strlen(msg_buf)], ".%.3lu ", ts.tv_usec / 1000);
+#endif
 
 	va_start(args, format);
 	vsnprintf(&msg_buf[strlen(msg_buf)], sizeof(msg_buf) - strlen(msg_buf), format, args);

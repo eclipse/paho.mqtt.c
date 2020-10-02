@@ -377,7 +377,7 @@ void test1cOnConnect(void* context, MQTTAsync_successData* response)
 
 int test1dReady = 0;
 char willTopic[100];
-char test_topic[50];
+char test_topic[100];
 
 void test1donSubscribe(void* context, MQTTAsync_successData* response)
 {
@@ -426,8 +426,8 @@ int test1(struct Options options)
 	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 	int count = 0;
-	char clientidc[50];
-	char clientidd[50];
+	char clientidc[70];
+	char clientidd[70];
 	int i = 0;
 
 	sprintf(willTopic, "paho-test9-1-%s", unique);
@@ -637,7 +637,7 @@ void test2cOnConnect(void* context, MQTTAsync_successData* response)
 
 int test2dReady = 0;
 char willTopic[100];
-char test_topic[50];
+char test_topic[100];
 
 void test2donSubscribe(void* context, MQTTAsync_successData* response)
 {
@@ -686,8 +686,8 @@ int test2(struct Options options)
 	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 	int count = 0;
-	char clientidc[50];
-	char clientidd[50];
+	char clientidc[70];
+	char clientidd[70];
 	int i = 0;
 	char *URIs[2] = {"rubbish", options.proxy_connection};
 
@@ -907,7 +907,7 @@ void test3cOnConnect(void* context, MQTTAsync_successData* response)
 
 int test3dReady = 0;
 char willTopic[100];
-char test_topic[50];
+char test_topic[100];
 
 void test3donSubscribe(void* context, MQTTAsync_successData* response)
 {
@@ -956,8 +956,8 @@ int test3(struct Options options)
 	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 	int count = 0;
-	char clientidc[50];
-	char clientidd[50];
+	char clientidc[70];
+	char clientidd[70];
 	int i = 0;
 
 	sprintf(willTopic, "paho-test9-3-%s", unique);
@@ -1165,7 +1165,7 @@ void test4cOnConnect(void* context, MQTTAsync_successData* response)
 
 int test4dReady = 0;
 char willTopic[100];
-char test_topic[50];
+char test_topic[100];
 
 void test4donSubscribe(void* context, MQTTAsync_successData* response)
 {
@@ -1214,8 +1214,8 @@ int test4(struct Options options)
 	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 	int count = 0;
-	char clientidc[50];
-	char clientidd[50];
+	char clientidc[70];
+	char clientidd[70];
 	int i = 0;
 	char *URIs[2] = {"rubbish", options.proxy_connection};
 
@@ -1424,7 +1424,7 @@ void test5cOnConnect(void* context, MQTTAsync_successData* response)
 
 int test5dReady = 0;
 char willTopic[100];
-char test_topic[50];
+char test_topic[100];
 
 void test5donSubscribe(void* context, MQTTAsync_successData* response)
 {
@@ -1471,8 +1471,8 @@ int test5(struct Options options)
 	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 	int count = 0;
-	char clientidc[50];
-	char clientidd[50];
+	char clientidc[70];
+	char clientidd[70];
 	int i = 0;
 
 	sprintf(willTopic, "paho-test9-5-%s", unique);
@@ -1626,8 +1626,8 @@ int test6(struct Options options)
 	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 	int count = 0;
-	char clientidc[50];
-	char clientidd[50];
+	char clientidc[70];
+	char clientidd[70];
 	int i = 0;
 
 	test5_will_message_received = 0;
@@ -1886,8 +1886,8 @@ int test7(struct Options options)
 	//MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 	int count = 0;
-	char clientidc[50];
-	char clientidd[50];
+	char clientidc[70];
+	char clientidd[70];
 	int i = 0;
 
 	test7_will_message_received = 0;
@@ -2129,8 +2129,8 @@ int test8(struct Options options)
 	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 	int count = 0;
-	char clientidc[50];
-	char clientidd[50];
+	char clientidc[70];
+	char clientidd[70];
 	int i = 0;
 
 	sprintf(willTopic, "paho-test9-8-%s", unique);
@@ -2317,7 +2317,7 @@ int test9(struct Options options)
 	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 	int count = 0;
-	char clientidc[50];
+	char clientidc[70];
 	int i = 0;
 	START_TIME_TYPE start;
 	int no_buffered_messages = 50000;
@@ -2492,8 +2492,8 @@ int test10(struct Options options)
 	MQTTAsync_createOptions createOptions = MQTTAsync_createOptions_initializer;
 	int rc = 0;
 	int count = 0;
-	char clientidc[50];
-	char clientidd[50];
+	char clientidc[70];
+	char clientidd[70];
 	int i = 0;
 
 	sprintf(willTopic, "paho-test9-10-%s", unique);

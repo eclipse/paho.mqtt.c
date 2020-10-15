@@ -472,6 +472,7 @@ int test1(struct Options options)
 
 	opts.keepAliveInterval = 5;
 	opts.cleansession = 1;
+	opts.MQTTVersion = MQTTVERSION_3_1_1; /* proxy doesn't handle MQTT 3.1 */
 	//opts.username = "testuser";
 	//opts.password = "testpassword";
 
@@ -733,6 +734,7 @@ int test2(struct Options options)
 
 	opts.keepAliveInterval = 5;
 	opts.cleansession = 1;
+	opts.MQTTVersion = MQTTVERSION_3_1_1; /* proxy doesn't handle MQTT 3.1 */
 
 	rc = MQTTAsync_setCallbacks(d, d, NULL, test2_messageArrived, NULL);
 	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -1002,6 +1004,7 @@ int test3(struct Options options)
 
 	opts.keepAliveInterval = 5;
 	opts.cleansession = 1;
+	opts.MQTTVersion = MQTTVERSION_3_1_1; /* proxy doesn't handle MQTT 3.1 */
 	//opts.username = "testuser";
 	//opts.password = "testpassword";
 
@@ -1261,6 +1264,7 @@ int test4(struct Options options)
 
 	opts.keepAliveInterval = 5;
 	opts.cleansession = 1;
+	opts.MQTTVersion = MQTTVERSION_3_1_1; /* proxy doesn't handle MQTT 3.1 */
 
 	rc = MQTTAsync_setCallbacks(d, d, NULL, test4_messageArrived, NULL);
 	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -1518,6 +1522,7 @@ int test5(struct Options options)
 
 	opts.keepAliveInterval = 5;
 	opts.cleansession = 1;
+	opts.MQTTVersion = MQTTVERSION_3_1_1; /* proxy doesn't handle MQTT 3.1 */
 	//opts.username = "testuser";
 	//opts.password = "testpassword";
 
@@ -1679,6 +1684,7 @@ int test6(struct Options options)
 
 	opts.keepAliveInterval = 5;
 	opts.cleansession = 1;
+	opts.MQTTVersion = MQTTVERSION_3_1_1; /* proxy doesn't handle MQTT 3.1 */
 	//opts.username = "testuser";
 	//opts.password = "testpassword";
 
@@ -1936,6 +1942,7 @@ int test7(struct Options options)
 
 	opts.keepAliveInterval = 5;
 	opts.cleansession = 1;
+	opts.MQTTVersion = MQTTVERSION_3_1_1; /* proxy doesn't handle MQTT 3.1 */
 
 	rc = MQTTAsync_setCallbacks(d, d, NULL, test7_messageArrived, NULL);
 	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -2213,6 +2220,7 @@ int test8(struct Options options)
 	opts.onSuccess = test8dOnConnect;
 	opts.onFailure = test8OnFailure;
 	opts.context = d;
+	opts.MQTTVersion = MQTTVERSION_3_1_1; /* proxy doesn't handle MQTT 3.1 */
 	MyLog(LOGA_DEBUG, "Connecting client d");
 	rc = MQTTAsync_connect(d, &opts);
 	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d ", rc);
@@ -2391,6 +2399,7 @@ int test9(struct Options options)
 	opts.onFailure = test9OnFailure;
 	opts.context = c;
 	opts.cleansession = 1;
+	opts.MQTTVersion = MQTTVERSION_3_1_1; /* proxy doesn't handle MQTT 3.1 */
 
 	MyLog(LOGA_DEBUG, "Connecting client c");
 	rc = MQTTAsync_connect(c, &opts);
@@ -2544,6 +2553,7 @@ int test10(struct Options options)
 	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	/* let client d go and subscribe */
+	opts.MQTTVersion = MQTTVERSION_3_1_1; /* proxy doesn't handle MQTT 3.1 */
 	opts.onSuccess = test10dOnConnect;
 	opts.onFailure = test10OnFailure;
 	opts.context = d;

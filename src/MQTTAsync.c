@@ -2234,12 +2234,19 @@ exit:
 
 static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 {
+	int was_connected = m->c->connected;
 	FUNC_ENTRY;
+
 	if (MQTTAsync_checkConn(&m->connect, m))
 	{
 		MQTTAsync_queuedCommand* conn;
 
 		MQTTAsync_closeOnly(m->c, MQTTREASONCODE_SUCCESS, NULL);
+		if (m->cl && was_connected)
+		{
+			Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
+				(*(m->cl))(m->clContext, NULL);
+		}
 		/* put the connect command back to the head of the command queue, using the next serverURI */
 		if ((conn = malloc(sizeof(MQTTAsync_queuedCommand))) == NULL)
 			goto exit;
@@ -2264,6 +2271,11 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 	else
 	{
 		MQTTAsync_closeSession(m->c, MQTTREASONCODE_SUCCESS, NULL);
+		if (m->cl && was_connected)
+		{
+			Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
+				(*(m->cl))(m->clContext, NULL);
+		}
 		if (m->connect.onFailure)
 		{
 			MQTTAsync_failureData data;
@@ -2734,8 +2746,6 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 		if (rc == SOCKET_ERROR)
 		{
 			Log(TRACE_MINIMUM, -1, "Error from MQTTAsync_cycle() - removing socket %d", sock);
-			if (m->c->connected == 1)
-				MQTTAsync_disconnect_internal(m, 0);
 			nextOrClose(m, rc, "socket error");
 		}
 		else

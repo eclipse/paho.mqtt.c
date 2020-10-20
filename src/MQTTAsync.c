@@ -1395,7 +1395,7 @@ static int MQTTAsync_unpersistInflightMessages(Clients* c)
 #endif
 
 /**
- * List callback function for comparing client handles and command types being CONNECT or DISCONNECT 
+ * List callback function for comparing client handles and command types being CONNECT or DISCONNECT
  * @param a first MQTTAsync_queuedCommand pointer
  * @param b second MQTTAsync_queuedCommand pointer
  * @return boolean indicating whether a and b are equal
@@ -1415,8 +1415,8 @@ static int clientCompareConnectCommand(void* a, void* b)
 		}
 	}
 	return 0;	//Item NOT found in the list
-}								   
- 
+}
+
 static int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 {
 	int rc = MQTTASYNC_SUCCESS;
@@ -1437,7 +1437,7 @@ static int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_si
 		if (head != NULL && head->client == command->client && head->command.type == command->command.type)
 			MQTTAsync_freeCommand(command); /* ignore duplicate connect or disconnect command */
 		else
-		{ 
+		{
 			ListRemoveItem(commands, command, clientCompareConnectCommand); /* remove command from the list if already there */
 			ListInsert(commands, command, command_size, commands->first); /* add to the head of the list */
 		}
@@ -2793,6 +2793,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 							data.alt.connect.sessionPresent = sessionPresent;
 							(*(m->connect.onSuccess))(m->connect.context, &data);
 							m->connect.onSuccess = NULL; /* don't accidentally call it again */
+              m->connect.onFailure = NULL; /* don't call the failure callback once connected */
 						}
 						else if (m->connect.onSuccess5)
 						{
@@ -2808,6 +2809,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 							data.reasonCode = connack->rc;
 							(*(m->connect.onSuccess5))(m->connect.context, &data);
 							m->connect.onSuccess5 = NULL; /* don't accidentally call it again */
+              m->connect.onFailure5 = NULL; /* don't call the failure callback once connected */
 						}
 						if (m->connected)
 						{

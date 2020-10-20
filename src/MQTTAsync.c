@@ -2130,6 +2130,9 @@ static int MQTTAsync_processCommand(void)
 					data.message = NULL;
 					Log(TRACE_MIN, -1, "Calling connect failure for client %s", command->client->c->clientID);
 					(*(command->client->connect.onFailure))(command->client->connect.context, &data);
+					/* Null out callback pointers so they aren't accidentally called again */
+					command->client->connect.onFailure = NULL;
+					command->client->connect.onSuccess = NULL;
 				}
 				else if (command->client->connect.onFailure5)
 				{
@@ -2140,6 +2143,9 @@ static int MQTTAsync_processCommand(void)
 					data.message = NULL;
 					Log(TRACE_MIN, -1, "Calling connect failure for client %s", command->client->c->clientID);
 					(*(command->client->connect.onFailure5))(command->client->connect.context, &data);
+					/* Null out callback pointers so they aren't accidentally called again */
+					command->client->connect.onFailure5 = NULL;
+					command->client->connect.onSuccess5 = NULL;
 				}
 			}
 			MQTTAsync_checkDisconnect(command->client, &command->command);
@@ -2285,6 +2291,9 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 			data.message = message;
 			Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
 			(*(m->connect.onFailure))(m->connect.context, &data);
+			/* Null out callback pointers so they aren't accidentally called again */
+			m->connect.onFailure = NULL;
+			m->connect.onSuccess = NULL;
 		}
 		else if (m->connect.onFailure5)
 		{
@@ -2295,6 +2304,9 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 			data.message = message;
 			Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
 			(*(m->connect.onFailure5))(m->connect.context, &data);
+			/* Null out callback pointers so they aren't accidentally called again */
+			m->connect.onFailure5 = NULL;
+			m->connect.onSuccess5 = NULL;
 		}
 		MQTTAsync_startConnectRetry(m);
 	}
@@ -2802,7 +2814,9 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 							data.alt.connect.MQTTVersion = m->connect.details.conn.MQTTVersion;
 							data.alt.connect.sessionPresent = sessionPresent;
 							(*(m->connect.onSuccess))(m->connect.context, &data);
-							m->connect.onSuccess = NULL; /* don't accidentally call it again */
+							/* Null out callback pointers so they aren't accidentally called again */
+							m->connect.onSuccess = NULL;
+							m->connect.onFailure = NULL;
 						}
 						else if (m->connect.onSuccess5)
 						{
@@ -2817,7 +2831,9 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 							data.properties = connack->properties;
 							data.reasonCode = connack->rc;
 							(*(m->connect.onSuccess5))(m->connect.context, &data);
-							m->connect.onSuccess5 = NULL; /* don't accidentally call it again */
+							/* Null out callback pointers so they aren't accidentally called again */
+							m->connect.onSuccess5 = NULL;
+							m->connect.onFailure5 = NULL;
 						}
 						if (m->connected)
 						{

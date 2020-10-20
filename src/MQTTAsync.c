@@ -2130,6 +2130,9 @@ static int MQTTAsync_processCommand(void)
 					data.message = NULL;
 					Log(TRACE_MIN, -1, "Calling connect failure for client %s", command->client->c->clientID);
 					(*(command->client->connect.onFailure))(command->client->connect.context, &data);
+					/* Null out callback pointers so they aren't accidentally called again */
+					command->client->connect.onFailure = NULL;
+					command->client->connect.onSuccess = NULL;
 				}
 				else if (command->client->connect.onFailure5)
 				{
@@ -2140,6 +2143,9 @@ static int MQTTAsync_processCommand(void)
 					data.message = NULL;
 					Log(TRACE_MIN, -1, "Calling connect failure for client %s", command->client->c->clientID);
 					(*(command->client->connect.onFailure5))(command->client->connect.context, &data);
+					/* Null out callback pointers so they aren't accidentally called again */
+					command->client->connect.onFailure5 = NULL;
+					command->client->connect.onSuccess5 = NULL;
 				}
 			}
 			MQTTAsync_checkDisconnect(command->client, &command->command);
@@ -2234,12 +2240,19 @@ exit:
 
 static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 {
+	int was_connected = m->c->connected;
 	FUNC_ENTRY;
+
 	if (MQTTAsync_checkConn(&m->connect, m))
 	{
 		MQTTAsync_queuedCommand* conn;
 
 		MQTTAsync_closeOnly(m->c, MQTTREASONCODE_SUCCESS, NULL);
+		if (m->cl && was_connected)
+		{
+			Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
+				(*(m->cl))(m->clContext, NULL);
+		}
 		/* put the connect command back to the head of the command queue, using the next serverURI */
 		if ((conn = malloc(sizeof(MQTTAsync_queuedCommand))) == NULL)
 			goto exit;
@@ -2264,6 +2277,11 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 	else
 	{
 		MQTTAsync_closeSession(m->c, MQTTREASONCODE_SUCCESS, NULL);
+		if (m->cl && was_connected)
+		{
+			Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
+				(*(m->cl))(m->clContext, NULL);
+		}
 		if (m->connect.onFailure)
 		{
 			MQTTAsync_failureData data;
@@ -2273,6 +2291,9 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 			data.message = message;
 			Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
 			(*(m->connect.onFailure))(m->connect.context, &data);
+			/* Null out callback pointers so they aren't accidentally called again */
+			m->connect.onFailure = NULL;
+			m->connect.onSuccess = NULL;
 		}
 		else if (m->connect.onFailure5)
 		{
@@ -2283,6 +2304,9 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 			data.message = message;
 			Log(TRACE_MIN, -1, "Calling connect failure for client %s", m->c->clientID);
 			(*(m->connect.onFailure5))(m->connect.context, &data);
+			/* Null out callback pointers so they aren't accidentally called again */
+			m->connect.onFailure5 = NULL;
+			m->connect.onSuccess5 = NULL;
 		}
 		MQTTAsync_startConnectRetry(m);
 	}
@@ -2734,10 +2758,7 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 		if (rc == SOCKET_ERROR)
 		{
 			Log(TRACE_MINIMUM, -1, "Error from MQTTAsync_cycle() - removing socket %d", sock);
-			if (m->c->connected == 1)
-				MQTTAsync_disconnect_internal(m, 0);
-			else
-				nextOrClose(m, rc, "socket error");
+			nextOrClose(m, rc, "socket error");
 		}
 		else
 		{
@@ -2793,7 +2814,9 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 							data.alt.connect.MQTTVersion = m->connect.details.conn.MQTTVersion;
 							data.alt.connect.sessionPresent = sessionPresent;
 							(*(m->connect.onSuccess))(m->connect.context, &data);
-							m->connect.onSuccess = NULL; /* don't accidentally call it again */
+							/* Null out callback pointers so they aren't accidentally called again */
+							m->connect.onSuccess = NULL;
+							m->connect.onFailure = NULL;
 						}
 						else if (m->connect.onSuccess5)
 						{
@@ -2808,7 +2831,9 @@ static thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 							data.properties = connack->properties;
 							data.reasonCode = connack->rc;
 							(*(m->connect.onSuccess5))(m->connect.context, &data);
-							m->connect.onSuccess5 = NULL; /* don't accidentally call it again */
+							/* Null out callback pointers so they aren't accidentally called again */
+							m->connect.onSuccess5 = NULL;
+							m->connect.onFailure5 = NULL;
 						}
 						if (m->connected)
 						{

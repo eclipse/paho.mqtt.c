@@ -2478,17 +2478,19 @@ static MQTTPacket* MQTTClient_cycle(int* sock, ELAPSED_TIME_TYPE timeout, int* r
 		tp.tv_usec = (long)((timeout % 1000) * 1000); /* this field is microseconds! */
 	}
 
+	int rc1 = 0;
 #if defined(OPENSSL)
 	if ((*sock = SSLSocket_getPendingRead()) == -1)
 	{
-		/* 0 from getReadySocket indicates no work to do, -1 == error, but can happen normally */
+		/* 0 from getReadySocket indicates no work to do, rc -1 == error */
 #endif
-		*sock = Socket_getReadySocket(0, &tp, socket_mutex);
+		*sock = Socket_getReadySocket(0, &tp, socket_mutex, rc);
+		*rc = rc1;
 #if defined(OPENSSL)
 	}
 #endif
 	Thread_lock_mutex(mqttclient_mutex);
-	if (*sock > 0)
+	if (*sock > 0 && rc1 == 0)
 	{
 		MQTTClients* m = NULL;
 		if (ListFindItem(handles, sock, clientSockCompare) != NULL)

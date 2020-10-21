@@ -288,7 +288,9 @@ void MQTTProtocol_removePublication(Publications* p)
 	if (p && --(p->refcount) == 0)
 	{
 		free(p->payload);
+		p->payload = NULL;
 		free(p->topic);
+		p->topic = NULL;
 		ListRemove(&(state.publications), p);
 	}
 	FUNC_EXIT;

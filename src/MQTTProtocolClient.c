@@ -124,6 +124,7 @@ static void MQTTProtocol_storeQoS0(Clients* pubclient, Publish* publish)
 	the saved copy is */
 	if (SocketBuffer_updateWrite(pw->socket, pw->p->topic, pw->p->payload) == NULL)
 		Log(LOG_SEVERE, 0, "Error updating write");
+	publish->payload = publish->topic = NULL;
 exit:
 	FUNC_EXIT;
 }
@@ -161,7 +162,7 @@ static int MQTTProtocol_startPublishCommon(Clients* pubclient, Publish* publish,
  */
 int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int retained, Messages** mm)
 {
-	Publish p = *publish;
+	Publish qos12pub = *publish;
 	int rc = 0;
 
 	FUNC_ENTRY;
@@ -171,14 +172,15 @@ int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int
 		ListAppend(pubclient->outboundMsgs, *mm, (*mm)->len);
 		/* we change these pointers to the saved message location just in case the packet could not be written
 		entirely; the socket buffer will use these locations to finish writing the packet */
-		p.payload = (*mm)->publish->payload;
-		p.topic = (*mm)->publish->topic;
-		p.properties = (*mm)->properties;
-		p.MQTTVersion = (*mm)->MQTTVersion;
+		qos12pub.payload = (*mm)->publish->payload;
+		qos12pub.topic = (*mm)->publish->topic;
+		qos12pub.properties = (*mm)->properties;
+		qos12pub.MQTTVersion = (*mm)->MQTTVersion;
+		publish = &qos12pub;
 	}
-	rc = MQTTProtocol_startPublishCommon(pubclient, &p, qos, retained);
+	rc = MQTTProtocol_startPublishCommon(pubclient, publish, qos, retained);
 	if (qos > 0)
-		memcpy((*mm)->publish->mask, p.mask, sizeof((*mm)->publish->mask));
+		memcpy((*mm)->publish->mask, publish->mask, sizeof((*mm)->publish->mask));
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

@@ -920,7 +920,6 @@ LIBMQTT_API int MQTTAsync_reconnect(MQTTAsync handle);
  * @return ::MQTTASYNC_SUCCESS if the client is successfully created, otherwise
  * an error code is returned.
  */
-
 LIBMQTT_API int MQTTAsync_create(MQTTAsync* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context);
 

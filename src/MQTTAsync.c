@@ -1936,31 +1936,28 @@ static int MQTTAsync_processCommand(void)
 
 			if (command->client->serverURIcount > 0)
 			{
-				if (command->command.details.conn.currentURI < command->client->serverURIcount)
-				{
-					serverURI = command->client->serverURIs[command->command.details.conn.currentURI];
+				serverURI = command->client->serverURIs[command->command.details.conn.currentURI];
 
-					if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
-						serverURI += strlen(URI_TCP);
-					else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
-					{
-						serverURI += strlen(URI_WS);
-						command->client->websocket = 1;
-					}
-#if defined(OPENSSL)
-					else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
-					{
-						serverURI += strlen(URI_SSL);
-						command->client->ssl = 1;
-					}
-					else if (strncmp(URI_WSS, serverURI, strlen(URI_WSS)) == 0)
-					{
-						serverURI += strlen(URI_WSS);
-						command->client->ssl = 1;
-						command->client->websocket = 1;
-					}
-#endif
+				if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
+					serverURI += strlen(URI_TCP);
+		 		else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
+				{
+					serverURI += strlen(URI_WS);
+					command->client->websocket = 1;
 				}
+#if defined(OPENSSL)
+				else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
+				{
+					serverURI += strlen(URI_SSL);
+					command->client->ssl = 1;
+				}
+		 		else if (strncmp(URI_WSS, serverURI, strlen(URI_WSS)) == 0)
+				{
+					serverURI += strlen(URI_WSS);
+					command->client->ssl = 1;
+					command->client->websocket = 1;
+				}
+#endif
 			}
 
 			if (command->client->c->MQTTVersion == MQTTVERSION_DEFAULT)

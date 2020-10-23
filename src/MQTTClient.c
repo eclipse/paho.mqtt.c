@@ -47,6 +47,8 @@
 #include <string.h>
 #if !defined(_WIN32) && !defined(_WIN64)
 	#include <sys/time.h>
+#else
+	#define BUILD_TIMESTAMP __DATE__ " " __TIME__
 #endif
 
 #include "MQTTClient.h"

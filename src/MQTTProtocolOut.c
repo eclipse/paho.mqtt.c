@@ -154,83 +154,10 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 	int rc = 0,
 		port;
 	size_t addr_len;
-	b64_size_t basic_auth_in_len, basic_auth_out_len;
-	char *p0, *p1;
-	b64_data_t *basic_auth;
 
 	FUNC_ENTRY;
 	aClient->good = 1;
-	aClient->net.http_proxy = NULL;
-	aClient->net.http_proxy_auth = NULL;
-	if ((p0 = getenv("http_proxy")))
-	{
-		p1 = strchr(p0, '@');
-		if(p1)
-		{
-			aClient->net.http_proxy = p1 + 1;
-			p1 = strchr(p0, ':') + 3;
-			basic_auth_in_len = (b64_size_t)(aClient->net.http_proxy - p1);
-			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
-			if (!basic_auth)
-			{
-				rc = PAHO_MEMORY_ERROR;
-				goto exit;
-			}
-			basic_auth_in_len--;
-			p0 = (char *)basic_auth;
-			MQTTProtocol_specialChars(p0, p1, &basic_auth_in_len);
-			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
-			if ((aClient->net.http_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
-			{
-				free(basic_auth);
-				rc = PAHO_MEMORY_ERROR;
-				goto exit;
-			}
-			Base64_encode(aClient->net.http_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
-			free(basic_auth);
-		}
-		else {
-			p1 = strchr(p0, ':');
-			if (p1)
-				aClient->net.http_proxy = p1 + 3;
-		}
-		Log(TRACE_PROTOCOL, -1, "MQTTProtocol_connect: setting http proxy to %s", aClient->net.http_proxy);
-	}
 #if defined(OPENSSL)
-	aClient->net.https_proxy = NULL;
-	aClient->net.https_proxy_auth = NULL;
-	if ((p0 = getenv("https_proxy"))) {
-		p1 = strchr(p0, '@');
-		if(p1) {
-			aClient->net.https_proxy = p1 + 1;
-			p1 = strchr(p0, ':') + 3;
-			basic_auth_in_len =  (b64_size_t)(aClient->net.https_proxy - p1);
-			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
-			if (!basic_auth)
-			{
-				rc = PAHO_MEMORY_ERROR;
-				goto exit;
-			}
-			basic_auth_in_len--;
-			p0 = (char *)basic_auth;
-			MQTTProtocol_specialChars(p0, p1, &basic_auth_in_len);
-			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
-			if ((aClient->net.https_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
-			{
-				free(basic_auth);
-				rc = PAHO_MEMORY_ERROR;
-				goto exit;
-			}
-			Base64_encode(aClient->net.https_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
-			free(basic_auth);
-		}
-		else {
-			p1 = strchr(p0, ':');
-			if (p1)
-				aClient->net.https_proxy = p1 + 3;
-		}
-	}
-
 	if (!ssl && websocket && aClient->net.http_proxy) {
 #else
 	if (websocket && aClient->net.http_proxy) {

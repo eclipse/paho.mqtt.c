@@ -63,6 +63,7 @@
 #include "Heap.h"
 #include "OsWrapper.h"
 #include "WebSocket.h"
+#include "Base64.h"
 
 #define URI_TCP "tcp://"
 #define URI_WS  "ws://"
@@ -738,7 +739,6 @@ int MQTTAsync_create(MQTTAsync* handle, const char* serverURI, const char* clien
 		int persistence_type, void* persistence_context)
 {
 	MQTTAsync_init_rand();
-
 	return MQTTAsync_createWithOptions(handle, serverURI, clientId, persistence_type,
 		persistence_context, NULL);
 }
@@ -3301,10 +3301,30 @@ static void MQTTAsync_closeOnly(Clients* client, enum MQTTReasonCodes reasonCode
 			MQTTPacket_send_disconnect(client, reasonCode, props);
 		Thread_lock_mutex(socket_mutex);
 		WebSocket_close(&client->net, WebSocket_CLOSE_NORMAL, NULL);
+		if (client->net.http_proxy)
+		{
+			free((void*)client->net.http_proxy);
+			client->net.http_proxy = NULL;
+		} 
+		if (client->net.http_proxy_auth)
+		{
+			free((void*)client->net.http_proxy_auth);
+			client->net.http_proxy_auth = NULL;
+		}
 #if defined(OPENSSL)
 		SSL_SESSION_free(client->session); /* is a no-op if session is NULL */
 		client->session = NULL; /* show the session has been freed */
 		SSLSocket_close(&client->net);
+		if (client->net.https_proxy)
+		{
+			free((void*)client->net.https_proxy);
+			client->net.https_proxy = NULL;
+		}
+		if (client->net.https_proxy_auth)
+		{
+			free((void*)client->net.https_proxy_auth);
+			client->net.https_proxy_auth = NULL;
+		}
 #endif
 		Socket_close(client->net.socket);
 		client->net.socket = 0;
@@ -3690,7 +3710,92 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		m->c->will->topic = MQTTStrdup(options->will->topicName);
 	}
 
+	if (m->c->net.http_proxy)
+	{
+		free((void*)m->c->net.http_proxy);
+		m->c->net.http_proxy = NULL;
+	}
+	if (m->c->net.http_proxy_auth)
+	{
+		free((void*)m->c->net.http_proxy_auth);
+		m->c->net.http_proxy_auth = NULL;
+	}
+	
+	b64_size_t basic_auth_in_len, basic_auth_out_len;
+	char *p0 = NULL, *p1 = NULL;
+	b64_data_t *basic_auth;
+
+	if ((p0 = (char*)options->httpProxy)) {
+		p1 = strchr(p0, '@');
+		if (p1) {
+			m->c->net.http_proxy = (char *)malloc(sizeof(char) * (strlen(p1) - 1));
+			strcpy(m->c->net.http_proxy, p1 + 1);
+			p1 = strchr(p0, ':') + 3;
+			basic_auth_in_len = (b64_size_t)(strlen(p1) - strlen(m->c->net.http_proxy));
+			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
+			basic_auth_in_len--;
+			p0 = (char *)basic_auth;
+			while (*p1 != '@')
+				*p0++ = *p1++;
+			*p0 = 0x0;
+			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
+			m->c->net.http_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len);
+			Base64_encode(m->c->net.http_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
+			m->c->net.http_proxy_auth[basic_auth_out_len] = 0;
+			free(basic_auth);
+		}
+		else
+		{
+			p1 = strchr(p0, ':');
+			if (p1) {
+				m->c->net.http_proxy = (char *)malloc(sizeof(char) * (strlen(p1) - 3));
+				strcpy(m->c->net.http_proxy, p1 + 3);
+			}
+		}
+	}
 #if defined(OPENSSL)
+	if (m->c->net.https_proxy)
+	{
+		free((void*)m->c->net.https_proxy);
+		m->c->net.https_proxy = NULL;
+	}
+	if (m->c->net.https_proxy_auth)
+	{
+		free((void*)m->c->net.https_proxy_auth);
+		m->c->net.https_proxy_auth = NULL;
+	}
+	
+	p0 = NULL;
+	p1 = NULL;
+	if ((p0 = (char*)options->httpsProxy)) {
+		p1 = strchr(p0, '@');
+		if (p1) {
+			m->c->net.https_proxy = (char *)malloc(sizeof(char) * (strlen(p1) - 1));
+			strcpy(m->c->net.https_proxy, p1 + 1);
+			p1 = strchr(p0, ':') + 3;
+			basic_auth_in_len = (b64_size_t)(strlen(p1) - strlen(m->c->net.https_proxy));
+			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
+			basic_auth_in_len--;
+			p0 = (char *)basic_auth;
+			while (*p1 != '@')
+				*p0++ = *p1++;
+			*p0 = 0x0;
+			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
+			m->c->net.https_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len);
+			Base64_encode(m->c->net.https_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
+			m->c->net.https_proxy_auth[basic_auth_out_len] = 0;
+			free(basic_auth);
+		}
+		else
+		{
+			p1 = strchr(p0, ':');
+			if (p1) {
+				m->c->net.https_proxy = (char *)malloc(sizeof(char) * (strlen(p1) - 3));
+				strcpy(m->c->net.https_proxy, p1 + 3);
+			}
+		}
+	}
+	
 	if (m->c->sslopts)
 	{
 		if (m->c->sslopts->trustStore)

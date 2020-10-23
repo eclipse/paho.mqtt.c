@@ -2120,7 +2120,6 @@ static int MQTTAsync_processCommand(void)
 		{
 			if (command->client->c->connect_state != NOT_IN_PROGRESS)
 			{
-				command->client->c->connect_state = DISCONNECTING;
 				if (command->client->connect.onFailure)
 				{
 					MQTTAsync_failureData data;
@@ -2148,6 +2147,7 @@ static int MQTTAsync_processCommand(void)
 					command->client->connect.onSuccess5 = NULL;
 				}
 			}
+			command->client->c->connect_state = DISCONNECTING;
 			MQTTAsync_checkDisconnect(command->client, &command->command);
 		}
 	}

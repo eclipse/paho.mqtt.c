@@ -38,6 +38,7 @@
 #include "StackTrace.h"
 #include "Heap.h"
 #include "WebSocket.h"
+#include "Base64.h"
 
 extern ClientStates* bstate;
 

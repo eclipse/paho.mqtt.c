@@ -37,11 +37,6 @@
 #include "SocketBuffer.h"
 #include "StackTrace.h"
 
-#if defined(__MINGW32__)
-#define htonll __builtin_bswap64
-#define ntohll __builtin_bswap64
-#endif
-
 #if defined(__linux__)
 #  include <endian.h>
 #elif defined(__APPLE__)
@@ -57,9 +52,17 @@
 #elif defined(_WIN32) || defined(_WIN64)
 #  pragma comment(lib, "rpcrt4.lib")
 #  include <rpc.h>
-#  define strncasecmp(s1,s2,c) _strnicmp(s1,s2,c)
-#  define htonll(x) _byteswap_uint64(x)
-#  define ntohll(x) _byteswap_uint64(x)
+
+#  if !(defined(__MINGW32__))
+#    define strncasecmp(s1, s2, c) _strnicmp(s1, s2, c)
+#  endif
+#  if defined(__MINGW32__)
+#    define htonll __builtin_bswap64
+#    define ntohll __builtin_bswap64
+#  elif
+#    define htonll(x) _byteswap_uint64(x)
+#    define ntohll(x) _byteswap_uint64(x)
+#  endif
 
 #  if BYTE_ORDER == LITTLE_ENDIAN
 #    define htobe16(x)   htons(x)

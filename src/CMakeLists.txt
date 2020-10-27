@@ -98,7 +98,7 @@ ENDIF()
 
 IF (PAHO_BUILD_SHARED)
     ADD_LIBRARY(paho-mqtt3c SHARED $<TARGET_OBJECTS:common_obj> MQTTClient.c)
-    ADD_LIBRARY(paho-mqtt3a SHARED $<TARGET_OBJECTS:common_obj> MQTTAsync.c)
+    ADD_LIBRARY(paho-mqtt3a SHARED $<TARGET_OBJECTS:common_obj> MQTTAsync.c MQTTAsyncUtils.c)
     
     TARGET_LINK_LIBRARIES(paho-mqtt3c ${LIBS_SYSTEM})
     TARGET_LINK_LIBRARIES(paho-mqtt3a ${LIBS_SYSTEM})
@@ -147,7 +147,7 @@ ENDIF()
 
 IF (PAHO_BUILD_STATIC)
     ADD_LIBRARY(paho-mqtt3c-static STATIC $<TARGET_OBJECTS:common_obj_static> MQTTClient.c)
-    ADD_LIBRARY(paho-mqtt3a-static STATIC $<TARGET_OBJECTS:common_obj_static> MQTTAsync.c)
+    ADD_LIBRARY(paho-mqtt3a-static STATIC $<TARGET_OBJECTS:common_obj_static> MQTTAsync.c MQTTAsyncUtils.c)
 
     TARGET_LINK_LIBRARIES(paho-mqtt3c-static ${LIBS_SYSTEM})
     TARGET_LINK_LIBRARIES(paho-mqtt3a-static ${LIBS_SYSTEM})
@@ -198,7 +198,7 @@ IF (PAHO_WITH_SSL)
     	SET_PROPERTY(TARGET common_ssl_obj PROPERTY COMPILE_DEFINITIONS "OPENSSL=1;PAHO_MQTT_EXPORTS=1")
     
         ADD_LIBRARY(paho-mqtt3cs SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTClient.c SSLSocket.c)
-        ADD_LIBRARY(paho-mqtt3as SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTAsync.c SSLSocket.c)
+        ADD_LIBRARY(paho-mqtt3as SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTAsync.c MQTTAsyncUtils.c SSLSocket.c)
     
         SET_TARGET_PROPERTIES(
             paho-mqtt3cs paho-mqtt3as PROPERTIES
@@ -250,7 +250,7 @@ IF (PAHO_WITH_SSL)
     	SET_PROPERTY(TARGET common_ssl_obj_static PROPERTY COMPILE_DEFINITIONS "OPENSSL=1;PAHO_MQTT_STATIC=1")
     
         ADD_LIBRARY(paho-mqtt3cs-static STATIC $<TARGET_OBJECTS:common_ssl_obj_static> MQTTClient.c SSLSocket.c)
-        ADD_LIBRARY(paho-mqtt3as-static STATIC $<TARGET_OBJECTS:common_ssl_obj_static> MQTTAsync.c SSLSocket.c)
+        ADD_LIBRARY(paho-mqtt3as-static STATIC $<TARGET_OBJECTS:common_ssl_obj_static> MQTTAsync.c MQTTAsyncUtils.c SSLSocket.c)
 
         SET_TARGET_PROPERTIES(
             paho-mqtt3cs-static paho-mqtt3as-static PROPERTIES

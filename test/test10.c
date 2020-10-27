@@ -186,7 +186,7 @@ void MyLog(int LOGA_level, char* format, ...)
 #if defined(_WIN32) || defined(_WINDOWS)
 	sprintf(&msg_buf[strlen(msg_buf)], ".%.3hu ", ts.millitm);
 #else
-	sprintf(&msg_buf[strlen(msg_buf)], ".%.3lu ", ts.tv_usec / 1000);
+	sprintf(&msg_buf[strlen(msg_buf)], ".%.3lu ", ts.tv_usec / 1000L);
 #endif
 
 	va_start(args, format);

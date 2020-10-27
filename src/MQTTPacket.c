@@ -961,7 +961,7 @@ void writeMQTTLenString(char** pptr, MQTTLenString lenstring)
 
 int MQTTLenStringRead(MQTTLenString* lenstring, char** pptr, char* enddata)
 {
-	int len = 0;
+	int len = -1;
 
 	/* the first two bytes are the length of the string */
 	if (enddata - (*pptr) > 1) /* enough length to read the integer? */

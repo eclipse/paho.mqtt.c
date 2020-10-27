@@ -238,7 +238,7 @@ int MQTTProperties_write(char** pptr, const MQTTProperties* properties)
 int MQTTProperty_read(MQTTProperty* prop, char** pptr, char* enddata)
 {
   int type = -1,
-    len = 0;
+    len = -1;
 
   prop->identifier = readChar(pptr);
   type = MQTTProperty_getType(prop->identifier);
@@ -265,17 +265,35 @@ int MQTTProperty_read(MQTTProperty* prop, char** pptr, char* enddata)
       case MQTTPROPERTY_TYPE_BINARY_DATA:
       case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
       case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
-        len = MQTTLenStringRead(&prop->value.data, pptr, enddata);
-        prop->value.data.data = datadup(&prop->value.data);
+        if ((len = MQTTLenStringRead(&prop->value.data, pptr, enddata)) == -1)
+          break; /* error */
+        if ((prop->value.data.data = datadup(&prop->value.data)) == NULL)
+        {
+          len = -1;
+          break; /* error */
+        }
         if (type == MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR)
         {
-          len += MQTTLenStringRead(&prop->value.value, pptr, enddata);
-          prop->value.value.data = datadup(&prop->value.value);
+          int proplen = MQTTLenStringRead(&prop->value.value, pptr, enddata);
+
+          if (proplen == -1)
+          {
+            len = -1;
+            free(prop->value.data.data);
+            break;
+          }
+          len += proplen;
+          if ((prop->value.value.data = datadup(&prop->value.value)) == NULL)
+          {
+            len = -1;
+            free(prop->value.data.data);
+            break;
+          }
         }
         break;
     }
   }
-  return len + 1; /* 1 byte for identifier */
+  return (len == -1) ? -1 : len + 1; /* 1 byte for identifier */
 }
 
 
@@ -288,6 +306,8 @@ int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata)
   /* we assume an initialized properties structure */
   if (enddata - (*pptr) > 0) /* enough length to read the VBI? */
   {
+    int proplen = 0;
+
     *pptr += MQTTPacket_decodeBuf(*pptr, &remlength);
     properties->length = remlength;
     while (remlength > 0)
@@ -305,19 +325,18 @@ int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata)
     	rc = PAHO_MEMORY_ERROR;
         goto exit;
       }
-      remlength -= MQTTProperty_read(&properties->array[properties->count], pptr, enddata);
+      if ((proplen = MQTTProperty_read(&properties->array[properties->count], pptr, enddata)) > 0)
+          remlength -= proplen;
+      else
+          break;
       properties->count++;
     }
     if (remlength == 0)
-      rc = 1; /* data read successfully */
+        rc = 1; /* data read successfully */
   }
 
   if (rc != 1 && properties->array != NULL)
-  {
-	  free(properties->array);
-	  properties->array = NULL;
-	  properties->max_count = properties->count = 0;
-  }
+      MQTTProperties_free(properties);
 
 exit:
   FUNC_EXIT_RC(rc);

@@ -287,8 +287,6 @@ int MQTTAsync_init(void)
 
 	return rc;
 }
-
-#define WINAPI
 #endif
 
 

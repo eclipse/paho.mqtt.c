@@ -172,6 +172,11 @@ int MQTTAsync_getNoBufferedMessages(MQTTAsyncs* m);
 void MQTTAsync_writeComplete(int socket, int rc);
 void setRetryLoopInterval(int keepalive);
 
+#if defined(_WIN32) || defined(_WIN64)
+#else
+#define WINAPI
+#endif
+
 thread_return_type WINAPI MQTTAsync_sendThread(void* n);
 thread_return_type WINAPI MQTTAsync_receiveThread(void* n);
 

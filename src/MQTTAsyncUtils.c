@@ -92,6 +92,10 @@ extern mutex_type mqttcommand_mutex;
 extern cond_type send_cond;
 #endif
 
+#if !defined(min)
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+
 void MQTTAsync_sleep(long milliseconds)
 {
 	FUNC_ENTRY;

@@ -2562,18 +2562,16 @@ exit:
 }
 
 
-static int retryLoopInterval = 5;
+static int retryLoopIntervalms = 5000;
 
 void setRetryLoopInterval(int keepalive)
 {
-	int proposed = keepalive / 10;
+	retryLoopIntervalms = (keepalive*1000) / 10;
 
-	if (proposed < 1)
-		proposed = 1;
-	else if (proposed > 5)
-		proposed = 5;
-	if (proposed < retryLoopInterval)
-		retryLoopInterval = proposed;
+	if (retryLoopIntervalms < 300)
+		retryLoopIntervalms = 300;
+	else if (retryLoopIntervalms  > 5000)
+		retryLoopIntervalms = 5000;
 }
 
 
@@ -2708,7 +2706,7 @@ static void MQTTAsync_retry(void)
 
 	FUNC_ENTRY;
 	now = MQTTTime_now();
-	if (MQTTTime_difftime(now, last) > (DIFF_TIME_TYPE)(retryLoopInterval * 1000))
+	if (MQTTTime_difftime(now, last) >= (DIFF_TIME_TYPE)(retryLoopIntervalms))
 	{
 		last = MQTTTime_now();
 		MQTTProtocol_keepalive(now);

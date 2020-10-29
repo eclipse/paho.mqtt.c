@@ -1432,8 +1432,8 @@ void setRetryLoopInterval(int keepalive)
 {
 	retryLoopIntervalms = (keepalive*1000) / 10;
 
-	if (retryLoopIntervalms < 300)
-		retryLoopIntervalms = 300;
+	if (retryLoopIntervalms < 100)
+		retryLoopIntervalms = 100;
 	else if (retryLoopIntervalms  > 5000)
 		retryLoopIntervalms = 5000;
 }

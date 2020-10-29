@@ -806,7 +806,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 		Thread_lock_mutex(mqttclient_mutex);
 		if (tostop)
 			break;
-		timeout = 1000L;
+		timeout = 100L;
 
 		/* find client corresponding to socket */
 		if (ListFindItem(handles, &sock, clientSockCompare) == NULL)

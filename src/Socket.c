@@ -58,6 +58,7 @@ int Socket_abortWrite(int socket);
 #if defined(_WIN32) || defined(_WIN64)
 #define iov_len len
 #define iov_base buf
+#define snprintf _snprintf
 #endif
 
 /**

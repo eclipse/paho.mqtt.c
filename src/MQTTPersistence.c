@@ -31,6 +31,10 @@
 #include "MQTTProtocolClient.h"
 #include "Heap.h"
 
+#if defined(_WIN32) || defined(_WIN64)
+	#define snprintf _snprintf
+#endif
+
 
 static MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t buflen, int MQTTVersion);
 static void MQTTPersistence_insertInSeqOrder(List* list, MQTTPersistence_qEntry* qEntry, size_t size);

@@ -31,6 +31,7 @@
 #include <tchar.h>
 #include <io.h>
 #include <sys/stat.h>
+#define snprintf _snprintf
 #else
 #include <dlfcn.h>
 #include <sys/mman.h>

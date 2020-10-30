@@ -40,6 +40,7 @@
 	#include <direct.h>
 	/* Windows doesn't have strtok_r, so remap it to strtok */
 	#define strtok_r( A, B, C ) strtok( A, B )
+	#define snprintf _snprintf
 	int keysWin32(char *, char ***, int *);
 	int clearWin32(char *);
 	int containskeyWin32(char *, char *);

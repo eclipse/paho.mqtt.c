@@ -220,13 +220,19 @@ static int MQTTAsync_unpersistCommand(MQTTAsync_queuedCommand* qcmd)
 {
 	int rc = 0;
 	char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
+	int chars = 0;
 
 	FUNC_ENTRY;
 	if (qcmd->client->c->MQTTVersion >= MQTTVERSION_5)
-		sprintf(key, "%s%u", PERSISTENCE_V5_COMMAND_KEY, qcmd->seqno);
+		chars = snprintf(key, sizeof(key), "%s%u", PERSISTENCE_V5_COMMAND_KEY, qcmd->seqno);
 	else
-		sprintf(key, "%s%u", PERSISTENCE_COMMAND_KEY, qcmd->seqno);
-	if ((rc = qcmd->client->c->persistence->premove(qcmd->client->c->phandle, key)) != 0)
+		chars = snprintf(key, sizeof(key), "%s%u", PERSISTENCE_COMMAND_KEY, qcmd->seqno);
+	if (chars >= sizeof(key))
+	{
+		rc = MQTTASYNC_PERSISTENCE_ERROR;
+		Log(LOG_ERROR, 0, "Error writing %d chars with snprintf", chars);
+	}
+	else if ((rc = qcmd->client->c->persistence->premove(qcmd->client->c->phandle, key)) != 0)
 		Log(LOG_ERROR, 0, "Error %d removing command from persistence", rc);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -242,6 +248,7 @@ static int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 	void** bufs = NULL;
 	int bufindex = 0, i, nbufs = 0;
 	char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
+	int chars = 0; /* number of chars from snprintf */
 	int props_allocated = 0;
 	int process = 1;
 
@@ -379,10 +386,15 @@ static int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 		props_allocated = bufindex;
 		rc = MQTTProperties_write(&ptr, &command->properties);
 		lens[bufindex++] = temp_len;
-		sprintf(key, "%s%u", PERSISTENCE_V5_COMMAND_KEY, aclient->command_seqno);
+		chars = snprintf(key, sizeof(key), "%s%u", PERSISTENCE_V5_COMMAND_KEY, aclient->command_seqno);
 	}
 	else
-		sprintf(key, "%s%u", PERSISTENCE_COMMAND_KEY, aclient->command_seqno);
+		chars = snprintf(key, sizeof(key), "%s%u", PERSISTENCE_COMMAND_KEY, aclient->command_seqno);
+	if (chars >= sizeof(key))
+	{
+		Log(LOG_ERROR, 0, "Error writing %d chars with snprintf", chars);
+		goto exit;
+	}
 
 	if (nbufs > 0)
 	{
@@ -906,12 +918,19 @@ int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 				if (command->command.type == PUBLISH && rc == 0)
 				{
 					char key[PERSISTENCE_MAX_KEY_LENGTH + 1];
+					int chars = 0;
 
 					command->not_restored = 1;
 					if (command->client->c->MQTTVersion >= MQTTVERSION_5)
-						sprintf(key, "%s%u", PERSISTENCE_V5_COMMAND_KEY, command->seqno);
+						chars = snprintf(key, sizeof(key), "%s%u", PERSISTENCE_V5_COMMAND_KEY, command->seqno);
 					else
-						sprintf(key, "%s%u", PERSISTENCE_COMMAND_KEY, command->seqno);
+						chars = snprintf(key, sizeof(key), "%s%u", PERSISTENCE_COMMAND_KEY, command->seqno);
+					if (chars >= sizeof(key))
+					{
+						rc = MQTTASYNC_PERSISTENCE_ERROR;
+						Log(LOG_ERROR, 0, "Error writing %d chars with snprintf", chars);
+						goto exit;
+					}
 					command->key = malloc(strlen(key+1));
 					strcpy(command->key, key);
 
@@ -958,6 +977,7 @@ int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 				command->client->noBufferedMessages++;
 		}
 	}
+exit:
 	MQTTAsync_unlock_mutex(mqttcommand_mutex);
 #if !defined(_WIN32) && !defined(_WIN64)
 	rc = Thread_signal_cond(send_cond);

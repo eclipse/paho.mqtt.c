@@ -1056,8 +1056,11 @@ char* Socket_getaddrname(struct sockaddr* sa, int sock)
 	/* strcpy(&addr_string[strlen(addr_string)], "what?"); */
 #else
 	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+	size_t buflen = sizeof(addr_string) - strlen(addr_string);
+
 	inet_ntop(sin->sin_family, &sin->sin_addr, addr_string, ADDRLEN);
-	sprintf(&addr_string[strlen(addr_string)], ":%d", ntohs(sin->sin_port));
+	if (snprintf(&addr_string[strlen(addr_string)], buflen, ":%d", ntohs(sin->sin_port)) >= buflen)
+		addr_string[sizeof(addr_string)-1] = '\0'; /* just in case of snprintf buffer filling */
 #endif
 	return addr_string;
 }

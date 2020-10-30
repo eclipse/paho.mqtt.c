@@ -71,6 +71,7 @@ int pstopen(void **handle, const char* clientID, const char* serverURI, void* co
 	char *pCrtDirName = NULL;
 	char *pTokDirName = NULL;
 	char *perserverURI = NULL, *ptraux;
+	size_t alloclen = 0;
 
 	FUNC_ENTRY;
 	/* Note that serverURI=address:port, but ":" not allowed in Windows directories */
@@ -84,15 +85,21 @@ int pstopen(void **handle, const char* clientID, const char* serverURI, void* co
 		*ptraux = '-' ;
 
 	/* consider '/'  +  '-'  +  '\0' */
-	clientDir = malloc(strlen(dataDir) + strlen(clientID) + strlen(perserverURI) + 3);
+	alloclen = strlen(dataDir) + strlen(clientID) + strlen(perserverURI) + 3;
+	clientDir = malloc(alloclen);
 	if (!clientDir)
 	{
 		free(perserverURI);
 		rc = PAHO_MEMORY_ERROR;
 		goto exit;
 	}
-	sprintf(clientDir, "%s/%s-%s", dataDir, clientID, perserverURI);
-
+	if (snprintf(clientDir, alloclen, "%s/%s-%s", dataDir, clientID, perserverURI) >= alloclen)
+	{
+		free(clientDir);
+		free(perserverURI);
+		rc = MQTTCLIENT_PERSISTENCE_ERROR;
+		goto exit;
+	}
 
 	/* create clientDir directory */
 
@@ -193,6 +200,7 @@ int pstput(void* handle, char* key, int bufcount, char* buffers[], int buflens[]
 	size_t bytesWritten = 0,
 	       bytesTotal = 0;
 	int i;
+	size_t alloclen = 0;
 
 	FUNC_ENTRY;
 	if (clientDir == NULL)
@@ -202,13 +210,18 @@ int pstput(void* handle, char* key, int bufcount, char* buffers[], int buflens[]
 	}
 
 	/* consider '/' + '\0' */
-	file = malloc(strlen(clientDir) + strlen(key) + strlen(MESSAGE_FILENAME_EXTENSION) + 2 );
+	alloclen = strlen(clientDir) + strlen(key) + strlen(MESSAGE_FILENAME_EXTENSION) + 2;
+	file = malloc(alloclen);
 	if (!file)
 	{
 		rc = PAHO_MEMORY_ERROR;
 		goto exit;
 	}
-	sprintf(file, "%s/%s%s", clientDir, key, MESSAGE_FILENAME_EXTENSION);
+	if (snprintf(file, alloclen, "%s/%s%s", clientDir, key, MESSAGE_FILENAME_EXTENSION) >= alloclen)
+	{
+		rc = MQTTCLIENT_PERSISTENCE_ERROR;
+		goto free_exit;
+	}
 
 	fp = fopen(file, "wb");
 	if ( fp != NULL )
@@ -229,8 +242,8 @@ int pstput(void* handle, char* key, int bufcount, char* buffers[], int buflens[]
 		rc = MQTTCLIENT_PERSISTENCE_ERROR;
 	}
 
+free_exit:
 	free(file);
-
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -249,6 +262,7 @@ int pstget(void* handle, char* key, char** buffer, int* buflen)
 	char *buf = NULL;
 	unsigned long fileLen = 0;
 	unsigned long bytesRead = 0;
+	size_t alloclen = 0;
 
 	FUNC_ENTRY;
 	if (clientDir == NULL)
@@ -258,13 +272,20 @@ int pstget(void* handle, char* key, char** buffer, int* buflen)
 	}
 
 	/* consider '/' + '\0' */
-	filename = malloc(strlen(clientDir) + strlen(key) + strlen(MESSAGE_FILENAME_EXTENSION) + 2);
+	alloclen = strlen(clientDir) + strlen(key) + strlen(MESSAGE_FILENAME_EXTENSION) + 2;
+	filename = malloc(alloclen);
 	if (!filename)
 	{
 		rc = PAHO_MEMORY_ERROR;
 		goto exit;
 	}
-	sprintf(filename, "%s/%s%s", clientDir, key, MESSAGE_FILENAME_EXTENSION);
+	if (snprintf(filename, alloclen, "%s/%s%s", clientDir, key, MESSAGE_FILENAME_EXTENSION) >= alloclen)
+	{
+		rc = MQTTCLIENT_PERSISTENCE_ERROR;
+		free(filename);
+		goto exit;
+	}
+
 	fp = fopen(filename, "rb");
 	free(filename);
 	if (fp != NULL)
@@ -302,6 +323,7 @@ int pstremove(void* handle, char* key)
 	int rc = 0;
 	char *clientDir = handle;
 	char *file;
+	size_t alloclen = 0;
 
 	FUNC_ENTRY;
 	if (clientDir == NULL)
@@ -311,27 +333,31 @@ int pstremove(void* handle, char* key)
 	}
 
 	/* consider '/' + '\0' */
-	file = malloc(strlen(clientDir) + strlen(key) + strlen(MESSAGE_FILENAME_EXTENSION) + 2);
+	/* consider '/' + '\0' */
+	alloclen = strlen(clientDir) + strlen(key) + strlen(MESSAGE_FILENAME_EXTENSION) + 2;
+	file = malloc(alloclen);
 	if (!file)
 	{
 		rc = PAHO_MEMORY_ERROR;
 		goto exit;
 	}
-	sprintf(file, "%s/%s%s", clientDir, key, MESSAGE_FILENAME_EXTENSION);
-
+	if (snprintf(file, alloclen, "%s/%s%s", clientDir, key, MESSAGE_FILENAME_EXTENSION) >= alloclen)
+		rc = MQTTCLIENT_PERSISTENCE_ERROR;
+	else
+	{
 #if defined(_WIN32) || defined(_WIN64)
-	if ( _unlink(file) != 0 )
-	{
+		if ( _unlink(file) != 0 )
+		{
 #else
-	if ( unlink(file) != 0 )
-	{
+		if ( unlink(file) != 0 )
+		{
 #endif
-		if ( errno != ENOENT )
-			rc = MQTTCLIENT_PERSISTENCE_ERROR;
+			if ( errno != ENOENT )
+				rc = MQTTCLIENT_PERSISTENCE_ERROR;
+		}
 	}
 
 	free(file);
-
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -405,12 +431,14 @@ int containskeyWin32(char *dirname, char *key)
 	int notFound = MQTTCLIENT_PERSISTENCE_ERROR;
 	int fFinished = 0;
 	char *filekey, *ptraux;
-	char dir[MAX_PATH+1];
+	const size_t dirsize = MAX_PATH+1;
+	char dir[dirsize];
 	WIN32_FIND_DATAA FileData;
 	HANDLE hDir;
 
 	FUNC_ENTRY;
-	sprintf(dir, "%s/*", dirname);
+	if (snprintf(dir, dirsize, "%s/*", dirname) >= dirsize)
+		goto exit;
 
 	hDir = FindFirstFileA(dir, &FileData);
 	if (hDir != INVALID_HANDLE_VALUE)
@@ -461,14 +489,20 @@ int containskeyUnix(char *dirname, char *key)
 	{
 		while((dir_entry = readdir(dp)) != NULL && notFound)
 		{
-			char* filename = malloc(strlen(dirname) + strlen(dir_entry->d_name) + 2);
+			const size_t allocsize = strlen(dirname) + strlen(dir_entry->d_name) + 2;
+			char* filename = malloc(allocsize);
 
 			if (!filename)
 			{
 				notFound = PAHO_MEMORY_ERROR;
 				goto exit;
 			}
-			sprintf(filename, "%s/%s", dirname, dir_entry->d_name);
+			if (snprintf(filename, allocsize, "%s/%s", dirname, dir_entry->d_name) >= allocsize)
+			{
+				free(filename);
+				notFound = MQTTCLIENT_PERSISTENCE_ERROR;
+				goto exit;
+			}
 			lstat(filename, &stat_info);
 			free(filename);
 			if(S_ISREG(stat_info.st_mode))
@@ -531,12 +565,17 @@ int clearWin32(char *dirname)
 	int rc = 0;
 	int fFinished = 0;
 	char *file;
-	char dir[MAX_PATH+1];
+	const size_t dirsize = MAX_PATH+1;
+	char dir[dirsize];
 	WIN32_FIND_DATAA FileData;
 	HANDLE hDir;
 
 	FUNC_ENTRY;
-	sprintf(dir, "%s/*", dirname);
+	if (snprintf(dir, dirsize, "%s/*", dirname) >= dirsize)
+	{
+		rc = MQTTCLIENT_PERSISTENCE_ERROR;
+		goto exit;
+	}
 
 	hDir = FindFirstFileA(dir, &FileData);
 	if (hDir != INVALID_HANDLE_VALUE)
@@ -545,13 +584,20 @@ int clearWin32(char *dirname)
 		{
 			if (FileData.dwFileAttributes & FILE_ATTRIBUTE_ARCHIVE)
 			{
-				file = malloc(strlen(dirname) + strlen(FileData.cFileName) + 2);
+				size_t allocsize = strlen(dirname) + strlen(FileData.cFileName) + 2;
+
+				file = malloc(allocsize);
 				if (!file)
 				{
 					rc = PAHO_MEMORY_ERROR;
 					goto exit;
 				}
-				sprintf(file, "%s/%s", dirname, FileData.cFileName);
+				if (snprintf(file, allocsize, "%s/%s", dirname, FileData.cFileName) >= allocsize)
+				{
+					rc = MQTTCLIENT_PERSISTENCE_ERROR;
+					free(file);
+					goto exit;
+				}
 				rc = remove(file);
 				free(file);
 				if ( rc != 0 )
@@ -636,7 +682,8 @@ int keysWin32(char *dirname, char ***keys, int *nkeys)
 	int rc = 0;
 	char **fkeys = NULL;
 	int nfkeys = 0;
-	char dir[MAX_PATH+1];
+	const size_t dirsize = MAX_PATH+1;
+	char dir[dirsize];
 	WIN32_FIND_DATAA FileData;
 	HANDLE hDir;
 	int fFinished = 0;
@@ -644,7 +691,11 @@ int keysWin32(char *dirname, char ***keys, int *nkeys)
 	int i;
 
 	FUNC_ENTRY;
-	sprintf(dir, "%s/*", dirname);
+	if (snprintf(dir, dirsize, "%s/*", dirname) >= dirsize)
+	{
+		rc = MQTTCLIENT_PERSISTENCE_ERROR;
+		goto exit;
+	}
 
 	/* get number of keys */
 	hDir = FindFirstFileA(dir, &FileData);
@@ -736,14 +787,20 @@ int keysUnix(char *dirname, char ***keys, int *nkeys)
 	{
 		while((dir_entry = readdir(dp)) != NULL)
 		{
-			char* temp = malloc(strlen(dirname)+strlen(dir_entry->d_name)+2);
+			size_t allocsize = strlen(dirname)+strlen(dir_entry->d_name)+2;
+			char* temp = malloc(allocsize);
 
 			if (!temp)
 			{
 				rc = PAHO_MEMORY_ERROR;
 				goto exit;
 			}
-			sprintf(temp, "%s/%s", dirname, dir_entry->d_name);
+			if (snprintf(temp, allocsize, "%s/%s", dirname, dir_entry->d_name) >= allocsize)
+			{
+				free(temp);
+				rc = MQTTCLIENT_PERSISTENCE_ERROR;
+				goto exit;
+			}
 			if (lstat(temp, &stat_info) == 0 && S_ISREG(stat_info.st_mode))
 				nfkeys++;
 			free(temp);
@@ -770,7 +827,8 @@ int keysUnix(char *dirname, char ***keys, int *nkeys)
 			i = 0;
 			while((dir_entry = readdir(dp)) != NULL)
 			{
-				char* temp = malloc(strlen(dirname)+strlen(dir_entry->d_name)+2);
+				size_t allocsize = strlen(dirname)+strlen(dir_entry->d_name)+2;
+				char* temp = malloc(allocsize);
 
 				if (!temp)
 				{
@@ -778,7 +836,13 @@ int keysUnix(char *dirname, char ***keys, int *nkeys)
 					rc = PAHO_MEMORY_ERROR;
 					goto exit;
 				}
-				sprintf(temp, "%s/%s", dirname, dir_entry->d_name);
+				if (snprintf(temp, allocsize, "%s/%s", dirname, dir_entry->d_name) >= allocsize)
+				{
+					free(temp);
+					free(fkeys);
+					rc = MQTTCLIENT_PERSISTENCE_ERROR;
+					goto exit;
+				}
 				if (lstat(temp, &stat_info) == 0 && S_ISREG(stat_info.st_mode))
 				{
 					if ((fkeys[i] = malloc(strlen(dir_entry->d_name) + 1)) == NULL)

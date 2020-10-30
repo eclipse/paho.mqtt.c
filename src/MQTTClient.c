@@ -2904,6 +2904,7 @@ MQTTClient_nameValue* MQTTClient_getVersionInfo(void)
 const char* MQTTClient_strerror(int code)
 {
   static char buf[30];
+  int chars = 0;
 
   switch (code) {
     case MQTTCLIENT_SUCCESS:
@@ -2938,7 +2939,12 @@ const char* MQTTClient_strerror(int code)
       return "Zero length will topic on connect";
   }
 
-  sprintf(buf, "Unknown error code %d", code);
+  chars = snprintf(buf, sizeof(buf), "Unknown error code %d", code);
+  if (chars >= sizeof(buf))
+  {
+	buf[sizeof(buf)-1] = '\0';
+	Log(LOG_ERROR, 0, "Error writing %d chars with snprintf", chars);
+  }
   return buf;
 }
 

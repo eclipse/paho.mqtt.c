@@ -284,7 +284,8 @@ char* SSLSocket_get_version_string(int version)
 
 	if (retstring == NULL)
 	{
-		sprintf(buf, "%i", version);
+		if (snprintf(buf, sizeof(buf), "%i", version) >= sizeof(buf))
+			buf[sizeof(buf)-1] = '\0'; /* just in case of snprintf buffer overflow */
 		retstring = buf;
 	}
 	return retstring;

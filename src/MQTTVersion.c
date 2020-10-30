@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2018 IBM Corp.
+ * Copyright (c) 2012, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -200,13 +200,13 @@ int main(int argc, char** argv)
 		for (i = 0; i < ARRAY_SIZE(libraries); ++i)
 		{
 #if defined(__CYGWIN__)
-			sprintf(namebuf, "cyg%s-1.dll", libraries[i]);
+			snprintf(namebuf, sizeof(namebuf), "cyg%s-1.dll", libraries[i]);
 #elif defined(_WIN32) || defined(_WIN64)
-			sprintf(namebuf, "%s.dll", libraries[i]);
+			snprintf(namebuf, sizeof(namebuf), "%s.dll", libraries[i]);
 #elif defined(OSX)
-			sprintf(namebuf, "lib%s.1.dylib", libraries[i]);
+			snprintf(namebuf, sizeof(namebuf), "lib%s.1.dylib", libraries[i]);
 #else
-			sprintf(namebuf, "lib%s.so.1", libraries[i]);
+			snprintf(namebuf, sizeof(namebuf), "lib%s.so.1", libraries[i]);
 #endif
 			printf("--- Trying library %s ---\n", libraries[i]);
 			if (!loadandcall(namebuf))

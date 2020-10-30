@@ -443,7 +443,8 @@ int WebSocket_connect( networkHandles *net, const char *uri)
 
 		while ( headers->name != NULL && headers->value != NULL )
 		{
-			headers_buf_cur += sprintf(headers_buf_cur, "%s: %s\r\n", headers->name, headers->value);
+			headers_buf_cur += snprintf(headers_buf_cur, headers_buf_len - (headers_buf_cur - headers_buf),
+					"%s: %s\r\n", headers->name, headers->value);
 			headers++;
 		}
 		*headers_buf_cur = '\0';

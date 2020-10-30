@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -147,19 +147,23 @@ int Log_initialize(Log_nameValue* info)
 			trace_destination = stdout;
 		else
 		{
+			size_t namelen = 0;
+
 			if ((trace_destination_name = malloc(strlen(envval) + 1)) == NULL)
 			{
 				free(trace_queue);
 				goto exit;
 			}
 			strcpy(trace_destination_name, envval);
-			if ((trace_destination_backup_name = malloc(strlen(envval) + 3)) == NULL)
+			namelen = strlen(envval) + 3;
+			if ((trace_destination_backup_name = malloc(namelen)) == NULL)
 			{
 				free(trace_queue);
 				free(trace_destination_name);
 				goto exit;
 			}
-			sprintf(trace_destination_backup_name, "%s.0", trace_destination_name);
+			if (snprintf(trace_destination_backup_name, namelen, "%s.0", trace_destination_name) >= namelen)
+				trace_destination_backup_name[namelen-1] = '\0';
 		}
 	}
 	if ((envval = getenv("MQTT_C_CLIENT_TRACE_MAX_LINES")) != NULL && strlen(envval) > 0)
@@ -320,13 +324,13 @@ static char* Log_formatTraceEntry(traceEntry* cur_entry)
 #endif
 	strftime(&msg_buf[7], 80, "%Y%m%d %H%M%S ", timeinfo);
 #if defined(GETTIMEOFDAY)
-	sprintf(&msg_buf[22], ".%.3lu ", cur_entry->ts.tv_usec / 1000L);
+	snprintf(&msg_buf[22], sizeof(msg_buf)-22, ".%.3lu ", cur_entry->ts.tv_usec / 1000L);
 #else
-	sprintf(&msg_buf[22], ".%.3hu ", cur_entry->ts.millitm);
+	snprintf(&msg_buf[22], sizeof(msg_buf)-22, ".%.3hu ", cur_entry->ts.millitm);
 #endif
 	buf_pos = 27;
 
-	sprintf(msg_buf, "(%.4d)", cur_entry->sametime_count);
+	snprintf(msg_buf, sizeof(msg_buf), "(%.4d)", cur_entry->sametime_count);
 	msg_buf[6] = ' ';
 
 	if (cur_entry->has_rc == 2)

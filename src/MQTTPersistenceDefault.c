@@ -432,13 +432,17 @@ int containskeyWin32(char *dirname, char *key)
 	int notFound = MQTTCLIENT_PERSISTENCE_ERROR;
 	int fFinished = 0;
 	char *filekey, *ptraux;
-	const size_t dirsize = MAX_PATH+1;
-	char dir[dirsize];
+#if defined(_WIN32) || defined(_WIN64)
+#define DIRSIZE MAX_PATH+1
+#else
+	const size_t DIRSIZE = MAX_PATH+1;
+#endif
+	char dir[DIRSIZE];
 	WIN32_FIND_DATAA FileData;
 	HANDLE hDir;
 
 	FUNC_ENTRY;
-	if (snprintf(dir, dirsize, "%s/*", dirname) >= dirsize)
+	if (snprintf(dir, DIRSIZE, "%s/*", dirname) >= DIRSIZE)
 		goto exit;
 
 	hDir = FindFirstFileA(dir, &FileData);
@@ -566,13 +570,12 @@ int clearWin32(char *dirname)
 	int rc = 0;
 	int fFinished = 0;
 	char *file;
-	const size_t dirsize = MAX_PATH+1;
-	char dir[dirsize];
+	char dir[DIRSIZE];
 	WIN32_FIND_DATAA FileData;
 	HANDLE hDir;
 
 	FUNC_ENTRY;
-	if (snprintf(dir, dirsize, "%s/*", dirname) >= dirsize)
+	if (snprintf(dir, DIRSIZE, "%s/*", dirname) >= DIRSIZE)
 	{
 		rc = MQTTCLIENT_PERSISTENCE_ERROR;
 		goto exit;
@@ -683,8 +686,7 @@ int keysWin32(char *dirname, char ***keys, int *nkeys)
 	int rc = 0;
 	char **fkeys = NULL;
 	int nfkeys = 0;
-	const size_t dirsize = MAX_PATH+1;
-	char dir[dirsize];
+	char dir[DIRSIZE];
 	WIN32_FIND_DATAA FileData;
 	HANDLE hDir;
 	int fFinished = 0;
@@ -692,7 +694,7 @@ int keysWin32(char *dirname, char ***keys, int *nkeys)
 	int i;
 
 	FUNC_ENTRY;
-	if (snprintf(dir, dirsize, "%s/*", dirname) >= dirsize)
+	if (snprintf(dir, DIRSIZE, "%s/*", dirname) >= DIRSIZE)
 	{
 		rc = MQTTCLIENT_PERSISTENCE_ERROR;
 		goto exit;

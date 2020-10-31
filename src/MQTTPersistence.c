@@ -645,16 +645,20 @@ void MQTTPersistence_wrapMsgID(Clients *client)
 int MQTTPersistence_unpersistQueueEntry(Clients* client, MQTTPersistence_qEntry* qe)
 {
 	int rc = 0;
-	const size_t keysize = PERSISTENCE_MAX_KEY_LENGTH + 1;
-	char key[keysize];
+#if defined(_WIN32) || defined(_WIN64)
+#define KEYSIZE PERSISTENCE_MAX_KEY_LENGTH + 1
+#else
+	const size_t KEYSIZE = PERSISTENCE_MAX_KEY_LENGTH + 1;
+#endif
+	char key[KEYSIZE];
 	int chars = 0;
 	
 	FUNC_ENTRY;
 	if (client->MQTTVersion >= MQTTVERSION_5)
-		chars = snprintf(key, keysize, "%s%u", PERSISTENCE_V5_QUEUE_KEY, qe->seqno);
+		chars = snprintf(key, KEYSIZE, "%s%u", PERSISTENCE_V5_QUEUE_KEY, qe->seqno);
 	else
-		chars = snprintf(key, keysize, "%s%u", PERSISTENCE_QUEUE_KEY, qe->seqno);
-	if (chars >= keysize)
+		chars = snprintf(key, KEYSIZE, "%s%u", PERSISTENCE_QUEUE_KEY, qe->seqno);
+	if (chars >= KEYSIZE)
 	{
 		Log(LOG_ERROR, 0, "Error writing %d chars with snprintf", chars);
 		rc = MQTTCLIENT_PERSISTENCE_ERROR;
@@ -671,8 +675,10 @@ int MQTTPersistence_persistQueueEntry(Clients* aclient, MQTTPersistence_qEntry* 
 {
 	int rc = 0;
 	int bufindex = 0;
-	const size_t keysize = PERSISTENCE_MAX_KEY_LENGTH + 1;
-	char key[keysize];
+#if !defined(_WIN32) && !defined(_WIN64)
+	const size_t KEYSIZE = PERSISTENCE_MAX_KEY_LENGTH + 1;
+#endif
+	char key[KEYSIZE];
 	int chars = 0;
 	int lens[MAX_NO_OF_BUFFERS];
 	void* bufs[MAX_NO_OF_BUFFERS];
@@ -727,12 +733,12 @@ int MQTTPersistence_persistQueueEntry(Clients* aclient, MQTTPersistence_qEntry* 
 		rc = MQTTProperties_write(&ptr, props);
 		lens[bufindex++] = temp_len;
 
-		chars = snprintf(key, keysize, "%s%u", PERSISTENCE_V5_QUEUE_KEY, aclient->qentry_seqno);
+		chars = snprintf(key, KEYSIZE, "%s%u", PERSISTENCE_V5_QUEUE_KEY, aclient->qentry_seqno);
 	}
 	else
-		chars = snprintf(key, keysize, "%s%u", PERSISTENCE_QUEUE_KEY, aclient->qentry_seqno);
+		chars = snprintf(key, KEYSIZE, "%s%u", PERSISTENCE_QUEUE_KEY, aclient->qentry_seqno);
 
-	if (chars >= keysize)
+	if (chars >= KEYSIZE)
 		rc = MQTTCLIENT_PERSISTENCE_ERROR;
 	else
 	{

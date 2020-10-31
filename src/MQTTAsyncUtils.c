@@ -76,6 +76,9 @@ extern List* MQTTAsync_commands;
 extern int MQTTAsync_tostop;
 
 #if defined(_WIN32) || defined(_WIN64)
+	#if defined(_MSC_VER) && _MSC_VER < 1900
+		#define snprintf _snprintf
+	#endif
 extern mutex_type mqttasync_mutex;
 extern mutex_type socket_mutex;
 extern mutex_type mqttcommand_mutex;

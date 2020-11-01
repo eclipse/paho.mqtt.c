@@ -426,8 +426,15 @@ static MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int bufle
 	char* ptr = buffer;
 	int i;
 	size_t data_size;
+	char* endpos = &buffer[buflen];
 
 	FUNC_ENTRY;
+	if (buflen == 0)
+	{
+		qcommand = NULL;
+		goto exit;
+	}
+
 	if (qcommand == NULL)
 	{
 		if ((qcommand = malloc(sizeof(MQTTAsync_queuedCommand))) == NULL)
@@ -440,9 +447,10 @@ static MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int bufle
 
 	command = &qcommand->command;
 
+	if (&ptr[sizeof(int) + sizeof(MQTTAsync_token)] > endpos)
+		goto error_exit;
 	command->type = *(int*)ptr;
 	ptr += sizeof(int);
-
 	command->token = *(MQTTAsync_token*)ptr;
 	ptr += sizeof(MQTTAsync_token);
 
@@ -451,58 +459,51 @@ static MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int bufle
 		case SUBSCRIBE:
 			if (qcommand->not_restored == 0)
 				break;
+			if (&ptr[sizeof(int)] > endpos)
+				goto error_exit;
 			command->details.sub.count = *(int*)ptr;
 			ptr += sizeof(int);
 
 			if (command->details.sub.count > 0)
 			{
 				if ((command->details.sub.topics = (char **)malloc(sizeof(char *) * command->details.sub.count)) == NULL)
-				{
-					free(qcommand);
-					qcommand = NULL;
-					goto exit;
-				}
+					goto error_exit;
 				if (MQTTVersion < MQTTVERSION_5)
 				{
 					if ((command->details.sub.qoss = (int *)malloc(sizeof(int) * command->details.sub.count)) == NULL)
-					{
-						free(qcommand);
-						qcommand = NULL;
-						goto exit;
-					}
+						goto error_exit;
 				}
 				else if (command->details.sub.count > 1)
 				{
 					command->details.sub.optlist = (MQTTSubscribe_options*)malloc(sizeof(MQTTSubscribe_options) * command->details.sub.count);
 					if (command->details.sub.optlist == NULL)
-					{
-						free(qcommand);
-						qcommand = NULL;
-						goto exit;
-					}
+						goto error_exit;
 				}
 			}
 
 			for (i = 0; i < command->details.sub.count; ++i)
 			{
-				data_size = strlen(ptr) + 1;
+				data_size = strnlen(ptr, endpos - ptr) + 1;
+				if (data_size == endpos - ptr)
+					goto error_exit; /* no null found */
 
 				if ((command->details.sub.topics[i] = malloc(data_size)) == NULL)
-				{
-					free(qcommand);
-					qcommand = NULL;
-					goto exit;
-				}
+					goto error_exit;
+
 				strcpy(command->details.sub.topics[i], ptr);
 				ptr += data_size;
 
 				if (MQTTVersion < MQTTVERSION_5)
 				{
+					if (&ptr[sizeof(int)] > endpos)
+						goto error_exit;
 					command->details.sub.qoss[i] = *(int*)ptr;
 					ptr += sizeof(int);
 				}
 				else
 				{
+					if (&ptr[sizeof(MQTTSubscribe_options)] > endpos)
+						goto error_exit;
 					if (command->details.sub.count == 1)
 					{
 						command->details.sub.opts = *(MQTTSubscribe_options*)ptr;
@@ -520,6 +521,9 @@ static MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int bufle
 		case UNSUBSCRIBE:
 			if (qcommand->not_restored == 0)
 				break;
+
+			if (&ptr[sizeof(int)] > endpos)
+				goto error_exit;
 			command->details.unsub.count = *(int*)ptr;
 			ptr += sizeof(int);
 
@@ -527,58 +531,53 @@ static MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int bufle
 			{
 				command->details.unsub.topics = (char **)malloc(sizeof(char *) * command->details.unsub.count);
 				if (command->details.unsub.topics == NULL)
-				{
-					free(qcommand);
-					qcommand = NULL;
-					goto exit;
-				}
+					goto error_exit;
 			}
 
 			for (i = 0; i < command->details.unsub.count; ++i)
 			{
-				data_size = strlen(ptr) + 1;
+				data_size = strnlen(ptr, endpos - ptr) + 1;
+				if (data_size == endpos - ptr)
+					goto error_exit; /* no null found */
 
 				if ((command->details.unsub.topics[i] = malloc(data_size)) == NULL)
-				{
-					free(qcommand);
-					qcommand = NULL;
-					goto exit;
-				}
+					goto error_exit;
 				strcpy(command->details.unsub.topics[i], ptr);
 				ptr += data_size;
 			}
 			break;
 
 		case PUBLISH:
-			data_size = strlen(ptr) + 1;
+			data_size = strnlen(ptr, endpos - ptr) + 1;
+			if (data_size == endpos - ptr)
+				goto error_exit; /* no null found */
+
 			if (qcommand->not_restored == 0)
 			{
 				if ((command->details.pub.destinationName = malloc(data_size)) == NULL)
-				{
-					free(qcommand);
-					qcommand = NULL;
-					goto exit;
-				}
+					goto error_exit;
 				strcpy(command->details.pub.destinationName, ptr);
 			}
 			ptr += data_size;
 
+			if (&ptr[sizeof(int)] > endpos)
+				goto error_exit;
 			command->details.pub.payloadlen = *(int*)ptr;
 			ptr += sizeof(int);
 
 			data_size = command->details.pub.payloadlen;
+			if (&ptr[data_size] > endpos)
+				goto error_exit;
 			if (qcommand->not_restored == 0)
 			{
 				if ((command->details.pub.payload = malloc(data_size)) == NULL)
-				{
-					free(qcommand);
-					qcommand = NULL;
-					goto exit;
-				}
+					goto error_exit;
 				memcpy(command->details.pub.payload, ptr, data_size);
 			}
 			ptr += data_size;
 
+			if (&ptr[sizeof(int)*2] > endpos)
+				goto error_exit;
 			command->details.pub.qos = *(int*)ptr;
 			ptr += sizeof(int);
 
@@ -587,8 +586,7 @@ static MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int bufle
 			break;
 
 		default:
-			free(qcommand);
-			qcommand = NULL;
+			goto error_exit;
 
 	}
 	if (qcommand != NULL && qcommand->not_restored == 0 && MQTTVersion >= MQTTVERSION_5 &&
@@ -598,6 +596,10 @@ static MQTTAsync_queuedCommand* MQTTAsync_restoreCommand(char* buffer, int bufle
 			free(qcommand);
 			qcommand = NULL;
 	}
+	goto exit;
+error_exit:
+	free(qcommand);
+	qcommand = NULL;
 exit:
 	FUNC_EXIT;
 	return qcommand;
@@ -742,15 +744,16 @@ int MQTTAsync_restoreCommands(MQTTAsyncs* client)
 					int MQTTVersion = (strncmp(msgkeys[i], PERSISTENCE_V5_COMMAND_KEY, strlen(PERSISTENCE_V5_COMMAND_KEY)) == 0)
 										? MQTTVERSION_5 : MQTTVERSION_3_1_1;
 					cmd = MQTTAsync_restoreCommand(buffer, buflen, MQTTVersion, NULL);
+				}
+
+				if (cmd)
+				{
 					/* As the entire command is not restored on the first read to save memory, we temporarily store
 					 * the filename of the persisted command to be used when restoreCommand is called the second time.
 					 */
 					cmd->key = malloc(strlen(msgkeys[i])+1);
 					strcpy(cmd->key, msgkeys[i]);
-				}
 
-				if (cmd)
-				{
 					cmd->client = client;
 					cmd->seqno = atoi(strchr(msgkeys[i], '-')+1); /* key format is tag'-'seqno */
 					MQTTAsync_insertInOrder(MQTTAsync_commands, cmd, sizeof(MQTTAsync_queuedCommand), keyloc_array, i + 1);

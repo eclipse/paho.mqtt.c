@@ -84,11 +84,17 @@ ADD_EXECUTABLE(paho_c_sub_static paho_c_sub.c pubsub_opts.c)
 ADD_EXECUTABLE(paho_cs_pub_static paho_cs_pub.c pubsub_opts.c)
 ADD_EXECUTABLE(paho_cs_sub_static paho_cs_sub.c pubsub_opts.c)
 
-
 TARGET_LINK_LIBRARIES(paho_c_pub_static paho-mqtt3as-static)
 TARGET_LINK_LIBRARIES(paho_c_sub_static paho-mqtt3as-static)
 TARGET_LINK_LIBRARIES(paho_cs_pub_static paho-mqtt3cs-static)
 TARGET_LINK_LIBRARIES(paho_cs_sub_static paho-mqtt3cs-static)
 
+INSTALL(TARGETS paho_c_sub_static
+                paho_c_pub_static
+                paho_cs_sub_static
+                paho_cs_pub_static
+
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 ENDIF()
 

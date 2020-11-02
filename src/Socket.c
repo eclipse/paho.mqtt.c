@@ -902,7 +902,6 @@ int Socket_continueWrite(int socket)
 			size_t offset = pw->bytes - curbuflen;
 			iovecs1[++curbuf].iov_len = pw->iovecs[i].iov_len - (ULONG)offset;
 			iovecs1[curbuf].iov_base = (char*)pw->iovecs[i].iov_base + offset;
-			break;
 		}
 		curbuflen += pw->iovecs[i].iov_len;
 	}

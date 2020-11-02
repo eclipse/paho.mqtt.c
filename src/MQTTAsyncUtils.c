@@ -2564,6 +2564,9 @@ void Protocol_processPublication(Publish* publish, Clients* client, int allocate
 
 			if (m->ma)
 				rc = MQTTAsync_deliverMessage(m, publish->topic, publish->topiclen, mm);
+			else
+				Log(LOG_ERROR, -1, "Message arrived for client %s but can't deliver it. No messageArrived callback",
+						m->c->clientID);
 		}
 	}
 

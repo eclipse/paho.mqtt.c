@@ -583,7 +583,10 @@ int MQTTProtocol_handlePubrels(void* pack, int sock)
 			if (m->MQTTVersion >= MQTTVERSION_5)
 				MQTTProperties_free(&m->properties);
 			if (m->publish)
+			{
 				ListRemove(&(state.publications), m->publish);
+				free(m->publish->topic);
+			}
 			ListRemove(client->inboundMsgs, m);
 			++(state.msgs_received);
 		}

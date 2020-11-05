@@ -361,6 +361,7 @@ int MQTTProtocol_handlePingresps(void* pack, int sock)
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	Log(LOG_PROTOCOL, 21, NULL, sock, client->clientID);
 	client->ping_outstanding = 0;
+	free(pack);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

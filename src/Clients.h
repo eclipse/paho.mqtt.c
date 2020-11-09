@@ -145,6 +145,8 @@ typedef struct
 	void* context;                  /**< calling context - used when calling disconnect_internal */
 	int MQTTVersion;                /**< the version of MQTT being used, 3, 4 or 5 */
 	int sessionExpiry;              /**< MQTT 5 session expiry */
+	char* httpProxy;                /**< HTTP proxy for websockets */
+	char* httpsProxy;               /**< HTTPS proxy for websockets */
 #if defined(OPENSSL)
 	MQTTClient_SSLOptions *sslopts; /**< the SSL/TLS connect options */
 	SSL_SESSION* session;           /**< SSL session pointer for fast handhake */

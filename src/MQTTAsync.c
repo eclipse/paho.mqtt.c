@@ -542,7 +542,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		goto exit;
 	}
 
-	if (strncmp(options->struct_id, "MQTC", 4) != 0 || options->struct_version < 0 || options->struct_version > 7)
+	if (strncmp(options->struct_id, "MQTC", 4) != 0 || options->struct_version < 0 || options->struct_version > 8)
 	{
 		rc = MQTTASYNC_BAD_STRUCTURE;
 		goto exit;
@@ -666,6 +666,13 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	if (options->struct_version >= 7)
 	{
 		m->c->net.httpHeaders = (const MQTTClient_nameValue *) options->httpHeaders;
+	}
+	if (options->struct_version >= 8)
+	{
+		if (options->httpProxy)
+			m->c->httpProxy = MQTTStrdup(options->httpProxy);
+		if (options->httpsProxy)
+			m->c->httpsProxy = MQTTStrdup(options->httpsProxy);
 	}
 
 	if (m->c->will)

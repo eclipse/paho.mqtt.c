@@ -832,6 +832,10 @@ void MQTTProtocol_freeClient(Clients* client)
 		free((void*)client->username);
 	if (client->password)
 		free((void*)client->password);
+	if (client->httpProxy)
+		free(client->httpProxy);
+	if (client->httpsProxy)
+		free(client->httpsProxy);
 #if defined(OPENSSL)
 	if (client->sslopts)
 	{
@@ -932,5 +936,7 @@ char* MQTTStrdup(const char* src)
 	char* temp = malloc(mlen);
 	if (temp)
 		MQTTStrncpy(temp, src, mlen);
+	else
+		Log(LOG_ERROR, -1, "memory allocation error in MQTTStrdup");
 	return temp;
 }

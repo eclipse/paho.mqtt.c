@@ -47,6 +47,7 @@ struct pubsub_opts opts =
 	NULL, NULL, 0, 0, /* will options */
 	0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, /* TLS options */
 	0, {NULL, NULL}, /* MQTT V5 options */
+	NULL, NULL, /* HTTP and HTTPS proxies */
 };
 
 MQTTAsync_responseOptions pub_opts = MQTTAsync_responseOptions_initializer;
@@ -300,6 +301,8 @@ void myconnect(MQTTAsync client)
 	conn_opts.MQTTVersion = opts.MQTTVersion;
 	conn_opts.context = client;
 	conn_opts.automaticReconnect = 1;
+	conn_opts.httpProxy = opts.http_proxy;
+	conn_opts.httpsProxy = opts.https_proxy;
 
 	if (opts.will_topic) 	/* will options */
 	{

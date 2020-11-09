@@ -1480,6 +1480,13 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 	{
 		m->c->net.httpHeaders = options->httpHeaders;
 	}
+	if (options->struct_version >= 8)
+	{
+		if (options->httpProxy)
+			m->c->httpProxy = MQTTStrdup(options->httpProxy);
+		if (options->httpsProxy)
+			m->c->httpsProxy = MQTTStrdup(options->httpsProxy);
+	}
 
 	if (m->c->will)
 	{
@@ -1699,7 +1706,7 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions*
 		goto exit;
 	}
 
-	if (strncmp(options->struct_id, "MQTC", 4) != 0 || options->struct_version < 0 || options->struct_version > 7)
+	if (strncmp(options->struct_id, "MQTC", 4) != 0 || options->struct_version < 0 || options->struct_version > 8)
 	{
 		rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
 		goto exit;

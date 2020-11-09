@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2018 IBM Corp., and others
+ * Copyright (c) 2012, 2020 IBM Corp., and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -45,6 +45,7 @@ struct pubsub_opts opts =
 	NULL, NULL, 0, 0, /* will options */
 	0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, /* TLS options */
 	0, {NULL, NULL}, /* MQTT V5 options */
+	NULL, NULL, /* HTTP and HTTPS proxies */
 };
 
 
@@ -68,6 +69,8 @@ int myconnect(MQTTClient* client)
 	conn_opts.username = opts.username;
 	conn_opts.password = opts.password;
 	conn_opts.MQTTVersion = opts.MQTTVersion;
+	conn_opts.httpProxy = opts.http_proxy;
+	conn_opts.httpsProxy = opts.https_proxy;
 
 	if (opts.will_topic) 	/* will options */
 	{

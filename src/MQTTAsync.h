@@ -1159,14 +1159,15 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1, 2, 3 4 5 6 or 7.
+	/** The version number of this structure.  Must be 0, 1, 2, 3 4 5 6, 7 or 8.
 	  * 0 signifies no SSL options and no serverURIs
 	  * 1 signifies no serverURIs
-    * 2 signifies no MQTTVersion
-    * 3 signifies no automatic reconnect options
-    * 4 signifies no binary password option (just string)
-    * 5 signifies no MQTTV5 properties
-    * 6 signifies no HTTP headers option
+      * 2 signifies no MQTTVersion
+      * 3 signifies no automatic reconnect options
+      * 4 signifies no binary password option (just string)
+      * 5 signifies no MQTTV5 properties
+      * 6 signifies no HTTP headers option
+      * 7 signifies no HTTP proxy and HTTPS proxy options
 	  */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -1326,23 +1327,31 @@ typedef struct
       */
 	MQTTAsync_onFailure5* onFailure5;
 	/**
-	 * httpHeaders
+	 * HTTP headers for websockets
 	 */
 	const MQTTAsync_nameValue* httpHeaders;
+	/**
+	 * HTTP proxy for websockets
+	 */
+	const char* httpProxy;
+	/**
+	 * HTTPS proxy for websockets
+	 */
+	const char* httpsProxy;
 } MQTTAsync_connectOptions;
 
 
-#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 7, 60, 1, 65535, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL}
+#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 8, 60, 1, 65535, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 
-#define MQTTAsync_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 7, 60, 0, 65535, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL}
+#define MQTTAsync_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 8, 60, 0, 65535, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 
-#define MQTTAsync_connectOptions_initializer_ws { {'M', 'Q', 'T', 'C'}, 7, 45, 1, 65535, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL}
+#define MQTTAsync_connectOptions_initializer_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 1, 65535, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 
-#define MQTTAsync_connectOptions_initializer5_ws { {'M', 'Q', 'T', 'C'}, 7, 45, 0, 65535, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL}
+#define MQTTAsync_connectOptions_initializer5_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 0, 65535, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 
 
 /**

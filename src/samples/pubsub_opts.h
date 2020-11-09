@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2018 IBM Corp.
+ * Copyright (c) 2012, 2020 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -69,6 +69,9 @@ struct pubsub_opts
 		char *name;
 		char *value;
 	} user_property;
+	/* websocket HTTP proxies */
+	char* http_proxy;
+	char* https_proxy;
 };
 
 typedef struct

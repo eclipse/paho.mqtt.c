@@ -806,7 +806,7 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1, 2, 3, 4, 5, 6 or 7.
+	/** The version number of this structure.  Must be 0, 1, 2, 3, 4, 5, 6, 7 or 8.
 	 * 0 signifies no SSL options and no serverURIs
 	 * 1 signifies no serverURIs
 	 * 2 signifies no MQTTVersion
@@ -814,6 +814,7 @@ typedef struct
 	 * 4 signifies no binary password option
 	 * 5 signifies no maxInflightMessages and cleanstart
 	 * 6 signifies no HTTP headers option
+	 * 7 signifies no HTTP proxy and HTTPS proxy options
 	 */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -945,22 +946,30 @@ typedef struct
 	 */
 	int cleanstart;
 	/**
-	 * httpHeaders
+	 * HTTP headers for websockets
 	 */
 	const MQTTClient_nameValue* httpHeaders;
+	/**
+	 * HTTP proxy for websockets
+	 */
+	const char* httpProxy;
+	/**
+	 * HTTPS proxy for websockets
+	 */
+	const char* httpsProxy;
 } MQTTClient_connectOptions;
 
-#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 7, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
-0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL}
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 8, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
+0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL}
 
-#define MQTTClient_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 7, 60, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
-0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL}
+#define MQTTClient_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 8, 60, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
+0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL, NULL, NULL}
 
-#define MQTTClient_connectOptions_initializer_ws { {'M', 'Q', 'T', 'C'}, 7, 45, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
-0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL}
+#define MQTTClient_connectOptions_initializer_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
+0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL}
 
-#define MQTTClient_connectOptions_initializer5_ws { {'M', 'Q', 'T', 'C'}, 7, 45, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
-0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL}
+#define MQTTClient_connectOptions_initializer5_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
+0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL, NULL, NULL}
 
 /**
   * This function attempts to connect a previously-created client (see

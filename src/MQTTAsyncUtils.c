@@ -2407,9 +2407,6 @@ static void MQTTAsync_stop(void)
 }
 
 
-
-
-
 static void MQTTAsync_closeOnly(Clients* client, enum MQTTReasonCodes reasonCode, MQTTProperties* props)
 {
 	FUNC_ENTRY;

@@ -96,19 +96,22 @@ size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic, 
 
 /**
  * Allow user or password characters to be expressed in the form of %XX, XX being the
- * hexadecimal value of the caracter. This will avoid problems when a user code or a password
+ * hexadecimal value of the character. This will avoid problems when a user code or a password
  * contains a '@' or another special character ('%' included)
- * @param p0
- * @param p1
+ * @param p0 output string
+ * @param p1 input string
  * @param basic_auth_in_len
  */
 void MQTTProtocol_specialChars(char* p0, char* p1, b64_size_t *basic_auth_in_len)
 {
-	while(*p1 != '@') {
-		if (*p1 != '%') {
+	while (*p1 != '@')
+	{
+		if (*p1 != '%')
+		{
 			*p0++ = *p1++;
 		}
-		else if (isxdigit(*(p1 + 1)) && isxdigit(*(p1 + 2))) {
+		else if (isxdigit(*(p1 + 1)) && isxdigit(*(p1 + 2)))
+		{
 			/* next 2 characters are hexa digits */
 			char hex[3];
 			p1++;
@@ -122,6 +125,126 @@ void MQTTProtocol_specialChars(char* p0, char* p1, b64_size_t *basic_auth_in_len
 	}
 	*p0 = 0x0;
 }
+
+
+/*
+ * Examples of proxy settings:
+ *   http://your.proxy.server:8080/
+ *   http://user:pass@my.proxy.server:8080/
+ */
+int MQTTProtocol_setHTTPProxy(Clients* aClient)
+{
+	b64_size_t basic_auth_in_len, basic_auth_out_len;
+	b64_data_t *basic_auth;
+	char *p0, *p1;
+	int rc = 0;
+
+	aClient->net.http_proxy = NULL;
+	aClient->net.http_proxy_auth = NULL;
+	if (aClient->httpProxy)
+		p0 = aClient->httpProxy;
+	else
+		p0 = getenv("http_proxy");
+
+	if (p0)
+	{
+		if ((p1 = strstr(p0, "http://")) != NULL) /* skip http:// prefix, if any */
+		{
+			p0 += 7;
+			aClient->net.http_proxy = p0;
+		}
+		if ((p1 = strchr(p0, '@')) != NULL) /* find user.pass separator */
+			aClient->net.http_proxy = p1 + 1;
+
+		if (p1)
+		{
+			/* basic auth len is string between http:// and @ */
+			basic_auth_in_len = (b64_size_t)(p1 - p0);
+			if (basic_auth_in_len > 0)
+			{
+				//printf("basic auth in len is %u\n", basic_auth_in_len);
+				basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
+				if (!basic_auth)
+				{
+					rc = PAHO_MEMORY_ERROR;
+					goto exit;
+				}
+				basic_auth_in_len--; /* space for terminating null */
+				MQTTProtocol_specialChars((char*)basic_auth, p0, &basic_auth_in_len);
+				//printf("basic auth in len is %u\n", basic_auth_in_len);
+				basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
+				//printf("basic auth out len is %u\n", basic_auth_out_len);
+				if ((aClient->net.http_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
+				{
+					free(basic_auth);
+					rc = PAHO_MEMORY_ERROR;
+					goto exit;
+				}
+				Base64_encode(aClient->net.http_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
+				free(basic_auth);
+			}
+		}
+		Log(TRACE_PROTOCOL, -1, "Setting http proxy to %s", aClient->net.http_proxy);
+	}
+exit:
+	return rc;
+}
+
+
+#if defined(OPENSSL)
+int MQTTProtocol_setHTTPSProxy(Clients* aClient)
+{
+	b64_size_t basic_auth_in_len, basic_auth_out_len;
+	b64_data_t *basic_auth;
+	char *p0, *p1;
+	int rc = 0;
+
+	aClient->net.https_proxy = NULL;
+	aClient->net.https_proxy_auth = NULL;
+	if (aClient->httpsProxy)
+		p0 = aClient->httpsProxy;
+	else
+		p0 = getenv("https_proxy");
+
+	if (aClient->httpsProxy)
+	{
+		p1 = strchr(p0, '@');
+		if (p1)
+		{
+			aClient->net.https_proxy = p1 + 1;
+			p1 = strchr(p0, ':') + 3;
+			basic_auth_in_len = (b64_size_t)(aClient->net.https_proxy - p1);
+			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
+			if (!basic_auth)
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
+			basic_auth_in_len--;
+			p0 = (char *)basic_auth;
+			MQTTProtocol_specialChars(p0, p1, &basic_auth_in_len);
+			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
+			if ((aClient->net.https_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
+			{
+				free(basic_auth);
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
+			Base64_encode(aClient->net.https_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
+			free(basic_auth);
+		}
+		else
+		{
+			p1 = strchr(p0, ':');
+			if (p1)
+				aClient->net.https_proxy = p1 + 3;
+		}
+		Log(TRACE_PROTOCOL, -1, "Setting https proxy to %s", aClient->net.http_proxy);
+	}
+exit:
+	return rc;
+}
+#endif
 
 
 /**
@@ -154,82 +277,15 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 	int rc = 0,
 		port;
 	size_t addr_len;
-	b64_size_t basic_auth_in_len, basic_auth_out_len;
-	char *p0, *p1;
-	b64_data_t *basic_auth;
 
 	FUNC_ENTRY;
 	aClient->good = 1;
-	aClient->net.http_proxy = NULL;
-	aClient->net.http_proxy_auth = NULL;
-	if ((p0 = getenv("http_proxy")))
-	{
-		p1 = strchr(p0, '@');
-		if(p1)
-		{
-			aClient->net.http_proxy = p1 + 1;
-			p1 = strchr(p0, ':') + 3;
-			basic_auth_in_len = (b64_size_t)(aClient->net.http_proxy - p1);
-			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
-			if (!basic_auth)
-			{
-				rc = PAHO_MEMORY_ERROR;
-				goto exit;
-			}
-			basic_auth_in_len--;
-			p0 = (char *)basic_auth;
-			MQTTProtocol_specialChars(p0, p1, &basic_auth_in_len);
-			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
-			if ((aClient->net.http_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
-			{
-				free(basic_auth);
-				rc = PAHO_MEMORY_ERROR;
-				goto exit;
-			}
-			Base64_encode(aClient->net.http_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
-			free(basic_auth);
-		}
-		else {
-			p1 = strchr(p0, ':');
-			if (p1)
-				aClient->net.http_proxy = p1 + 3;
-		}
-		Log(TRACE_PROTOCOL, -1, "MQTTProtocol_connect: setting http proxy to %s", aClient->net.http_proxy);
-	}
+	if ((rc = MQTTProtocol_setHTTPProxy(aClient)) != 0)
+		goto exit;
+
 #if defined(OPENSSL)
-	aClient->net.https_proxy = NULL;
-	aClient->net.https_proxy_auth = NULL;
-	if ((p0 = getenv("https_proxy"))) {
-		p1 = strchr(p0, '@');
-		if(p1) {
-			aClient->net.https_proxy = p1 + 1;
-			p1 = strchr(p0, ':') + 3;
-			basic_auth_in_len =  (b64_size_t)(aClient->net.https_proxy - p1);
-			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
-			if (!basic_auth)
-			{
-				rc = PAHO_MEMORY_ERROR;
-				goto exit;
-			}
-			basic_auth_in_len--;
-			p0 = (char *)basic_auth;
-			MQTTProtocol_specialChars(p0, p1, &basic_auth_in_len);
-			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
-			if ((aClient->net.https_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
-			{
-				free(basic_auth);
-				rc = PAHO_MEMORY_ERROR;
-				goto exit;
-			}
-			Base64_encode(aClient->net.https_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
-			free(basic_auth);
-		}
-		else {
-			p1 = strchr(p0, ':');
-			if (p1)
-				aClient->net.https_proxy = p1 + 3;
-		}
-	}
+	if ((rc = MQTTProtocol_setHTTPSProxy(aClient)) != 0)
+		goto exit;
 
 	if (!ssl && websocket && aClient->net.http_proxy) {
 #else

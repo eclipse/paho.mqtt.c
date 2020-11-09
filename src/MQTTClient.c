@@ -327,6 +327,7 @@ typedef struct
 	sem_type unsuback_sem;
 	MQTTPacket* pack;
 
+	unsigned long commandTimeout;
 } MQTTClients;
 
 struct props_rc_parms
@@ -441,6 +442,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 	}
 	*handle = m;
 	memset(m, '\0', sizeof(MQTTClients));
+	m->commandTimeout = 10000L;
 	if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
 		serverURI += strlen(URI_TCP);
 	else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
@@ -2008,7 +2010,7 @@ MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char* const
 		MQTTPacket* pack = NULL;
 
 		Thread_unlock_mutex(mqttclient_mutex);
-		pack = MQTTClient_waitfor(handle, SUBACK, &rc, 10000L);
+		pack = MQTTClient_waitfor(handle, SUBACK, &rc, m->commandTimeout);
 		Thread_lock_mutex(mqttclient_mutex);
 		if (pack != NULL)
 		{
@@ -2167,7 +2169,7 @@ MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count, char* con
 		MQTTPacket* pack = NULL;
 
 		Thread_unlock_mutex(mqttclient_mutex);
-		pack = MQTTClient_waitfor(handle, UNSUBACK, &rc, 10000L);
+		pack = MQTTClient_waitfor(handle, UNSUBACK, &rc, m->commandTimeout);
 		Thread_lock_mutex(mqttclient_mutex);
 		if (pack != NULL)
 		{
@@ -2866,6 +2868,21 @@ void MQTTClient_setTraceLevel(enum MQTTCLIENT_TRACE_LEVELS level)
 void MQTTClient_setTraceCallback(MQTTClient_traceCallback* callback)
 {
 	Log_setTraceCallback((Log_traceCallback*)callback);
+}
+
+
+int MQTTClient_setCommandTimeout(MQTTClient handle, unsigned long milliSeconds)
+{
+	int rc = MQTTCLIENT_SUCCESS;
+	MQTTClients* m = handle;
+
+	FUNC_ENTRY;
+	if (milliSeconds < 5000L)
+		rc = MQTTCLIENT_FAILURE;
+	else
+		m->commandTimeout = milliSeconds;
+	FUNC_EXIT_RC(rc);
+	return rc;
 }
 
 

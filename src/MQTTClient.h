@@ -1413,6 +1413,14 @@ typedef void MQTTClient_traceCallback(enum MQTTCLIENT_TRACE_LEVELS level, char* 
 LIBMQTT_API void MQTTClient_setTraceCallback(MQTTClient_traceCallback* callback);
 
 /**
+  * Sets the timeout value for un/subscribe commands when waiting for the un/suback response from
+  * the server.  Values less than 5000 are not allowed.
+  * @param milliSeconds the maximum number of milliseconds to wait
+  * @return MQTTCLIENT_SUCCESS or MQTTCLIENT_FAILURE
+  */
+LIBMQTT_API int MQTTClient_setCommandTimeout(MQTTClient handle, unsigned long milliSeconds);
+
+/**
  * Returns a pointer to the string representation of the error or NULL.
  *
  * Do not free after use. Returns NULL if the error code is unknown.

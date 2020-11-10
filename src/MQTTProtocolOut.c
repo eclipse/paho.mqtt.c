@@ -227,8 +227,6 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 	else
 		p0 = getenv("http_proxy");
 
-	printf("aClient->httpProxy %s\n", aClient->httpProxy);
-
 	if (p0)
 	{
 		if ((rc = MQTTProtocol_setHTTPProxy(aClient, p0, &aClient->net.http_proxy, &aClient->net.http_proxy_auth, "http://")) != 0)

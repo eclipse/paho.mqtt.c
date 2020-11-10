@@ -836,13 +836,9 @@ void MQTTProtocol_freeClient(Clients* client)
 		free(client->httpProxy);
 	if (client->httpsProxy)
 		free(client->httpsProxy);
-	if (client->net.http_proxy)
-		free(client->net.http_proxy);
 	if (client->net.http_proxy_auth)
 		free(client->net.http_proxy_auth);
 #if defined(OPENSSL)
-	if (client->net.https_proxy)
-		free(client->net.https_proxy);
 	if (client->net.https_proxy_auth)
 		free(client->net.https_proxy_auth);
 	if (client->sslopts)

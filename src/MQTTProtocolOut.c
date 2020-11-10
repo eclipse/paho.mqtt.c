@@ -132,18 +132,12 @@ void MQTTProtocol_specialChars(char* p0, char* p1, b64_size_t *basic_auth_in_len
  *   http://your.proxy.server:8080/
  *   http://user:pass@my.proxy.server:8080/
  */
-int MQTTProtocol_setHTTPProxy(Clients* aClient, char* source, char** dest, char** auth_dest)
+int MQTTProtocol_setHTTPProxy(Clients* aClient, char* source, char** dest, char** auth_dest, char* prefix)
 {
 	b64_size_t basic_auth_in_len, basic_auth_out_len;
 	b64_data_t *basic_auth;
 	char *p1;
 	int rc = 0;
-
-	if (*dest)
-	{
-		free(*dest);
-		*dest = NULL;
-	}
 
 	if (*auth_dest)
 	{
@@ -153,8 +147,8 @@ int MQTTProtocol_setHTTPProxy(Clients* aClient, char* source, char** dest, char*
 
 	if (source)
 	{
-		if ((p1 = strstr(source, "http://")) != NULL) /* skip http:// prefix, if any */
-			source += 7;
+		if ((p1 = strstr(source, prefix)) != NULL) /* skip http:// prefix, if any */
+			source += strlen(prefix);
 		*dest = source;
 		if ((p1 = strchr(source, '@')) != NULL) /* find user.pass separator */
 			*dest = p1 + 1;
@@ -233,9 +227,11 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 	else
 		p0 = getenv("http_proxy");
 
+	printf("aClient->httpProxy %s\n", aClient->httpProxy);
+
 	if (p0)
 	{
-		if ((rc = MQTTProtocol_setHTTPProxy(aClient, p0, &aClient->net.http_proxy, &aClient->net.http_proxy_auth)) != 0)
+		if ((rc = MQTTProtocol_setHTTPProxy(aClient, p0, &aClient->net.http_proxy, &aClient->net.http_proxy_auth, "http://")) != 0)
 			goto exit;
 		Log(TRACE_PROTOCOL, -1, "Setting http proxy to %s", aClient->net.http_proxy);
 		if (aClient->net.http_proxy_auth)
@@ -250,7 +246,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 
 	if (p0)
 	{
-		if ((rc = MQTTProtocol_setHTTPProxy(aClient, p0, &aClient->net.https_proxy, &aClient->net.https_proxy_auth)) != 0)
+		if ((rc = MQTTProtocol_setHTTPProxy(aClient, p0, &aClient->net.https_proxy, &aClient->net.https_proxy_auth, "https://")) != 0)
 			goto exit;
 		Log(TRACE_PROTOCOL, -1, "Setting https proxy to %s", aClient->net.https_proxy);
 		if (aClient->net.https_proxy_auth)

@@ -132,34 +132,37 @@ void MQTTProtocol_specialChars(char* p0, char* p1, b64_size_t *basic_auth_in_len
  *   http://your.proxy.server:8080/
  *   http://user:pass@my.proxy.server:8080/
  */
-int MQTTProtocol_setHTTPProxy(Clients* aClient)
+int MQTTProtocol_setHTTPProxy(Clients* aClient, char* source, char** dest, char** auth_dest)
 {
 	b64_size_t basic_auth_in_len, basic_auth_out_len;
 	b64_data_t *basic_auth;
-	char *p0, *p1;
+	char *p1;
 	int rc = 0;
 
-	aClient->net.http_proxy = NULL;
-	aClient->net.http_proxy_auth = NULL;
-	if (aClient->httpProxy)
-		p0 = aClient->httpProxy;
-	else
-		p0 = getenv("http_proxy");
-
-	if (p0)
+	if (*dest)
 	{
-		if ((p1 = strstr(p0, "http://")) != NULL) /* skip http:// prefix, if any */
-		{
-			p0 += 7;
-			aClient->net.http_proxy = p0;
-		}
-		if ((p1 = strchr(p0, '@')) != NULL) /* find user.pass separator */
-			aClient->net.http_proxy = p1 + 1;
+		free(*dest);
+		*dest = NULL;
+	}
+
+	if (*auth_dest)
+	{
+		free(*auth_dest);
+		*auth_dest = NULL;
+	}
+
+	if (source)
+	{
+		if ((p1 = strstr(source, "http://")) != NULL) /* skip http:// prefix, if any */
+			source += 7;
+		*dest = source;
+		if ((p1 = strchr(source, '@')) != NULL) /* find user.pass separator */
+			*dest = p1 + 1;
 
 		if (p1)
 		{
 			/* basic auth len is string between http:// and @ */
-			basic_auth_in_len = (b64_size_t)(p1 - p0);
+			basic_auth_in_len = (b64_size_t)(p1 - source);
 			if (basic_auth_in_len > 0)
 			{
 				//printf("basic auth in len is %u\n", basic_auth_in_len);
@@ -170,81 +173,24 @@ int MQTTProtocol_setHTTPProxy(Clients* aClient)
 					goto exit;
 				}
 				basic_auth_in_len--; /* space for terminating null */
-				MQTTProtocol_specialChars((char*)basic_auth, p0, &basic_auth_in_len);
+				MQTTProtocol_specialChars((char*)basic_auth, source, &basic_auth_in_len);
 				//printf("basic auth in len is %u\n", basic_auth_in_len);
 				basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
 				//printf("basic auth out len is %u\n", basic_auth_out_len);
-				if ((aClient->net.http_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
+				if ((*auth_dest = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
 				{
 					free(basic_auth);
 					rc = PAHO_MEMORY_ERROR;
 					goto exit;
 				}
-				Base64_encode(aClient->net.http_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
+				Base64_encode(*auth_dest, basic_auth_out_len, basic_auth, basic_auth_in_len);
 				free(basic_auth);
 			}
 		}
-		Log(TRACE_PROTOCOL, -1, "Setting http proxy to %s", aClient->net.http_proxy);
 	}
 exit:
 	return rc;
 }
-
-
-#if defined(OPENSSL)
-int MQTTProtocol_setHTTPSProxy(Clients* aClient)
-{
-	b64_size_t basic_auth_in_len, basic_auth_out_len;
-	b64_data_t *basic_auth;
-	char *p0, *p1;
-	int rc = 0;
-
-	aClient->net.https_proxy = NULL;
-	aClient->net.https_proxy_auth = NULL;
-	if (aClient->httpsProxy)
-		p0 = aClient->httpsProxy;
-	else
-		p0 = getenv("https_proxy");
-
-	if (aClient->httpsProxy)
-	{
-		p1 = strchr(p0, '@');
-		if (p1)
-		{
-			aClient->net.https_proxy = p1 + 1;
-			p1 = strchr(p0, ':') + 3;
-			basic_auth_in_len = (b64_size_t)(aClient->net.https_proxy - p1);
-			basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
-			if (!basic_auth)
-			{
-				rc = PAHO_MEMORY_ERROR;
-				goto exit;
-			}
-			basic_auth_in_len--;
-			p0 = (char *)basic_auth;
-			MQTTProtocol_specialChars(p0, p1, &basic_auth_in_len);
-			basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
-			if ((aClient->net.https_proxy_auth = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
-			{
-				free(basic_auth);
-				rc = PAHO_MEMORY_ERROR;
-				goto exit;
-			}
-			Base64_encode(aClient->net.https_proxy_auth, basic_auth_out_len, basic_auth, basic_auth_in_len);
-			free(basic_auth);
-		}
-		else
-		{
-			p1 = strchr(p0, ':');
-			if (p1)
-				aClient->net.https_proxy = p1 + 3;
-		}
-		Log(TRACE_PROTOCOL, -1, "Setting https proxy to %s", aClient->net.http_proxy);
-	}
-exit:
-	return rc;
-}
-#endif
 
 
 /**
@@ -277,15 +223,39 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 	int rc = 0,
 		port;
 	size_t addr_len;
+	char* p0;
 
 	FUNC_ENTRY;
 	aClient->good = 1;
-	if ((rc = MQTTProtocol_setHTTPProxy(aClient)) != 0)
-		goto exit;
+
+	if (aClient->httpProxy)
+		p0 = aClient->httpProxy;
+	else
+		p0 = getenv("http_proxy");
+
+	if (p0)
+	{
+		if ((rc = MQTTProtocol_setHTTPProxy(aClient, p0, &aClient->net.http_proxy, &aClient->net.http_proxy_auth)) != 0)
+			goto exit;
+		Log(TRACE_PROTOCOL, -1, "Setting http proxy to %s", aClient->net.http_proxy);
+		if (aClient->net.http_proxy_auth)
+			Log(TRACE_PROTOCOL, -1, "Setting http proxy auth to %s", aClient->net.http_proxy_auth);
+	}
 
 #if defined(OPENSSL)
-	if ((rc = MQTTProtocol_setHTTPSProxy(aClient)) != 0)
-		goto exit;
+	if (aClient->httpProxy)
+		p0 = aClient->httpsProxy;
+	else
+		p0 = getenv("https_proxy");
+
+	if (p0)
+	{
+		if ((rc = MQTTProtocol_setHTTPProxy(aClient, p0, &aClient->net.https_proxy, &aClient->net.https_proxy_auth)) != 0)
+			goto exit;
+		Log(TRACE_PROTOCOL, -1, "Setting https proxy to %s", aClient->net.https_proxy);
+		if (aClient->net.https_proxy_auth)
+			Log(TRACE_PROTOCOL, -1, "Setting https proxy auth to %s", aClient->net.https_proxy_auth);
+	}
 
 	if (!ssl && websocket && aClient->net.http_proxy) {
 #else

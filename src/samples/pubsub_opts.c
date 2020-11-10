@@ -120,8 +120,8 @@ void usage(struct pubsub_opts* opts, pubsub_opts_nameValue* name_values, const c
 	);
 
 	printf(
-	"  --http_proxy        : HTTP proxy string.\n"
-	"  --https_proxy       : HTTPS proxy string.\n"
+	"  --http-proxy        : HTTP proxy string.\n"
+	"  --https-proxy       : HTTPS proxy string.\n"
 	);
 
 	printf("\nSee http://eclipse.org/paho for more information about the Eclipse Paho project.\n");
@@ -180,6 +180,20 @@ int getopts(int argc, char** argv, struct pubsub_opts* opts)
 		{
 			if (++count < argc)
 				opts->port = argv[count];
+			else
+				return 1;
+		}
+		else if (strcmp(argv[count], "--http-proxy") == 0)
+		{
+			if (++count < argc)
+				opts->http_proxy = argv[count];
+			else
+				return 1;
+		}
+		else if (strcmp(argv[count], "--https-proxy") == 0)
+		{
+			if (++count < argc)
+				opts->https_proxy = argv[count];
 			else
 				return 1;
 		}
@@ -409,20 +423,6 @@ int getopts(int argc, char** argv, struct pubsub_opts* opts)
 			{
 				opts->stdin_lines = 0;
 				opts->null_message = 1;
-			}
-			else if (strcmp(argv[count], "--http_proxy") == 0)
-			{
-				if (++count < argc)
-					opts->http_proxy = argv[count];
-				else
-					return 1;
-			}
-			else if (strcmp(argv[count], "--https_proxy") == 0)
-			{
-				if (++count < argc)
-					opts->https_proxy = argv[count];
-				else
-					return 1;
 			}
 			else
 			{

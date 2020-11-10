@@ -3119,7 +3119,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 				}
 			}
 			else if (pack->header.bits.type == PUBREL)
-				*rc = MQTTProtocol_handlePubrels(pack, *sock);
+				*rc = MQTTProtocol_handlePubrels(pack, *sock, 1);
 			else if (pack->header.bits.type == PINGRESP)
 				*rc = MQTTProtocol_handlePingresps(pack, *sock);
 			else

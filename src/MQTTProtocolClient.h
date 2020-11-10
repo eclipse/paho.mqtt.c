@@ -42,7 +42,7 @@ void Protocol_processPublication(Publish* publish, Clients* client, int allocate
 int MQTTProtocol_handlePublishes(void* pack, int sock);
 int MQTTProtocol_handlePubacks(void* pack, int sock);
 int MQTTProtocol_handlePubrecs(void* pack, int sock);
-int MQTTProtocol_handlePubrels(void* pack, int sock);
+int MQTTProtocol_handlePubrels(void* pack, int sock, int freeTopic);
 int MQTTProtocol_handlePubcomps(void* pack, int sock);
 
 void MQTTProtocol_closeSession(Clients* c, int sendwill);

@@ -90,7 +90,6 @@ int main(int argc, char *argv[])
             memcpy(&id, key->id, 2);
             EVP_PKEY *evp_key;
             evp_key = PKCS11_get_public_key(key);
-            j, key->label, ntohs(id), key->needLogin, key->evp_key);
         }
 
         /* perform pkcs #11 login */

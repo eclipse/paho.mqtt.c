@@ -93,6 +93,7 @@
  * Additional information about important concepts is provided here:
  * <ul>
  * <li>@ref async</li>
+ * <li>@ref callbacks</li>
  * <li>@ref wildcard</li>
  * <li>@ref qos</li>
  * <li>@ref tracing</li>
@@ -433,7 +434,7 @@ LIBMQTT_API int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTCl
  * This is a callback function, which will be called when the a disconnect
  * packet is received from the server.  This applies to MQTT V5 and above only.
  * @param context A pointer to the <i>context</i> value originally passed to
- * ::MQTTAsync_setDisconnected(), which contains any application-specific context.
+ * ::MQTTClient_setDisconnected(), which contains any application-specific context.
  * @param properties The MQTT V5 properties received with the disconnect, if any.
  * @param reasonCode The MQTT V5 reason code received with the disconnect.
  * Currently, <i>cause</i> is always set to NULL.
@@ -1021,6 +1022,7 @@ LIBMQTT_API void MQTTResponse_free(MQTTResponse response);
   * @param options A pointer to a valid MQTTClient_connectOptions
   * structure.
   * @param connectProperties the MQTT 5.0 connect properties to use
+  * @param willProperties the MQTT 5.0 properties to set on the will message
   * @return the MQTT 5.0 response information: error codes and properties.
   */
 LIBMQTT_API MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connectOptions* options,
@@ -1424,6 +1426,7 @@ LIBMQTT_API void MQTTClient_setTraceCallback(MQTTClient_traceCallback* callback)
 /**
   * Sets the timeout value for un/subscribe commands when waiting for the un/suback response from
   * the server.  Values less than 5000 are not allowed.
+  * @param handle A valid client handle from a successful call to MQTTClient_create().
   * @param milliSeconds the maximum number of milliseconds to wait
   * @return MQTTCLIENT_SUCCESS or MQTTCLIENT_FAILURE
   */
@@ -1436,16 +1439,16 @@ LIBMQTT_API int MQTTClient_setCommandTimeout(MQTTClient handle, unsigned long mi
  */
 LIBMQTT_API const char* MQTTClient_strerror(int code);
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
      }
 #endif
 
 #endif
 
-/**
+/*!
   * @cond MQTTClient_main
   * @page async Asynchronous vs synchronous client applications
-  * The client library supports two modes of operation. These are referred to
+  * This client library supports two modes of operation. These are referred to
   * as <b>synchronous</b> and <b>asynchronous</b> modes. If your application
   * calls MQTTClient_setCallbacks(), this puts the client into asynchronous
   * mode, otherwise it operates in synchronous mode.
@@ -1471,6 +1474,27 @@ LIBMQTT_API const char* MQTTClient_strerror(int code);
   * MQTTClient_connectionLost() and MQTTClient_deliveryComplete()).
   * This API is not thread safe however - it is not possible to call it from multiple
   * threads without synchronization.  You can use the MQTTAsync API for that.
+  *
+  * @page callbacks Callbacks
+  * You must not call a function from this API from within a callback otherwise
+  * a deadlock might result.  The only exception to this is the ability to call
+  * connect within the connection lost callback, to allow a reconnect.
+  *
+  * When using MQTT 5.0, you can also call connect from within the disconnected
+  * callback, which is invoked when the MQTT server sends a disconnect packet.
+  * This server behaviour is allowed in MQTT 5.0, but not in MQTT 3.1.1, so the
+  * disconnected callback will never be invoked if you use MQTT 3.1.1.
+  *
+  * In particular, you must make a publish call within the message arrived callback.
+  * These restrictions are all lifted in the
+  * <a href="../../MQTTAsync/html/index.html">MQTTAsync API</a>.
+  *
+  * If no callbacks are assigned, this will include the message arrived callback.
+  * This could be done if the application is a pure publisher, and does
+  * not subscribe to any topics.  If however messages are received, and no message
+  * arrived callback is set, or receive not called, then those messages will accumulate
+  * and take up memory, as there is no place for them to be delivered.
+  * It is up to the application to protect against this situation.
   *
   * @page wildcard Subscription wildcards
   * Every MQTT message includes a topic that classifies it. MQTT servers use

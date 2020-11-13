@@ -1711,7 +1711,7 @@ LIBMQTT_API MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void);
 LIBMQTT_API const char* MQTTAsync_strerror(int code);
 
 
-/**
+/*!
   * @cond MQTTAsync_main
   * @page async Threading
   * The client application runs on several threads.
@@ -1725,12 +1725,22 @@ LIBMQTT_API const char* MQTTAsync_strerror(int code);
   * MQTTAsync_connectionLost() and MQTTAsync_deliveryComplete()).
   * In addition, some functions allow success and failure callbacks to be set
   * for individual requests, in the ::MQTTAsync_responseOptions structure.  Applications
-  * can be written as a chain of callback functions. Note that it is a theoretically
-  * possible but unlikely event, that a success or failure callback could be called
-  * before function requesting the callback has returned.  In this case the token
-  * delivered in the callback would not yet be known to the application program (see
-  * Race condition for MQTTAsync_token in MQTTAsync.c
-  * https://bugs.eclipse.org/bugs/show_bug.cgi?id=444093)
+  * can be written as a chain of callback functions.
+  *
+  * @page callbacks Callbacks
+  * Any function from this API may be used within a callback.  It is not advisable to
+  * use ::MQTTAsync_waitForCompletion within a callback, however, as it is the only
+  * API call that may take some time to complete, which may cause unpredictable
+  * behaviour.  All the other API calls are intended to complete quickly, starting
+  * a request in the background, with success or failure notified by other callbacks.
+  *
+  * If no callbacks are assigned, this will include the message arrived callback.
+  * This could be done if the application is a pure publisher, and does
+  * not subscribe to any topics.  If however messages are received, and no message
+  * arrived callback is set, then those messages will accumulate
+  * and take up memory, as there is no place for them to be delivered.
+  * A log message will be written to highlight the issue, but it is up
+  * to the application to protect against this situation.
   *
   * @page auto_reconnect Automatic Reconnect
   * The ability for the client library to reconnect automatically in the event
@@ -1758,7 +1768,7 @@ LIBMQTT_API const char* MQTTAsync_strerror(int code);
   *
   * To enable messages to be published when the application is disconnected
   * ::MQTTAsync_createWithOptions must be used instead of ::MQTTAsync_create to
-  * create the client object.  The ::createOptions field sendWhileDisconnected
+  * create the client object.  The ::MQTTAsync_createOptions field sendWhileDisconnected
   * must be set to non-zero, and the maxBufferedMessages field set as required -
   * the default being 100.
   *
@@ -2314,7 +2324,7 @@ exit:
   * @endcond
   */
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
      }
 #endif
 

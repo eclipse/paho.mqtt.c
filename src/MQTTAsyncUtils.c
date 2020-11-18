@@ -860,7 +860,7 @@ static int MQTTAsync_unpersistInflightMessages(Clients* c)
 #endif
 
 /**
- * List callback function for comparing client handles and command types being CONNECT or DISCONNECT 
+ * List callback function for comparing client handles and command types being CONNECT or DISCONNECT
  * @param a first MQTTAsync_queuedCommand pointer
  * @param b second MQTTAsync_queuedCommand pointer
  * @return boolean indicating whether a and b are equal
@@ -880,7 +880,7 @@ static int clientCompareConnectCommand(void* a, void* b)
 		}
 	}
 	return 0;	//Item NOT found in the list
-}								   
+}
 
 
 int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
@@ -903,7 +903,7 @@ int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 		if (head != NULL && head->client == command->client && head->command.type == command->command.type)
 			MQTTAsync_freeCommand(command); /* ignore duplicate connect or disconnect command */
 		else
-		{ 
+		{
 			ListRemoveItem(MQTTAsync_commands, command, clientCompareConnectCommand); /* remove command from the list if already there */
 			ListInsert(MQTTAsync_commands, command, command_size, MQTTAsync_commands->first); /* add to the head of the list */
 		}
@@ -2057,6 +2057,12 @@ static void MQTTAsync_freePack(MQTTPacket* pack)
 		else if (pack->header.bits.type == DISCONNECT)
 		{
 			MQTTPacket_freeAck((Ack*)pack);
+		}
+		else if (pack->header.bits.type == PINGRESP ||
+			     pack->header.bits.type == PINGREQ)
+		{
+			// No free(pack) here as pack comes from MQTTPacket_header_only, which returns a
+			// reference to a static variable.
 		}
 		else
 			free(pack);

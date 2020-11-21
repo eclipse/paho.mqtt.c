@@ -1,0 +1,7 @@
+<map id="Connack" name="Connack">
+<area shape="rect" id="node1" title="Data for a connack packet." alt="" coords="37,288,110,315"/>
+<area shape="rect" id="node2" href="$unionHeader.html" title="Bitfields for the MQTT header byte." alt="" coords="5,199,69,225"/>
+<area shape="rect" id="node3" href="$structMQTTProperties.html" title="MQTT version 5 property list." alt="" coords="94,199,213,225"/>
+<area shape="rect" id="node4" href="$structMQTTProperty.html" title="Structure to hold an MQTT version 5 property of any type." alt="" coords="100,109,207,136"/>
+<area shape="rect" id="node5" href="$structMQTTLenString.html" title="The data for a length delimited string." alt="" coords="96,5,211,32"/>
+</map>

@@ -1,0 +1,8 @@
+<map id="qEntry" name="qEntry">
+<area shape="rect" id="node1" title=" " alt="" coords="141,377,200,404"/>
+<area shape="rect" id="node2" href="$structMQTTAsync__message.html" title="A structure representing the payload and attributes of an MQTT message." alt="" coords="5,288,160,315"/>
+<area shape="rect" id="node3" href="$structMQTTProperties.html" title="MQTT version 5 property list." alt="" coords="111,199,230,225"/>
+<area shape="rect" id="node6" href="$structMQTTClient__message.html" title="A structure representing the payload and attributes of an MQTT message." alt="" coords="184,288,336,315"/>
+<area shape="rect" id="node4" href="$structMQTTProperty.html" title="Structure to hold an MQTT version 5 property of any type." alt="" coords="117,109,224,136"/>
+<area shape="rect" id="node5" href="$structMQTTLenString.html" title="The data for a length delimited string." alt="" coords="113,5,228,32"/>
+</map>

@@ -1,0 +1,10 @@
+<map id="MQTTPersistenceDefault.c" name="MQTTPersistenceDefault.c">
+<area shape="rect" id="node1" title="A file system based persistence implementation." alt="" coords="214,5,393,32"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,80,65,107"/>
+<area shape="rect" id="node3" title=" " alt="" coords="90,80,154,107"/>
+<area shape="rect" id="node4" title=" " alt="" coords="178,80,239,107"/>
+<area shape="rect" id="node5" title=" " alt="" coords="264,80,343,107"/>
+<area shape="rect" id="node6" title=" " alt="" coords="367,80,431,107"/>
+<area shape="rect" id="node7" title=" " alt="" coords="455,80,522,107"/>
+<area shape="rect" id="node8" href="$MQTTClientPersistence_8h.html" title="This structure represents a persistent data store, used to store outbound and inbound messages,..." alt="" coords="546,80,717,107"/>
+</map>

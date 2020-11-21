@@ -1,0 +1,4 @@
+<map id="MQTTPersistence_wrapMsgID" name="MQTTPersistence_wrapMsgID">
+<area shape="rect" id="node1" title="Checks whether the message IDs wrapped by looking for the largest gap between two consecutive message..." alt="" coords="5,5,207,32"/>
+<area shape="rect" id="node2" href="$LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="255,5,373,32"/>
+</map>

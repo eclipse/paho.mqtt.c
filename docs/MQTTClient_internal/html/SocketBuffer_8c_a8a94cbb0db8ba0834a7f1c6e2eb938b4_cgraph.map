@@ -1,0 +1,7 @@
+<map id="SocketBuffer_queueChar" name="SocketBuffer_queueChar">
+<area shape="rect" id="node1" title="Queued a Charactor to a specific socket." alt="" coords="5,56,172,83"/>
+<area shape="rect" id="node2" href="$LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="228,5,323,32"/>
+<area shape="rect" id="node4" href="$Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="253,56,297,83"/>
+<area shape="rect" id="node5" href="$SocketBuffer_8c.html#acebc1cbb93be4588f33b04ed404f6dbf" title="List callback function for comparing socket_queues by socket." alt="" coords="220,107,331,133"/>
+<area shape="rect" id="node3" href="$LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="379,5,497,32"/>
+</map>

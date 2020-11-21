@@ -1,0 +1,5 @@
+<map id="MQTTPacketOut.c" name="MQTTPacketOut.c">
+<area shape="rect" id="node1" title="functions to deal with reading and writing of MQTT packets from and to sockets" alt="" coords="16,5,147,32"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,80,69,107"/>
+<area shape="rect" id="node3" title=" " alt="" coords="94,80,157,107"/>
+</map>

@@ -585,9 +585,9 @@ int MQTTProtocol_handlePubrels(void* pack, int sock, int freeTopic)
 				MQTTProperties_free(&m->properties);
 			if (m->publish)
 			{
-				ListRemove(&(state.publications), m->publish);
 				if (freeTopic)
 					free(m->publish->topic);
+				ListRemove(&(state.publications), m->publish);
 			}
 			ListRemove(client->inboundMsgs, m);
 			++(state.msgs_received);

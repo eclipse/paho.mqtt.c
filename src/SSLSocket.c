@@ -672,14 +672,18 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 
 #if (OPENSSL_VERSION_NUMBER >= 0x010002000) /* 1.0.2 and later */
 	if (opts->protos != NULL && opts->protos_len > 0) {
+        // SSL_CTX_set_alpn_protos() returns 0 on success as opposed to the other SSL functions,
+        // so we need to flip the meaning of rc or the return code will be wrong.
         if ((rc = SSL_CTX_set_alpn_protos(net->ctx, opts->protos, opts->protos_len)) != 0)
         {
+            rc = 0;
             if (opts->struct_version >= 3)
                 SSLSocket_error("SSL_CTX_set_alpn_protos", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
             else
                 SSLSocket_error("SSL_CTX_set_alpn_protos", NULL, net->socket, rc, NULL, NULL);
             goto free_ctx;
         }
+        rc = 1;
 	}
 #endif
 

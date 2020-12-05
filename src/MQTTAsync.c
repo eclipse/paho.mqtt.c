@@ -957,7 +957,7 @@ exit:
 }
 
 
-int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int* qos, MQTTAsync_responseOptions* response)
+int MQTTAsync_subscribeMany(MQTTAsync handle, int count, const char* const* topic, const int* qos, MQTTAsync_responseOptions* response)
 {
 	MQTTAsyncs* m = handle;
 	int i = 0;
@@ -1078,13 +1078,13 @@ int MQTTAsync_subscribe(MQTTAsync handle, const char* topic, int qos, MQTTAsync_
 {
 	int rc = 0;
 	FUNC_ENTRY;
-	rc = MQTTAsync_subscribeMany(handle, 1, (char * const *)(&topic), &qos, response);
+	rc = MQTTAsync_subscribeMany(handle, 1, &topic, &qos, response);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
 
-int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* const* topic, MQTTAsync_responseOptions* response)
+int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, const char* const* topic, MQTTAsync_responseOptions* response)
 {
 	MQTTAsyncs* m = handle;
 	int i = 0;
@@ -1166,7 +1166,7 @@ int MQTTAsync_unsubscribe(MQTTAsync handle, const char* topic, MQTTAsync_respons
 {
 	int rc = 0;
 	FUNC_ENTRY;
-	rc = MQTTAsync_unsubscribeMany(handle, 1, (char * const *)(&topic), response);
+	rc = MQTTAsync_unsubscribeMany(handle, 1, &topic, response);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

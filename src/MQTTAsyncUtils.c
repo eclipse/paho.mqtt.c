@@ -2753,6 +2753,15 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 #endif
 
 	FUNC_ENTRY;
+	if (m->c->MQTTVersion == MQTTVERSION_DEFAULT) //#1007
+	{
+		if (m->connect.details.conn.MQTTVersion == MQTTVERSION_DEFAULT)
+		{	
+			m->connect.details.conn.MQTTVersion = MQTTVERSION_3_1_1;
+		}
+	}
+	 else
+	 	m->connect.details.conn.MQTTVersion = m->c->MQTTVersion;
 	if (m->serverURIcount > 0)
 	{
 		serverURI = m->serverURIs[m->connect.details.conn.currentURI];

@@ -1499,7 +1499,7 @@ LIBMQTT_API int MQTTAsync_subscribe(MQTTAsync handle, const char* topic, int qos
   * An error code is returned if there was a problem registering the
   * subscriptions.
   */
-LIBMQTT_API int MQTTAsync_subscribeMany(MQTTAsync handle, int count, const char* const* topic, const int* qos, MQTTAsync_responseOptions* response);
+LIBMQTT_API int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, const int* qos, MQTTAsync_responseOptions* response);
 
 /**
   * This function attempts to remove an existing subscription made by the
@@ -1527,7 +1527,7 @@ LIBMQTT_API int MQTTAsync_unsubscribe(MQTTAsync handle, const char* topic, MQTTA
   * @return ::MQTTASYNC_SUCCESS if the subscriptions are removed.
   * An error code is returned if there was a problem removing the subscriptions.
   */
-LIBMQTT_API int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, const char* const* topic, MQTTAsync_responseOptions* response);
+LIBMQTT_API int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* const* topic, MQTTAsync_responseOptions* response);
 
 
 /**

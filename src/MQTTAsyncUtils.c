@@ -937,7 +937,7 @@ int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 						Log(LOG_ERROR, 0, "Error writing %d chars with snprintf", chars);
 						goto exit;
 					}
-					command->key = malloc(strlen(key+1));
+					command->key = malloc(strlen(key)+1);
 					strcpy(command->key, key);
 
 					free(command->command.details.pub.payload);

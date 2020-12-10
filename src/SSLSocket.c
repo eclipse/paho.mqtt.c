@@ -502,9 +502,9 @@ void SSLSocket_terminate(void)
 
 	if (handle_openssl_init)
 	{
-		EVP_cleanup();
-		ERR_free_strings();
 		CRYPTO_set_locking_callback(NULL);
+		ERR_free_strings();
+		EVP_cleanup();
 		if (sslLocks)
 		{
 			int i = 0;

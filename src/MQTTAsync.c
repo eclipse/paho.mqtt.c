@@ -957,7 +957,7 @@ exit:
 }
 
 
-int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int* qos, MQTTAsync_responseOptions* response)
+int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, const int* qos, MQTTAsync_responseOptions* response)
 {
 	MQTTAsyncs* m = handle;
 	int i = 0;

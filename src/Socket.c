@@ -807,7 +807,7 @@ int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 				rc = Socket_error("addSocket", *sock);
 			else
 			{
-				/* this could complete immmediately, even though we are non-blocking */
+				/* this could complete immediately, even though we are non-blocking */
 				if (family == AF_INET)
 					rc = connect(*sock, (struct sockaddr*)&address, sizeof(address));
 	#if defined(AF_INET6)

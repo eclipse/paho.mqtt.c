@@ -374,7 +374,6 @@ static int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd)
 	if (++aclient->command_seqno == PERSISTENCE_SEQNO_LIMIT)
 		aclient->command_seqno = 0;
 
-
 	if (aclient->c->MQTTVersion >= MQTTVERSION_5 && process) 	/* persist properties */
 	{
 		int temp_len = 0;
@@ -605,81 +604,6 @@ exit:
 	return qcommand;
 }
 
-struct keyloc {
-	int seqno;
-	ListElement* elem;
-};
-
-/**
- * Inserts the specified message into the list, maintaining command sequence no order.
- * @param list the list to insert the message into.
- * @param content the message to add.
- * @param size size of the message.
- */
-static void MQTTAsync_insertInOrder(List* list, void* content, int size, struct keyloc* keyloc_array, int array_size)
-{
-	ListElement* insert_point = NULL;
-	ListElement* inserted = NULL;
-	int seqno = ((MQTTAsync_queuedCommand*)content)->seqno;
-	int low = 0;
-
-	FUNC_ENTRY;
-	/*printf("\nseqno %d array_size %d\n", seqno, array_size);
-
-	int i;
-	for (i = 0; i < array_size; ++i)
-		printf("%d ", keyloc_array[i].seqno);
-	printf("\n"); */
-
-	/* look through keyloc array to find location to insert message - binary search by sequence number */
-	if (array_size > 0 && seqno > keyloc_array[array_size - 1].seqno)
-	{
-		low = array_size - 1;
-	}
-	else if (array_size > 0)
-	{
-		int high = array_size - 1;
-		int divide_index = array_size / 2;
-
-		//printf("divide index %d\n", divide_index);
-		//int count = 0;
-		while (high - low > 1)
-		{
-			if (seqno < keyloc_array[divide_index].seqno)
-				high = divide_index;
-			else
-				low = divide_index;
-
-			divide_index = (high - low) / 2 + low;
-			/*printf("high %d low %d divide_index %d\n", high, low, divide_index);
-			if (++count == 10)
-				exit(99);*/
-		}
-	}
-	//printf("low %d\n", low);
-
-	insert_point = keyloc_array[low].elem;
-	if (insert_point)
-		insert_point = insert_point->next;
-
-	//if (insert_point)
-	//	printf("insert after %d %d\n", keyloc_array[low].seqno, ((MQTTAsync_queuedCommand*)insert_point->content)->seqno);
-	inserted = ListInsert(list, content, size, insert_point);
-
-	if (array_size > 0 && low + 1 < array_size)
-	{
-		/* make space for new entry in array after low point*/
-		//printf("array_size - low %d\n", array_size - low);
-		memmove(&keyloc_array[low+2], &keyloc_array[low+1], (array_size - low - 1) * sizeof(struct keyloc));
-	}
-	keyloc_array[low+1].seqno = seqno;
-	keyloc_array[low+1].elem = inserted;
-
-	/*if (array_size > 50)
-		exit(99);*/
-
-	FUNC_EXIT;
-}
 
 static int cmpkeys(const void *p1, const void *p2)
 {
@@ -702,28 +626,8 @@ int MQTTAsync_restoreCommands(MQTTAsyncs* client)
 	FUNC_ENTRY;
 	if (c->persistence && (rc = c->persistence->pkeys(c->phandle, &msgkeys, &nkeys)) == 0 && nkeys > 0)
 	{
-		MQTTAsync_queuedCommand* sentinel = NULL;
-		/* keep track of location of nkeys key locations for fast insert */
-		struct keyloc* keyloc_array = malloc(sizeof(struct keyloc) * (nkeys + 1));
-
 		/* let's have the sequence number array sorted */
 		qsort(msgkeys, (size_t)nkeys, sizeof(char*), cmpkeys);
-		/*for (i = 0; i < nkeys; ++i) printf("%s ", msgkeys[i]); printf("\n");*/
-		if (keyloc_array == NULL)
-		{
-			rc = PAHO_MEMORY_ERROR;
-			goto exit;
-		}
-		sentinel = malloc(sizeof(MQTTAsync_queuedCommand));
-		if (sentinel == NULL)
-		{
-			free(keyloc_array);
-			rc = PAHO_MEMORY_ERROR;
-			goto exit;
-		}
-		sentinel->seqno = -1;
-		keyloc_array[0].seqno = -1;
-		keyloc_array[0].elem = ListAppend(MQTTAsync_commands, sentinel, sizeof(MQTTAsync_queuedCommand));
 
 		while (rc == 0 && i < nkeys)
 		{
@@ -756,7 +660,8 @@ int MQTTAsync_restoreCommands(MQTTAsyncs* client)
 
 					cmd->client = client;
 					cmd->seqno = atoi(strchr(msgkeys[i], '-')+1); /* key format is tag'-'seqno */
-					MQTTAsync_insertInOrder(MQTTAsync_commands, cmd, sizeof(MQTTAsync_queuedCommand), keyloc_array, i + 1);
+					/* we can just append the commands to the list as they've already been sorted */
+					ListAppend(MQTTAsync_commands, cmd, sizeof(MQTTAsync_queuedCommand));
 					if (buffer)
 						free(buffer);
 					client->command_seqno = max(client->command_seqno, cmd->seqno);
@@ -771,12 +676,6 @@ int MQTTAsync_restoreCommands(MQTTAsyncs* client)
 		}
 		if (msgkeys != NULL)
 			free(msgkeys);
-
-		/*int j; for (j = 0; j < i + 1; ++j) printf("%d ", keyloc_array[j].seqno); printf("\n"); */
-		ListRemoveHead(MQTTAsync_commands); /* remove sentinel */
-		/*ListElement* pos = NULL; while (ListNextElement(MQTTAsync_commands, &pos)) printf("%d ", ((MQTTAsync_queuedCommand*)(pos->content))->seqno); printf("\n");*/
-
-		free(keyloc_array);
 	}
 exit:
 	Log(TRACE_MINIMUM, -1, "%d commands restored for client %s", commands_restored, c->clientID);

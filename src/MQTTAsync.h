@@ -470,6 +470,12 @@ typedef struct
 
 #define MQTTAsync_connectData_initializer {{'M', 'Q', 'C', 'D'}, 0, NULL, {0, NULL}}
 
+/**
+ * This is a callback function which will allow the client application to update the 
+ * connection data.
+ * @param data The conneciton data which can be modified by the application.
+ * @return Return a non-zero value to update the connect data, zero to keep the same data.
+ */
 typedef int MQTTAsync_updateConnectOptions(void* context, MQTTAsync_connectData* data);
 
 /**

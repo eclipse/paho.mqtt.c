@@ -1687,7 +1687,7 @@ static void MQTTAsync_checkTimeouts(void)
 					Log(TRACE_MIN, -1, "Calling updateConnectOptions for client %s", m->c->clientID);
 					callback_rc = (*(m->updateConnectOptions))(m->updateConnectOptions_context, &connectData);
 
-					if (callback_rc == 1)
+					if (callback_rc)
 					{
 						if (connectData.username != m->c->username)
 						{

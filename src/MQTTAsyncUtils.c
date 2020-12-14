@@ -677,7 +677,6 @@ int MQTTAsync_restoreCommands(MQTTAsyncs* client)
 		if (msgkeys != NULL)
 			free(msgkeys);
 	}
-exit:
 	Log(TRACE_MINIMUM, -1, "%d commands restored for client %s", commands_restored, c->clientID);
 	FUNC_EXIT_RC(rc);
 	return rc;

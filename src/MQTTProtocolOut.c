@@ -237,7 +237,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 	}
 
 #if defined(OPENSSL)
-	if (aClient->httpProxy)
+	if (aClient->httpsProxy)
 		p0 = aClient->httpsProxy;
 	else
 		p0 = getenv("https_proxy");

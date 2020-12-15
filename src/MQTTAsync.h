@@ -454,13 +454,16 @@ typedef struct
 	/** The version number of this structure.  Will be 0 */
 	int struct_version;
 	/**
-      * MQTT servers that support the MQTT v3.1 protocol provide authentication
-      * and authorisation by user name and password. This is the user name
-      * parameter.
-      */
+	 * MQTT servers that support the MQTT v3.1 protocol provide authentication
+	 * and authorisation by user name and password. This is the user name parameter.
+	 * Set data to NULL to remove.  To change, allocate new
+	 * storage with ::MQTTAsync_allocate - this will then be free later by the library.
+	 */
 	const char* username;
 	/**
-	 * Optional binary password.  Only checked and used if the password option is NULL
+	 * The password parameter of the MQTT authentication.
+	 * Set data to NULL to remove.  To change, allocate new
+	 * storage with ::MQTTAsync_allocate - this will then be free later by the library.
 	 */
 	struct {
 		int len;           /**< binary password length */
@@ -473,7 +476,7 @@ typedef struct
 /**
  * This is a callback function which will allow the client application to update the 
  * connection data.
- * @param data The conneciton data which can be modified by the application.
+ * @param data The connection data which can be modified by the application.
  * @return Return a non-zero value to update the connect data, zero to keep the same data.
  */
 typedef int MQTTAsync_updateConnectOptions(void* context, MQTTAsync_connectData* data);

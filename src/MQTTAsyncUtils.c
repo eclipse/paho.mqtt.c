@@ -1693,7 +1693,7 @@ static void MQTTAsync_checkTimeouts(void)
 							if (m->c->username)
 								free((void*)m->c->username);
 							if (connectData.username)
-								m->c->username = MQTTStrdup(connectData.username);
+								m->c->username = connectData.username; /* must be allocated by MQTTAsync_malloc in the callback */
 							else
 								m->c->username = NULL;
 						}
@@ -1704,8 +1704,7 @@ static void MQTTAsync_checkTimeouts(void)
 							if (connectData.binarypwd.data)
 							{
 								m->c->passwordlen = connectData.binarypwd.len;
-								if ((m->c->password = malloc(m->c->passwordlen)))
-									memcpy((void*)m->c->password, connectData.binarypwd.data, m->c->passwordlen);
+								m->c->password = connectData.binarypwd.data; /* must be allocated by MQTTAsync_malloc in the callback */
 							}
 							else
 							{

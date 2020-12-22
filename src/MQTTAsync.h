@@ -302,12 +302,13 @@ typedef struct
       * The dup flag indicates whether or not this message is a duplicate.
       * It is only meaningful when receiving QoS1 messages. When true, the
       * client application should take appropriate action to deal with the
-      * duplicate message.
+      * duplicate message.  This is an output parameter only.
       */
 	int dup;
 	/** The message identifier is reserved for internal use by the
       * MQTT client and server.  It is an output parameter only - writing
-      * to it will serve no purpose.
+      * to it will serve no purpose.  It contains the MQTT message id of
+      * an incoming publish message.
       */
 	int msgid;
 	/**
@@ -1542,7 +1543,8 @@ LIBMQTT_API int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* con
 /**
   * This function attempts to publish a message to a given topic (see also
   * ::MQTTAsync_sendMessage()). An ::MQTTAsync_token is issued when
-  * this function returns successfully. If the client application needs to
+  * this function returns successfully if the QoS is greater than 0.
+  * If the client application needs to
   * test for successful delivery of messages, a callback should be set
   * (see ::MQTTAsync_onSuccess() and ::MQTTAsync_deliveryComplete()).
   * @param handle A valid client handle from a successful call to
@@ -1563,7 +1565,8 @@ LIBMQTT_API int MQTTAsync_send(MQTTAsync handle, const char* destinationName, in
 /**
   * This function attempts to publish a message to a given topic (see also
   * MQTTAsync_publish()). An ::MQTTAsync_token is issued when
-  * this function returns successfully. If the client application needs to
+  * this function returns successfully if the QoS is greater than 0.
+  * If the client application needs to
   * test for successful delivery of messages, a callback should be set
   * (see ::MQTTAsync_onSuccess() and ::MQTTAsync_deliveryComplete()).
   * @param handle A valid client handle from a successful call to
@@ -1611,7 +1614,9 @@ LIBMQTT_API int MQTTAsync_isComplete(MQTTAsync handle, MQTTAsync_token token);
 
 
 /**
- * Waits for a request corresponding to a token to complete.
+ * Waits for a request corresponding to a token to complete.  This only works for
+ * messages with QoS greater than 0.  A QoS 0 message has no MQTT token.
+ * This function will always return ::MQTTASYNC_SUCCESS for a QoS 0 message.
  *
  * @param handle A valid client handle from a successful call to
  * MQTTAsync_create().

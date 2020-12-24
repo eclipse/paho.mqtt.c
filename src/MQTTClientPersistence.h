@@ -254,9 +254,7 @@ typedef struct {
 
 /**
  * A callback which is invoked just before a write to persistence.  This can be
- * used to transform the data, for instance to encrypt it.  If the buffers are
- * changed in size, then the MQTTAsync_malloc and MQTTAsync_free calls must be
- * used to reallocate them.
+ * used to transform the data, for instance to encrypt it.
  * @param context The context as set in ::MQTTAsync_setBeforePersistenceWrite
  * @param bufcount The number of buffers to write to the persistence store.
  * @param buffers An array of pointers to the data buffers.
@@ -268,9 +266,7 @@ typedef int MQTTPersistence_beforeWrite(void* context, int bufcount, char* buffe
 
 /**
  * A callback which is invoked just after a read from persistence.  This can be
- * used to transform the data, for instance to decrypt it.  If the buffers are
- * changed in size, then the MQTTAsync_malloc and MQTTAsync_free calls must be
- * used to reallocate them.
+ * used to transform the data, for instance to decrypt it.
  * @param context The context as set in ::MQTTAsync_setAfterPersistenceRead
  * @param buffer The address of a pointer to a buffer.
  * @param buflen The address of an int that is the length of the buffer.

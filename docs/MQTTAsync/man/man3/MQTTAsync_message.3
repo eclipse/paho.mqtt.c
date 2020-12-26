@@ -1,4 +1,4 @@
-.TH "MQTTAsync_message" 3 "Sat Nov 21 2020" "Paho Asynchronous MQTT C Client Library" \" -*- nroff -*-
+.TH "MQTTAsync_message" 3 "Sat Dec 26 2020" "Paho Asynchronous MQTT C Client Library" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -73,9 +73,9 @@ The retained flag serves two purposes depending on whether the message it is ass
 .br
  For publishers, this indicates that this message should not be retained by the MQTT server\&. For subscribers, a false setting indicates this is a normal message, received as a result of it being published to the server\&. 
 .SS "int dup"
-The dup flag indicates whether or not this message is a duplicate\&. It is only meaningful when receiving QoS1 messages\&. When true, the client application should take appropriate action to deal with the duplicate message\&. 
+The dup flag indicates whether or not this message is a duplicate\&. It is only meaningful when receiving QoS1 messages\&. When true, the client application should take appropriate action to deal with the duplicate message\&. This is an output parameter only\&. 
 .SS "int msgid"
-The message identifier is reserved for internal use by the MQTT client and server\&. It is an output parameter only - writing to it will serve no purpose\&. 
+The message identifier is reserved for internal use by the MQTT client and server\&. It is an output parameter only - writing to it will serve no purpose\&. It contains the MQTT message id of an incoming publish message\&. 
 .SS "\fBMQTTProperties\fP properties"
 The MQTT V5 properties associated with the message\&. 
 

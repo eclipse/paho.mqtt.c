@@ -29,7 +29,7 @@ var searchData=
   ['mqttasync_5fsetupdateconnectoptions_399',['MQTTAsync_setUpdateConnectOptions',['../_m_q_t_t_async_8h.html#aa078aec3eba83481f63db3c3939a5da9',1,'MQTTAsync.h']]],
   ['mqttasync_5fstrerror_400',['MQTTAsync_strerror',['../_m_q_t_t_async_8h.html#a875cd089a8b23eb3fd50c0406fc75d9f',1,'MQTTAsync.h']]],
   ['mqttasync_5fsubscribe_401',['MQTTAsync_subscribe',['../_m_q_t_t_async_8h.html#ae10bd009934b3bb4a9f4abae7424a611',1,'MQTTAsync.h']]],
-  ['mqttasync_5fsubscribemany_402',['MQTTAsync_subscribeMany',['../_m_q_t_t_async_8h.html#a8a956fd9eed94eeb1bf87c88abf43f9d',1,'MQTTAsync.h']]],
+  ['mqttasync_5fsubscribemany_402',['MQTTAsync_subscribeMany',['../_m_q_t_t_async_8h.html#ac78620b33434a187255bd1a3faec1578',1,'MQTTAsync.h']]],
   ['mqttasync_5funsubscribe_403',['MQTTAsync_unsubscribe',['../_m_q_t_t_async_8h.html#a08d18ece91c1b011011354570d8ac1ab',1,'MQTTAsync.h']]],
   ['mqttasync_5funsubscribemany_404',['MQTTAsync_unsubscribeMany',['../_m_q_t_t_async_8h.html#a69fd433ce1b9b6a1b3b453c4793a9311',1,'MQTTAsync.h']]],
   ['mqttasync_5fwaitforcompletion_405',['MQTTAsync_waitForCompletion',['../_m_q_t_t_async_8h.html#a4fe09cc9c976b1cf424e13765d6cd8c9',1,'MQTTAsync.h']]],

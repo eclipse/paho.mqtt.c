@@ -131,7 +131,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>MQTT servers that support the MQTT v3.1 protocol provide authentication and authorisation by user name and password. This is the user name parameter. </p>
+<p>MQTT servers that support the MQTT v3.1 protocol provide authentication and authorisation by user name and password. This is the user name parameter. Set data to NULL to remove. To change, allocate new storage with ::MQTTAsync_allocate - this will then be free later by the library. </p>
 
 </div>
 </div>
@@ -176,7 +176,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Optional binary password. Only checked and used if the password option is NULL </p>
+<p>The password parameter of the MQTT authentication. Set data to NULL to remove. To change, allocate new storage with ::MQTTAsync_allocate - this will then be free later by the library. </p>
 
 </div>
 </div>
@@ -186,7 +186,7 @@ Data Fields</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Nov 21 2020 00:15:30 for Paho Asynchronous MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Dec 26 2020 12:43:47 for Paho Asynchronous MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

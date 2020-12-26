@@ -1,4 +1,4 @@
-.TH "MQTTAsync.h" 3 "Sat Nov 21 2020" "Paho Asynchronous MQTT C Client Library" \" -*- nroff -*-
+.TH "MQTTAsync.h" 3 "Sat Dec 26 2020" "Paho Asynchronous MQTT C Client Library" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -313,7 +313,7 @@ MQTTAsync.h
 .RI "int \fBMQTTAsync_subscribe\fP (\fBMQTTAsync\fP handle, const char *topic, int qos, \fBMQTTAsync_responseOptions\fP *response)"
 .br
 .ti -1c
-.RI "int \fBMQTTAsync_subscribeMany\fP (\fBMQTTAsync\fP handle, int count, char *const *topic, int *qos, \fBMQTTAsync_responseOptions\fP *response)"
+.RI "int \fBMQTTAsync_subscribeMany\fP (\fBMQTTAsync\fP handle, int count, char *const *topic, const int *qos, \fBMQTTAsync_responseOptions\fP *response)"
 .br
 .ti -1c
 .RI "int \fBMQTTAsync_unsubscribe\fP (\fBMQTTAsync\fP handle, const char *topic, \fBMQTTAsync_responseOptions\fP *response)"
@@ -584,6 +584,18 @@ This is a callback function, which will be called when the client library receiv
 .PP
 
 .SS "typedef int MQTTAsync_updateConnectOptions(void *context, \fBMQTTAsync_connectData\fP *data)"
+This is a callback function which will allow the client application to update the connection data\&. 
+.PP
+\fBParameters\fP
+.RS 4
+\fIdata\fP The connection data which can be modified by the application\&. 
+.RE
+.PP
+\fBReturns\fP
+.RS 4
+Return a non-zero value to update the connect data, zero to keep the same data\&. 
+.RE
+.PP
 
 .SS "typedef void MQTTAsync_onSuccess(void *context, \fBMQTTAsync_successData\fP *response)"
 This is a callback function\&. The client application must provide an implementation of this function to enable asynchronous notification of the successful completion of an API call\&. The function is registered with the client library by passing it as an argument in \fBMQTTAsync_responseOptions\fP\&.
@@ -967,7 +979,7 @@ This function attempts to subscribe a client to a single topic, which may contai
 .RE
 .PP
 
-.SS "int MQTTAsync_subscribeMany (\fBMQTTAsync\fP handle, int count, char *const * topic, int * qos, \fBMQTTAsync_responseOptions\fP * response)"
+.SS "int MQTTAsync_subscribeMany (\fBMQTTAsync\fP handle, int count, char *const * topic, const int * qos, \fBMQTTAsync_responseOptions\fP * response)"
 This function attempts to subscribe a client to a list of topics, which may contain wildcards (see \fBSubscription wildcards\fP)\&. This call also specifies the \fBQuality of service\fP requested for each topic (see also \fBMQTTAsync_subscribe()\fP)\&. 
 .PP
 \fBParameters\fP
@@ -1028,7 +1040,7 @@ This function attempts to remove existing subscriptions to a list of topics made
 .PP
 
 .SS "int MQTTAsync_send (\fBMQTTAsync\fP handle, const char * destinationName, int payloadlen, const void * payload, int qos, int retained, \fBMQTTAsync_responseOptions\fP * response)"
-This function attempts to publish a message to a given topic (see also \fBMQTTAsync_sendMessage()\fP)\&. An \fBMQTTAsync_token\fP is issued when this function returns successfully\&. If the client application needs to test for successful delivery of messages, a callback should be set (see \fBMQTTAsync_onSuccess()\fP and \fBMQTTAsync_deliveryComplete()\fP)\&. 
+This function attempts to publish a message to a given topic (see also \fBMQTTAsync_sendMessage()\fP)\&. An \fBMQTTAsync_token\fP is issued when this function returns successfully if the QoS is greater than 0\&. If the client application needs to test for successful delivery of messages, a callback should be set (see \fBMQTTAsync_onSuccess()\fP and \fBMQTTAsync_deliveryComplete()\fP)\&. 
 .PP
 \fBParameters\fP
 .RS 4
@@ -1054,7 +1066,7 @@ This function attempts to publish a message to a given topic (see also \fBMQTTAs
 .PP
 
 .SS "int MQTTAsync_sendMessage (\fBMQTTAsync\fP handle, const char * destinationName, const \fBMQTTAsync_message\fP * msg, \fBMQTTAsync_responseOptions\fP * response)"
-This function attempts to publish a message to a given topic (see also MQTTAsync_publish())\&. An \fBMQTTAsync_token\fP is issued when this function returns successfully\&. If the client application needs to test for successful delivery of messages, a callback should be set (see \fBMQTTAsync_onSuccess()\fP and \fBMQTTAsync_deliveryComplete()\fP)\&. 
+This function attempts to publish a message to a given topic (see also MQTTAsync_publish())\&. An \fBMQTTAsync_token\fP is issued when this function returns successfully if the QoS is greater than 0\&. If the client application needs to test for successful delivery of messages, a callback should be set (see \fBMQTTAsync_onSuccess()\fP and \fBMQTTAsync_deliveryComplete()\fP)\&. 
 .PP
 \fBParameters\fP
 .RS 4
@@ -1094,7 +1106,7 @@ This function sets a pointer to an array of tokens for messages that are current
 .SS "int MQTTAsync_isComplete (\fBMQTTAsync\fP handle, \fBMQTTAsync_token\fP token)"
 
 .SS "int MQTTAsync_waitForCompletion (\fBMQTTAsync\fP handle, \fBMQTTAsync_token\fP token, unsigned long timeout)"
-Waits for a request corresponding to a token to complete\&.
+Waits for a request corresponding to a token to complete\&. This only works for messages with QoS greater than 0\&. A QoS 0 message has no MQTT token\&. This function will always return \fBMQTTASYNC_SUCCESS\fP for a QoS 0 message\&.
 .PP
 \fBParameters\fP
 .RS 4

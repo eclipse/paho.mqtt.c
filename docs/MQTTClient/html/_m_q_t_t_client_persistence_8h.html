@@ -404,7 +404,7 @@ Typedefs</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>A callback which is invoked just before a write to persistence. This can be used to transform the data, for instance to encrypt it. If the buffers are changed in size, then the MQTTAsync_malloc and MQTTAsync_free calls must be used to reallocate them. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>A callback which is invoked just before a write to persistence. This can be used to transform the data, for instance to encrypt it. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">context</td><td>The context as set in ::MQTTAsync_setBeforePersistenceWrite </td></tr>
     <tr><td class="paramname">bufcount</td><td>The number of buffers to write to the persistence store. </td></tr>
@@ -428,7 +428,7 @@ Typedefs</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>A callback which is invoked just after a read from persistence. This can be used to transform the data, for instance to decrypt it. If the buffers are changed in size, then the MQTTAsync_malloc and MQTTAsync_free calls must be used to reallocate them. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>A callback which is invoked just after a read from persistence. This can be used to transform the data, for instance to decrypt it. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">context</td><td>The context as set in ::MQTTAsync_setAfterPersistenceRead </td></tr>
     <tr><td class="paramname">buffer</td><td>The address of a pointer to a buffer. </td></tr>
@@ -443,7 +443,7 @@ Typedefs</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Nov 21 2020 00:15:30 for Paho MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Dec 26 2020 12:43:46 for Paho MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

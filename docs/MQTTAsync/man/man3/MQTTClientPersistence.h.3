@@ -1,4 +1,4 @@
-.TH "MQTTClientPersistence.h" 3 "Sat Nov 21 2020" "Paho Asynchronous MQTT C Client Library" \" -*- nroff -*-
+.TH "MQTTClientPersistence.h" 3 "Sat Dec 26 2020" "Paho Asynchronous MQTT C Client Library" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -257,7 +257,7 @@ Return 0 if the key was found in the store, otherwise return \fBMQTTCLIENT_PERSI
 .PP
 
 .SS "typedef int MQTTPersistence_beforeWrite(void *context, int bufcount, char *buffers[], int buflens[])"
-A callback which is invoked just before a write to persistence\&. This can be used to transform the data, for instance to encrypt it\&. If the buffers are changed in size, then the MQTTAsync_malloc and MQTTAsync_free calls must be used to reallocate them\&. 
+A callback which is invoked just before a write to persistence\&. This can be used to transform the data, for instance to encrypt it\&. 
 .PP
 \fBParameters\fP
 .RS 4
@@ -277,7 +277,7 @@ Return 0 if the function completes successfully, otherwise non 0\&.
 .PP
 
 .SS "typedef int MQTTPersistence_afterRead(void *context, char **buffer, int *buflen)"
-A callback which is invoked just after a read from persistence\&. This can be used to transform the data, for instance to decrypt it\&. If the buffers are changed in size, then the MQTTAsync_malloc and MQTTAsync_free calls must be used to reallocate them\&. 
+A callback which is invoked just after a read from persistence\&. This can be used to transform the data, for instance to decrypt it\&. 
 .PP
 \fBParameters\fP
 .RS 4

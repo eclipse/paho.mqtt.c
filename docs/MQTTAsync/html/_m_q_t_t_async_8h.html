@@ -288,8 +288,8 @@ Functions</h2></td></tr>
 <tr class="separator:a46c332245c379629ae11f457fc179457"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae10bd009934b3bb4a9f4abae7424a611"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_m_q_t_t_async_8h.html#ae10bd009934b3bb4a9f4abae7424a611">MQTTAsync_subscribe</a> (<a class="el" href="_m_q_t_t_async_8h.html#a0db1d736cdc0c864fe41abb3afd605bd">MQTTAsync</a> handle, const char *topic, int qos, <a class="el" href="struct_m_q_t_t_async__response_options.html">MQTTAsync_responseOptions</a> *response)</td></tr>
 <tr class="separator:ae10bd009934b3bb4a9f4abae7424a611"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a956fd9eed94eeb1bf87c88abf43f9d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_m_q_t_t_async_8h.html#a8a956fd9eed94eeb1bf87c88abf43f9d">MQTTAsync_subscribeMany</a> (<a class="el" href="_m_q_t_t_async_8h.html#a0db1d736cdc0c864fe41abb3afd605bd">MQTTAsync</a> handle, int count, char *const *topic, int *qos, <a class="el" href="struct_m_q_t_t_async__response_options.html">MQTTAsync_responseOptions</a> *response)</td></tr>
-<tr class="separator:a8a956fd9eed94eeb1bf87c88abf43f9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac78620b33434a187255bd1a3faec1578"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_m_q_t_t_async_8h.html#ac78620b33434a187255bd1a3faec1578">MQTTAsync_subscribeMany</a> (<a class="el" href="_m_q_t_t_async_8h.html#a0db1d736cdc0c864fe41abb3afd605bd">MQTTAsync</a> handle, int count, char *const *topic, const int *qos, <a class="el" href="struct_m_q_t_t_async__response_options.html">MQTTAsync_responseOptions</a> *response)</td></tr>
+<tr class="separator:ac78620b33434a187255bd1a3faec1578"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08d18ece91c1b011011354570d8ac1ab"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_m_q_t_t_async_8h.html#a08d18ece91c1b011011354570d8ac1ab">MQTTAsync_unsubscribe</a> (<a class="el" href="_m_q_t_t_async_8h.html#a0db1d736cdc0c864fe41abb3afd605bd">MQTTAsync</a> handle, const char *topic, <a class="el" href="struct_m_q_t_t_async__response_options.html">MQTTAsync_responseOptions</a> *response)</td></tr>
 <tr class="separator:a08d18ece91c1b011011354570d8ac1ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69fd433ce1b9b6a1b3b453c4793a9311"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_m_q_t_t_async_8h.html#a69fd433ce1b9b6a1b3b453c4793a9311">MQTTAsync_unsubscribeMany</a> (<a class="el" href="_m_q_t_t_async_8h.html#a0db1d736cdc0c864fe41abb3afd605bd">MQTTAsync</a> handle, int count, char *const *topic, <a class="el" href="struct_m_q_t_t_async__response_options.html">MQTTAsync_responseOptions</a> *response)</td></tr>
@@ -1153,6 +1153,13 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>This is a callback function which will allow the client application to update the connection data. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">data</td><td>The connection data which can be modified by the application. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Return a non-zero value to update the connect data, zero to keep the same data. </dd></dl>
 
 </div>
 </div>
@@ -2025,7 +2032,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>This function attempts to subscribe a client to a single topic, which may contain wildcards (see <a class="el" href="wildcard.html">Subscription wildcards</a>). This call also specifies the <a class="el" href="qos.html">Quality of service</a> requested for the subscription (see also <a class="el" href="_m_q_t_t_async_8h.html#a8a956fd9eed94eeb1bf87c88abf43f9d">MQTTAsync_subscribeMany()</a>). </p><dl class="params"><dt>Parameters</dt><dd>
+<p>This function attempts to subscribe a client to a single topic, which may contain wildcards (see <a class="el" href="wildcard.html">Subscription wildcards</a>). This call also specifies the <a class="el" href="qos.html">Quality of service</a> requested for the subscription (see also <a class="el" href="_m_q_t_t_async_8h.html#ac78620b33434a187255bd1a3faec1578">MQTTAsync_subscribeMany()</a>). </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">handle</td><td>A valid client handle from a successful call to <a class="el" href="_m_q_t_t_async_8h.html#a5462c4618d0a229116db5fbadacf95d2">MQTTAsync_create()</a>. </td></tr>
     <tr><td class="paramname">topic</td><td>The subscription topic, which may include wildcards. </td></tr>
@@ -2038,8 +2045,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a8a956fd9eed94eeb1bf87c88abf43f9d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8a956fd9eed94eeb1bf87c88abf43f9d">&#9670;&nbsp;</a></span>MQTTAsync_subscribeMany()</h2>
+<a id="ac78620b33434a187255bd1a3faec1578"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac78620b33434a187255bd1a3faec1578">&#9670;&nbsp;</a></span>MQTTAsync_subscribeMany()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2065,7 +2072,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int *&#160;</td>
+          <td class="paramtype">const int *&#160;</td>
           <td class="paramname"><em>qos</em>, </td>
         </tr>
         <tr>
@@ -2243,7 +2250,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>This function attempts to publish a message to a given topic (see also <a class="el" href="_m_q_t_t_async_8h.html#a5687171e67e98f9ea590c9e3b64cde18">MQTTAsync_sendMessage()</a>). An <a class="el" href="_m_q_t_t_async_8h.html#a7ca6d2a1813f2bbd0bc3af2771e46ba4">MQTTAsync_token</a> is issued when this function returns successfully. If the client application needs to test for successful delivery of messages, a callback should be set (see <a class="el" href="_m_q_t_t_async_8h.html#a7b0c18a0e29e2ce73f3ea109bc32617b">MQTTAsync_onSuccess()</a> and <a class="el" href="_m_q_t_t_async_8h.html#ab10296618e266b3c02fd117d6616b15d">MQTTAsync_deliveryComplete()</a>). </p><dl class="params"><dt>Parameters</dt><dd>
+<p>This function attempts to publish a message to a given topic (see also <a class="el" href="_m_q_t_t_async_8h.html#a5687171e67e98f9ea590c9e3b64cde18">MQTTAsync_sendMessage()</a>). An <a class="el" href="_m_q_t_t_async_8h.html#a7ca6d2a1813f2bbd0bc3af2771e46ba4">MQTTAsync_token</a> is issued when this function returns successfully if the QoS is greater than 0. If the client application needs to test for successful delivery of messages, a callback should be set (see <a class="el" href="_m_q_t_t_async_8h.html#a7b0c18a0e29e2ce73f3ea109bc32617b">MQTTAsync_onSuccess()</a> and <a class="el" href="_m_q_t_t_async_8h.html#ab10296618e266b3c02fd117d6616b15d">MQTTAsync_deliveryComplete()</a>). </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">handle</td><td>A valid client handle from a successful call to <a class="el" href="_m_q_t_t_async_8h.html#a5462c4618d0a229116db5fbadacf95d2">MQTTAsync_create()</a>. </td></tr>
     <tr><td class="paramname">destinationName</td><td>The topic associated with this message. </td></tr>
@@ -2296,7 +2303,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>This function attempts to publish a message to a given topic (see also MQTTAsync_publish()). An <a class="el" href="_m_q_t_t_async_8h.html#a7ca6d2a1813f2bbd0bc3af2771e46ba4">MQTTAsync_token</a> is issued when this function returns successfully. If the client application needs to test for successful delivery of messages, a callback should be set (see <a class="el" href="_m_q_t_t_async_8h.html#a7b0c18a0e29e2ce73f3ea109bc32617b">MQTTAsync_onSuccess()</a> and <a class="el" href="_m_q_t_t_async_8h.html#ab10296618e266b3c02fd117d6616b15d">MQTTAsync_deliveryComplete()</a>). </p><dl class="params"><dt>Parameters</dt><dd>
+<p>This function attempts to publish a message to a given topic (see also MQTTAsync_publish()). An <a class="el" href="_m_q_t_t_async_8h.html#a7ca6d2a1813f2bbd0bc3af2771e46ba4">MQTTAsync_token</a> is issued when this function returns successfully if the QoS is greater than 0. If the client application needs to test for successful delivery of messages, a callback should be set (see <a class="el" href="_m_q_t_t_async_8h.html#a7b0c18a0e29e2ce73f3ea109bc32617b">MQTTAsync_onSuccess()</a> and <a class="el" href="_m_q_t_t_async_8h.html#ab10296618e266b3c02fd117d6616b15d">MQTTAsync_deliveryComplete()</a>). </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">handle</td><td>A valid client handle from a successful call to <a class="el" href="_m_q_t_t_async_8h.html#a5462c4618d0a229116db5fbadacf95d2">MQTTAsync_create()</a>. </td></tr>
     <tr><td class="paramname">destinationName</td><td>The topic associated with this message. </td></tr>
@@ -2405,7 +2412,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Waits for a request corresponding to a token to complete.</p>
+<p>Waits for a request corresponding to a token to complete. This only works for messages with QoS greater than 0. A QoS 0 message has no MQTT token. This function will always return <a class="el" href="_m_q_t_t_async_8h.html#afe0cffcce8efe25186f79c51ac44e16f">MQTTASYNC_SUCCESS</a> for a QoS 0 message.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">handle</td><td>A valid client handle from a successful call to <a class="el" href="_m_q_t_t_async_8h.html#a5462c4618d0a229116db5fbadacf95d2">MQTTAsync_create()</a>. </td></tr>
@@ -2612,7 +2619,7 @@ Functions</h2></td></tr>
 <div class="ttc" id="a_m_q_t_t_async_8h_html_a75b80b01f98d5a1ffa2a4d42995a8397"><div class="ttname"><a href="_m_q_t_t_async_8h.html#a75b80b01f98d5a1ffa2a4d42995a8397">MQTTVERSION_DEFAULT</a></div><div class="ttdeci">#define MQTTVERSION_DEFAULT</div><div class="ttdef"><b>Definition:</b> MQTTAsync.h:195</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Nov 21 2020 00:15:30 for Paho Asynchronous MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Dec 26 2020 12:43:47 for Paho Asynchronous MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

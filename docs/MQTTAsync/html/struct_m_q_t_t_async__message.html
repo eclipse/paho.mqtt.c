@@ -207,7 +207,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The dup flag indicates whether or not this message is a duplicate. It is only meaningful when receiving QoS1 messages. When true, the client application should take appropriate action to deal with the duplicate message. </p>
+<p>The dup flag indicates whether or not this message is a duplicate. It is only meaningful when receiving QoS1 messages. When true, the client application should take appropriate action to deal with the duplicate message. This is an output parameter only. </p>
 
 </div>
 </div>
@@ -222,7 +222,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The message identifier is reserved for internal use by the MQTT client and server. It is an output parameter only - writing to it will serve no purpose. </p>
+<p>The message identifier is reserved for internal use by the MQTT client and server. It is an output parameter only - writing to it will serve no purpose. It contains the MQTT message id of an incoming publish message. </p>
 
 </div>
 </div>
@@ -247,7 +247,7 @@ Data Fields</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Nov 21 2020 00:15:30 for Paho Asynchronous MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Dec 26 2020 12:43:47 for Paho Asynchronous MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

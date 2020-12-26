@@ -95,7 +95,7 @@ Data Fields</h2></td></tr>
 <tr class="memdesc:a9d7489dcae1d26925218ab0bfe82bd70"><td class="mdescLeft">&#160;</td><td class="mdescRight">binary password data <br /></td></tr>
 <tr class="separator:a9d7489dcae1d26925218ab0bfe82bd70"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8643b5dacde868343c91cf6ad68d56b8"><td class="memItemLeft" valign="top">}&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structMQTTAsync__connectData.html#a8643b5dacde868343c91cf6ad68d56b8">binarypwd</a></td></tr>
-<tr class="memdesc:a8643b5dacde868343c91cf6ad68d56b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Optional binary password.  <a href="structMQTTAsync__connectData.html#a8643b5dacde868343c91cf6ad68d56b8">More...</a><br /></td></tr>
+<tr class="memdesc:a8643b5dacde868343c91cf6ad68d56b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">The password parameter of the MQTT authentication.  <a href="structMQTTAsync__connectData.html#a8643b5dacde868343c91cf6ad68d56b8">More...</a><br /></td></tr>
 <tr class="separator:a8643b5dacde868343c91cf6ad68d56b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -113,8 +113,8 @@ Data Fields</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Optional binary password. </p>
-<p>Only checked and used if the password option is NULL </p>
+<p>The password parameter of the MQTT authentication. </p>
+<p>Set data to NULL to remove. To change, allocate new storage with ::MQTTAsync_allocate - this will then be free later by the library. </p>
 
 </div>
 </div>
@@ -165,7 +165,7 @@ Data Fields</h2></td></tr>
 </div><div class="memdoc">
 
 <p>MQTT servers that support the MQTT v3.1 protocol provide authentication and authorisation by user name and password. </p>
-<p>This is the user name parameter. </p>
+<p>This is the user name parameter. Set data to NULL to remove. To change, allocate new storage with ::MQTTAsync_allocate - this will then be free later by the library. </p>
 
 </div>
 </div>
@@ -175,7 +175,7 @@ Data Fields</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Nov 21 2020 00:15:30 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Dec 26 2020 12:43:49 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

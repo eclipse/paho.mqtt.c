@@ -68,7 +68,7 @@ $(function() {
 <div class="contents">
 <div class="textblock"><p>The MQTT protocol provides three qualities of service for delivering messages between clients and servers: "at most once", "at least once" and "exactly once".</p>
 <p>Quality of service (QoS) is an attribute of an individual message being published. An application sets the QoS for a specific message by setting the <a class="el" href="struct_m_q_t_t_async__message.html#a35738099155a0e4f54050da474bab2e7">MQTTAsync_message.qos</a> field to the required value.</p>
-<p>A subscribing client can set the maximum quality of service a server uses to send messages that match the client subscriptions. The <a class="el" href="_m_q_t_t_async_8h.html#ae10bd009934b3bb4a9f4abae7424a611">MQTTAsync_subscribe()</a> and <a class="el" href="_m_q_t_t_async_8h.html#a8a956fd9eed94eeb1bf87c88abf43f9d">MQTTAsync_subscribeMany()</a> functions set this maximum. The QoS of a message forwarded to a subscriber thus might be different to the QoS given to the message by the original publisher. The lower of the two values is used to forward a message.</p>
+<p>A subscribing client can set the maximum quality of service a server uses to send messages that match the client subscriptions. The <a class="el" href="_m_q_t_t_async_8h.html#ae10bd009934b3bb4a9f4abae7424a611">MQTTAsync_subscribe()</a> and <a class="el" href="_m_q_t_t_async_8h.html#ac78620b33434a187255bd1a3faec1578">MQTTAsync_subscribeMany()</a> functions set this maximum. The QoS of a message forwarded to a subscriber thus might be different to the QoS given to the message by the original publisher. The lower of the two values is used to forward a message.</p>
 <p>The three levels are:</p>
 <p><b>QoS0, At most once:</b> The message is delivered at most once, or it may not be delivered at all. Its delivery across the network is not acknowledged. The message is not stored. The message could be lost if the client is disconnected, or if the server fails. QoS0 is the fastest mode of transfer. It is sometimes called "fire and forget".</p>
 <p>The MQTT protocol does not require servers to forward publications at QoS0 to a client. If the client is disconnected at the time the server receives the publication, the publication might be discarded, depending on the server implementation.</p>
@@ -78,7 +78,7 @@ $(function() {
 </div><!-- PageDoc -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Nov 21 2020 00:15:30 for Paho Asynchronous MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Dec 26 2020 12:43:47 for Paho Asynchronous MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

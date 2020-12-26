@@ -78,8 +78,8 @@ This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
 <div class="center"><img src="MQTTClientPersistence_8h__dep__incl.png" border="0" usemap="#MQTTClientPersistence_8hdep" alt=""/></div>
 <map name="MQTTClientPersistence_8hdep" id="MQTTClientPersistence_8hdep">
-<area shape="rect" title="This structure represents a persistent data store, used to store outbound and inbound messages,..." alt="" coords="9,5,180,32"/>
-<area shape="rect" href="MQTTPersistenceDefault_8c.html" title="A file system based persistence implementation." alt="" coords="5,80,184,107"/>
+<area shape="rect" title="This structure represents a persistent data store, used to store outbound and inbound messages,..." alt="" coords="9,5,183,31"/>
+<area shape="rect" href="MQTTPersistenceDefault_8c.html" title="A file system based persistence implementation." alt="" coords="5,79,187,104"/>
 </map>
 </div>
 </div><table class="memberdecls">
@@ -162,7 +162,7 @@ Typedefs</h2></td></tr>
 </div><div class="memdoc">
 
 <p>A callback which is invoked just after a read from persistence. </p>
-<p>This can be used to transform the data, for instance to decrypt it. If the buffers are changed in size, then the MQTTAsync_malloc and MQTTAsync_free calls must be used to reallocate them. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>This can be used to transform the data, for instance to decrypt it. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">context</td><td>The context as set in ::MQTTAsync_setAfterPersistenceRead </td></tr>
     <tr><td class="paramname">buffer</td><td>The address of a pointer to a buffer. </td></tr>
@@ -187,7 +187,7 @@ Typedefs</h2></td></tr>
 </div><div class="memdoc">
 
 <p>A callback which is invoked just before a write to persistence. </p>
-<p>This can be used to transform the data, for instance to encrypt it. If the buffers are changed in size, then the MQTTAsync_malloc and MQTTAsync_free calls must be used to reallocate them. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>This can be used to transform the data, for instance to encrypt it. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">context</td><td>The context as set in ::MQTTAsync_setBeforePersistenceWrite </td></tr>
     <tr><td class="paramname">bufcount</td><td>The number of buffers to write to the persistence store. </td></tr>
@@ -403,7 +403,7 @@ Typedefs</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Nov 21 2020 00:15:30 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Dec 26 2020 12:43:49 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

@@ -302,12 +302,13 @@ typedef struct
       * The dup flag indicates whether or not this message is a duplicate.
       * It is only meaningful when receiving QoS1 messages. When true, the
       * client application should take appropriate action to deal with the
-      * duplicate message.
+      * duplicate message.  This is an output parameter only.
       */
 	int dup;
 	/** The message identifier is reserved for internal use by the
       * MQTT client and server.  It is an output parameter only - writing
-      * to it will serve no purpose.
+      * to it will serve no purpose.  It contains the MQTT message id of
+      * an incoming publish message.
       */
 	int msgid;
 	/**
@@ -454,13 +455,16 @@ typedef struct
 	/** The version number of this structure.  Will be 0 */
 	int struct_version;
 	/**
-      * MQTT servers that support the MQTT v3.1 protocol provide authentication
-      * and authorisation by user name and password. This is the user name
-      * parameter.
-      */
+	 * MQTT servers that support the MQTT v3.1 protocol provide authentication
+	 * and authorisation by user name and password. This is the user name parameter.
+	 * Set data to NULL to remove.  To change, allocate new
+	 * storage with ::MQTTAsync_allocate - this will then be free later by the library.
+	 */
 	const char* username;
 	/**
-	 * Optional binary password.  Only checked and used if the password option is NULL
+	 * The password parameter of the MQTT authentication.
+	 * Set data to NULL to remove.  To change, allocate new
+	 * storage with ::MQTTAsync_allocate - this will then be free later by the library.
 	 */
 	struct {
 		int len;           /**< binary password length */
@@ -470,6 +474,12 @@ typedef struct
 
 #define MQTTAsync_connectData_initializer {{'M', 'Q', 'C', 'D'}, 0, NULL, {0, NULL}}
 
+/**
+ * This is a callback function which will allow the client application to update the 
+ * connection data.
+ * @param data The connection data which can be modified by the application.
+ * @return Return a non-zero value to update the connect data, zero to keep the same data.
+ */
 typedef int MQTTAsync_updateConnectOptions(void* context, MQTTAsync_connectData* data);
 
 /**
@@ -1499,7 +1509,7 @@ LIBMQTT_API int MQTTAsync_subscribe(MQTTAsync handle, const char* topic, int qos
   * An error code is returned if there was a problem registering the
   * subscriptions.
   */
-LIBMQTT_API int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int* qos, MQTTAsync_responseOptions* response);
+LIBMQTT_API int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, const int* qos, MQTTAsync_responseOptions* response);
 
 /**
   * This function attempts to remove an existing subscription made by the
@@ -1533,7 +1543,8 @@ LIBMQTT_API int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* con
 /**
   * This function attempts to publish a message to a given topic (see also
   * ::MQTTAsync_sendMessage()). An ::MQTTAsync_token is issued when
-  * this function returns successfully. If the client application needs to
+  * this function returns successfully if the QoS is greater than 0.
+  * If the client application needs to
   * test for successful delivery of messages, a callback should be set
   * (see ::MQTTAsync_onSuccess() and ::MQTTAsync_deliveryComplete()).
   * @param handle A valid client handle from a successful call to
@@ -1554,7 +1565,8 @@ LIBMQTT_API int MQTTAsync_send(MQTTAsync handle, const char* destinationName, in
 /**
   * This function attempts to publish a message to a given topic (see also
   * MQTTAsync_publish()). An ::MQTTAsync_token is issued when
-  * this function returns successfully. If the client application needs to
+  * this function returns successfully if the QoS is greater than 0.
+  * If the client application needs to
   * test for successful delivery of messages, a callback should be set
   * (see ::MQTTAsync_onSuccess() and ::MQTTAsync_deliveryComplete()).
   * @param handle A valid client handle from a successful call to
@@ -1602,7 +1614,9 @@ LIBMQTT_API int MQTTAsync_isComplete(MQTTAsync handle, MQTTAsync_token token);
 
 
 /**
- * Waits for a request corresponding to a token to complete.
+ * Waits for a request corresponding to a token to complete.  This only works for
+ * messages with QoS greater than 0.  A QoS 0 message has no MQTT token.
+ * This function will always return ::MQTTASYNC_SUCCESS for a QoS 0 message.
  *
  * @param handle A valid client handle from a successful call to
  * MQTTAsync_create().

@@ -227,7 +227,7 @@ void Log_setTraceCallback(Log_traceCallback* callback)
 
 void Log_setTraceLevel(enum LOG_LEVELS level)
 {
-	if (level < TRACE_MINIMUM) /* the lowest we can go is TRACE_MINIMUM*/
+	if (level < LOG_ERROR) /* the lowest we can go is LOG_ERROR */
 		trace_settings.trace_level = level;
 	trace_output_level = level;
 }

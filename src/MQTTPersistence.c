@@ -144,10 +144,11 @@ int MQTTPersistence_close(Clients *c)
 	{
 		rc = c->persistence->pclose(c->phandle);
 
-		if (c->persistence->context)
-			free(c->persistence->context);
-		if (c->persistence->popen == pstopen)
+		if (c->persistence->popen == pstopen) {
+			if (c->persistence->context)
+				free(c->persistence->context);
 			free(c->persistence);
+		}
 
 		c->phandle = NULL;
 		c->persistence = NULL;

@@ -159,19 +159,15 @@ int MQTTProtocol_setHTTPProxy(Clients* aClient, char* source, char** dest, char*
 			basic_auth_in_len = (b64_size_t)(p1 - source);
 			if (basic_auth_in_len > 0)
 			{
-				//printf("basic auth in len is %u\n", basic_auth_in_len);
-				basic_auth = (b64_data_t *)malloc(sizeof(char)*basic_auth_in_len);
+				basic_auth = (b64_data_t *)malloc(sizeof(char)*(basic_auth_in_len+1));
 				if (!basic_auth)
 				{
 					rc = PAHO_MEMORY_ERROR;
 					goto exit;
 				}
-				basic_auth_in_len--; /* space for terminating null */
 				MQTTProtocol_specialChars((char*)basic_auth, source, &basic_auth_in_len);
-				//printf("basic auth in len is %u\n", basic_auth_in_len);
-				basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len);
-				//printf("basic auth out len is %u\n", basic_auth_out_len);
-				if ((*auth_dest = (char *)malloc(sizeof(char) * basic_auth_out_len)) == NULL)
+				basic_auth_out_len = Base64_encodeLength(basic_auth, basic_auth_in_len) + 1; /* add 1 for trailing NULL */
+				if ((*auth_dest = (char *)malloc(sizeof(char)*basic_auth_out_len)) == NULL)
 				{
 					free(basic_auth);
 					rc = PAHO_MEMORY_ERROR;
@@ -237,7 +233,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 	}
 
 #if defined(OPENSSL)
-	if (aClient->httpProxy)
+	if (aClient->httpsProxy)
 		p0 = aClient->httpsProxy;
 	else
 		p0 = getenv("https_proxy");

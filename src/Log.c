@@ -229,6 +229,9 @@ void Log_setTraceLevel(enum LOG_LEVELS level)
 {
 	if (level < LOG_ERROR) /* the lowest we can go is LOG_ERROR */
 		trace_settings.trace_level = level;
+	else
+		trace_settings.trace_level = LOG_ERROR;
+
 	trace_output_level = level;
 }
 
@@ -577,5 +580,3 @@ exit:
 	return rc;
 }
 #endif
-
-

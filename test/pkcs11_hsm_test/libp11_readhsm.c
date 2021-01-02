@@ -20,16 +20,16 @@
 int main(int argc, char *argv[])
 {
 	PKCS11_CTX *ctx;
-	PKCS11_SLOT *slots, *slot;
-	PKCS11_KEY *keys;
+    PKCS11_SLOT *slots, *slot;
+    PKCS11_KEY *keys;
 	PKCS11_CERT *certs;
 
 	PKCS11_KEY *authkey;
 	PKCS11_CERT *authcert;
 	EVP_PKEY *pubkey = NULL;
 
-    	/* This is just an example. This should be changed properly. */
-    	char *password_table[1] = {"abcdefg"};
+    /* This is just an example. This should be changed properly. */
+    char *password_table[1] = {"abcdefg"};
 	unsigned char *random = NULL, *signature = NULL;
 
 	char password[20];

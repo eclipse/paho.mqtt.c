@@ -2335,8 +2335,8 @@ static void MQTTAsync_closeOnly(Clients* client, enum MQTTReasonCodes reasonCode
         if(client->sslopts->pkcs11_ctx) {
             PKCS11_CTX_unload(client->sslopts->pkcs11_ctx);
             PKCS11_CTX_free(client->sslopts->pkcs11_ctx);
-			client->sslopts->pkcs11_ctx = NULL;
-			client->sslopts->pkcs11_slots = NULL;
+            client->sslopts->pkcs11_ctx = NULL;
+            client->sslopts->pkcs11_slots = NULL;
         }
 #endif /* PKCS11_HSM */
 #endif

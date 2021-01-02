@@ -12,6 +12,6 @@ COPY openssl.cnf /etc/ssl/
 COPY . /app
 WORKDIR /app
 RUN make
-ENTRYPOINT ["/bin/bash", "-c", "-l"]
+ENTRYPOINT ["/bin/bash"]
 # Executes commands
 CMD ["entrypoint.sh"]

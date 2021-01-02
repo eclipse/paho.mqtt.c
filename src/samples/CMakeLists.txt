@@ -38,8 +38,8 @@ ADD_EXECUTABLE(paho_cs_sub paho_cs_sub.c pubsub_opts.c)
 
 IF(PAHO_WITH_SSL_PKCS11)        
 SET_TARGET_PROPERTIES(
-     paho_cs_pub paho_cs_sub PROPERTIES
-     COMPILE_DEFINITIONS "OPENSSL=1;PKCS11_HSM=1;PAHO_MQTT_IMPORTS=1")
+    paho_cs_pub paho_cs_sub PROPERTIES
+    COMPILE_DEFINITIONS "OPENSSL=1;PKCS11_HSM=1;PAHO_MQTT_IMPORTS=1")
 ELSE()
 SET_TARGET_PROPERTIES(
     paho_cs_pub paho_cs_sub PROPERTIES
@@ -47,8 +47,8 @@ SET_TARGET_PROPERTIES(
 ENDIF()
 
 SET_TARGET_PROPERTIES(
-        paho_c_pub paho_c_sub PROPERTIES
-        COMPILE_DEFINITIONS "PAHO_MQTT_IMPORTS=1")
+    paho_c_pub paho_c_sub PROPERTIES
+    COMPILE_DEFINITIONS "PAHO_MQTT_IMPORTS=1")
 
 TARGET_LINK_LIBRARIES(paho_c_pub paho-mqtt3as)
 TARGET_LINK_LIBRARIES(paho_c_sub paho-mqtt3as)
@@ -78,8 +78,8 @@ INSTALL(TARGETS paho_c_sub
                 paho_cs_sub
                 paho_cs_pub
                 MQTTAsync_subscribe
-	              MQTTAsync_publish
-	              MQTTAsync_publish_time
+                MQTTAsync_publish
+                MQTTAsync_publish_time
                 MQTTClient_subscribe
                 MQTTClient_publish
                 MQTTClient_publish_async

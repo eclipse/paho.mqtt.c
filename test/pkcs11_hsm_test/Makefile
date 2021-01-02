@@ -1,7 +1,7 @@
 CC = gcc
 TARGET = libp11_readhsm
 
-LDFLAGS = -lp11 -lcrypto
+LDFLAGS = -lp11 -lcrypto -ldl -lpthread
 
 OBJECTS = $(TARGET).o
 SRCS = $(TARGET).c

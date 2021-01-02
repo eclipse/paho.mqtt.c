@@ -1093,6 +1093,8 @@ static void MQTTClient_closeSession(Clients* client, enum MQTTReasonCodes reason
 			if(client->sslopts->pkcs11_ctx) {
 				PKCS11_CTX_unload(client->sslopts->pkcs11_ctx);
 				PKCS11_CTX_free(client->sslopts->pkcs11_ctx);
+				client->sslopts->pkcs11_ctx = NULL;
+				client->sslopts->pkcs11_slots = NULL;
 			}
 		}
 #endif /* PKCS11_HSM */

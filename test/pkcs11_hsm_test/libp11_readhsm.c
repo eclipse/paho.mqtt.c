@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <libp11.h>
+#include <arpa/inet.h>
 
 #define RANDOM_SOURCE "/dev/urandom"
 #define RANDOM_SIZE 20
@@ -20,15 +21,15 @@ int main(int argc, char *argv[])
 {
 	PKCS11_CTX *ctx;
 	PKCS11_SLOT *slots, *slot;
-    PKCS11_KEY *keys;
+	PKCS11_KEY *keys;
 	PKCS11_CERT *certs;
 
 	PKCS11_KEY *authkey;
 	PKCS11_CERT *authcert;
 	EVP_PKEY *pubkey = NULL;
 
-    /* This is just an example. This should be changed properly. */
-    char *password_table[3] = {"yksecret1", "yksecret2", "yksecret3"};
+    	/* This is just an example. This should be changed properly. */
+    	char *password_table[1] = {"abcdefg"};
 	unsigned char *random = NULL, *signature = NULL;
 
 	char password[20];
@@ -52,8 +53,8 @@ int main(int argc, char *argv[])
 	}
 
 	slot = PKCS11_find_token(ctx, slots, nslots);
-    for (unsigned int i = 1; i <= nslots; i++) {
-        if (slot == NULL || slot->token == NULL || slot->token->label[0] == NULL) {
+	for (unsigned int i = 1; i <= nslots; i++) {
+        if (!slot || !slot->token || !slot->token->label ) {
             goto notoken;
         }
         /* get all certs */
@@ -70,7 +71,6 @@ int main(int argc, char *argv[])
             PKCS11_CERT *cert = &certs[j-1];
             unsigned short id;
             memcpy(&id, cert->id, 2);
-            j, cert->label, ntohs(id), cert->x509);
         }
 
         /* get all public keys */

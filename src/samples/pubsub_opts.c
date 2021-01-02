@@ -55,9 +55,11 @@ void usage(struct pubsub_opts* opts, pubsub_opts_nameValue* name_values, const c
 		printf("       [-R] [--no-delimiter]\n");
 	printf("       [--will-topic topic] [--will-payload message] [--will-qos qos] [--will-retain]\n");
 	printf("       [--cafile filename] [--capath dirname] [--cert filename] [--key filename]\n"
-		   "       [--keypass string] [--ciphers string] [--insecure]\n"
-		   "       [--hsmmodule string] [--calabel string] [--keylabel string]\n"
+		   "       [--keypass string] [--ciphers string] [--insecure]\n");
+	#ifdef PKCS11_HSM
+	printf("       [--hsmmodule string] [--calabel string] [--keylabel string]\n" \
            "       [--tokenlabel string] [--pin string]");
+	#endif /* PKCS11_HSM */
 
 	printf(
 	"\n\n  -t (--topic)        : MQTT topic to %s to\n"

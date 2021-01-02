@@ -362,3 +362,5 @@ engine_id = pkcs11
 dynamic_path = /usr/lib/x86_64-linux-gnu/engines-1.1/pkcs11.so
 MODULE_PATH = /usr/lib/softhsm/libsofthsm2.so
 init = 0
+PIN=plaintext
+

@@ -72,6 +72,14 @@ struct pubsub_opts
 	/* websocket HTTP proxies */
 	char* http_proxy;
 	char* https_proxy;
+#ifdef PKCS11_HSM
+    /* PKCS11 HSM options */
+    char* hsmmodule;
+    char* calabel;
+    char* keylabel;
+    char* tokenlabel;
+    char* pin;
+#endif /* PKCS11_HSM */
 };
 
 typedef struct

@@ -69,6 +69,9 @@ struct pubsub_opts opts =
 	0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, /* TLS options */
 	0, {NULL, NULL}, /* MQTT V5 options */
 	NULL, NULL, /* HTTP and HTTPS proxies */
+#ifdef PKCS11_HSM
+    NULL, NULL, NULL, NULL, NULL, /* PKCS11_HSM */
+#endif /* PKCS11_HSM */
 };
 
 
@@ -312,6 +315,13 @@ int main(int argc, char** argv)
 		ssl_opts.privateKey = opts.key;
 		ssl_opts.privateKeyPassword = opts.keypass;
 		ssl_opts.enabledCipherSuites = opts.ciphers;
+#ifdef PKCS11_HSM
+        ssl_opts.hsmModule = opts.hsmmodule;
+        ssl_opts.caLabel = opts.calabel;
+        ssl_opts.keyLabel = opts.keylabel;
+        ssl_opts.tokenLabel = opts.tokenlabel;
+        ssl_opts.pinValue = opts.pin;
+#endif /* PKCS11_HSM */
 		conn_opts.ssl = &ssl_opts;
 	}
 

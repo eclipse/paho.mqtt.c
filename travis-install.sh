@@ -2,6 +2,7 @@
 
 if [ "$TRAVIS_OS_NAME" == "linux" ]; then
 	pwd
+	sudo apt-get -y install libp11-dev
 	sudo service mosquitto stop
 	# Stop any mosquitto instance which may be still running from previous runs
 	killall mosquitto

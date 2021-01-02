@@ -48,6 +48,9 @@ struct pubsub_opts opts =
 	0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, /* TLS options */
 	0, {NULL, NULL}, /* MQTT V5 options */
 	NULL, NULL, /* HTTP and HTTPS proxies */
+#ifdef PKCS11_HSM
+    NULL, NULL, NULL, NULL, NULL, /* PKCS11_HSM */
+#endif /* PKCS11_HSM */
 };
 
 MQTTAsync_responseOptions pub_opts = MQTTAsync_responseOptions_initializer;
@@ -330,6 +333,13 @@ void myconnect(MQTTAsync client)
 		ssl_opts.ssl_error_context = client;
 		ssl_opts.ssl_psk_cb = onPSKAuth;
 		ssl_opts.ssl_psk_context = &opts;
+#ifdef PKCS11_HSM
+        ssl_opts.hsmModule = opts.hsmmodule;
+        ssl_opts.caLabel = opts.calabel;
+        ssl_opts.keyLabel = opts.keylabel;
+        ssl_opts.tokenLabel = opts.tokenlabel;
+        ssl_opts.pinValue = opts.pin;
+#endif /* PKCS11_HSM */
 		conn_opts.ssl = &ssl_opts;
 	}
 

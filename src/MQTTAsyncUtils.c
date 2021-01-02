@@ -2325,6 +2325,18 @@ static void MQTTAsync_closeOnly(Clients* client, enum MQTTReasonCodes reasonCode
 		client->net.socket = 0;
 #if defined(OPENSSL)
 		client->net.ssl = NULL;
+#if PKCS11_HSM
+        /* release all allocated resources */
+        if(client->sslopts->pkcs11_slots) {
+            PKCS11_release_all_slots(client->sslopts->pkcs11_ctx,
+                                     client->sslopts->pkcs11_slots,
+                                     client->sslopts->pkcs11_slot_num);
+        }
+        if(client->sslopts->pkcs11_ctx) {
+            PKCS11_CTX_unload(client->sslopts->pkcs11_ctx);
+            PKCS11_CTX_free(client->sslopts->pkcs11_ctx);
+        }
+#endif /* PKCS11_HSM */
 #endif
 		Thread_unlock_mutex(socket_mutex);
 	}

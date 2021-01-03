@@ -89,7 +89,7 @@ SET_TARGET_PROPERTIES(MQTTVersion PROPERTIES
     COMPILE_DEFINITIONS "PAHO_MQTT_IMPORTS=1")
 ENDIF()
 
-IF (PAHO_BUILD_STATIC)    
+IF (PAHO_BUILD_STATIC)
 ADD_LIBRARY(common_obj_static OBJECT ${common_src})
 SET_TARGET_PROPERTIES(common_obj_static PROPERTIES
     POSITION_INDEPENDENT_CODE ON
@@ -99,11 +99,11 @@ ENDIF()
 IF (PAHO_BUILD_SHARED)
     ADD_LIBRARY(paho-mqtt3c SHARED $<TARGET_OBJECTS:common_obj> MQTTClient.c)
     ADD_LIBRARY(paho-mqtt3a SHARED $<TARGET_OBJECTS:common_obj> MQTTAsync.c MQTTAsyncUtils.c)
-    
+
     TARGET_LINK_LIBRARIES(paho-mqtt3c ${LIBS_SYSTEM})
     TARGET_LINK_LIBRARIES(paho-mqtt3a ${LIBS_SYSTEM})
     TARGET_LINK_LIBRARIES(MQTTVersion paho-mqtt3a paho-mqtt3c ${LIBS_SYSTEM})
-    
+
     SET_TARGET_PROPERTIES(
         paho-mqtt3c paho-mqtt3a PROPERTIES
         VERSION ${CLIENT_VERSION}
@@ -135,7 +135,7 @@ IF (PAHO_BUILD_SHARED)
             PRIVATE
                 ${CMAKE_BINARY_DIR})
     ENDFOREACH()
-    
+
 	INSTALL(TARGETS paho-mqtt3c paho-mqtt3a
 		EXPORT eclipse-paho-mqtt-cTargets
 		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -154,7 +154,7 @@ IF (PAHO_BUILD_STATIC)
     IF (NOT WIN32)
         SET_TARGET_PROPERTIES(paho-mqtt3c-static PROPERTIES OUTPUT_NAME paho-mqtt3c)
         SET_TARGET_PROPERTIES(paho-mqtt3a-static PROPERTIES OUTPUT_NAME paho-mqtt3a)
-    ENDIF()       
+    ENDIF()
     SET_TARGET_PROPERTIES(
         paho-mqtt3c-static paho-mqtt3a-static PROPERTIES
         VERSION ${CLIENT_VERSION}
@@ -196,10 +196,10 @@ IF (PAHO_WITH_SSL)
     	TARGET_INCLUDE_DIRECTORIES(common_ssl_obj PUBLIC ${OPENSSL_INCLUDE_DIR})
     	SET_PROPERTY(TARGET common_ssl_obj PROPERTY	POSITION_INDEPENDENT_CODE ON)
     	SET_PROPERTY(TARGET common_ssl_obj PROPERTY COMPILE_DEFINITIONS "OPENSSL=1;PAHO_MQTT_EXPORTS=1")
-    
+
         ADD_LIBRARY(paho-mqtt3cs SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTClient.c SSLSocket.c)
         ADD_LIBRARY(paho-mqtt3as SHARED $<TARGET_OBJECTS:common_ssl_obj> MQTTAsync.c MQTTAsyncUtils.c SSLSocket.c)
-    
+
         SET_TARGET_PROPERTIES(
             paho-mqtt3cs paho-mqtt3as PROPERTIES
             VERSION ${CLIENT_VERSION}
@@ -248,7 +248,7 @@ IF (PAHO_WITH_SSL)
     	TARGET_INCLUDE_DIRECTORIES(common_ssl_obj_static PUBLIC ${OPENSSL_INCLUDE_DIR})
     	SET_PROPERTY(TARGET common_ssl_obj_static PROPERTY POSITION_INDEPENDENT_CODE ON)
     	SET_PROPERTY(TARGET common_ssl_obj_static PROPERTY COMPILE_DEFINITIONS "OPENSSL=1;PAHO_MQTT_STATIC=1")
-    
+
         ADD_LIBRARY(paho-mqtt3cs-static STATIC $<TARGET_OBJECTS:common_ssl_obj_static> MQTTClient.c SSLSocket.c)
         ADD_LIBRARY(paho-mqtt3as-static STATIC $<TARGET_OBJECTS:common_ssl_obj_static> MQTTAsync.c MQTTAsyncUtils.c SSLSocket.c)
 

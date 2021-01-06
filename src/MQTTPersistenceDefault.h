@@ -17,8 +17,6 @@
 #if !defined(MQTTPERSISTENCEDEFAULT_H)
 #define MQTTPERSISTENCEDEFAULT_H
 
-/** 8.3 filesystem */
-#define MESSAGE_FILENAME_LENGTH 8    
 /** Extension of the filename */
 #define MESSAGE_FILENAME_EXTENSION ".msg"
 

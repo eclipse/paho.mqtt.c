@@ -50,9 +50,9 @@
 /** Stem of the key for an MQTT V5 incoming message queue */
 #define PERSISTENCE_V5_QUEUE_KEY "q5-"
 /** Maximum length of a stem for a persistence key */
-#define PERSISTENCE_MAX_STEM_LENGTH 3
+#define PERSISTENCE_MAX_STEM_LENGTH 4
 /** Maximum allowed length of a persistence key */
-#define PERSISTENCE_MAX_KEY_LENGTH 9
+#define PERSISTENCE_MAX_KEY_LENGTH 10
 /** Maximum size of an integer sequence number appended to a persistence key */
 #define PERSISTENCE_SEQNO_LIMIT 1000000 /*10^(PERSISTENCE_MAX_KEY_LENGTH - PERSISTENCE_MAX_STEM_LENGTH)*/
 

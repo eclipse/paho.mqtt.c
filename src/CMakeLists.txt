@@ -65,7 +65,7 @@ ELSEIF (UNIX)
         # it or build will fail on uclibc or musl
         FIND_LIBRARY(LIB_ANL anl)
         IF(LIB_ANL)
-            SET(LIBS_SYSTEM "${LIBS_SYSTEM} ${LIB_ANL}")
+            SET(LIBS_SYSTEM "${LIBS_SYSTEM}" anl)
         ENDIF()
         ADD_DEFINITIONS(-D_GNU_SOURCE -fvisibility=hidden)
     ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Android")

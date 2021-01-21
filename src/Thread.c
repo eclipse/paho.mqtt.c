@@ -55,9 +55,8 @@
  * Start a new thread
  * @param fn the function to run, must be of the correct signature
  * @param parameter pointer to the function parameter, can be NULL
- * @return the new thread
  */
-thread_type Thread_start(thread_fn fn, void* parameter)
+void Thread_start(thread_fn fn, void* parameter)
 {
 #if defined(_WIN32) || defined(_WIN64)
 	thread_type thread = NULL;
@@ -69,6 +68,7 @@ thread_type Thread_start(thread_fn fn, void* parameter)
 	FUNC_ENTRY;
 #if defined(_WIN32) || defined(_WIN64)
 	thread = CreateThread(NULL, 0, fn, parameter, 0, NULL);
+    CloseHandle(thread);
 #else
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -77,7 +77,6 @@ thread_type Thread_start(thread_fn fn, void* parameter)
 	pthread_attr_destroy(&attr);
 #endif
 	FUNC_EXIT;
-	return thread;
 }
 
 
@@ -563,14 +562,13 @@ int cond_test()
 {
 	int rc = 0;
 	cond_type cond = Thread_create_cond();
-	thread_type thread;
 
 	printf("Post secondary so it should return immediately\n");
 	rc = Thread_signal_cond(cond);
 	assert("rc 0 from signal cond", rc == 0, "rc was %d", rc);
 
 	printf("Starting secondary thread\n");
-	thread = Thread_start(cond_secondary, (void*)cond);
+	Thread_start(cond_secondary, (void*)cond);
 
 	sleep(3);
 
@@ -614,7 +612,6 @@ int sem_test()
 {
 	int rc = 0;
 	sem_type sem = Thread_create_sem();
-	thread_type thread;
 
 	printf("Primary semaphore pointer %p\n", sem);
 
@@ -629,7 +626,7 @@ int sem_test()
 	assert("rc 1 from check_sem", rc == 1, "rc was %d", rc);
 
 	printf("Starting secondary thread\n");
-	thread = Thread_start(sem_secondary, (void*)sem);
+	Thread_start(sem_secondary, (void*)sem);
 
 	sleep(3);
 	rc = Thread_check_sem(sem);

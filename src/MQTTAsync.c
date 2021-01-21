@@ -639,18 +639,12 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	if (sendThread_state != STARTING && sendThread_state != RUNNING)
 	{
 		sendThread_state = STARTING;
-		thread_type thread_handle = Thread_start(MQTTAsync_sendThread, NULL);
-#if defined(_WIN32) || defined(_WIN64)
-		CloseHandle(thread_handle);
-#endif
+		Thread_start(MQTTAsync_sendThread, NULL);
 	}
 	if (receiveThread_state != STARTING && receiveThread_state != RUNNING)
 	{
 		receiveThread_state = STARTING;
-		thread_type thread_handle = Thread_start(MQTTAsync_receiveThread, handle);
-#if defined(_WIN32) || defined(_WIN64)
-		CloseHandle(thread_handle);
-#endif
+		Thread_start(MQTTAsync_receiveThread, handle);
 	}
 	if (locked)
 		MQTTAsync_unlock_mutex(mqttasync_mutex);

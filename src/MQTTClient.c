@@ -915,11 +915,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 								*(dp->properties) = disc->properties;
 								MQTTClient_disconnect1(m, 10, 0, 1, MQTTREASONCODE_SUCCESS, NULL);
 								Log(TRACE_MIN, -1, "Calling disconnected for client %s", m->c->clientID);
-								thread_type handle = Thread_start(call_disconnected, dp);
-#if defined(_WIN32) || defined(_WIN64)
-								CloseHandle(handle);
-#endif
-
+								Thread_start(call_disconnected, dp);
 							}
 							else
 								free(dp);
@@ -937,10 +933,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 						dp.reasonCode = disc->rc;
 						free(pack);
 						Log(TRACE_MIN, -1, "Calling auth_handle for client %s", m->c->clientID);
-						thread_type handle = Thread_start(call_auth_handle, &dp);
-#if defined(_WIN32) || defined(_WIN64)
-						CloseHandle(handle);
-#endif
+						Thread_start(call_auth_handle, &dp);
 					}
 #endif
 				}
@@ -1186,10 +1179,7 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 	resp.reasonCode = SOCKET_ERROR;
 	if (m->ma && !running)
 	{
-		thread_type thread_handle = Thread_start(MQTTClient_run, handle);
-#if defined(_WIN32) || defined(_WIN64)
-		CloseHandle(thread_handle);
-#endif
+		Thread_start(MQTTClient_run, handle);
 		if (MQTTTime_elapsed(start) >= millisecsTimeout)
 		{
 			rc = SOCKET_ERROR;
@@ -1902,11 +1892,7 @@ exit:
 	if (call_connection_lost && m->cl && was_connected)
 	{
 		Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
-		thread_type thread_handle = Thread_start(connectionLost_call, m);
-#if defined(_WIN32) || defined(_WIN64)
-		CloseHandle(thread_handle);
-#endif
-	
+		Thread_start(connectionLost_call, m);
 	}
 	FUNC_EXIT_RC(rc);
 	return rc;

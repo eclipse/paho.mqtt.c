@@ -258,7 +258,6 @@ int test_sem(struct Options options)
 	START_TIME_TYPE start;
 	long duration;
 	sem_type sem = Thread_create_sem(&rc);
-	thread_type thread;
 
 	MyLog(LOGA_INFO, "Starting semaphore test");
 	fprintf(xml, "<testcase classname=\"test\" name=\"%s\"", testname);
@@ -306,7 +305,7 @@ int test_sem(struct Options options)
 	assert("duration is 2s", duration >= 1500L, "duration was %ld", duration);
 
 	MyLog(LOGA_DEBUG, "Starting secondary thread");
-	thread = Thread_start(sem_secondary, (void*)sem);
+	Thread_start(sem_secondary, (void*)sem);
 
 	mysleep(2);
 	MyLog(LOGA_DEBUG, "post secondary");
@@ -360,7 +359,6 @@ int test_cond(struct Options options)
 	START_TIME_TYPE start;
 	long duration;
 	cond_type cond = Thread_create_cond(&rc);
-	thread_type thread;
 
 	MyLog(LOGA_INFO, "Starting condition variable test");
 	fprintf(xml, "<testcase classname=\"cond\" name=\"%s\"", testname);
@@ -399,7 +397,7 @@ int test_cond(struct Options options)
 	assert("rc 0 from signal cond", rc == 0, "rc was %d", rc);
 
 	MyLog(LOGA_DEBUG, "Starting secondary thread");
-	thread = Thread_start(cond_secondary, (void*)cond);
+	Thread_start(cond_secondary, (void*)cond);
 
 	MyLog(LOGA_DEBUG, "wait for secondary thread to enter second wait");
 	mysleep(2);
@@ -448,7 +446,6 @@ int test_mutex(struct Options options)
 	char* testname = "test_mutex";
 	int rc = 0;
 	mutex_type mutex = Thread_create_mutex(&rc);
-	thread_type thread;
 	START_TIME_TYPE start;
 	long duration;
 
@@ -465,7 +462,7 @@ int test_mutex(struct Options options)
 	assert("duration is very low", duration < 5L, "duration was %ld", duration);
 
 	MyLog(LOGA_DEBUG, "Starting secondary thread");
-	thread = Thread_start(mutex_secondary, (void*)mutex);
+	Thread_start(mutex_secondary, (void*)mutex);
 
 	mysleep(2);
 	rc = Thread_unlock_mutex(mutex); /* let background thread have it */

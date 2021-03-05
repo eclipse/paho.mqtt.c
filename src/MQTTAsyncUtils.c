@@ -1556,7 +1556,7 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 	int was_connected = m->c->connected;
 	FUNC_ENTRY;
 
-	if (MQTTAsync_checkConn(&m->connect, m))
+	if (MQTTAsync_checkConn(&m->connect, m)  && rc!= SOCKET_ERROR)
 	{
 		MQTTAsync_queuedCommand* conn;
 

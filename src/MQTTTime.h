@@ -44,6 +44,6 @@ void MQTTTime_sleep(ELAPSED_TIME_TYPE milliseconds);
 START_TIME_TYPE MQTTTime_start_clock(void);
 START_TIME_TYPE MQTTTime_now(void);
 ELAPSED_TIME_TYPE MQTTTime_elapsed(START_TIME_TYPE milliseconds);
-DIFF_TIME_TYPE MQTTTime_difftime(START_TIME_TYPE new, START_TIME_TYPE old);
+DIFF_TIME_TYPE MQTTTime_difftime(START_TIME_TYPE t_new, START_TIME_TYPE t_old);
 
 #endif

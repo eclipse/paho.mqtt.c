@@ -41,6 +41,9 @@
 #include <string.h>
 #include <signal.h>
 #include <ctype.h>
+#if !defined(_WIN32) && !defined(_WIN64)
+#include <net/if.h>
+#endif
 
 #include "Heap.h"
 
@@ -679,7 +682,7 @@ int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 #endif
 {
 	int type = SOCK_STREAM;
-	char *addr_mem, *ifname, *p;
+	char *addr_mem, *ifname = NULL, *p;
 	size_t ifname_len = 0;
 	struct sockaddr_in address;
 #if defined(AF_INET6)
@@ -703,7 +706,7 @@ int Socket_new(const char* addr, size_t addr_len, int port, int* sock)
 		++addr;
 		--addr_len;
 #if !defined(_WIN32) && !defined(_WIN64)
-		if (p = strchr(addr, (int)'%')) {
+		if ((p = strchr(addr, (int)'%'))) {
 			ifname_len = addr_len - (p - addr) - 1;
 			addr_len = p - addr;
 			p++;

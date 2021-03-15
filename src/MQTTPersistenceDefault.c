@@ -923,7 +923,7 @@ int main (int argc, char *argv[])
 	/* put */
 	for(msgId=0;msgId<NMSGS;msgId++)
 	{
-		key = malloc(MESSAGE_FILENAME_LENGTH + 1);
+		key = malloc(PERSISTENCE_MAX_KEY_LENGTH + 1);
 		sprintf(key, "%s%d", stem, msgId);
 		rc = pstput(handle, key, nbufs, bufs, buflens);
 		printf("%s Adding message %s\n", RC, key);
@@ -942,7 +942,7 @@ int main (int argc, char *argv[])
 	/* containskey */
 	for(i=0;i<NDEL;i++)
 	{
-		key = malloc(MESSAGE_FILENAME_LENGTH + 1);
+		key = malloc(PERSISTENCE_MAX_KEY_LENGTH + 1);
 		sprintf(key, "%s%d", stem, nm[i]);
 		rc = pstcontainskey(handle, key);
 		printf("%s Message %s is persisted ?\n", RC, key);
@@ -952,7 +952,7 @@ int main (int argc, char *argv[])
 	/* get && remove*/
 	for(i=0;i<NDEL;i++)
 	{
-		key = malloc(MESSAGE_FILENAME_LENGTH + 1);
+		key = malloc(PERSISTENCE_MAX_KEY_LENGTH + 1);
 		sprintf(key, "%s%d", stem, nm[i]);
 		rc = pstget(handle, key, &buffer, &buflen);
 		buff = malloc(buflen+1);
@@ -969,7 +969,7 @@ int main (int argc, char *argv[])
 	/* containskey */
 	for(i=0;i<NDEL;i++)
 	{
-		key = malloc(MESSAGE_FILENAME_LENGTH + 1);
+		key = malloc(PERSISTENCE_MAX_KEY_LENGTH + 1);
 		sprintf(key, "%s%d", stem, nm[i]);
 		rc = pstcontainskey(handle, key);
 		printf("%s Message %s is persisted ?\n", RC, key);

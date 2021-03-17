@@ -1341,11 +1341,11 @@ typedef struct
 	 */
 	const MQTTAsync_nameValue* httpHeaders;
 	/**
-	 * HTTP proxy for websockets
+	 * HTTP proxy
 	 */
 	const char* httpProxy;
 	/**
-	 * HTTPS proxy for websockets
+	 * HTTPS proxy
 	 */
 	const char* httpsProxy;
 } MQTTAsync_connectOptions;

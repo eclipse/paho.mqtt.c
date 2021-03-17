@@ -47,6 +47,7 @@ SET(common_src
   Base64.c
   SHA1.c
   WebSocket.c
+  Proxy.c
 )
 
 IF (NOT PAHO_HIGH_PERFORMANCE)

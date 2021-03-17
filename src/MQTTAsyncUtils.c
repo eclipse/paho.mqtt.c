@@ -12,7 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial implementation and documentation
- *
+ *    Sven Gambel - add generic proxy support
  *******************************************************************************/
 
 #include <stdlib.h>
@@ -35,6 +35,7 @@
 #include "Heap.h"
 #include "OsWrapper.h"
 #include "WebSocket.h"
+#include "Proxy.h"
 
 static int clientSockCompare(void* a, void* b);
 static int MQTTAsync_checkConn(MQTTAsync_command* command, MQTTAsyncs* client);
@@ -2698,9 +2699,9 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 			size_t hostname_len;
 			int setSocketForSSLrc = 0;
 
-			if (m->websocket && m->c->net.https_proxy) {
+			if (m->c->net.https_proxy) {
 				m->c->connect_state = PROXY_CONNECT_IN_PROGRESS;
-				if ((rc = WebSocket_proxy_connect( &m->c->net, 1, serverURI)) == SOCKET_ERROR )
+				if ((rc = Proxy_connect( &m->c->net, 1, serverURI)) == SOCKET_ERROR )
 					goto exit;
 			}
 
@@ -2760,14 +2761,14 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 		else
 		{
 #endif
+			if (m->c->net.http_proxy) {
+				m->c->connect_state = PROXY_CONNECT_IN_PROGRESS;
+				if ((rc = Proxy_connect( &m->c->net, 0, serverURI)) == SOCKET_ERROR )
+					goto exit;
+			}
+
 			if ( m->websocket )
 			{
-				if (m->c->net.http_proxy) {
-					m->c->connect_state = PROXY_CONNECT_IN_PROGRESS;
-					if ((rc = WebSocket_proxy_connect( &m->c->net, 0, serverURI)) == SOCKET_ERROR )
-						goto exit;
-				}
-
 				m->c->connect_state = WEBSOCKET_IN_PROGRESS;
 				if ((rc = WebSocket_connect(&m->c->net, serverURI)) == SOCKET_ERROR )
 					goto exit;

@@ -758,7 +758,7 @@ static int MQTTAsync_unpersistInflightMessages(Clients* c)
 #endif
 
 /**
- * List callback function for comparing client handles and command types being CONNECT or DISCONNECT 
+ * List callback function for comparing client handles and command types being CONNECT or DISCONNECT
  * @param a first MQTTAsync_queuedCommand pointer
  * @param b second MQTTAsync_queuedCommand pointer
  * @return boolean indicating whether a and b are equal
@@ -778,7 +778,7 @@ static int clientCompareConnectCommand(void* a, void* b)
 		}
 	}
 	return 0;	//Item NOT found in the list
-}								   
+}
 
 
 int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
@@ -801,9 +801,18 @@ int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 		if (head != NULL && head->client == command->client && head->command.type == command->command.type)
 			MQTTAsync_freeCommand(command); /* ignore duplicate connect or disconnect command */
 		else
-		{ 
+		{
 			ListRemoveItem(MQTTAsync_commands, command, clientCompareConnectCommand); /* remove command from the list if already there */
-			ListInsert(MQTTAsync_commands, command, command_size, MQTTAsync_commands->first); /* add to the head of the list */
+
+			/* do not change the order of consecutive CONNECT / DISCONNECT commands */
+			ListElement* current = NULL;
+			while (ListNextElement(MQTTAsync_commands, &current))
+			{
+				head = (MQTTAsync_queuedCommand*)(current->content);
+				if (head == NULL || !(head->command.type == CONNECT || head->command.type == DISCONNECT))
+					break;
+			}
+			ListInsert(MQTTAsync_commands, command, command_size, current); /* add to the head of the list */
 		}
 	}
 	else

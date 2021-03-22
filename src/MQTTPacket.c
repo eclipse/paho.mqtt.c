@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2021 IBM Corp. and Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -569,7 +569,15 @@ void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, siz
 		goto exit;
 	}
 	if (pack->header.bits.qos > 0)  /* Msgid only exists for QoS 1 or 2 */
+	{
+		if (enddata - curdata < 2)  /* Is there enough data for the msgid? */
+		{
+			free(pack);
+			pack = NULL;
+			goto exit;
+		}
 		pack->msgId = readInt(&curdata);
+	}
 	else
 		pack->msgId = 0;
 	if (MQTTVersion >= MQTTVERSION_5)
@@ -792,7 +800,15 @@ void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t 
 	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
 	if (pack->header.bits.type != DISCONNECT)
+	{
+		if (enddata - curdata < 2)  /* Is there enough data for the msgid? */
+		{
+			free(pack);
+			pack = NULL;
+			goto exit;
+		}
 		pack->msgId = readInt(&curdata);
+	}
 	if (MQTTVersion >= MQTTVERSION_5)
 	{
 		MQTTProperties props = MQTTProperties_initializer;

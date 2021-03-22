@@ -9,6 +9,7 @@
   <license>Eclipse Public License - v 2.0</license>
 
   <buildtool_depend>cmake</buildtool_depend>
+  <depend>libssl-dev</depend>
 
   <export>
     <build_type>cmake</build_type>

@@ -11,6 +11,7 @@ cmake --build .
 python3 ../test/mqttsas.py &
 ctest -VV --timeout 600
 killall python3
+sleep 3 # allow broker time to terminate and report
 #killall mosquitto
 cpack --verbose
 

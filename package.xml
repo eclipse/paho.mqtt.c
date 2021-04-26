@@ -10,6 +10,7 @@
 
   <buildtool_depend>cmake</buildtool_depend>
   <depend>libssl-dev</depend>
+  <exec_depend>catkin</exec_depend>
 
   <export>
     <build_type>cmake</build_type>

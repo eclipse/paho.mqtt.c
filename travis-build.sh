@@ -10,7 +10,8 @@ cmake -DPAHO_BUILD_STATIC=$PAHO_BUILD_STATIC -DPAHO_BUILD_SHARED=$PAHO_BUILD_SHA
 cmake --build .
 python3 ../test/mqttsas.py &
 ctest -VV --timeout 600
-cpack --verbose
-kill %1
+killall python3 || true
+sleep 3 # allow broker time to terminate and report
 #killall mosquitto
+cpack --verbose
 

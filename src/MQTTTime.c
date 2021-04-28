@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2020 IBM Corp.
+ * Copyright (c) 2020, 2021 IBM Corp. and Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -47,15 +47,15 @@ START_TIME_TYPE MQTTTime_start_clock(void)
 #elif defined(AIX)
 START_TIME_TYPE MQTTTime_start_clock(void)
 {
-	static struct timespec start;
+	struct timespec start;
 	clock_gettime(CLOCK_MONOTONIC, &start);
 	return start;
 }
 #else
 START_TIME_TYPE MQTTTime_start_clock(void)
 {
-	static struct timeval start;
-	static struct timespec start_ts;
+	struct timeval start;
+	struct timespec start_ts;
 
 	clock_gettime(CLOCK_MONOTONIC, &start_ts);
 	start.tv_sec = start_ts.tv_sec;

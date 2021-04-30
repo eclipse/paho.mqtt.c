@@ -340,9 +340,8 @@ void* MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char* data, size
 	{
 		if (pack->properties.array)
 			free(pack->properties.array);
-		if (pack)
-			free(pack);
 		ListFree(pack->qoss);
+		free(pack);
 		pack = NULL;
 	}
 exit:

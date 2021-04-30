@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2021 IBM Corp. and Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -679,6 +679,14 @@ void MQTTProtocol_keepalive(START_TIME_TYPE now)
 				MQTTProtocol_closeSession(client, 1);
 			}
 		}
+		else if (client->ping_due == 1 &&
+			(MQTTTime_difftime(now, client->ping_due_time) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1000)))
+		{
+			/* ping still outstanding after keep alive interval, so close session */
+			Log(TRACE_PROTOCOL, -1, "PINGREQ still outstanding for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
+			MQTTProtocol_closeSession(client, 1);
+
+		}
 		else if (MQTTTime_difftime(now, client->net.lastSent) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1000) ||
 					MQTTTime_difftime(now, client->net.lastReceived) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1000))
 		{
@@ -691,9 +699,17 @@ void MQTTProtocol_keepalive(START_TIME_TYPE now)
 				}
 				else
 				{
+					client->ping_due = 0;
 					client->net.lastPing = now;
 					client->ping_outstanding = 1;
 				}
+			}
+			else if (client->ping_due == 0)
+			{
+				Log(TRACE_PROTOCOL, -1, "Couldn't send PINGREQ for client %s on socket %d, noting",
+						client->clientID, client->net.socket);
+				client->ping_due = 1;
+				client->ping_due_time = now;
 			}
 		}
 	}

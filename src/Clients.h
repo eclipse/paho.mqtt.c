@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2021 IBM Corp. and Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -125,7 +125,9 @@ typedef struct
 	unsigned int connected : 1;		/**< whether it is currently connected */
 	unsigned int good : 1; 			  /**< if we have an error on the socket we turn this off */
 	unsigned int ping_outstanding : 1;
+	unsigned int ping_due : 1;      /**< we couldn't send a ping so we should send one when we can */
 	signed int connect_state : 4;
+	START_TIME_TYPE ping_due_time;  /**< the time at which the ping should have been sent (ping_due) */
 	networkHandles net;             /**< network info for this client */
 	int msgID;                      /**< the MQTT message id */
 	int keepAliveInterval;          /**< the MQTT keep alive interval */

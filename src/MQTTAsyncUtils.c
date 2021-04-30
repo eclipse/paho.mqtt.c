@@ -758,7 +758,7 @@ static int MQTTAsync_unpersistInflightMessages(Clients* c)
 #endif
 
 /**
- * List callback function for comparing client handles and command types being CONNECT or DISCONNECT 
+ * List callback function for comparing client handles and command types being CONNECT or DISCONNECT
  * @param a first MQTTAsync_queuedCommand pointer
  * @param b second MQTTAsync_queuedCommand pointer
  * @return boolean indicating whether a and b are equal
@@ -778,7 +778,7 @@ static int clientCompareConnectCommand(void* a, void* b)
 		}
 	}
 	return 0;	//Item NOT found in the list
-}								   
+}
 
 
 int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
@@ -801,7 +801,7 @@ int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 		if (head != NULL && head->client == command->client && head->command.type == command->command.type)
 			MQTTAsync_freeCommand(command); /* ignore duplicate connect or disconnect command */
 		else
-		{ 
+		{
 			ListRemoveItem(MQTTAsync_commands, command, clientCompareConnectCommand); /* remove command from the list if already there */
 			ListInsert(MQTTAsync_commands, command, command_size, MQTTAsync_commands->first); /* add to the head of the list */
 		}
@@ -1369,6 +1369,9 @@ static int MQTTAsync_processCommand(void)
 			rc = PAHO_MEMORY_ERROR;
 			goto exit;
 		}
+
+		/* Initialize the mask */
+		memset(p->mask, 0, sizeof(p->mask));
 
 		p->payload = command->command.details.pub.payload;
 		p->payloadlen = command->command.details.pub.payloadlen;

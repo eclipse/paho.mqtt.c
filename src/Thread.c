@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2021 IBM Corp. and Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -199,14 +199,8 @@ sem_type Thread_create_sem(int *rc)
 		        FALSE,              /* initial state is nonsignaled */
 		        NULL                /* object name */
 		        );
-#if 0
-		sem = CreateSemaphore(
-				NULL,				/* default security attributes */
-				0,       	        /* initial count - non signaled */
-				1, 					/* maximum count */
-				NULL 				/* unnamed semaphore */
-		);
-#endif
+		if (sem == NULL)
+			*rc = GetLastError();
 	#elif defined(OSX)
 		sem = dispatch_semaphore_create(0L);
 		*rc = (sem == NULL) ? -1 : 0;

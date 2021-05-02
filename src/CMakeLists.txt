@@ -333,3 +333,8 @@ IF (PAHO_WITH_SSL)
 	TARGET_LINK_LIBRARIES( Sha1TestOpenSSL OpenSSL::SSL OpenSSL::Crypto)
 	TARGET_COMPILE_DEFINITIONS( Sha1TestOpenSSL PUBLIC "-DSHA1_TEST -DOPENSSL=1" )
 ENDIF (PAHO_WITH_SSL)
+
+if(DEFINED ENV{LIB_FUZZING_ENGINE})
+  add_executable(fuzz_client_receive fuzz_client_receive.c)
+  target_link_libraries(fuzz_client_receive paho-mqtt3c-static $ENV{LIB_FUZZING_ENGINE})
+endif()

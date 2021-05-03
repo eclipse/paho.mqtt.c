@@ -1937,6 +1937,38 @@ static int MQTTAsync_completeConnection(MQTTAsyncs* m, Connack* connack)
 	return rc;
 }
 
+static void MQTTAsync_freePack(MQTTPacket* pack)
+{
+	FUNC_ENTRY;
+	if (pack)
+	{
+		if (pack->header.bits.type == CONNACK)
+		{
+			MQTTPacket_freeConnack((Connack*)pack);
+		}
+		else if (pack->header.bits.type == SUBACK)
+		{
+			MQTTPacket_freeSuback((Suback*)pack);
+		}
+		else if (pack->header.bits.type == UNSUBACK)
+		{
+			MQTTPacket_freeUnsuback((Unsuback*)pack);
+		}
+		else if (pack->header.bits.type == DISCONNECT)
+		{
+			MQTTPacket_freeAck((Ack*)pack);
+		}
+		else if (pack->header.bits.type == PINGRESP ||
+			     pack->header.bits.type == PINGREQ)
+		{
+			// No free(pack) here as pack comes from MQTTPacket_header_only, which returns a
+			// reference to a static variable.
+		}
+		else
+			free(pack);
+	}
+	FUNC_EXIT;
+}
 
 /* This is the thread function that handles the calling of callback functions if set */
 thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
@@ -1958,16 +1990,23 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 		pack = MQTTAsync_cycle(&sock, timeout, &rc);
 		MQTTAsync_lock_mutex(mqttasync_mutex);
 		if (MQTTAsync_tostop)
+		{
+			MQTTAsync_freePack(pack);
 			break;
+		}
 		timeout = 1000L;
 
 		if (sock == 0)
+		{
+			MQTTAsync_freePack(pack);
 			continue;
+		}
 		/* find client corresponding to socket */
 		if (ListFindItem(MQTTAsync_handles, &sock, clientSockCompare) == NULL)
 		{
 			Log(TRACE_MINIMUM, -1, "Could not find client corresponding to socket %d", sock);
 			/* Socket_close(sock); - removing socket in this case is not necessary (Bug 442400) */
+			MQTTAsync_freePack(pack);
 			continue;
 		}
 		m = (MQTTAsyncs*)(MQTTAsync_handles->current->content);
@@ -1975,6 +2014,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 		{
 			Log(LOG_ERROR, -1, "Client structure was NULL for socket %d - removing socket", sock);
 			Socket_close(sock);
+			MQTTAsync_freePack(pack);
 			continue;
 		}
 		if (rc == SOCKET_ERROR)
@@ -2241,6 +2281,8 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 					}
 					MQTTPacket_freeAck(disc);
 				}
+				else
+					MQTTAsync_freePack(pack);
 			}
 		}
 	}
@@ -2481,9 +2523,9 @@ void Protocol_processPublication(Publish* publish, Clients* client, int allocate
 		if (client->persistence)
 			MQTTPersistence_persistQueueEntry(client, (MQTTPersistence_qEntry*)qe);
 #endif
+		publish->topic = NULL; /* Prevent topic name free as reference was passed to qe */
 	}
 exit:
-	publish->topic = NULL;
 	FUNC_EXIT;
 }
 
@@ -2896,14 +2938,15 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 		{
 			int freed = 1;
 
+			int packet_type = pack->header.bits.type;
+
 			/* Note that these handle... functions free the packet structure that they are dealing with */
-			if (pack->header.bits.type == PUBLISH)
+			if (packet_type == PUBLISH)
 				*rc = MQTTProtocol_handlePublishes(pack, *sock);
-			else if (pack->header.bits.type == PUBACK || pack->header.bits.type == PUBCOMP ||
-					pack->header.bits.type == PUBREC)
+			else if (packet_type == PUBACK || packet_type == PUBCOMP ||
+					packet_type == PUBREC)
 			{
 				int msgid = 0,
-					msgtype = 0,
 					ackrc = 0,
 					mqttversion = 0;
 				MQTTProperties msgprops = MQTTProperties_initializer;
@@ -2914,7 +2957,6 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 					ack = *(Ack*)pack;
 					/* these values are stored because the packet structure is freed in the handle functions */
 					msgid = ack.msgId;
-					msgtype = pack->header.bits.type;
 					if (ack.MQTTVersion >= MQTTVERSION_5)
 					{
 						ackrc = ack.rc;
@@ -2923,15 +2965,15 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 					}
 				}
 
-				if (pack->header.bits.type == PUBCOMP)
+				if (packet_type == PUBCOMP)
 					*rc = MQTTProtocol_handlePubcomps(pack, *sock);
-				else if (pack->header.bits.type == PUBREC)
+				else if (packet_type == PUBREC)
 					*rc = MQTTProtocol_handlePubrecs(pack, *sock);
-				else if (pack->header.bits.type == PUBACK)
+				else if (packet_type == PUBACK)
 					*rc = MQTTProtocol_handlePubacks(pack, *sock);
 				if (!m)
 					Log(LOG_ERROR, -1, "PUBCOMP, PUBACK or PUBREC received for no client, msgid %d", msgid);
-				if (m && (msgtype != PUBREC || ackrc >= MQTTREASONCODE_UNSPECIFIED_ERROR))
+				if (m && (packet_type != PUBREC || ackrc >= MQTTREASONCODE_UNSPECIFIED_ERROR))
 				{
 					ListElement* current = NULL;
 
@@ -2982,7 +3024,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 								data.token = command->command.token;
 								data.reasonCode = ackrc;
 								data.properties = msgprops;
-								data.packet_type = pack->header.bits.type;
+								data.packet_type = packet_type;
 								Log(TRACE_MIN, -1, "Calling publish failure for client %s", m->c->clientID);
 								(*(command->command.onFailure5))(command->command.context, &data);
 							}
@@ -2995,7 +3037,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 				}
 			}
 			else if (pack->header.bits.type == PUBREL)
-				*rc = MQTTProtocol_handlePubrels(pack, *sock);
+				*rc = MQTTProtocol_handlePubrels(pack, *sock, 1);
 			else if (pack->header.bits.type == PINGRESP)
 				*rc = MQTTProtocol_handlePingresps(pack, *sock);
 			else

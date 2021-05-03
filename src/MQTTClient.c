@@ -2559,7 +2559,7 @@ static MQTTPacket* MQTTClient_cycle(int* sock, ELAPSED_TIME_TYPE timeout, int* r
 				*rc = MQTTProtocol_handlePubrecs(pack, *sock);
 			}
 			else if (pack->header.bits.type == PUBREL)
-				*rc = MQTTProtocol_handlePubrels(pack, *sock);
+				*rc = MQTTProtocol_handlePubrels(pack, *sock, 0);
 			else if (pack->header.bits.type == PINGRESP)
 				*rc = MQTTProtocol_handlePingresps(pack, *sock);
 			else

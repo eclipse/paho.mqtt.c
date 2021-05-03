@@ -521,9 +521,10 @@ int MQTTProtocol_handlePubrecs(void* pack, int sock)
  * Process an incoming pubrel packet for a socket
  * @param pack pointer to the publish packet
  * @param sock the socket on which the packet was received
+ * @param freeTopic If true, the topic name is freed along with the packet
  * @return completion code
  */
-int MQTTProtocol_handlePubrels(void* pack, int sock)
+int MQTTProtocol_handlePubrels(void* pack, int sock, int freeTopic)
 {
 	Pubrel* pubrel = (Pubrel*)pack;
 	Clients* client = NULL;
@@ -583,7 +584,11 @@ int MQTTProtocol_handlePubrels(void* pack, int sock)
 			if (m->MQTTVersion >= MQTTVERSION_5)
 				MQTTProperties_free(&m->properties);
 			if (m->publish)
+			{
+				if (freeTopic)
+					free(m->publish->topic);
 				ListRemove(&(state.publications), m->publish);
+			}
 			ListRemove(client->inboundMsgs, m);
 			++(state.msgs_received);
 		}

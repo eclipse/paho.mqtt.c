@@ -2653,6 +2653,18 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 #endif
 
 	FUNC_ENTRY;
+
+	/* This was reported in #1007, but I've not been able to reproduce it.  It feels like this is
+	 * covering up the issue, if it exists.  If the error message is ever seen, please consider
+	 * reporting the circumstances so that more debugging can occur.  Thanks - IGC.
+	 */
+	if (m->connect.details.conn.MQTTVersion == MQTTVERSION_DEFAULT) /* should not happen - #1007 */
+	{
+		Log(LOG_ERROR, -1, "MQTT version is 0 in MQTTAsync_connecting");
+		m->connect.details.conn.MQTTVersion = (m->c->MQTTVersion == MQTTVERSION_DEFAULT) ? MQTTVERSION_3_1_1 : m->c->MQTTVersion;
+	}
+	/* End of #1007 avoiding code */
+
 	if (m->serverURIcount > 0)
 	{
 		serverURI = m->serverURIs[m->connect.details.conn.currentURI];

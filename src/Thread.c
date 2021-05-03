@@ -82,6 +82,7 @@ void Thread_start(thread_fn fn, void* parameter)
 
 /**
  * Create a new mutex
+ * @param rc return code: 0 for success, negative otherwise
  * @return the new mutex
  */
 mutex_type Thread_create_mutex(int* rc)
@@ -92,8 +93,7 @@ mutex_type Thread_create_mutex(int* rc)
 	*rc = -1;
 	#if defined(_WIN32) || defined(_WIN64)
 		mutex = CreateMutex(NULL, 0, NULL);
-		if (mutex == NULL)
-			*rc = GetLastError();
+		*rc = (mutex == NULL) ? GetLastError() : 0;
 	#else
 		mutex = malloc(sizeof(pthread_mutex_t));
 		if (mutex)
@@ -184,6 +184,7 @@ thread_id_type Thread_getid(void)
 
 /**
  * Create a new semaphore
+ * @param rc return code: 0 for success, negative otherwise
  * @return the new condition variable
  */
 sem_type Thread_create_sem(int *rc)
@@ -199,8 +200,7 @@ sem_type Thread_create_sem(int *rc)
 		        FALSE,              /* initial state is nonsignaled */
 		        NULL                /* object name */
 		        );
-		if (sem == NULL)
-			*rc = GetLastError();
+		*rc = (sem == NULL) ? GetLastError() : 0;
 	#elif defined(OSX)
 		sem = dispatch_semaphore_create(0L);
 		*rc = (sem == NULL) ? -1 : 0;

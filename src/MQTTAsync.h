@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2021 IBM Corp. and others
+ * Copyright (c) 2009, 2021 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -169,26 +169,30 @@
  * Return code: Attempting SSL connection using non-SSL version of library
  */
 #define MQTTASYNC_SSL_NOT_SUPPORTED -13
- /**
-  * Return code: protocol prefix in serverURI should be tcp://, ssl://, ws:// or wss://
-  * The TLS enabled prefixes (ssl, wss) are only valid if the TLS version of the library
-  * is linked with.
-  */
+/**
+ * Return code: protocol prefix in serverURI should be tcp://, ssl://, ws:// or wss://
+ * The TLS enabled prefixes (ssl, wss) are only valid if the TLS version of the library
+ * is linked with.
+ */
 #define MQTTASYNC_BAD_PROTOCOL -14
- /**
-  * Return code: don't use options for another version of MQTT
-  */
- #define MQTTASYNC_BAD_MQTT_OPTION -15
- /**
-  * Return code: call not applicable to the client's version of MQTT
-  */
- #define MQTTASYNC_WRONG_MQTT_VERSION -16
- /**
-  *  Return code: 0 length will topic
-  */
- #define MQTTASYNC_0_LEN_WILL_TOPIC -17
-
-
+/**
+ * Return code: don't use options for another version of MQTT
+ */
+#define MQTTASYNC_BAD_MQTT_OPTION -15
+/**
+ * Return code: call not applicable to the client's version of MQTT
+ */
+#define MQTTASYNC_WRONG_MQTT_VERSION -16
+/**
+ *  Return code: 0 length will topic
+ */
+#define MQTTASYNC_0_LEN_WILL_TOPIC -17
+/*
+ * Return code: connect or disconnect command ignored because there is already a connect or disconnect
+ * command at the head of the list waiting to be processed. Use the onSuccess/onFailure callbacks to wait
+ * for the previous connect or disconnect command to be complete.
+ */
+#define MQTTASYNC_COMMAND_IGNORED -18
 /**
  * Default MQTT version to connect with.  Use 3.1.1 then fall back to 3.1
  */

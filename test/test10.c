@@ -937,7 +937,7 @@ int test_flow_control(struct Options options)
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test - flow control");
 
-	//MQTTClient_setTraceCallback(test_flow_control_trace_callback);
+	MQTTClient_setTraceLevel(MQTTCLIENT_TRACE_MINIMUM); /* to get the blocking trace message */
 
 	createOpts.MQTTVersion = MQTTVERSION_5;
 	rc = MQTTClient_createWithOptions(&c, options.connection, "flow_control",

@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+
+<!-- A package.xml in the root of a cmake projects allows it to be build using catkin (the ROS1 build system) -->
+
 <package format="2">
   <name>paho-mqtt-c</name>
   <version>1.3.8</version>

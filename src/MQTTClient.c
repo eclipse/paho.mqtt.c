@@ -1064,6 +1064,7 @@ static void MQTTClient_closeSession(Clients* client, enum MQTTReasonCodes reason
 	FUNC_ENTRY;
 	client->good = 0;
 	client->ping_outstanding = 0;
+	client->ping_due = 0;
 	if (client->net.socket > 0)
 	{
 		if (client->connected)

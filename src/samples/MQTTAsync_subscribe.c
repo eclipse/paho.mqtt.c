@@ -40,6 +40,9 @@ int disc_finished = 0;
 int subscribed = 0;
 int finished = 0;
 
+void onConnect(void* context, MQTTAsync_successData* response);       
+void onConnectFailure(void* context, MQTTAsync_failureData* response);
+
 void connlost(void *context, char *cause)
 {
 	MQTTAsync client = (MQTTAsync)context;
@@ -53,6 +56,9 @@ void connlost(void *context, char *cause)
 	printf("Reconnecting\n");
 	conn_opts.keepAliveInterval = 20;
 	conn_opts.cleansession = 1;
+	conn_opts.onSuccess = onConnect;       
+        conn_opts.onFailure = onConnectFailure;
+        conn_opts.context = client;            
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
 	{
 		printf("Failed to start connect, return code %d\n", rc);

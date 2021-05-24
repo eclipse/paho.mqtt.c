@@ -757,6 +757,7 @@ static int MQTTAsync_unpersistInflightMessages(Clients* c)
 }
 #endif
 
+#if 0
 /**
  * List callback function for comparing client handles and command types being CONNECT or DISCONNECT
  * @param a first MQTTAsync_queuedCommand pointer
@@ -779,6 +780,7 @@ static int clientCompareConnectCommand(void* a, void* b)
 	}
 	return 0;	//Item NOT found in the list
 }
+#endif
 
 
 int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)

@@ -29,7 +29,7 @@
  * @cond MQTTAsync_main
  * @mainpage Asynchronous MQTT client library for C
  *
- * &copy; Copyright IBM Corp. 2009, 2020 and others
+ * &copy; Copyright 2009, 2021 IBM Corp., Ian Craggs and others
  *
  * @brief An Asynchronous MQTT client library for C.
  *

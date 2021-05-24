@@ -267,7 +267,7 @@ int MQTTPersistence_restorePackets(Clients *c)
 					{
 						Publish* publish = (Publish*)pack;
 						Messages* msg = NULL;
-						const size_t keysize = MESSAGE_FILENAME_LENGTH + 1;
+						const size_t keysize = PERSISTENCE_MAX_KEY_LENGTH + 1;
 						char *key = malloc(keysize);
 						int chars = 0;
 
@@ -306,7 +306,7 @@ int MQTTPersistence_restorePackets(Clients *c)
 					{
 						/* orphaned PUBRELs ? */
 						Pubrel* pubrel = (Pubrel*)pack;
-						const size_t keysize = MESSAGE_FILENAME_LENGTH + 1;
+						const size_t keysize = PERSISTENCE_MAX_KEY_LENGTH + 1;
 						char *key = malloc(keysize);
 						int chars = 0;
 
@@ -446,7 +446,7 @@ int MQTTPersistence_putPacket(int socket, char* buf0, size_t buf0len, int count,
 	client = (Clients*)(ListFindItem(bstate->clients, &socket, clientSocketCompare)->content);
 	if (client->persistence != NULL)
 	{
-		const size_t keysize = MESSAGE_FILENAME_LENGTH + 1;
+		const size_t keysize = PERSISTENCE_MAX_KEY_LENGTH + 1;
 		if ((key = malloc(keysize)) == NULL)
 		{
 			rc = PAHO_MEMORY_ERROR;
@@ -537,7 +537,7 @@ int MQTTPersistence_remove(Clients* c, char *type, int qos, int msgId)
 	FUNC_ENTRY;
 	if (c->persistence != NULL)
 	{
-		const size_t keysize = MESSAGE_FILENAME_LENGTH + 1;
+		const size_t keysize = PERSISTENCE_MAX_KEY_LENGTH + 1;
 		char *key = malloc(keysize);
 		int chars = 0;
 

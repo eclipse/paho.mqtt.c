@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp. and others
+ * Copyright (c) 2009, 2021 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -968,7 +968,6 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 				}
 			}
 #endif
-
 			else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS)
 			{
 				if (rc != TCPSOCKET_INTERRUPTED)
@@ -1065,6 +1064,7 @@ static void MQTTClient_closeSession(Clients* client, enum MQTTReasonCodes reason
 	FUNC_ENTRY;
 	client->good = 0;
 	client->ping_outstanding = 0;
+	client->ping_due = 0;
 	if (client->net.socket > 0)
 	{
 		if (client->connected)
@@ -2647,7 +2647,7 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 					}
 				}
 #endif
-				else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS )
+				else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS && *rc != TCPSOCKET_INTERRUPTED)
 				{
 					*rc = 1;
 					break;

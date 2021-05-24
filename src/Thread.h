@@ -59,7 +59,7 @@
 	int Thread_destroy_cond(cond_type);
 #endif
 
-LIBMQTT_API thread_type Thread_start(thread_fn, void*);
+LIBMQTT_API void Thread_start(thread_fn, void*);
 
 LIBMQTT_API mutex_type Thread_create_mutex(int*);
 LIBMQTT_API int Thread_lock_mutex(mutex_type);

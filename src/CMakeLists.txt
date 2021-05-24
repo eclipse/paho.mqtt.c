@@ -65,7 +65,7 @@ ELSEIF (UNIX)
         # it or build will fail on uclibc or musl
         FIND_LIBRARY(LIB_ANL anl)
         IF(LIB_ANL)
-            SET(LIBS_SYSTEM "${LIBS_SYSTEM} ${LIB_ANL}")
+            SET(LIBS_SYSTEM "${LIBS_SYSTEM}" anl)
         ENDIF()
         ADD_DEFINITIONS(-D_GNU_SOURCE -fvisibility=hidden)
     ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Android")
@@ -306,7 +306,7 @@ ENDIF()
 INSTALL(EXPORT eclipse-paho-mqtt-cTargets
     FILE eclipse-paho-mqtt-cConfig.cmake
     NAMESPACE eclipse-paho-mqtt-c::
-    DESTINATION lib/cmake/eclipse-paho-mqtt-c)
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/eclipse-paho-mqtt-c)
 
 INCLUDE(CMakePackageConfigHelpers)
 WRITE_BASIC_PACKAGE_VERSION_FILE("eclipse-paho-mqtt-cConfigVersion.cmake"
@@ -314,7 +314,7 @@ WRITE_BASIC_PACKAGE_VERSION_FILE("eclipse-paho-mqtt-cConfigVersion.cmake"
     COMPATIBILITY SameMajorVersion)
 INSTALL(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/eclipse-paho-mqtt-cConfigVersion.cmake"
-    DESTINATION lib/cmake/eclipse-paho-mqtt-c)
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/eclipse-paho-mqtt-c)
 
 # Base64 test
 ADD_EXECUTABLE( Base64Test EXCLUDE_FROM_ALL Base64.c Base64.h )

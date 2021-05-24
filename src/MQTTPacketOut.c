@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2021 IBM Corp. and Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -150,17 +150,15 @@ void* MQTTPacket_connack(int MQTTVersion, unsigned char aHeader, char* data, siz
 		goto exit;
 	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
+	if (datalen < 2) /* enough data for connect flags and reason code? */
+	{
+		free(pack);
+		pack = NULL;
+		goto exit;
+	}
 	pack->flags.all = readChar(&curdata); /* connect flags */
 	pack->rc = readChar(&curdata); /* reason code */
-	if (MQTTVersion < MQTTVERSION_5)
-	{
-		if (datalen != 2)
-		{
-			free(pack);
-			pack = NULL;
-		}
-	}
-	else if (datalen > 2)
+	if (MQTTVersion >= MQTTVERSION_5 && datalen > 2)
 	{
 		MQTTProperties props = MQTTProperties_initializer;
 		pack->properties = props;
@@ -300,6 +298,12 @@ void* MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char* data, size
 		goto exit;
 	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
+	if (enddata - curdata < 2)  /* Is there enough data to read the msgid? */
+	{
+		free(pack);
+		pack = NULL;
+		goto exit;
+	}
 	pack->msgId = readInt(&curdata);
 	if (MQTTVersion >= MQTTVERSION_5)
 	{
@@ -336,9 +340,8 @@ void* MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char* data, size
 	{
 		if (pack->properties.array)
 			free(pack->properties.array);
-		if (pack)
-			free(pack);
 		ListFree(pack->qoss);
+		free(pack);
 		pack = NULL;
 	}
 exit:
@@ -416,6 +419,12 @@ void* MQTTPacket_unsuback(int MQTTVersion, unsigned char aHeader, char* data, si
 		goto exit;
 	pack->MQTTVersion = MQTTVersion;
 	pack->header.byte = aHeader;
+	if (enddata - curdata < 2)  /* Is there enough data? */
+	{
+		free(pack);
+		pack = NULL;
+		goto exit;
+	}
 	pack->msgId = readInt(&curdata);
 	pack->reasonCodes = NULL;
 	if (MQTTVersion >= MQTTVERSION_5)

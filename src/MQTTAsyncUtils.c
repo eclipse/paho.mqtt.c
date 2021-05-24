@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp. and others
+ * Copyright (c) 2009, 2021 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -757,8 +757,9 @@ static int MQTTAsync_unpersistInflightMessages(Clients* c)
 }
 #endif
 
+#if 0
 /**
- * List callback function for comparing client handles and command types being CONNECT or DISCONNECT 
+ * List callback function for comparing client handles and command types being CONNECT or DISCONNECT
  * @param a first MQTTAsync_queuedCommand pointer
  * @param b second MQTTAsync_queuedCommand pointer
  * @return boolean indicating whether a and b are equal
@@ -778,33 +779,51 @@ static int clientCompareConnectCommand(void* a, void* b)
 		}
 	}
 	return 0;	//Item NOT found in the list
-}								   
+}
+#endif
 
 
 int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 {
 	int rc = MQTTASYNC_SUCCESS;
+	int rc1 = 0;
 
 	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttcommand_mutex);
 	/* Don't set start time if the connect command is already in process #218 */
 	if ((command->command.type != CONNECT) || (command->client->c->connect_state == NOT_IN_PROGRESS))
 		command->command.start_time = MQTTTime_start_clock();
+
 	if (command->command.type == CONNECT ||
 		(command->command.type == DISCONNECT && command->command.details.dis.internal))
 	{
 		MQTTAsync_queuedCommand* head = NULL;
+		ListElement* current = MQTTAsync_commands->first;
 
-		if (MQTTAsync_commands->first)
-			head = (MQTTAsync_queuedCommand*)(MQTTAsync_commands->first->content);
-
-		if (head != NULL && head->client == command->client && head->command.type == command->command.type)
-			MQTTAsync_freeCommand(command); /* ignore duplicate connect or disconnect command */
-		else
-		{ 
-			ListRemoveItem(MQTTAsync_commands, command, clientCompareConnectCommand); /* remove command from the list if already there */
-			ListInsert(MQTTAsync_commands, command, command_size, MQTTAsync_commands->first); /* add to the head of the list */
+		/* Look for any connect or disconnect command belonging to this client.  All the connects/disconnects
+		 * are at the head of the list, so we don't search any further if we meet anything other than a
+		 * connect or disconnect for any client.
+		 */
+		while (current)
+		{
+			MQTTAsync_queuedCommand* cur_cmd = (MQTTAsync_queuedCommand*)(current->content);
+			if (cur_cmd->command.type != CONNECT && cur_cmd->command.type != DISCONNECT)
+				break; /* end search if we meet anything other than connect or disconnect */
+			if (cur_cmd->client == command->client)
+			{
+				head = cur_cmd;
+				break;
+			}
+			current = current->prev;
 		}
+
+		if (head)
+		{
+			MQTTAsync_freeCommand(command); /* ignore duplicate connect or disconnect command */
+			rc = MQTTASYNC_COMMAND_IGNORED;
+		}
+		else
+			ListInsert(MQTTAsync_commands, command, command_size, MQTTAsync_commands->first); /* add to the head of the list */
 	}
 	else
 	{
@@ -884,11 +903,11 @@ int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 exit:
 	MQTTAsync_unlock_mutex(mqttcommand_mutex);
 #if !defined(_WIN32) && !defined(_WIN64)
-	rc = Thread_signal_cond(send_cond);
-	if (rc != 0)
-		Log(LOG_ERROR, 0, "Error %d from signal cond", rc);
+	if ((rc1 = Thread_signal_cond(send_cond)) != 0)
+		Log(LOG_ERROR, 0, "Error %d from signal cond", rc1);
 #else
-	rc = Thread_post_sem(send_sem);
+	if ((rc1 = Thread_post_sem(send_sem)) != 0)
+		Log(LOG_ERROR, 0, "Error %d from signal cond", rc1);
 #endif
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -1369,6 +1388,9 @@ static int MQTTAsync_processCommand(void)
 			rc = PAHO_MEMORY_ERROR;
 			goto exit;
 		}
+
+		/* Initialize the mask */
+		memset(p->mask, 0, sizeof(p->mask));
 
 		p->payload = command->command.details.pub.payload;
 		p->payloadlen = command->command.details.pub.payloadlen;
@@ -2309,6 +2331,7 @@ static void MQTTAsync_closeOnly(Clients* client, enum MQTTReasonCodes reasonCode
 	FUNC_ENTRY;
 	client->good = 0;
 	client->ping_outstanding = 0;
+	client->ping_due = 0;
 	if (client->net.socket > 0)
 	{
 		MQTTProtocol_checkPendingWrites();
@@ -2650,6 +2673,18 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 #endif
 
 	FUNC_ENTRY;
+
+	/* This was reported in #1007, but I've not been able to reproduce it.  It feels like this is
+	 * covering up the issue, if it exists.  If the error message is ever seen, please consider
+	 * reporting the circumstances so that more debugging can occur.  Thanks - IGC.
+	 */
+	if (m->connect.details.conn.MQTTVersion == MQTTVERSION_DEFAULT) /* should not happen - #1007 */
+	{
+		Log(LOG_ERROR, -1, "MQTT version is 0 in MQTTAsync_connecting");
+		m->connect.details.conn.MQTTVersion = (m->c->MQTTVersion == MQTTVERSION_DEFAULT) ? MQTTVERSION_3_1_1 : m->c->MQTTVersion;
+	}
+	/* End of #1007 avoiding code */
+
 	if (m->serverURIcount > 0)
 	{
 		serverURI = m->serverURIs[m->connect.details.conn.currentURI];

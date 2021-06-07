@@ -3,7 +3,7 @@
 
 <!-- A package.xml in the root of a cmake projects allows it to be built using catkin (the ROS1 build system) -->
 
-<package format="2">
+<package format="3">
   <name>paho-mqtt-c</name>
   <version>1.3.8</version>
   <description>Eclipse Paho C Client Library for the MQTT Protocol</description>
@@ -13,7 +13,8 @@
 
   <buildtool_depend>cmake</buildtool_depend>
   <depend>libssl-dev</depend>
-  <exec_depend>catkin</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">catkin</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 2">ament_cmake</exec_depend>
 
   <export>
     <build_type>cmake</build_type>

@@ -871,6 +871,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 					if (m->c->persistence)
 						MQTTPersistence_unpersistQueueEntry(m->c, (MQTTPersistence_qEntry*)qe);
 					#endif
+					free(qe->topicName);
 					ListRemove(m->c->messageQueue, qe);
 				}
 				else

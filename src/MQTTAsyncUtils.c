@@ -198,7 +198,9 @@ void MQTTAsync_terminate(void)
 {
 	FUNC_ENTRY;
 	MQTTAsync_stop();
-	if (global_initialized)
+
+	/* don't destroy global data if a new client was created while waiting for background threads to terminate */
+	if (global_initialized && bstate->clients->count == 0)
 	{
 		ListElement* elem = NULL;
 		ListFree(bstate->clients);
@@ -2309,7 +2311,7 @@ static void MQTTAsync_stop(void)
 		{
 			int count = 0;
 			MQTTAsync_tostop = 1;
-			while ((sendThread_state != STOPPED || receiveThread_state != STOPPED) && ++count < 100)
+			while ((sendThread_state != STOPPED || receiveThread_state != STOPPED) && MQTTAsync_tostop != 0 && ++count < 100)
 			{
 				MQTTAsync_unlock_mutex(mqttasync_mutex);
 				Log(TRACE_MIN, -1, "sleeping");

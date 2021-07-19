@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp. and others
+ * Copyright (c) 2009, 2021 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -1775,6 +1775,8 @@ const char* MQTTAsync_strerror(int code)
       return "Client created for another version of MQTT";
     case MQTTASYNC_0_LEN_WILL_TOPIC:
       return "Zero length will topic on connect";
+    case MQTTASYNC_COMMAND_IGNORED:
+      return "Connect or disconnect command ignored";
   }
 
   chars = snprintf(buf, sizeof(buf), "Unknown error code %d", code);

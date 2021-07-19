@@ -1,0 +1,14 @@
+<map id="MQTTPersistence_restorePackets" name="MQTTPersistence_restorePackets">
+<area shape="rect" id="node1" title="Restores the persisted records to the outbound and inbound message queues of the client." alt="" coords="5,169,228,196"/>
+<area shape="rect" id="node2" href="$LinkedList_8c.html#abc7a28449893dfa775c2f709349968b4" title="Append an item to a list." alt="" coords="795,52,883,78"/>
+<area shape="rect" id="node4" href="$Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="362,220,406,246"/>
+<area shape="rect" id="node5" href="$MQTTPacket_8c.html#a642e5f62d21f14e81f8fc70b491d89c8" title="Free allocated storage for a publish packet." alt="" coords="298,270,470,297"/>
+<area shape="rect" id="node6" href="$MQTTPersistence_8c.html#a568adcd6ad3542d6f631a7f7a2e682e5" title="Inserts the specified message into the list, maintaining message ID order." alt="" coords="295,103,473,144"/>
+<area shape="rect" id="node9" href="$MQTTPersistence_8c.html#a6bc55eebf10d7a7f7e2849b3e33716d1" title="Returns a MQTT packet restored from persisted data." alt="" coords="276,321,492,348"/>
+<area shape="rect" id="node10" href="$MQTTPersistence_8c.html#adbf5881a3c6ce9bd7062182dfffe27fa" title="Checks whether the message IDs wrapped by looking for the largest gap between two consecutive message..." alt="" coords="283,169,485,196"/>
+<area shape="rect" id="node11" href="$MQTTProtocolClient_8c.html#afbf121be11a48fcda3e0d639bc47472b" title="Copy and store message data for retries." alt="" coords="283,52,485,78"/>
+<area shape="rect" id="node3" href="$LinkedList_8c.html#a321a3598d6979c7af3f995b77ea2cec3" title="Append an already allocated ListElement and content to a list." alt="" coords="931,81,1073,108"/>
+<area shape="rect" id="node7" href="$LinkedList_8c.html#aabca387fa4b86475bc9e4da40c3977fc" title="Insert an item to a list at a specific position." alt="" coords="800,106,877,133"/>
+<area shape="rect" id="node8" href="$LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="584,164,703,190"/>
+<area shape="rect" id="node12" href="$MQTTProtocolClient_8c.html#ac753a3ad12292a0a9c2f4343bd33817e" title="Store message data for possible retry." alt="" coords="540,52,747,78"/>
+</map>

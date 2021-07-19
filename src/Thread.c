@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2021 IBM Corp. and Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -82,6 +82,7 @@ void Thread_start(thread_fn fn, void* parameter)
 
 /**
  * Create a new mutex
+ * @param rc return code: 0 for success, negative otherwise
  * @return the new mutex
  */
 mutex_type Thread_create_mutex(int* rc)
@@ -92,8 +93,7 @@ mutex_type Thread_create_mutex(int* rc)
 	*rc = -1;
 	#if defined(_WIN32) || defined(_WIN64)
 		mutex = CreateMutex(NULL, 0, NULL);
-		if (mutex == NULL)
-			*rc = GetLastError();
+		*rc = (mutex == NULL) ? GetLastError() : 0;
 	#else
 		mutex = malloc(sizeof(pthread_mutex_t));
 		if (mutex)
@@ -184,6 +184,7 @@ thread_id_type Thread_getid(void)
 
 /**
  * Create a new semaphore
+ * @param rc return code: 0 for success, negative otherwise
  * @return the new condition variable
  */
 sem_type Thread_create_sem(int *rc)
@@ -199,14 +200,7 @@ sem_type Thread_create_sem(int *rc)
 		        FALSE,              /* initial state is nonsignaled */
 		        NULL                /* object name */
 		        );
-#if 0
-		sem = CreateSemaphore(
-				NULL,				/* default security attributes */
-				0,       	        /* initial count - non signaled */
-				1, 					/* maximum count */
-				NULL 				/* unnamed semaphore */
-		);
-#endif
+		*rc = (sem == NULL) ? GetLastError() : 0;
 	#elif defined(OSX)
 		sem = dispatch_semaphore_create(0L);
 		*rc = (sem == NULL) ? -1 : 0;

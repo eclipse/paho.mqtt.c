@@ -1,0 +1,9 @@
+<map id="MQTTAsync_connectOptions" name="MQTTAsync_connectOptions">
+<area shape="rect" id="node1" title="MQTTAsync_connectOptions defines several settings that control the way the client connects to an MQTT..." alt="" coords="251,303,444,329"/>
+<area shape="rect" id="node2" href="$structMQTTAsync__willOptions.html" title="MQTTAsync_willOptions defines the MQTT &quot;Last Will and Testament&quot; (LWT) settings for the client." alt="" coords="5,199,172,225"/>
+<area shape="rect" id="node3" href="$structMQTTAsync__nameValue.html" title="Utility structure where name/value pairs are needed." alt="" coords="196,199,363,225"/>
+<area shape="rect" id="node4" href="$structMQTTProperties.html" title="MQTT version 5 property list." alt="" coords="387,199,505,225"/>
+<area shape="rect" id="node5" href="$structMQTTProperty.html" title="Structure to hold an MQTT version 5 property of any type." alt="" coords="393,109,499,136"/>
+<area shape="rect" id="node6" href="$structMQTTLenString.html" title="The data for a length delimited string." alt="" coords="389,5,503,32"/>
+<area shape="rect" id="node7" href="$structMQTTAsync__SSLOptions.html" title="MQTTAsync_sslProperties defines the settings to establish an SSL/TLS connection using the OpenSSL lib..." alt="" coords="530,199,703,225"/>
+</map>

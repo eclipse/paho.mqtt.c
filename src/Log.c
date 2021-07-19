@@ -66,7 +66,11 @@
 
 trace_settings_type trace_settings =
 {
+#if defined(HIGH_PERFORMANCE)
+	LOG_ERROR,
+#else
 	TRACE_MINIMUM,
+#endif
 	400,
 	INVALID_LEVEL
 };
@@ -227,7 +231,7 @@ void Log_setTraceCallback(Log_traceCallback* callback)
 
 void Log_setTraceLevel(enum LOG_LEVELS level)
 {
-	if (level < LOG_ERROR) /* the lowest we can go is LOG_ERROR */
+	if (level <= LOG_ERROR) /* the lowest we can go is LOG_ERROR */
 		trace_settings.trace_level = level;
 	trace_output_level = level;
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018, 2020 Wind River Systems, Inc. and others. All Rights Reserved.
+ * Copyright (c) 2018, 2021 Wind River Systems, Inc., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -37,11 +37,6 @@
 #include "SocketBuffer.h"
 #include "StackTrace.h"
 
-#if defined(__MINGW32__)
-#define htonll __builtin_bswap64
-#define ntohll __builtin_bswap64
-#endif
-
 #if defined(__linux__)
 #  include <endian.h>
 #elif defined(__APPLE__)
@@ -57,9 +52,16 @@
 #elif defined(_WIN32) || defined(_WIN64)
 #  pragma comment(lib, "rpcrt4.lib")
 #  include <rpc.h>
-#  define strncasecmp(s1,s2,c) _strnicmp(s1,s2,c)
-#  define htonll(x) _byteswap_uint64(x)
-#  define ntohll(x) _byteswap_uint64(x)
+#  if !(defined(__MINGW32__))
+#    define strncasecmp(s1,s2,c) _strnicmp(s1,s2,c)
+#  endif
+#  if defined(__MINGW32__)
+#    define htonll __builtin_bswap64
+#    define ntohll __builtin_bswap64
+#  else
+#    define htonll(x) _byteswap_uint64(x)
+#    define ntohll(x) _byteswap_uint64(x)
+#  endif
 
 #  if BYTE_ORDER == LITTLE_ENDIAN
 #    define htobe16(x)   htons(x)
@@ -815,8 +817,11 @@ char *WebSocket_getRawSocketData(networkHandles *net, size_t bytes, size_t* actu
 		frame_buffer_data_len = 0;
 		frame_buffer_len = 0;
 		
-		free (frame_buffer);
-		frame_buffer = NULL;
+		if (frame_buffer)
+		{
+			free (frame_buffer);
+			frame_buffer = NULL;
+		}
 	}
 	// append data to the buffer
 	else if (rv != NULL && *actual_len != 0U)
@@ -1326,13 +1331,13 @@ int WebSocket_upgrade( networkHandles *net )
 		SHA1_Final( sha_hash, &ctx );
 		Base64_encode( ws_key, sizeof(ws_key), sha_hash, SHA1_DIGEST_LENGTH );
 
-		rc = TCPSOCKET_INTERRUPTED;
 		read_buf = WebSocket_getRawSocketData( net, 12u, &rcv, &rc);
 		if (rc == SOCKET_ERROR)
 			goto exit;
 
 		if ((read_buf == NULL) || rcv < 12u) {
 			Log(TRACE_PROTOCOL, 1, "WebSocket upgrade read not complete %lu", rcv );
+			rc = TCPSOCKET_INTERRUPTED;
 			goto exit;
 		}
 

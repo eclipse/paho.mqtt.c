@@ -1,0 +1,4 @@
+<map id="Connect" name="Connect">
+<area shape="rect" id="node1" title="Data for a connect packet." alt="" coords="5,95,76,121"/>
+<area shape="rect" id="node2" href="$unionHeader.html" title="Bitfields for the MQTT header byte." alt="" coords="9,5,73,32"/>
+</map>

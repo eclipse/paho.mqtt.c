@@ -428,6 +428,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 		bstate->clients = ListInitialize();
 		Socket_outInitialize();
 		Socket_setWriteCompleteCallback(MQTTClient_writeComplete);
+		Socket_setWriteAvailableCallback(MQTTProtocol_writeAvailable);
 		handles = ListInitialize();
 #if defined(OPENSSL)
 		SSLSocket_initialize();
@@ -486,6 +487,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 	m->c->outboundMsgs = ListInitialize();
 	m->c->inboundMsgs = ListInitialize();
 	m->c->messageQueue = ListInitialize();
+	m->c->outboundQueue = ListInitialize();
 	m->c->clientID = MQTTStrdup(clientId);
 	m->connect_sem = Thread_create_sem(&rc);
 	m->connack_sem = Thread_create_sem(&rc);

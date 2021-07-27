@@ -356,6 +356,7 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 		bstate->clients = ListInitialize();
 		Socket_outInitialize();
 		Socket_setWriteCompleteCallback(MQTTAsync_writeComplete);
+		Socket_setWriteAvailableCallback(MQTTProtocol_writeAvailable);
 		MQTTAsync_handles = ListInitialize();
 		MQTTAsync_commands = ListInitialize();
 #if defined(OPENSSL)
@@ -408,9 +409,10 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 	m->c->outboundMsgs = ListInitialize();
 	m->c->inboundMsgs = ListInitialize();
 	m->c->messageQueue = ListInitialize();
+	m->c->outboundQueue = ListInitialize();
 	m->c->clientID = MQTTStrdup(clientId);
 	if (m->c->context == NULL || m->c->outboundMsgs == NULL || m->c->inboundMsgs == NULL ||
-			m->c->messageQueue == NULL || m->c->clientID == NULL)
+			m->c->messageQueue == NULL || m->c->outboundQueue == NULL || m->c->clientID == NULL)
 	{
 		rc = PAHO_MEMORY_ERROR;
 		goto exit;

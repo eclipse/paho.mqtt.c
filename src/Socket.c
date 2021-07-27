@@ -861,7 +861,12 @@ void Socket_setWriteCompleteCallback(Socket_writeComplete* mywritecomplete)
 	writecomplete = mywritecomplete;
 }
 
+static Socket_writeAvailable* writeAvailable = NULL;
 
+void Socket_setWriteAvailableCallback(Socket_writeAvailable* mywriteavailable)
+{
+	writeAvailable = mywriteavailable;
+}
 
 /**
  *  Continue an outstanding write for a particular socket
@@ -1009,6 +1014,9 @@ int Socket_continueWrites(fd_set* pwset, int* sock)
 				ListNextElement(mod_s.write_pending, &curpending);
 			}
 			curpending = mod_s.write_pending->current;
+
+			if (writeAvailable && rc > 0)
+				(*writeAvailable)(socket);
 
 			if (writecomplete)
 				(*writecomplete)(socket, rc);

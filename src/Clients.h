@@ -137,6 +137,7 @@ typedef struct
 	List* inboundMsgs;              /**< inbound in flight messages */
 	List* outboundMsgs;				/**< outbound in flight messages */
 	List* messageQueue;             /**< inbound complete but undelivered messages */
+	List* outboundQueue;            /**< outbound queued messages */
 	unsigned int qentry_seqno;
 	void* phandle;                  /**< the persistence handle */
 	MQTTClient_persistence* persistence; /**< a persistence implementation */

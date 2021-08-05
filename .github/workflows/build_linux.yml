@@ -9,7 +9,8 @@ jobs:
         uses: actions/checkout@v2
       - name: Install dependencies
         run: |
-          apt-get install doxygen
+          sudo apt-get update
+          sudo apt-get install doxygen
       - name: Build
         run: |
           rm -rf build.paho

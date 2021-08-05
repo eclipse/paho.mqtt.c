@@ -1,7 +1,7 @@
 name: "Builds for Linux"
 on: push
 
-jobs: 
+jobs:
   build:
     runs-on: ubuntu-latest
     steps:
@@ -21,9 +21,9 @@ jobs:
       - name: Start test broker
         run: |
           git clone https://github.com/eclipse/paho.mqtt.testing.git
-	        cd paho.mqtt.testing/interoperability
-	        python3 startbroker.py -c localhost_testing.conf &
-	        cd ../..
+          cd paho.mqtt.testing/interoperability
+          python3 startbroker.py -c localhost_testing.conf &
+          cd ../..
       - name: Start test proxy
         run: |
           python3 test/mqttsas.py &
@@ -37,5 +37,3 @@ jobs:
       - name: package
         run: |
           cpack --verbose
-
-

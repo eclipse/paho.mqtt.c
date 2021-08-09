@@ -3,7 +3,7 @@ on: push
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -17,7 +17,7 @@ jobs:
           mkdir build.paho
           cd build.paho
           echo "pwd $PWD"
-          cmake -DPAHO_BUILD_STATIC=TRUE -DPAHO_BUILD_SHARED=TRUE -DCMAKE_BUILD_TYPE=Debug -DPAHO_WITH_SSL=TRUE -DOPENSSL_ROOT_DIR= -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE -DPAHO_HIGH_PERFORMANCE=TRUE ..
+          cmake -DPAHO_BUILD_STATIC=FALSE -DPAHO_BUILD_SHARED=TRUE -DCMAKE_BUILD_TYPE=Debug -DPAHO_WITH_SSL=TRUE -DOPENSSL_ROOT_DIR= -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE -DPAHO_HIGH_PERFORMANCE=TRUE ..
           cmake --build .
           cd ..
       - name: Start test broker

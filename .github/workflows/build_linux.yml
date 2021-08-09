@@ -19,13 +19,11 @@ jobs:
           echo "pwd $PWD"
           cmake -DPAHO_BUILD_STATIC=FALSE -DPAHO_BUILD_SHARED=TRUE -DCMAKE_BUILD_TYPE=Debug -DPAHO_WITH_SSL=TRUE -DOPENSSL_ROOT_DIR= -DPAHO_BUILD_DOCUMENTATION=FALSE -DPAHO_BUILD_SAMPLES=TRUE -DPAHO_HIGH_PERFORMANCE=TRUE ..
           cmake --build .
-          cd ..
       - name: Start test broker
         run: |
           git clone https://github.com/eclipse/paho.mqtt.testing.git
           cd paho.mqtt.testing/interoperability
           python3 startbroker.py -c localhost_testing.conf &
-          cd ../..
       - name: Start test proxy
         run: |
           python3 test/mqttsas.py &
@@ -39,4 +37,5 @@ jobs:
           sleep 3 # allow broker time to terminate and report
       - name: package
         run: |
+          cd build.paho
           cpack --verbose

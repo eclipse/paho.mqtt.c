@@ -25,6 +25,26 @@ CONFIGURE_FILE(VersionInfo.h.in
     @ONLY
     )
 
+CONFIGURE_FILE(libpaho-mqtt3c.pc.in
+   libpaho-mqtt3c.pc
+   @ONLY
+   )
+
+CONFIGURE_FILE(libpaho-mqtt3cs.pc.in
+   libpaho-mqtt3cs.pc
+   @ONLY
+   )
+
+CONFIGURE_FILE(libpaho-mqtta.pc.in
+   libpaho-mqtt3a.pc
+   @ONLY
+   )
+
+CONFIGURE_FILE(libpaho-mqtt3as.pc.in
+   libpaho-mqttas.pc
+   @ONLY
+   )
+
 SET(common_src
   MQTTTime.c
   MQTTProtocolClient.c

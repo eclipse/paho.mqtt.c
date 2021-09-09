@@ -1,16 +1,16 @@
-name: "Builds for Linux"
-on: [push, pull_request]
+name: "Builds for MacOS"
+on: [push, pull_request] 
 
 jobs:
   build:
-    runs-on: ubuntu-18.04
+    runs-on: macos-latest
     steps:
       - name: Check out code
         uses: actions/checkout@v2
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install doxygen
+          brew update
+          brew install doxygen
       - name: Build
         run: |
           rm -rf build.paho

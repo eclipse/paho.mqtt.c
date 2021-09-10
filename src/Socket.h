@@ -142,4 +142,7 @@ void Socket_clearPendingWrite(int socket);
 typedef void Socket_writeComplete(int socket, int rc);
 void Socket_setWriteCompleteCallback(Socket_writeComplete*);
 
+typedef void Socket_writeAvailable(int socket);
+void Socket_setWriteAvailableCallback(Socket_writeAvailable*);
+
 #endif /* SOCKET_H */

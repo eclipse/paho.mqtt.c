@@ -55,6 +55,8 @@ void MQTTProtocol_freeMessageList(List* msgList);
 char* MQTTStrncpy(char *dest, const char* src, size_t num);
 char* MQTTStrdup(const char* src);
 
+void MQTTProtocol_writeAvailable(int socket);
+
 //#define MQTTStrdup(src) MQTTStrncpy(malloc(strlen(src)+1), src, strlen(src)+1)
 
 #endif

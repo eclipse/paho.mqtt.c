@@ -1139,6 +1139,8 @@ void test6_onPublish(void* context, MQTTAsync_successData* response)
 		goto exit;
 	}
 
+	MyLog(LOGA_INFO, "In publish onSuccess callback, count %d", publish_count);
+
 	if (test6_payload == NULL) {
 		test6_payload = malloc(options.size);
 	}
@@ -1179,7 +1181,7 @@ void test6_onSubscribe(void* context, MQTTAsync_successData* response)
 		test6_payload = malloc(options.size);
 	}
 
-	MyLog(LOGA_DEBUG, "In subscribe onSuccess callback, context %p", context);
+	MyLog(LOGA_INFO, "In subscribe onSuccess callback, context %p", context);
 	pubmsg.payload = test6_payload;
 	pubmsg.payloadlen = options.size;
 	pubmsg.qos = 0;
@@ -1208,7 +1210,7 @@ void test6_onConnect(void* context, MQTTAsync_successData* response)
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	int rc;
 
-	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
+	MyLog(LOGA_INFO, "In connect onSuccess callback, context %p", context);
 	opts.onSuccess = test6_onSubscribe;
 	opts.onFailure = test6_onSubscribeFailure;
 	opts.context = c;

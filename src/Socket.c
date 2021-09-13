@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp. and others
+ * Copyright (c) 2009, 2021 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -51,7 +51,7 @@ int isReady(int socket, fd_set* read_set, fd_set* write_set);
 int Socket_writev(int socket, iobuf* iovecs, int count, unsigned long* bytes);
 int Socket_close_only(int socket);
 int Socket_continueWrite(int socket);
-int Socket_continueWrites(fd_set* pwset, int* socket);
+int Socket_continueWrites(fd_set* pwset, int* socket, mutex_type mutex);
 char* Socket_getaddrname(struct sockaddr* sa, int sock);
 int Socket_abortWrite(int socket);
 
@@ -284,7 +284,7 @@ int Socket_getReadySocket(int more_work, struct timeval *tp, mutex_type mutex, i
 		}
 		Log(TRACE_MAX, -1, "Return code %d from read select", *rc);
 
-		if (Socket_continueWrites(&pwset, &sock) == SOCKET_ERROR)
+		if (Socket_continueWrites(&pwset, &sock, mutex) == SOCKET_ERROR)
 		{
 			*rc = SOCKET_ERROR;
 			goto exit;
@@ -992,7 +992,7 @@ exit:
  *  @param sock in case of a socket error contains the affected socket
  *  @return completion code, 0 or SOCKET_ERROR
  */
-int Socket_continueWrites(fd_set* pwset, int* sock)
+int Socket_continueWrites(fd_set* pwset, int* sock, mutex_type mutex)
 {
 	int rc1 = 0;
 	ListElement* curpending = mod_s.write_pending->first;
@@ -1019,7 +1019,11 @@ int Socket_continueWrites(fd_set* pwset, int* sock)
 				(*writeAvailable)(socket);
 
 			if (writecomplete)
+			{
+				Thread_unlock_mutex(mutex);
 				(*writecomplete)(socket, rc);
+				Thread_lock_mutex(mutex);
+			}
 		}
 		else
 			ListNextElement(mod_s.write_pending, &curpending);

@@ -979,9 +979,9 @@ void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* command)
 static int MQTTAsync_Socket_noPendingWrites(int socket)
 {
     int rc;
-    Thread_lock_mutex(socket_mutex);
+    MQTTAsync_lock_mutex(socket_mutex);
     rc = Socket_noPendingWrites(socket);
-    Thread_unlock_mutex(socket_mutex);
+    MQTTAsync_unlock_mutex(socket_mutex);
     return rc;
 }
 
@@ -2337,7 +2337,7 @@ static void MQTTAsync_closeOnly(Clients* client, enum MQTTReasonCodes reasonCode
 		MQTTProtocol_checkPendingWrites();
 		if (client->connected && Socket_noPendingWrites(client->net.socket))
 			MQTTPacket_send_disconnect(client, reasonCode, props);
-		Thread_lock_mutex(socket_mutex);
+		MQTTAsync_lock_mutex(socket_mutex);
 		WebSocket_close(&client->net, WebSocket_CLOSE_NORMAL, NULL);
 #if defined(OPENSSL)
 		SSL_SESSION_free(client->session); /* is a no-op if session is NULL */
@@ -2349,7 +2349,7 @@ static void MQTTAsync_closeOnly(Clients* client, enum MQTTReasonCodes reasonCode
 #if defined(OPENSSL)
 		client->net.ssl = NULL;
 #endif
-		Thread_unlock_mutex(socket_mutex);
+		MQTTAsync_unlock_mutex(socket_mutex);
 	}
 	client->connected = 0;
 	client->connect_state = NOT_IN_PROGRESS;
@@ -2886,7 +2886,7 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 	{
 #endif
 		/* 0 from getReadySocket indicates no work to do, rc -1 == error */
-		*sock = Socket_getReadySocket(0, &tp,socket_mutex, &rc1);
+		*sock = Socket_getReadySocket(0, &tp, socket_mutex, &rc1);
 		*rc = rc1;
 		if (!MQTTAsync_tostop && *sock == 0 && (tp.tv_sec > 0L || tp.tv_usec > 0L))
 			MQTTAsync_sleep(100L);

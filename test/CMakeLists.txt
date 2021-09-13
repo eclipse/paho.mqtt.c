@@ -1397,6 +1397,11 @@ IF (PAHO_BUILD_STATIC)
 		COMMAND test8-static "--test_no" "7" "--connection" ${MQTT_TEST_BROKER}
 	)
 	
+	ADD_TEST(
+		NAME test8-6-blocked-acks-static
+		COMMAND test8-static "--test_no" "8" "--connection" ${MQTT_TEST_BROKER}
+	)
+	
 	SET_TESTS_PROPERTIES(
 		test8-1-basic-connect-subscribe-receive-static
 		test8-2-connect-timeout-static
@@ -1405,6 +1410,7 @@ IF (PAHO_BUILD_STATIC)
 		test8-5a-all-ha-connections-out-of-service-static
 		test8-5b-all-ha-connections-out-of-service-except-the-last-one-static
 		test8-5c-all-ha-connections-out-of-service-except-the-first-one-static
+		test8-6-blocked-acks-static
 		PROPERTIES TIMEOUT 540
 	)
 ENDIF()
@@ -1455,6 +1461,11 @@ IF (PAHO_BUILD_SHARED)
 		COMMAND test8 "--test_no" "7" "--connection" ${MQTT_TEST_BROKER}
 	)
 	
+	ADD_TEST(
+		NAME test8-6-blocked-acks
+		COMMAND test8 "--test_no" "8" "--connection" ${MQTT_TEST_BROKER}
+	)
+	
 	SET_TESTS_PROPERTIES(
 		test8-1-basic-connect-subscribe-receive
 		test8-2-connect-timeout
@@ -1463,6 +1474,7 @@ IF (PAHO_BUILD_SHARED)
 		test8-5a-all-ha-connections-out-of-service
 		test8-5b-all-ha-connections-out-of-service-except-the-last-one
 		test8-5c-all-ha-connections-out-of-service-except-the-first-one
+		test8-6-blocked-acks
 		PROPERTIES TIMEOUT 540
 	)
 ENDIF()

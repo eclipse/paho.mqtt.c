@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2020 IBM Corp. and others
+ * Copyright (c) 2012, 2021 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -1117,6 +1117,14 @@ int test6_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 }
 
 
+void test6_onPublishFailure(void* context, MQTTAsync_failureData* response)
+{
+	MyLog(LOGA_INFO, "In publish onFailure callback, context %p", context);
+	failures++;
+	test_finished = 1;
+}
+
+
 void test6_onPublish(void* context, MQTTAsync_successData* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
@@ -1142,12 +1150,21 @@ void test6_onPublish(void* context, MQTTAsync_successData* response)
 	pubmsg.retained = 0;
 
 	opts.onSuccess = test6_onPublish;
+	opts.onFailure = test6_onPublishFailure;
 	opts.context = c;
 
 	rc = MQTTAsync_sendMessage(c, "test6_big_messages", &pubmsg, &opts);
 	assert("Good rc from publish", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 exit:
 	MyLog(LOGA_DEBUG, "Leaving publish onSuccess callback, context %p", context);
+}
+
+
+void test6_onSubscribeFailure(void* context, MQTTAsync_failureData* response)
+{
+	MyLog(LOGA_INFO, "In subscribe onFailure callback, context %p", context);
+	failures++;
+	test_finished = 1;
 }
 
 
@@ -1169,10 +1186,19 @@ void test6_onSubscribe(void* context, MQTTAsync_successData* response)
 	pubmsg.retained = 0;
 
 	opts.onSuccess = test6_onPublish;
+	opts.onFailure = test6_onPublishFailure;
 	opts.context = c;
 
 	rc = MQTTAsync_sendMessage(c, "test6_big_messages", &pubmsg, &opts);
 	assert("Good rc from publish", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+}
+
+
+void test6_onConnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	MyLog(LOGA_INFO, "In connect onFailure callback, context %p", context);
+	failures++;
+	test_finished = 1;
 }
 
 
@@ -1184,6 +1210,7 @@ void test6_onConnect(void* context, MQTTAsync_successData* response)
 
 	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
 	opts.onSuccess = test6_onSubscribe;
+	opts.onFailure = test6_onSubscribeFailure;
 	opts.context = c;
 
 	rc = MQTTAsync_subscribe(c, test6_topic, 2, &opts);
@@ -1239,7 +1266,7 @@ int test6(struct Options options)
 	opts.password = "testpassword";
 
 	opts.onSuccess = test6_onConnect;
-	opts.onFailure = NULL;
+	opts.onFailure = test6_onConnectFailure;
 	opts.context = c;
 
 	MyLog(LOGA_DEBUG, "Connecting");
@@ -1266,7 +1293,7 @@ int test6(struct Options options)
 	if (rc != MQTTASYNC_SUCCESS)
 		goto exit;
 
-	while (!test6_connected)
+	while (test6_connected == 0 && test_finished == 0 && failures == 0)
 	{
 		#if defined(_WIN32)
 			Sleep(100);
@@ -1342,7 +1369,7 @@ int main(int argc, char** argv)
 	}
 	else
 	{
-		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_PROTOCOL);
+		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
 		rc = tests[options.test_no](options); /* run just the selected test */
 	}
 

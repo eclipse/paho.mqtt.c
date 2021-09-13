@@ -1399,7 +1399,7 @@ IF (PAHO_BUILD_STATIC)
 	
 	ADD_TEST(
 		NAME test8-6-blocked-acks-static
-		COMMAND test8-static "--test_no" "8" "--connection" ${MQTT_TEST_BROKER}
+		COMMAND test8-static "--test_no" "8" "--connection" ${MQTT_TEST_BROKER} "--size" "500000"
 	)
 	
 	SET_TESTS_PROPERTIES(
@@ -1463,7 +1463,7 @@ IF (PAHO_BUILD_SHARED)
 	
 	ADD_TEST(
 		NAME test8-6-blocked-acks
-		COMMAND test8 "--test_no" "8" "--connection" ${MQTT_TEST_BROKER}
+		COMMAND test8 "--test_no" "8" "--connection" ${MQTT_TEST_BROKER} "--size" "500000"
 	)
 	
 	SET_TESTS_PROPERTIES(

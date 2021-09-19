@@ -11,6 +11,7 @@
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
+ *    Keith Holman - initial implementation and documentation
  *    Sven Gambel - move WebSocket proxy support to generic proxy support
  *******************************************************************************/
 

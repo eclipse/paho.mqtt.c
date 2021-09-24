@@ -550,7 +550,8 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	FUNC_ENTRY;
 	if (net->ctx == NULL)
 	{
-#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+        
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(OPENSSL_SYS_iOS))
 		net->ctx = SSL_CTX_new(TLS_client_method());
 #else
 		int sslVersion = MQTT_SSL_VERSION_DEFAULT;
@@ -562,7 +563,11 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 		switch (sslVersion)
 		{
 		case MQTT_SSL_VERSION_DEFAULT:
+#if defined(OPENSSL_SYS_iOS)
+            net->ctx = SSL_CTX_new(TLSv1_2_client_method());
+#else
 			net->ctx = SSL_CTX_new(SSLv23_client_method()); /* SSLv23 for compatibility with SSLv2, SSLv3 and TLSv1 */
+#endif
 			break;
 #if defined(SSL_OP_NO_TLSv1) && !defined(OPENSSL_NO_TLS1)
 		case MQTT_SSL_VERSION_TLS_1_0:

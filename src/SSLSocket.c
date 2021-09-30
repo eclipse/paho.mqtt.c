@@ -708,7 +708,11 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts,
 
 	FUNC_ENTRY;
 
-	if (net->ctx != NULL || (rc = SSLSocket_createContext(net, opts)) == 1)
+    if(net->ctx == NULL) {
+        rc = SSLSocket_createContext(net, opts);
+    }
+    
+	if (net->ctx != NULL)
 	{
 		char *hostname_plus_null;
 		int i;
@@ -716,8 +720,10 @@ int SSLSocket_setSocketForSSL(networkHandles* net, MQTTClient_SSLOptions* opts,
 		SSL_CTX_set_info_callback(net->ctx, SSL_CTX_info_callback);
 		SSL_CTX_set_msg_callback(net->ctx, SSL_CTX_msg_callback);
    		if (opts->enableServerCertAuth)
+        {
 			SSL_CTX_set_verify(net->ctx, SSL_VERIFY_PEER, NULL);
-
+        }
+        
 		net->ssl = SSL_new(net->ctx);
 
 		/* Log all ciphers available to the SSL sessions (loaded in ctx) */
@@ -764,7 +770,10 @@ int SSLSocket_connect(SSL* ssl, int sock, const char* hostname, int verify, int 
 	FUNC_ENTRY;
 
 	ERR_clear_error();
-	rc = SSL_connect(ssl);
+    if(ssl != NULL)
+    {
+        rc = SSL_connect(ssl);
+    }
 	if (rc != 1)
 	{
 		int error;

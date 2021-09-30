@@ -11,7 +11,7 @@ jobs:
       env: OPENSSL_ROOT_DIR= PAHO_BUILD_STATIC=TRUE PAHO_BUILD_SHARED=TRUE PAHO_HIGH_PERFORMANCE=TRUE
     - os: osx
       compiler: clang
-      env: OPENSSL_ROOT_DIR=/usr/local/opt/openssl PAHO_BUILD_STATIC=FALSE PAHO_BUILD_SHARED=TRUE PAHO_HIGH_PERFORMANC=FALSE
+      env: OPENSSL_ROOT_DIR=/usr/local/opt/openssl PAHO_BUILD_STATIC=FALSE PAHO_BUILD_SHARED=TRUE PAHO_HIGH_PERFORMANCE=FALSE
     - os: linux
       compiler: gcc
       dist: trusty

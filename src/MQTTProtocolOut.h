@@ -16,6 +16,7 @@
  *    Ian Craggs - MQTT 3.1.1 support
  *    Ian Craggs - SNI support
  *    Ian Craggs - MQTT 5.0 support
+ *    Sven Gambel - add generic proxy support
  *******************************************************************************/
 
 #if !defined(MQTTPROTOCOLOUT_H)
@@ -32,6 +33,7 @@
 #define MQTT_DEFAULT_PORT 1883
 #define SECURE_MQTT_DEFAULT_PORT 8883
 #define WS_DEFAULT_PORT 80
+#define PROXY_DEFAULT_PORT 8080
 
 size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic, int default_port);
 void MQTTProtocol_reconnect(const char* ip_address, Clients* client);

@@ -1,5 +1,5 @@
 #*******************************************************************************
-#  Copyright (c) 2009, 2020 IBM Corp.
+#  Copyright (c) 2009, 2021 IBM Corp.
 #
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v2.0
@@ -21,7 +21,7 @@
 # Note: on OS X you should install XCode and the associated command-line tools
 
 SHELL = /bin/sh
-.PHONY: clean, mkdir, install, uninstall, html
+.PHONY: clean mkdir install install-strip uninstall html strip-options
 
 MAJOR_VERSION := $(shell cat version.major)
 MINOR_VERSION := $(shell cat version.minor)

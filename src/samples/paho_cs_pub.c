@@ -107,14 +107,14 @@ int myconnect(MQTTClient* client)
 		MQTTResponse response = MQTTResponse_initializer;
 
 		conn_opts.cleanstart = 1;
-		response = MQTTClient_connect5(client, &conn_opts, &props, &willProps);
+		response = MQTTClient_connect5(*client, &conn_opts, &props, &willProps);
 		rc = response.reasonCode;
 		MQTTResponse_free(response);
 	}
 	else
 	{
 		conn_opts.cleansession = 1;
-		rc = MQTTClient_connect(client, &conn_opts);
+		rc = MQTTClient_connect(*client, &conn_opts);
 	}
 
 	if (opts.verbose && rc == MQTTCLIENT_SUCCESS)

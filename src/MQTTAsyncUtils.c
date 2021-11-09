@@ -2255,13 +2255,17 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 				else if (pack->header.bits.type == DISCONNECT)
 				{
 					Ack* disc = (Ack*)pack;
+					int discrc = 0;
 
+					discrc = disc->rc;
 					if (m->disconnected)
 					{
 						Log(TRACE_MIN, -1, "Calling disconnected for client %s", m->c->clientID);
 						(*(m->disconnected))(m->disconnected_context, &disc->properties, disc->rc);
 					}
-					MQTTPacket_freeAck(disc);
+					rc = MQTTProtocol_handleDisconnects(pack, m->c->net.socket);
+					m->c->connected = 0; /* don't send disconnect packet back */
+					nextOrClose(m, discrc, "Received disconnect");
 				}
 			}
 		}

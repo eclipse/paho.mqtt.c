@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2021 IBM Corp., Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -439,6 +439,27 @@ int MQTTProtocol_handleUnsubacks(void* pack, int sock)
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	Log(LOG_PROTOCOL, 24, NULL, sock, client->clientID, unsuback->msgId);
 	MQTTPacket_freeUnsuback(unsuback);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+/**
+ * Process an incoming disconnect packet for a socket
+ * @param pack pointer to the disconnect packet
+ * @param sock the socket on which the packet was received
+ * @return completion code
+ */
+int MQTTProtocol_handleDisconnects(void* pack, int sock)
+{
+	Ack* disconnect = (Ack*)pack;
+	Clients* client = NULL;
+	int rc = TCPSOCKET_COMPLETE;
+
+	FUNC_ENTRY;
+	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
+	Log(LOG_PROTOCOL, 30, NULL, sock, client->clientID, disconnect->rc);
+	MQTTPacket_freeAck(disconnect);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

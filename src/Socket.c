@@ -268,14 +268,15 @@ int Socket_getReadySocket(int more_work, struct timeval *tp, mutex_type mutex, i
 
 	if (mod_s.cur_clientsds == NULL)
 	{
-		int rc1;
+		int rc1, maxfdp1_saved;
 		fd_set pwset;
 
 		memcpy((void*)&(mod_s.rset), (void*)&(mod_s.rset_saved), sizeof(mod_s.rset));
 		memcpy((void*)&(pwset), (void*)&(mod_s.pending_wset), sizeof(pwset));
 		/* Prevent performance issue by unlocking the socket_mutex while waiting for a ready socket. */
+		maxfdp1_saved = mod_s.maxfdp1;
 		Thread_unlock_mutex(mutex);
-		*rc = select(mod_s.maxfdp1, &(mod_s.rset), &pwset, NULL, &timeout);
+		*rc = select(maxfdp1_saved, &(mod_s.rset), &pwset, NULL, &timeout);
 		Thread_lock_mutex(mutex);
 		if (*rc == SOCKET_ERROR)
 		{

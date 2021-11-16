@@ -1761,11 +1761,18 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 	while (!MQTTAsync_tostop)
 	{
 		int rc;
+		int command_count = 0;
 
-		while (MQTTAsync_commands->count > 0)
+		MQTTAsync_lock_mutex(mqttcommand_mutex);
+		command_count = MQTTAsync_commands->count;
+		MQTTAsync_unlock_mutex(mqttcommand_mutex);
+		while (command_count > 0)
 		{
 			if (MQTTAsync_processCommand() == 0)
 				break;  /* no commands were processed, so go into a wait */
+			MQTTAsync_lock_mutex(mqttcommand_mutex);
+			command_count = MQTTAsync_commands->count;
+			MQTTAsync_unlock_mutex(mqttcommand_mutex);
 		}
 #if !defined(_WIN32) && !defined(_WIN64)
 		if ((rc = Thread_wait_cond(send_cond, 1)) != 0 && rc != ETIMEDOUT)
@@ -2888,10 +2895,15 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 	if ((*sock = SSLSocket_getPendingRead()) == -1)
 	{
 #endif
+		int should_stop = 0;
+
 		/* 0 from getReadySocket indicates no work to do, rc -1 == error */
 		*sock = Socket_getReadySocket(0, &tp, socket_mutex, &rc1);
 		*rc = rc1;
-		if (!MQTTAsync_tostop && *sock == 0 && (tp.tv_sec > 0L || tp.tv_usec > 0L))
+		MQTTAsync_lock_mutex(mqttasync_mutex);
+		should_stop = MQTTAsync_tostop;
+		MQTTAsync_unlock_mutex(mqttasync_mutex);
+		if (!should_stop && *sock == 0 && (tp.tv_sec > 0L || tp.tv_usec > 0L))
 			MQTTAsync_sleep(100L);
 #if defined(OPENSSL)
 	}

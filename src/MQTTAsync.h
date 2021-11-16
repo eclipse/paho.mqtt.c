@@ -421,7 +421,7 @@ typedef void MQTTAsync_connected(void* context, char* cause);
 
 /**
  * This is a callback function, which will be called when the client
- * library receives a disconnect packet.
+ * library receives a disconnect packet from the server. This applies to MQTT V5 and above only.
  *
  * <b>Note:</b> Neither MQTTAsync_create() nor MQTTAsync_destroy() should be
  * called within this callback.

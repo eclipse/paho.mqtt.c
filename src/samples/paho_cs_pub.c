@@ -52,7 +52,7 @@ struct pubsub_opts opts =
 };
 
 
-int myconnect(MQTTClient* client)
+int myconnect(MQTTClient client)
 {
 	MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;

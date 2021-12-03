@@ -2320,11 +2320,12 @@ static void MQTTAsync_stop(void)
 		{
 			int count = 0;
 			MQTTAsync_tostop = 1;
+			Socket_unblock();
 			while ((sendThread_state != STOPPED || receiveThread_state != STOPPED) && MQTTAsync_tostop != 0 && ++count < 100)
 			{
 				MQTTAsync_unlock_mutex(mqttasync_mutex);
 				Log(TRACE_MIN, -1, "sleeping");
-				MQTTAsync_sleep(100L);
+				MQTTAsync_sleep(20L);
 				MQTTAsync_lock_mutex(mqttasync_mutex);
 			}
 #if !defined(NOSTACKTRACE)

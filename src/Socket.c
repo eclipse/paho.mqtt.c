@@ -120,8 +120,10 @@ int Socket_error(char* aString, int sock)
 /**
  * Initialize the socket module
  */
-void Socket_outInitialize(void)
+int Socket_outInitialize(void)
 {
+	int rc = 0;
+
 #if defined(_WIN32) || defined(_WIN64)
 	WORD    winsockVer = 0x0202;
 	WSADATA wsd;
@@ -140,9 +142,20 @@ void Socket_outInitialize(void)
 	mod_s.cur_clientsds = NULL;
 	FD_ZERO(&(mod_s.rset));														/* Initialize the descriptor set */
 	FD_ZERO(&(mod_s.pending_wset));
-	mod_s.maxfdp1 = 0;
+
+	/* initialize pipe to unblock selects waiting to read from sockets */
+	if (pipe(mod_s.unblock_pipe) != 0) {
+		rc = PAHO_MEMORY_ERROR;
+		goto exit;
+	}
+
+	FD_SET(mod_s.unblock_pipe[0], &(mod_s.rset));
+	mod_s.maxfdp1 = mod_s.unblock_pipe[0];
 	memcpy((void*)&(mod_s.rset_saved), (void*)&(mod_s.rset), sizeof(mod_s.rset_saved));
-	FUNC_EXIT;
+
+exit:
+	FUNC_EXIT_RC(rc);
+	return rc;
 }
 
 
@@ -1098,6 +1111,15 @@ char* Socket_getpeer(int sock)
 	return Socket_getaddrname((struct sockaddr*)&sa, sock);
 }
 
+
+/**
+ *  Unblock any selects waiting for reading from sockets
+ */
+void Socket_unblock()
+{
+	if (write(mod_s.unblock_pipe[1], "", 1) != 1)
+		Log(LOG_SEVERE, -1, "Failed to write to unblock pipe");
+}
 
 #if defined(Socket_TEST)
 

@@ -428,7 +428,14 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 		#endif
 		Log_initialize((Log_nameValue*)MQTTClient_getVersionInfo());
 		bstate->clients = ListInitialize();
-		Socket_outInitialize();
+		if ((rc = Socket_outInitialize()) != 0) {
+			ListFree(bstate->clients);
+			Log_terminate();
+			#if !defined(NO_HEAP_TRACKING)
+				Heap_terminate();
+			#endif
+			goto exit;
+		}
 		Socket_setWriteCompleteCallback(MQTTClient_writeComplete);
 		Socket_setWriteAvailableCallback(MQTTProtocol_writeAvailable);
 		handles = ListInitialize();

@@ -116,10 +116,11 @@ typedef struct
 	List* connect_pending; /**< list of sockets for which a connect is pending */
 	List* write_pending; /**< list of sockets for which a write is pending */
 	fd_set pending_wset; /**< socket pending write set for select */
+	int unblock_pipe[2]; /**< pipe to allow for unblocking selects waiting for reading */
 } Sockets;
 
 
-void Socket_outInitialize(void);
+int Socket_outInitialize(void);
 void Socket_outTerminate(void);
 int Socket_getReadySocket(int more_work, struct timeval *tp, mutex_type mutex, int* rc);
 int Socket_getch(int socket, char* c);
@@ -144,5 +145,7 @@ void Socket_setWriteCompleteCallback(Socket_writeComplete*);
 
 typedef void Socket_writeAvailable(int socket);
 void Socket_setWriteAvailableCallback(Socket_writeAvailable*);
+
+void Socket_unblock();
 
 #endif /* SOCKET_H */

@@ -629,8 +629,6 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	m->connect.context = options->context;
 	m->connectTimeout = options->connectTimeout;
 
-	MQTTAsync_tostop = 0;
-
 	/* don't lock async mutex if we are being called from a callback */
 	thread_id = Thread_getid();
 	if (thread_id != sendThread_id && thread_id != receiveThread_id)
@@ -638,6 +636,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		MQTTAsync_lock_mutex(mqttasync_mutex);
 		locked = 1;
 	}
+	MQTTAsync_tostop = 0;
 	if (sendThread_state != STARTING && sendThread_state != RUNNING)
 	{
 		sendThread_state = STARTING;
@@ -1427,6 +1426,7 @@ int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens)
 
 	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttasync_mutex);
+	MQTTAsync_lock_mutex(mqttcommand_mutex);
 	*tokens = NULL;
 
 	if (m == NULL)
@@ -1440,7 +1440,7 @@ int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens)
 	{
 		MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)(current->content);
 
-		if (cmd->client == m)
+		if (cmd->client == m && cmd->command.type == PUBLISH)
 			count++;
 	}
 	if (m->c)
@@ -1461,7 +1461,7 @@ int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens)
 	{
 		MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)(current->content);
 
-		if (cmd->client == m)
+		if (cmd->client == m  && cmd->command.type == PUBLISH)
 			(*tokens)[count++] = cmd->command.token;
 	}
 
@@ -1478,6 +1478,7 @@ int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens)
 	(*tokens)[count] = -1; /* indicate end of list */
 
 exit:
+	MQTTAsync_unlock_mutex(mqttcommand_mutex);
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
 	FUNC_EXIT_RC(rc);
 	return rc;

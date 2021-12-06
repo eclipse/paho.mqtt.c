@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2021 IBM Corp., Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -21,6 +21,7 @@
  *    Ian Craggs - fix for issue #164
  *    Ian Craggs - fix for issue #179
  *    Ian Craggs - MQTT 5.0 support
+ *    Sven Gambel - add generic proxy support
  *******************************************************************************/
 
 /**
@@ -38,6 +39,7 @@
 #include "StackTrace.h"
 #include "Heap.h"
 #include "WebSocket.h"
+#include "Proxy.h"
 #include "Base64.h"
 
 extern ClientStates* bstate;
@@ -247,11 +249,11 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 			Log(TRACE_PROTOCOL, -1, "Setting https proxy auth to %s", aClient->net.https_proxy_auth);
 	}
 
-	if (!ssl && websocket && aClient->net.http_proxy) {
+	if (!ssl && aClient->net.http_proxy) {
 #else
-	if (websocket && aClient->net.http_proxy) {
+	if (aClient->net.http_proxy) {
 #endif
-		addr_len = MQTTProtocol_addressPort(aClient->net.http_proxy, &port, NULL, WS_DEFAULT_PORT);
+		addr_len = MQTTProtocol_addressPort(aClient->net.http_proxy, &port, NULL, PROXY_DEFAULT_PORT);
 #if defined(__GNUC__) && defined(__linux__)
 		if (timeout < 0)
 			rc = -1;
@@ -262,8 +264,8 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 #endif
 	}
 #if defined(OPENSSL)
-	else if (ssl && websocket && aClient->net.https_proxy) {
-		addr_len = MQTTProtocol_addressPort(aClient->net.https_proxy, &port, NULL, WS_DEFAULT_PORT);
+	else if (ssl && aClient->net.https_proxy) {
+		addr_len = MQTTProtocol_addressPort(aClient->net.https_proxy, &port, NULL, PROXY_DEFAULT_PORT);
 #if defined(__GNUC__) && defined(__linux__)
 		if (timeout < 0)
 			rc = -1;
@@ -296,9 +298,9 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 #if defined(OPENSSL)
 		if (ssl)
 		{
-			if (websocket && aClient->net.https_proxy) {
+			if (aClient->net.https_proxy) {
 				aClient->connect_state = PROXY_CONNECT_IN_PROGRESS;
-				rc = WebSocket_proxy_connect( &aClient->net, 1, ip_address);
+				rc = Proxy_connect( &aClient->net, 1, ip_address);
 			}
 			if (rc == 0 && SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts, ip_address, addr_len) == 1)
 			{
@@ -313,12 +315,12 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 			else
 				rc = SOCKET_ERROR;
 		}
-		else if (websocket && aClient->net.http_proxy) {
+		else if (aClient->net.http_proxy) {
 #else
-		if (websocket && aClient->net.http_proxy) {
+		if (aClient->net.http_proxy) {
 #endif
 			aClient->connect_state = PROXY_CONNECT_IN_PROGRESS;
-			rc = WebSocket_proxy_connect( &aClient->net, 0, ip_address);
+			rc = Proxy_connect( &aClient->net, 0, ip_address);
 		}
 		if ( websocket )
 		{
@@ -437,6 +439,27 @@ int MQTTProtocol_handleUnsubacks(void* pack, int sock)
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	Log(LOG_PROTOCOL, 24, NULL, sock, client->clientID, unsuback->msgId);
 	MQTTPacket_freeUnsuback(unsuback);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+/**
+ * Process an incoming disconnect packet for a socket
+ * @param pack pointer to the disconnect packet
+ * @param sock the socket on which the packet was received
+ * @return completion code
+ */
+int MQTTProtocol_handleDisconnects(void* pack, int sock)
+{
+	Ack* disconnect = (Ack*)pack;
+	Clients* client = NULL;
+	int rc = TCPSOCKET_COMPLETE;
+
+	FUNC_ENTRY;
+	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
+	Log(LOG_PROTOCOL, 30, NULL, sock, client->clientID, disconnect->rc);
+	MQTTPacket_freeAck(disconnect);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

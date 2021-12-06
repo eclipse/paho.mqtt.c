@@ -951,11 +951,11 @@ typedef struct
 	 */
 	const MQTTClient_nameValue* httpHeaders;
 	/**
-	 * HTTP proxy for websockets
+	 * HTTP proxy
 	 */
 	const char* httpProxy;
 	/**
-	 * HTTPS proxy for websockets
+	 * HTTPS proxy
 	 */
 	const char* httpsProxy;
 } MQTTClient_connectOptions;

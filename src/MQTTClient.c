@@ -35,6 +35,7 @@
  *    Ian Craggs - check for NULL SSL options #334
  *    Ian Craggs - allocate username/password buffers #431
  *    Ian Craggs - MQTT 5.0 support
+ *    Sven Gambel - add generic proxy support
  *******************************************************************************/
 
 /**
@@ -80,6 +81,7 @@
 
 #include "VersionInfo.h"
 #include "WebSocket.h"
+#include "Proxy.h"
 
 const char *client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
 const char *client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
@@ -360,7 +362,7 @@ static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal, 
 static int MQTTClient_disconnect_internal(MQTTClient handle, int timeout);
 static void MQTTClient_retry(void);
 static MQTTPacket* MQTTClient_cycle(int* sock, ELAPSED_TIME_TYPE timeout, int* rc);
-static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, ELAPSED_TIME_TYPE timeout);
+static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, int64_t timeout);
 /*static int pubCompare(void* a, void* b); */
 static void MQTTProtocol_checkPendingWrites(void);
 static void MQTTClient_writeComplete(int socket, int rc);
@@ -1233,9 +1235,9 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 			const char *topic;
 			int setSocketForSSLrc = 0;
 
-			if (m->websocket && m->c->net.https_proxy) {
+			if (m->c->net.https_proxy) {
 				m->c->connect_state = PROXY_CONNECT_IN_PROGRESS;
-				if ((rc = WebSocket_proxy_connect( &m->c->net, 1, serverURI)) == SOCKET_ERROR )
+				if ((rc = Proxy_connect( &m->c->net, 1, serverURI)) == SOCKET_ERROR )
 					goto exit;
 			}
 
@@ -1290,28 +1292,31 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 			}
 		}
 #endif
-		else if (m->websocket)
+		else
 		{
 			if (m->c->net.http_proxy) {
 				m->c->connect_state = PROXY_CONNECT_IN_PROGRESS;
-				if ((rc = WebSocket_proxy_connect( &m->c->net, 0, serverURI)) == SOCKET_ERROR )
+				if ((rc = Proxy_connect( &m->c->net, 0, serverURI)) == SOCKET_ERROR )
 					goto exit;
 			}
 
-			m->c->connect_state = WEBSOCKET_IN_PROGRESS;
-			if ( WebSocket_connect(&m->c->net, serverURI) == SOCKET_ERROR )
+			if (m->websocket)
 			{
-				rc = SOCKET_ERROR;
-				goto exit;
+				m->c->connect_state = WEBSOCKET_IN_PROGRESS;
+				if ( WebSocket_connect(&m->c->net, serverURI) == SOCKET_ERROR )
+				{
+					rc = SOCKET_ERROR;
+					goto exit;
+				}
 			}
-		}
-		else
-		{
-			m->c->connect_state = WAIT_FOR_CONNACK; /* TCP connect completed, in which case send the MQTT connect packet */
-			if (MQTTPacket_send_connect(m->c, MQTTVersion, connectProperties, willProperties) == SOCKET_ERROR)
+			else
 			{
-				rc = SOCKET_ERROR;
-				goto exit;
+				m->c->connect_state = WAIT_FOR_CONNACK; /* TCP connect completed, in which case send the MQTT connect packet */
+				if (MQTTPacket_send_connect(m->c, MQTTVersion, connectProperties, willProperties) == SOCKET_ERROR)
+				{
+					rc = SOCKET_ERROR;
+					goto exit;
+				}
 			}
 		}
 	}
@@ -2578,7 +2583,7 @@ static MQTTPacket* MQTTClient_cycle(int* sock, ELAPSED_TIME_TYPE timeout, int* r
 }
 
 
-static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, ELAPSED_TIME_TYPE timeout)
+static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* rc, int64_t timeout)
 {
 	MQTTPacket* pack = NULL;
 	MQTTClients* m = handle;
@@ -2673,7 +2678,7 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 					}
 				}
 			}
-			if (MQTTTime_elapsed(start) > (ELAPSED_TIME_TYPE)timeout)
+			if (MQTTTime_elapsed(start) > (int64_t)timeout)
 			{
 				pack = NULL;
 				break;

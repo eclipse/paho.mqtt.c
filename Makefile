@@ -1,5 +1,5 @@
 #*******************************************************************************
-#  Copyright (c) 2009, 2020 IBM Corp.
+#  Copyright (c) 2009, 2021 IBM Corp.
 #
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v2.0
@@ -21,7 +21,7 @@
 # Note: on OS X you should install XCode and the associated command-line tools
 
 SHELL = /bin/sh
-.PHONY: clean, mkdir, install, uninstall, html
+.PHONY: clean mkdir install install-strip uninstall html strip-options
 
 MAJOR_VERSION := $(shell cat version.major)
 MINOR_VERSION := $(shell cat version.minor)
@@ -155,18 +155,18 @@ PAHO_CS_PUB_TARGET = ${blddir}/samples/${PAHO_CS_PUB_NAME}
 PAHO_CS_SUB_TARGET = ${blddir}/samples/${PAHO_CS_SUB_NAME}
 
 #CCFLAGS_SO = -g -fPIC $(CFLAGS) -Os -Wall -fvisibility=hidden -I$(blddir_work) 
-#FLAGS_EXE = $(LDFLAGS) -I ${srcdir} -lpthread -L ${blddir}
-#FLAGS_EXES = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread -lssl -lcrypto ${END_GROUP} -L ${blddir}
+#FLAGS_EXE = $(LDFLAGS) -I ${srcdir} -pthread -L ${blddir}
+#FLAGS_EXES = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -pthread -lssl -lcrypto ${END_GROUP} -L ${blddir}
 
 CCFLAGS_SO = -g -fPIC $(CFLAGS) -D_GNU_SOURCE -Os -Wall -fvisibility=hidden -I$(blddir_work) -DPAHO_MQTT_EXPORTS=1
-FLAGS_EXE = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread ${GAI_LIB} ${END_GROUP} -L ${blddir}
-FLAGS_EXES = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -lpthread ${GAI_LIB} -lssl -lcrypto ${END_GROUP} -L ${blddir}
+FLAGS_EXE = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -pthread ${GAI_LIB} ${END_GROUP} -L ${blddir}
+FLAGS_EXES = $(LDFLAGS) -I ${srcdir} ${START_GROUP} -pthread ${GAI_LIB} -lssl -lcrypto ${END_GROUP} -L ${blddir}
 
 LDCONFIG ?= /sbin/ldconfig
-LDFLAGS_C = $(LDFLAGS) -shared -Wl,-init,$(MQTTCLIENT_INIT) $(START_GROUP) -lpthread $(GAI_LIB) $(END_GROUP)
-LDFLAGS_CS = $(LDFLAGS) -shared $(START_GROUP) -lpthread $(GAI_LIB) $(EXTRA_LIB) -lssl -lcrypto $(END_GROUP) -Wl,-init,$(MQTTCLIENT_INIT)
-LDFLAGS_A = $(LDFLAGS) -shared -Wl,-init,$(MQTTASYNC_INIT) $(START_GROUP) -lpthread $(GAI_LIB) $(END_GROUP)
-LDFLAGS_AS = $(LDFLAGS) -shared $(START_GROUP) -lpthread $(GAI_LIB) $(EXTRA_LIB) -lssl -lcrypto $(END_GROUP) -Wl,-init,$(MQTTASYNC_INIT)
+LDFLAGS_C = $(LDFLAGS) -shared -Wl,-init,$(MQTTCLIENT_INIT) $(START_GROUP) -pthread $(GAI_LIB) $(END_GROUP)
+LDFLAGS_CS = $(LDFLAGS) -shared $(START_GROUP) -pthread $(GAI_LIB) $(EXTRA_LIB) -lssl -lcrypto $(END_GROUP) -Wl,-init,$(MQTTCLIENT_INIT)
+LDFLAGS_A = $(LDFLAGS) -shared -Wl,-init,$(MQTTASYNC_INIT) $(START_GROUP) -pthread $(GAI_LIB) $(END_GROUP)
+LDFLAGS_AS = $(LDFLAGS) -shared $(START_GROUP) -pthread $(GAI_LIB) $(EXTRA_LIB) -lssl -lcrypto $(END_GROUP) -Wl,-init,$(MQTTASYNC_INIT)
 
 SED_COMMAND = sed \
     -e "s/@CLIENT_VERSION@/${release.version}/g" \

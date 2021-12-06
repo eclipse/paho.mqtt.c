@@ -1592,6 +1592,7 @@ exit:
 
 static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 {
+	MQTTAsync_checkConnect(m);
 	int was_connected = m->c->connected;
 	FUNC_ENTRY;
 
@@ -2342,6 +2343,20 @@ static void MQTTAsync_stop(void)
 	FUNC_EXIT_RC(rc);
 }
 
+int MQTTASyncSocketConnected(int sock)
+{
+	if (sock <= 0)
+		return 0;
+	struct tcp_info info;
+	int len = sizeof(info);
+	getsockopt(sock, IPPROTO_TCP, TCP_INFO, &info, (socklen_t*)&len);
+	if ((info.tcpi_state == TCP_ESTABLISHED)) {
+		return 1;
+	}
+	else {
+		return 0;
+	}
+}
 
 static void MQTTAsync_closeOnly(Clients* client, enum MQTTReasonCodes reasonCode, MQTTProperties* props)
 {
@@ -2352,7 +2367,7 @@ static void MQTTAsync_closeOnly(Clients* client, enum MQTTReasonCodes reasonCode
 	if (client->net.socket > 0)
 	{
 		MQTTProtocol_checkPendingWrites();
-		if (client->connected && Socket_noPendingWrites(client->net.socket))
+		if (client->connected && MQTTASyncSocketConnected(client->net.socket) && Socket_noPendingWrites(client->net.socket))
 			MQTTPacket_send_disconnect(client, reasonCode, props);
 		MQTTAsync_lock_mutex(socket_mutex);
 		WebSocket_close(&client->net, WebSocket_CLOSE_NORMAL, NULL);

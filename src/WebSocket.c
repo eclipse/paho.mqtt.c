@@ -452,29 +452,55 @@ int WebSocket_connect( networkHandles *net, const char *uri)
 		*headers_buf_cur = '\0';
 	}
 
+  bool is_default_port = port == WS_DEFAULT_PORT || port == 443;
+  
 	for ( i = 0; i < 2; ++i )
-	{
-		buf_len = snprintf( buf, (size_t)buf_len,
-			"GET %s HTTP/1.1\r\n"
-			"Host: %.*s:%d\r\n"
-			"Upgrade: websocket\r\n"
-			"Connection: Upgrade\r\n"
-			"Origin: %s://%.*s:%d\r\n"
-			"Sec-WebSocket-Key: %s\r\n"
-			"Sec-WebSocket-Version: 13\r\n"
-			"Sec-WebSocket-Protocol: mqtt\r\n"
-			"%s"
-			"\r\n", topic,
-			(int)hostname_len, uri, port,
+{
+    if (is_default_port) {
+      buf_len = snprintf(buf, (size_t) buf_len,
+              "GET %s HTTP/1.1\r\n"
+              "Host: %.*s\r\n"
+              "Upgrade: websocket\r\n"
+              "Connection: Upgrade\r\n"
+              "Origin: %s://%.*s:%d\r\n"
+              "Sec-WebSocket-Key: %s\r\n"
+              "Sec-WebSocket-Version: 13\r\n"
+              "Sec-WebSocket-Protocol: mqtt\r\n"
+              "%s"
+              "\r\n", topic,
+              (int) hostname_len, uri,
 #if defined(OPENSSL)
-			HTTP_PROTOCOL(net->ssl),
+              HTTP_PROTOCOL(net->ssl),
 #else
-			HTTP_PROTOCOL(0),
+              HTTP_PROTOCOL(0),
 #endif
-			
-			(int)hostname_len, uri, port,
-			net->websocket_key,
-			headers_buf ? headers_buf : "");
+
+              (int) hostname_len, uri, port,
+              net->websocket_key,
+              headers_buf ? headers_buf : "");
+    } else {
+      buf_len = snprintf(buf, (size_t) buf_len,
+              "GET %s HTTP/1.1\r\n"
+              "Host: %.*s:%d\r\n"
+              "Upgrade: websocket\r\n"
+              "Connection: Upgrade\r\n"
+              "Origin: %s://%.*s:%d\r\n"
+              "Sec-WebSocket-Key: %s\r\n"
+              "Sec-WebSocket-Version: 13\r\n"
+              "Sec-WebSocket-Protocol: mqtt\r\n"
+              "%s"
+              "\r\n", topic,
+              (int) hostname_len, uri, port,
+#if defined(OPENSSL)
+              HTTP_PROTOCOL(net->ssl),
+#else
+              HTTP_PROTOCOL(0),
+#endif
+
+              (int) hostname_len, uri, port,
+              net->websocket_key,
+              headers_buf ? headers_buf : "");
+    }
 
 		if ( i == 0 && buf_len > 0 )
 		{

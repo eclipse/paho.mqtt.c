@@ -333,7 +333,10 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 		}
 		if ( websocket )
 		{
-			rc = WebSocket_connect( &aClient->net, 0, ip_address );
+#if defined(OPENSSL)
+			rc = WebSocket_connect(&aClient->net, ssl, ip_address);
+#endif
+			rc = WebSocket_connect(&aClient->net, 0, ip_address);
 			if ( rc == TCPSOCKET_INTERRUPTED )
 				aClient->connect_state = WEBSOCKET_IN_PROGRESS; /* Websocket connect called - wait for completion */
 		}

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2021 IBM Corp., Ian Craggs
+ * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -55,11 +55,14 @@ extern ClientStates* bstate;
  */
 size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic, int default_port)
 {
-	char* colon_pos = strrchr(uri, ':'); /* reverse find to allow for ':' in IPv6 addresses */
 	char* buf = (char*)uri;
+	char* colon_pos;
 	size_t len;
+	char* topic_pos;
 
 	FUNC_ENTRY;
+	colon_pos = strrchr(uri, ':'); /* reverse find to allow for ':' in IPv6 addresses */
+
 	if (uri[0] == '[')
 	{  /* ip v6 */
 		if (colon_pos < strrchr(uri, ']'))
@@ -77,13 +80,17 @@ size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic, 
 		*port = default_port;
 	}
 
-	/* try and find topic portion */
-	if ( topic )
+	/* find any topic portion */
+	topic_pos = (char*)uri;
+	if (colon_pos)
+		topic_pos = colon_pos;
+	topic_pos = strchr(topic_pos, '/');
+	if (topic_pos)
 	{
-		const char* addr_start = uri;
-		if ( colon_pos )
-			addr_start = colon_pos;
-		*topic = strchr( addr_start, '/' );
+		if (topic)
+			*topic = topic_pos;
+		if (!colon_pos)
+			len = topic_pos - uri;
 	}
 
 	if (buf[len - 1] == ']')

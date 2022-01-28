@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2021 IBM Corp., Ian Craggs and others
+ * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -1267,7 +1267,7 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 					if (m->websocket)
 					{
 						m->c->connect_state = WEBSOCKET_IN_PROGRESS;
-						rc = WebSocket_connect(&m->c->net, serverURI);
+						rc = WebSocket_connect(&m->c->net, 1, serverURI);
 						if ( rc == SOCKET_ERROR )
 							goto exit;
 					}
@@ -1303,7 +1303,7 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 			if (m->websocket)
 			{
 				m->c->connect_state = WEBSOCKET_IN_PROGRESS;
-				if ( WebSocket_connect(&m->c->net, serverURI) == SOCKET_ERROR )
+				if ( WebSocket_connect(&m->c->net, 0, serverURI) == SOCKET_ERROR )
 				{
 					rc = SOCKET_ERROR;
 					goto exit;
@@ -1339,7 +1339,7 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 		{
 			/* wait for websocket connect */
 			m->c->connect_state = WEBSOCKET_IN_PROGRESS;
-			rc = WebSocket_connect( &m->c->net, serverURI );
+			rc = WebSocket_connect( &m->c->net, 1, serverURI);
 			if ( rc != 1 )
 			{
 				rc = SOCKET_ERROR;

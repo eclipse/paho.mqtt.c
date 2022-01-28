@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2021 IBM Corp., Ian Craggs and others
+ * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -2719,7 +2719,7 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 		else if (strncmp(URI_WSS, serverURI, strlen(URI_WSS)) == 0)
 		{
 			serverURI += strlen(URI_WSS);
-			default_port = WS_DEFAULT_PORT;
+			default_port = WSS_DEFAULT_PORT;
 		}
 #endif
 	}
@@ -2779,7 +2779,7 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 					if ( m->websocket )
 					{
 						m->c->connect_state = WEBSOCKET_IN_PROGRESS;
-						if ((rc = WebSocket_connect(&m->c->net, serverURI)) == SOCKET_ERROR )
+						if ((rc = WebSocket_connect(&m->c->net, m->ssl, serverURI)) == SOCKET_ERROR )
 							goto exit;
 					}
 					else
@@ -2815,7 +2815,7 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 			if ( m->websocket )
 			{
 				m->c->connect_state = WEBSOCKET_IN_PROGRESS;
-				if ((rc = WebSocket_connect(&m->c->net, serverURI)) == SOCKET_ERROR )
+				if ((rc = WebSocket_connect(&m->c->net, 0, serverURI)) == SOCKET_ERROR )
 					goto exit;
 			}
 			else
@@ -2846,7 +2846,7 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 		if ( m->websocket )
 		{
 			m->c->connect_state = WEBSOCKET_IN_PROGRESS;
-			if ((rc = WebSocket_connect(&m->c->net, serverURI)) == SOCKET_ERROR )
+			if ((rc = WebSocket_connect(&m->c->net, 1, serverURI)) == SOCKET_ERROR )
 				goto exit;
 		}
 		else

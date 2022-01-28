@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2021 IBM Corp., Ian Craggs
+ * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -33,6 +33,7 @@
 #define MQTT_DEFAULT_PORT 1883
 #define SECURE_MQTT_DEFAULT_PORT 8883
 #define WS_DEFAULT_PORT 80
+#define WSS_DEFAULT_PORT 443
 #define PROXY_DEFAULT_PORT 8080
 
 size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic, int default_port);

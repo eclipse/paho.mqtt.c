@@ -285,9 +285,11 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 #endif
 	else {
 #if defined(OPENSSL)
-		addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL, ssl ? SECURE_MQTT_DEFAULT_PORT : MQTT_DEFAULT_PORT);
+		addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL, ssl ?
+				(websocket ? WSS_DEFAULT_PORT : SECURE_MQTT_DEFAULT_PORT) :
+				(websocket ? WS_DEFAULT_PORT : MQTT_DEFAULT_PORT) );
 #else
-		addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL, MQTT_DEFAULT_PORT);
+		addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL, websocket ? WS_DEFAULT_PORT : MQTT_DEFAULT_PORT);
 #endif
 #if defined(__GNUC__) && defined(__linux__)
 		if (timeout < 0)
@@ -331,7 +333,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 		}
 		if ( websocket )
 		{
-			rc = WebSocket_connect( &aClient->net, ip_address );
+			rc = WebSocket_connect( &aClient->net, 0, ip_address );
 			if ( rc == TCPSOCKET_INTERRUPTED )
 				aClient->connect_state = WEBSOCKET_IN_PROGRESS; /* Websocket connect called - wait for completion */
 		}

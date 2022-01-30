@@ -934,21 +934,6 @@ void MQTTAsync_startConnectRetry(MQTTAsyncs* m)
 	}
 }
 
-void  MQTTAsync_checkConnect(MQTTAsyncs* m)
-{
-	int sock = m->c->net.socket;
-	if (sock <= 0)
-		m->c->connected = 0;
-	struct tcp_info info;
-	int len = sizeof(info);
-	getsockopt(sock, IPPROTO_TCP, TCP_INFO, &info, (socklen_t*)&len);
-	if ((info.tcpi_state == TCP_ESTABLISHED)) {
-		m->c->connected = 1;
-	}
-	else {
-		m->c->connected = 0;
-	}
-}
 void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* command)
 {
 	MQTTAsyncs* m = handle;
@@ -957,7 +942,9 @@ void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* command)
 	/* wait for all inflight message flows to finish, up to timeout */;
 	if (m->c->outboundMsgs->count == 0 || MQTTTime_elapsed(command->start_time) >= (ELAPSED_TIME_TYPE)command->details.dis.timeout)
 	{
-		MQTTAsync_checkConnect(m);
+#if defined(__linux__)
+		clientSocket_checkConnect(m->c);
+#endif
 		int was_connected = m->c->connected;
 		MQTTAsync_closeSession(m->c, command->details.dis.reasonCode, &command->properties);
 		if (command->details.dis.internal)
@@ -1592,7 +1579,9 @@ exit:
 
 static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 {
-	MQTTAsync_checkConnect(m);
+#if defined(__linux__)
+	clientSocket_checkConnect(m->c);
+#endif
 	int was_connected = m->c->connected;
 	FUNC_ENTRY;
 
@@ -2354,31 +2343,20 @@ static void MQTTAsync_stop(void)
 	FUNC_EXIT_RC(rc);
 }
 
-int MQTTASyncSocketConnected(int sock)
-{
-	if (sock <= 0)
-		return 0;
-	struct tcp_info info;
-	int len = sizeof(info);
-	getsockopt(sock, IPPROTO_TCP, TCP_INFO, &info, (socklen_t*)&len);
-	if ((info.tcpi_state == TCP_ESTABLISHED)) {
-		return 1;
-	}
-	else {
-		return 0;
-	}
-}
 
 static void MQTTAsync_closeOnly(Clients* client, enum MQTTReasonCodes reasonCode, MQTTProperties* props)
 {
 	FUNC_ENTRY;
 	client->good = 0;
 	client->ping_outstanding = 0;
-	client->ping_due = 0;
+	client->ping_due = 0;	
+#if defined(__linux__)
+	clientSocket_checkConnect(client);
+#endif
 	if (client->net.socket > 0)
 	{
 		MQTTProtocol_checkPendingWrites();
-		if (client->connected && MQTTASyncSocketConnected(client->net.socket) && Socket_noPendingWrites(client->net.socket))
+		if (client->connected &&  Socket_noPendingWrites(client->net.socket))
 			MQTTPacket_send_disconnect(client, reasonCode, props);
 		MQTTAsync_lock_mutex(socket_mutex);
 		WebSocket_close(&client->net, WebSocket_CLOSE_NORMAL, NULL);

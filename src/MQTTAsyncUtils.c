@@ -19,7 +19,6 @@
 #include <string.h>
 #if !defined(_WIN32) && !defined(_WIN64)
 	#include <sys/time.h>
-	#include <netinet/tcp.h>
 #endif
 
 #if !defined(NO_PERSISTENCE)

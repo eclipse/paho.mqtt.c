@@ -22,10 +22,12 @@
 
 
 #include "Clients.h"
-
 #include <string.h>
 #include <stdio.h>
-
+#if defined(__linux__)
+#include <netinet/tcp.h>
+#include <netinet/in.h>
+#endif
 
 /**
  * List callback function for comparing clients by clientid

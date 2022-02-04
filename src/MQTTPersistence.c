@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2022 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -431,7 +431,7 @@ void MQTTPersistence_insertInOrder(List* list, void* content, size_t size)
  * @param the MQTT version being used (>= MQTTVERSION_5 means properties included)
  * @return 0 if success, #MQTTCLIENT_PERSISTENCE_ERROR otherwise.
  */
-int MQTTPersistence_putPacket(int socket, char* buf0, size_t buf0len, int count,
+int MQTTPersistence_putPacket(SOCKET socket, char* buf0, size_t buf0len, int count,
 						char** buffers, size_t* buflens, int htype, int msgId, int scr, int MQTTVersion)
 {
 	int rc = 0;

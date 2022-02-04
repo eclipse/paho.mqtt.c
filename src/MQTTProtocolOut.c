@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs
+ * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -333,7 +333,10 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 		}
 		if ( websocket )
 		{
-			rc = WebSocket_connect( &aClient->net, 0, ip_address );
+#if defined(OPENSSL)
+			rc = WebSocket_connect(&aClient->net, ssl, ip_address);
+#endif
+			rc = WebSocket_connect(&aClient->net, 0, ip_address);
 			if ( rc == TCPSOCKET_INTERRUPTED )
 				aClient->connect_state = WEBSOCKET_IN_PROGRESS; /* Websocket connect called - wait for completion */
 		}
@@ -359,7 +362,7 @@ exit:
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePingresps(void* pack, int sock)
+int MQTTProtocol_handlePingresps(void* pack, SOCKET sock)
 {
 	Clients* client = NULL;
 	int rc = TCPSOCKET_COMPLETE;
@@ -400,7 +403,7 @@ int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss, int msgID,
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handleSubacks(void* pack, int sock)
+int MQTTProtocol_handleSubacks(void* pack, SOCKET sock)
 {
 	Suback* suback = (Suback*)pack;
 	Clients* client = NULL;
@@ -438,7 +441,7 @@ int MQTTProtocol_unsubscribe(Clients* client, List* topics, int msgID, MQTTPrope
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handleUnsubacks(void* pack, int sock)
+int MQTTProtocol_handleUnsubacks(void* pack, SOCKET sock)
 {
 	Unsuback* unsuback = (Unsuback*)pack;
 	Clients* client = NULL;
@@ -459,7 +462,7 @@ int MQTTProtocol_handleUnsubacks(void* pack, int sock)
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handleDisconnects(void* pack, int sock)
+int MQTTProtocol_handleDisconnects(void* pack, SOCKET sock)
 {
 	Ack* disconnect = (Ack*)pack;
 	Clients* client = NULL;

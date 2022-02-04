@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 IBM Corp.
+ * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -27,7 +27,7 @@
 
 typedef struct
 {
-	int socket;
+	SOCKET socket;
 	Publications* p;
 } pending_write;
 

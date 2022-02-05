@@ -154,7 +154,6 @@ void Socket_outTerminate(void)
 	FUNC_ENTRY;
 	ListFree(mod_s.connect_pending);
 	ListFree(mod_s.write_pending);
-	//ListFree(mod_s.clientsds);
 	if (mod_s.fds)
 		free(mod_s.fds);
 	if (mod_s.saved.fds)
@@ -206,7 +205,11 @@ int Socket_addSocket(SOCKET newSd)
 	}
 
 	mod_s.fds[mod_s.nfds - 1].fd = newSd;
-	mod_s.fds[mod_s.nfds - 1].events = POLLIN | POLLOUT/* | POLLNVAL*/;
+#if defined(_WIN32) || defined(_WIN64)
+	mod_s.fds[mod_s.nfds - 1].events = POLLIN | POLLOUT;
+#else
+	mod_s.fds[mod_s.nfds - 1].events = POLLIN | POLLOUT | POLLNVAL;
+#endif
 
 	/* sort the poll fds array by socket number */
 	qsort(mod_s.fds, (size_t)mod_s.nfds, sizeof(mod_s.fds[0]), cmpfds);
@@ -215,7 +218,7 @@ int Socket_addSocket(SOCKET newSd)
 	if (rc == SOCKET_ERROR)
 		Log(LOG_ERROR, -1, "addSocket: setnonblocking");
 
-	exit:
+exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -230,7 +233,7 @@ int Socket_addSocket(SOCKET newSd)
 int isReady(int index)
 {
 	int rc = 1;
-	SOCKET* socket = &mod_s.fds[index].fd;
+	SOCKET* socket = &mod_s.saved.fds[index].fd;
 
 	FUNC_ENTRY;
 
@@ -264,7 +267,7 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 
 	FUNC_ENTRY;
 	Thread_lock_mutex(mutex);
-	if (mod_s.nfds == 0)
+	if (mod_s.nfds == 0 && mod_s.saved.nfds == 0)
 		goto exit;
 
 	if (more_work)
@@ -639,10 +642,10 @@ int Socket_close_only(SOCKET socket)
  *  @param socket the socket to close
  *  @return completion code
  */
-void Socket_close(SOCKET socket)
+int Socket_close(SOCKET socket)
 {
 	struct pollfd* fd;
-	struct pollfd* last_fd = &mod_s.fds[mod_s.nfds - 1];
+	int rc = 0;
 
 	FUNC_ENTRY;
 	Socket_close_only(socket);
@@ -651,22 +654,37 @@ void Socket_close(SOCKET socket)
 	ListRemoveItem(mod_s.connect_pending, &socket, intcompare);
 	ListRemoveItem(mod_s.write_pending, &socket, intcompare);
 
-	/* find the socket in the fds structure */
 	fd = bsearch(&socket, mod_s.fds, (size_t)mod_s.nfds, sizeof(mod_s.fds[0]), cmpsockfds);
 	if (fd)
 	{
-		if (fd != last_fd)
+		struct pollfd* last_fd = &mod_s.fds[mod_s.nfds - 1];
+
+		if (--mod_s.nfds == 0)
 		{
-			/* shift array to remove the socket in question */
-			memmove(fd, fd + 1, (mod_s.fds + ((mod_s.nfds - 1) * sizeof(struct pollfd))) - fd);
+			free(mod_s.fds);
+			mod_s.fds = NULL;
 		}
-		mod_s.nfds--;
-		mod_s.fds = realloc(mod_s.fds, sizeof(mod_s.fds[0]) * mod_s.nfds);
+		else
+		{
+			if (fd != last_fd)
+			{
+				/* shift array to remove the socket in question */
+				memmove(fd, fd + 1, (mod_s.fds + (mod_s.nfds * sizeof(struct pollfd))) - fd);
+			}
+			mod_s.fds = realloc(mod_s.fds, sizeof(mod_s.fds[0]) * mod_s.nfds);
+			if (mod_s.fds == NULL)
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
+		}
 		Log(TRACE_MIN, -1, "Removed socket %d", socket);
 	}
 	else
 		Log(LOG_ERROR, -1, "Failed to remove socket %d", socket);
-	FUNC_EXIT;
+exit:
+	FUNC_EXIT_RC(rc);
+	return rc;
 }
 
 

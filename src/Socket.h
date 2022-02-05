@@ -131,7 +131,7 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 int Socket_getch(SOCKET socket, char* c);
 char *Socket_getdata(SOCKET socket, size_t bytes, size_t* actual_len, int* rc);
 int Socket_putdatas(SOCKET socket, char* buf0, size_t buf0len, PacketBuffers bufs);
-void Socket_close(SOCKET socket);
+int Socket_close(SOCKET socket);
 #if defined(__GNUC__) && defined(__linux__)
 /* able to use GNU's getaddrinfo_a to make timeouts possible */
 int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* socket, long timeout);

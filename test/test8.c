@@ -1419,7 +1419,7 @@ int main(int argc, char** argv)
 	}
 	else
 	{
-		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_MINIMUM);
 		rc = tests[options.test_no](options); /* run just the selected test */
 	}
 

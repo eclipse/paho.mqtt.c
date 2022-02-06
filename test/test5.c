@@ -2715,10 +2715,7 @@ int main(int argc, char** argv)
 	}
 	else
 	{
-		if (options.test_no == 10)
-			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_MINIMUM);
-		else
-			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_PROTOCOL);
+		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
 		rc = tests[options.test_no](options); /* run just the selected test */
 	}
 

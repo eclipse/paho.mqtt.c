@@ -242,6 +242,7 @@ void test1_onUnsubscribe(void* context, MQTTAsync_successData* response)
 	MyLog(LOGA_DEBUG, "In onUnsubscribe onSuccess callback %p", c);
 	opts.onSuccess = test1_onDisconnect;
 	opts.context = c;
+	opts.timeout = 1000;
 
 	rc = MQTTAsync_disconnect(c, &opts);
 	assert("Disconnect successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -1104,16 +1105,29 @@ char* test6_topic = "test6_topic";
 char* test6_payload = NULL;
 int test6_connected = 0;
 int test6_payloadlen = 0;
+int test6_message_count = 0;
+int test6_disconnected = 0;
+
+
+void test6_onDisconnect(void* context, MQTTAsync_successData* response)
+{
+	MyLog(LOGA_DEBUG, "In onDisconnect callback");
+	test6_disconnected = 1;
+}
+
 
 int test6_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* message)
 {
 	MQTTAsync c = (MQTTAsync)context;
-	static int message_count = 0;
 
 	MyLog(LOGA_DEBUG, "In messageArrived callback %p", c);
 
 	assert("Message size correct", message->payloadlen == test6_payloadlen,
 				 "message size was %d", message->payloadlen);
+
+	MQTTAsync_freeMessage(&message);
+	MQTTAsync_free(topicName);
+
 	return 1;
 }
 
@@ -1242,9 +1256,11 @@ int test6(struct Options options)
 {
 	MQTTAsync c, d;
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_disconnectOptions dopts = MQTTAsync_disconnectOptions_initializer;
 	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 	int rc = 0;
 	char* test_topic = "C client test8 - test6";
+	int messages_sent = 0;
 
 	failures = 0;
 	test_finished = 0;
@@ -1309,13 +1325,44 @@ int test6(struct Options options)
 	pubmsg.payloadlen = test6_payloadlen = strlen(pubmsg.payload)+1;
 	pubmsg.qos = 1;
 	pubmsg.retained = 0;
+
 	while (test_finished == 0 && failures == 0)
 	{
 		rc = MQTTAsync_sendMessage(d, test6_topic, &pubmsg, NULL);
 		assert("Good rc from publish", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 		if (rc != MQTTASYNC_SUCCESS)
 			break;
+		messages_sent++;
 
+		#if defined(_WIN32)
+			Sleep(1000);
+		#else
+			usleep(100000L);
+		#endif
+	}
+
+	dopts.onSuccess = test6_onDisconnect;
+	dopts.timeout = 1000;
+
+	dopts.context = d;
+	rc = MQTTAsync_disconnect(d, &dopts);
+	test6_disconnected = 0;
+	assert("Disconnect start successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	while (test6_disconnected == 0)
+	{
+		#if defined(_WIN32)
+			Sleep(1000);
+		#else
+			usleep(100000L);
+		#endif
+	}
+
+	dopts.context = c;
+	rc = MQTTAsync_disconnect(c, &dopts);
+	test6_disconnected = 0;
+	assert("Disconnect start successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	while (test6_disconnected == 0)
+	{
 		#if defined(_WIN32)
 			Sleep(1000);
 		#else
@@ -1338,7 +1385,7 @@ exit:
 
 void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 {
-	if (strstr(message, "onnect") && !strstr(message, "isconnect"))
+	if ((strstr(message, "onnect") && !strstr(message, "isconnect")) || level == MQTTASYNC_TRACE_ERROR)
 		printf("Trace : %d, %s\n", level, message);
 }
 
@@ -1372,10 +1419,7 @@ int main(int argc, char** argv)
 	}
 	else
 	{
-		if (options.test_no == 8)
-			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_MINIMUM);
-		else
-			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
 		rc = tests[options.test_no](options); /* run just the selected test */
 	}
 

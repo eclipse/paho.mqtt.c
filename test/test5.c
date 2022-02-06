@@ -529,6 +529,7 @@ void asyncTestOnUnsubscribe(void* context, MQTTAsync_successData* response)
 	MyLog(LOGA_DEBUG, "In asyncTestOnUnsubscribe callback, %s", tc->clientid);
 	opts.onSuccess = asyncTestOnDisconnect;
 	opts.context = tc;
+	opts.timeout = 1000;
 
 	rc = MQTTAsync_disconnect(tc->client, &opts);
 }
@@ -2294,7 +2295,7 @@ int test7(struct Options options)
 	tc.subscribed = 0;
 	tc.testFinished = 0;
 
-	opts.keepAliveInterval = 20;
+	opts.keepAliveInterval = 60;
 	opts.cleansession = 1;
 	//opts.username = "testuser";
 	//opts.password = "testpassword";
@@ -2326,7 +2327,7 @@ int test7(struct Options options)
 	if (rc != MQTTASYNC_SUCCESS)
 		goto exit;
 
-	while (test7OnUnsubscribed == 0 && test7OnPublishSuccessCount < options.message_count)
+	while (tc.testFinished == 0 && test7OnUnsubscribed == 0 && test7OnPublishSuccessCount < options.message_count)
 #if defined(_WIN32)
 		Sleep(100);
 #else
@@ -2714,7 +2715,7 @@ int main(int argc, char** argv)
 	}
 	else
 	{
-		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_PROTOCOL);
 		rc = tests[options.test_no](options); /* run just the selected test */
 	}
 

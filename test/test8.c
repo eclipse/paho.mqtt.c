@@ -525,6 +525,7 @@ void test3_onUnsubscribe(void* context, MQTTAsync_successData* response)
 	MyLog(LOGA_DEBUG, "In onUnsubscribe onSuccess callback \"%s\"", cd->clientid);
 	opts.onSuccess = test3_onDisconnect;
 	opts.context = cd;
+	opts.timeout = 1000;
 
 	rc = MQTTAsync_disconnect(cd->c, &opts);
 	assert("Disconnect successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -1371,7 +1372,7 @@ int main(int argc, char** argv)
 	}
 	else
 	{
-		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_PROTOCOL);
 		rc = tests[options.test_no](options); /* run just the selected test */
 	}
 

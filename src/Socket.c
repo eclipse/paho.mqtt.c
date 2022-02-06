@@ -237,8 +237,8 @@ int isReady(int index)
 
 	FUNC_ENTRY;
 
-	if (mod_s.saved.fds[index].revents & POLLHUP || mod_s.saved.fds[index].revents & POLLNVAL)
-		; /* signal work to be done if there is an error on the socket */
+	if ((mod_s.saved.fds[index].revents & POLLHUP) || (mod_s.saved.fds[index].revents & POLLNVAL))
+		printf("isReady error on socket %d\n", mod_s.saved.fds[index].revents); /* signal work to be done if there is an error on the socket */
 	else if  (ListFindItem(mod_s.connect_pending, socket, intcompare) &&
 			(mod_s.saved.fds[index].revents & POLLOUT))
 		ListRemoveItem(mod_s.connect_pending, socket, intcompare);

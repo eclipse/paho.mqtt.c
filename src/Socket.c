@@ -238,17 +238,7 @@ int isReady(int index)
 	FUNC_ENTRY;
 
 	if ((mod_s.saved.fds[index].revents & POLLHUP) || (mod_s.saved.fds[index].revents & POLLNVAL))
-		//; /* signal work to be done if there is an error on the socket */
-#if defined(_WIN32) || defined(_WIN64)
-	printf("isReady socket %ld POLLHUP %d POLLNVAL %d POLLIN %d POLLOUT %d\n",
-#else
-	printf("isReady socket %d POLLHUP %d POLLNVAL %d POLLIN %d POLLOUT %d\n",
-#endif
-		*socket,
-		(mod_s.saved.fds[index].revents & POLLHUP),
-		(mod_s.saved.fds[index].revents & POLLNVAL),
-		(mod_s.saved.fds[index].revents & POLLIN),
-		(mod_s.saved.fds[index].revents & POLLOUT));
+		; /* signal work to be done if there is an error on the socket */
 	else if  (ListFindItem(mod_s.connect_pending, socket, intcompare) &&
 			(mod_s.saved.fds[index].revents & POLLOUT))
 		ListRemoveItem(mod_s.connect_pending, socket, intcompare);
@@ -689,11 +679,6 @@ int Socket_close(SOCKET socket)
 			}
 		}
 		Log(TRACE_MIN, -1, "Removed socket %d", socket);
-
-		printf("Socket_close:\n");
-#if !defined(HIGH_PERFORMANCE)
-		StackTrace_printStack(stdout);
-#endif
 	}
 	else
 		Log(LOG_ERROR, -1, "Failed to remove socket %d", socket);

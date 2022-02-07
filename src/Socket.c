@@ -691,7 +691,9 @@ int Socket_close(SOCKET socket)
 		Log(TRACE_MIN, -1, "Removed socket %d", socket);
 
 		printf("Socket_close:\n");
+#if !defined(HIGH_PERFORMANCE)
 		StackTrace_printStack(stdout);
+#endif
 	}
 	else
 		Log(LOG_ERROR, -1, "Failed to remove socket %d", socket);

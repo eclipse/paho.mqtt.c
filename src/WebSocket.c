@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018, 2021 Wind River Systems, Inc., Ian Craggs and others
+ * Copyright (c) 2018, 2022 Wind River Systems, Inc., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -780,7 +780,7 @@ char *WebSocket_getRawSocketData(networkHandles *net, size_t bytes, size_t* actu
 			*actual_len = bytes;
 			rv = frame_buffer + frame_buffer_index;
 			frame_buffer_index += bytes;
-
+			*rc = (int)bytes;
 			goto exit;
 		}
 		else

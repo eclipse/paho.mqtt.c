@@ -237,6 +237,17 @@ int isReady(int index)
 
 	FUNC_ENTRY;
 
+#if defined(_WIN32) || defined(_WIN64)
+	printf("isReady socket %ld POLLHUP %d POLLNVAL %d POLLIN %d POLLOUT %d\n",
+#else
+	printf("isReady socket %d POLLHUP %d POLLNVAL %d POLLIN %d POLLOUT %d\n",
+#endif
+		*socket,
+		(mod_s.saved.fds[index].revents & POLLHUP),
+		(mod_s.saved.fds[index].revents & POLLNVAL),
+		(mod_s.saved.fds[index].revents & POLLIN),
+		(mod_s.saved.fds[index].revents & POLLOUT));
+
 	if ((mod_s.saved.fds[index].revents & POLLHUP) || (mod_s.saved.fds[index].revents & POLLNVAL))
 		; /* signal work to be done if there is an error on the socket */
 	else if  (ListFindItem(mod_s.connect_pending, socket, intcompare) &&

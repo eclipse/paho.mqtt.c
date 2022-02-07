@@ -1385,7 +1385,7 @@ exit:
 
 void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 {
-	if ((strstr(message, "onnect") && !strstr(message, "isconnect")) || level == MQTTASYNC_TRACE_ERROR)
+	//if ((strstr(message, "onnect") && !strstr(message, "isconnect")) || level == MQTTASYNC_TRACE_ERROR)
 		printf("Trace : %d, %s\n", level, message);
 }
 
@@ -1419,7 +1419,10 @@ int main(int argc, char** argv)
 	}
 	else
 	{
-		MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_MINIMUM);
+		if (options.test_no == 8)
+			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_MINIMUM);
+		else
+			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
 		rc = tests[options.test_no](options); /* run just the selected test */
 	}
 

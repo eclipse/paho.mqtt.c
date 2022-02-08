@@ -294,6 +294,12 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 		}
 		memcpy(mod_s.saved.fds, mod_s.fds, mod_s.nfds * sizeof(struct pollfd));
 
+		if (mod_s.saved.nfds == 0)
+		{
+			sock = 0;
+			goto exit; /* no work to do */
+		}
+
 		/* Prevent performance issue by unlocking the socket_mutex while waiting for a ready socket. */
 		Thread_unlock_mutex(mutex);
 		*rc = poll(mod_s.saved.fds, mod_s.saved.nfds, timeout_ms);

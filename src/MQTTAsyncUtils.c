@@ -1065,8 +1065,9 @@ void MQTTAsync_writeComplete(int socket, int rc)
 	ListElement* found = NULL;
 
 	FUNC_ENTRY;
-	/* a partial write is now complete for a socket - this will be on a publish*/
 
+	/* a partial write is now complete for a socket - this will be on a publish*/
+	MQTTAsync_lock_mutex(mqttasync_mutex);
 	MQTTProtocol_checkPendingWrites();
 
 	/* find the client using this socket */
@@ -1167,6 +1168,7 @@ void MQTTAsync_writeComplete(int socket, int rc)
 			m->pending_write = NULL;
 		} /* if pending_write */
 	}
+	MQTTAsync_unlock_mutex(mqttasync_mutex);
 	FUNC_EXIT;
 }
 

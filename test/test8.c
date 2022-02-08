@@ -1158,6 +1158,7 @@ void test6_onPublish(void* context, MQTTAsync_successData* response)
 
 	if (test6_payload == NULL) {
 		test6_payload = malloc(options.size);
+		memset(test6_payload, ' ', options.size);
 	}
 
 	MyLog(LOGA_DEBUG, "In publish onSuccess callback, context %p", context);
@@ -1170,10 +1171,12 @@ void test6_onPublish(void* context, MQTTAsync_successData* response)
 	opts.onFailure = test6_onPublishFailure;
 	opts.context = c;
 
+	MyLog(LOGA_INFO, "Calling sendMessage, count %d", publish_count);
 	rc = MQTTAsync_sendMessage(c, "test6_big_messages", &pubmsg, &opts);
+	MyLog(LOGA_INFO, "Called sendMessage, count %d rc %d", publish_count, rc);
 	assert("Good rc from publish", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 exit:
-	MyLog(LOGA_DEBUG, "Leaving publish onSuccess callback, context %p", context);
+	MyLog(LOGA_DEBUG, "Leaving publish onSuccess callback, count %d, context %p", publish_count, context);
 }
 
 

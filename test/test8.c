@@ -1194,6 +1194,7 @@ void test6_onSubscribe(void* context, MQTTAsync_successData* response)
 
 	if (test6_payload == NULL) {
 		test6_payload = malloc(options.size);
+		memset(test6_payload, ' ', options.size);
 	}
 
 	MyLog(LOGA_INFO, "In subscribe onSuccess callback, context %p", context);
@@ -1420,7 +1421,7 @@ int main(int argc, char** argv)
 	else
 	{
 		if (options.test_no == 8)
-			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
+			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_MINIMUM);
 		else
 			MQTTAsync_setTraceLevel(MQTTASYNC_TRACE_ERROR);
 		rc = tests[options.test_no](options); /* run just the selected test */

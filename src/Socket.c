@@ -675,7 +675,7 @@ int Socket_close(SOCKET socket)
 			if (fd != last_fd)
 			{
 				/* shift array to remove the socket in question */
-				memmove(fd, fd + 1, (mod_s.fds + (mod_s.nfds * sizeof(struct pollfd))) - fd);
+				memmove(fd, fd + 1, (mod_s.nfds - (fd - mod_s.fds)) * sizeof(mod_s.fds[0]));
 			}
 			mod_s.fds = realloc(mod_s.fds, sizeof(mod_s.fds[0]) * mod_s.nfds);
 			if (mod_s.fds == NULL)

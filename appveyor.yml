@@ -52,7 +52,7 @@ build_script:
 
     nmake
 
-    ctest -T test -VV -R "test8-6-blocked-acks|test5-6-multiple-connections-static|test8-3-multiple-client-objects-simultaneous-working"
+    ctest -T test -VV
 
     cd ..
 

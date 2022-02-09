@@ -1094,13 +1094,10 @@ void MQTTAsync_writeComplete(SOCKET socket, int rc)
 
 			if (cur_response) /* we found a response */
 			{
-				printf("writeComplete: cur_response\n");
 				if (command->type == PUBLISH)
 				{
-					printf("writeComplete: PUBLISH %d %d\n", rc, command->details.pub.qos);
 					if (rc == 1 && command->details.pub.qos == 0)
 					{
-						printf("writeComplete: rc 1 onSuccess %p\n", command->onSuccess);
 						if (command->onSuccess)
 						{
 							MQTTAsync_successData data;

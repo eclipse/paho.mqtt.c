@@ -1265,6 +1265,7 @@ int test6(struct Options options)
 	int rc = 0;
 	char* test_topic = "C client test8 - test6";
 	int messages_sent = 0;
+	int count = 0;
 
 	failures = 0;
 	test_finished = 0;
@@ -1349,10 +1350,10 @@ int test6(struct Options options)
 	dopts.timeout = 1000;
 
 	dopts.context = d;
-	rc = MQTTAsync_disconnect(d, &dopts);
 	test6_disconnected = 0;
+	rc = MQTTAsync_disconnect(d, &dopts);
 	assert("Disconnect start successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
-	while (test6_disconnected == 0)
+	while (test6_disconnected == 0 && ++count < 5)
 	{
 		#if defined(_WIN32)
 			Sleep(1000);
@@ -1362,10 +1363,11 @@ int test6(struct Options options)
 	}
 
 	dopts.context = c;
-	rc = MQTTAsync_disconnect(c, &dopts);
 	test6_disconnected = 0;
+	rc = MQTTAsync_disconnect(c, &dopts);
 	assert("Disconnect start successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
-	while (test6_disconnected == 0)
+	count = 0;
+	while (test6_disconnected == 0 && ++count < 5)
 	{
 		#if defined(_WIN32)
 			Sleep(1000);

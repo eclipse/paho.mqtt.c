@@ -662,14 +662,14 @@ int MQTTAsync_restoreCommands(MQTTAsyncs* client)
 					cmd->seqno = atoi(strchr(msgkeys[i], '-')+1); /* key format is tag'-'seqno */
 					/* we can just append the commands to the list as they've already been sorted */
 					ListAppend(MQTTAsync_commands, cmd, sizeof(MQTTAsync_queuedCommand));
-					if (buffer)
-						free(buffer);
 					client->command_seqno = max(client->command_seqno, cmd->seqno);
 					commands_restored++;
 					if (cmd->command.type == PUBLISH)
 						client->noBufferedMessages++;
 				}
 			}
+			if (buffer)
+				free(buffer);
 			if (msgkeys[i])
 				free(msgkeys[i]);
 			i++;
@@ -1246,11 +1246,11 @@ static int MQTTAsync_processCommand(void)
 					free(command->key);
 					command->key = NULL;
 					command = MQTTAsync_restoreCommand(buffer, buflen, MQTTVersion, command);
-					if (buffer)
-						free(buffer);
 				}
 				else
 					Log(LOG_ERROR, -1, "Error restoring command: rc %d from pget\n", rc);
+				if (buffer)
+					free(buffer);
 			}
 			MQTTAsync_unpersistCommand(command);
 		}

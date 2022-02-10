@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2022 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -886,10 +886,11 @@ int MQTTPersistence_restoreMessageQueue(Clients* c)
 				{	
 					qe->seqno = atoi(strchr(msgkeys[i], '-')+1); /* key format is tag'-'seqno */
 					MQTTPersistence_insertInSeqOrder(c->messageQueue, qe, sizeof(MQTTPersistence_qEntry));
-					free(buffer);
 					c->qentry_seqno = max(c->qentry_seqno, qe->seqno);
 					entries_restored++;
 				}
+				if (buffer)
+					free(buffer);
 			}
 			if (msgkeys[i])
 			{

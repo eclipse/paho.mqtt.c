@@ -886,10 +886,11 @@ int MQTTPersistence_restoreMessageQueue(Clients* c)
 				{	
 					qe->seqno = atoi(strchr(msgkeys[i], '-')+1); /* key format is tag'-'seqno */
 					MQTTPersistence_insertInSeqOrder(c->messageQueue, qe, sizeof(MQTTPersistence_qEntry));
-					free(buffer);
 					c->qentry_seqno = max(c->qentry_seqno, qe->seqno);
 					entries_restored++;
 				}
+				if (buffer)
+					free(buffer);
 			}
 			if (msgkeys[i])
 			{

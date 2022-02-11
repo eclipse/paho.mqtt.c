@@ -1014,7 +1014,9 @@ int SSLSocket_putdatas(SSL* ssl, SOCKET socket, char* buf0, size_t buf0len, Pack
 			SocketBuffer_pendingWrite(socket, ssl, 1, &iovec, &free, iovec.iov_len, 0);
 			*sockmem = socket;
 			ListAppend(mod_s.write_pending, sockmem, sizeof(int));
-			//FD_SET(socket, &(mod_s.pending_wset));
+#if defined(USE_SELECT)
+			FD_SET(socket, &(mod_s.pending_wset));
+#endif
 			rc = TCPSOCKET_INTERRUPTED;
 		}
 		else

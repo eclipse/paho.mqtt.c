@@ -114,6 +114,14 @@ typedef struct
 	List* connect_pending; /**< list of sockets for which a connect is pending */
 	List* write_pending; /**< list of sockets for which a write is pending */
 
+#if defined(USE_SELECT)
+	fd_set rset, /**< socket read set (see select doc) */
+		rset_saved; /**< saved socket read set */
+	int maxfdp1; /**< max descriptor used +1 (again see select doc) */
+	List* clientsds; /**< list of client socket descriptors */
+	ListElement* cur_clientsds; /**< current client socket descriptor (iterator) */
+	fd_set pending_wset; /**< socket pending write set for select */
+#else
 	unsigned int nfds;         /**< no of file descriptors for poll */
 	struct pollfd* fds;        /**< poll read file descriptors */
 
@@ -122,6 +130,7 @@ typedef struct
 		unsigned int nfds;	   /**< number of fds in the fds_saved array */
 		struct pollfd* fds;
 	} saved;
+#endif
 } Sockets;
 
 

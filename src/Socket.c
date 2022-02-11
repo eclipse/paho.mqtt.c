@@ -381,7 +381,13 @@ int Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* rc)
 		static struct timeval zero = {0L, 0L}; /* 0 seconds */
 		int rc1, maxfdp1_saved;
 		fd_set pwset;
-		struct timeval timeout_tv = {0L, timeout_ms*1000};
+		struct timeval timeout_tv = {0L, 0L};
+
+		if (timeout_ms > 0L)
+		{
+			timeout_tv.tv_sec = timeout_ms / 1000;
+			timeout_tv.tv_usec = (timeout_ms % 1000) * 1000; /* this field is microseconds! */
+		}
 
 		memcpy((void*)&(mod_s.rset), (void*)&(mod_s.rset_saved), sizeof(mod_s.rset));
 		memcpy((void*)&(pwset), (void*)&(mod_s.pending_wset), sizeof(pwset));

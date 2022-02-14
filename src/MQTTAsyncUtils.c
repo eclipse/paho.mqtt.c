@@ -1753,6 +1753,8 @@ exit:
 
 thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 {
+	int timeout = 10; /* first time in we have a small timeout.  Gets things started more quickly */
+
 	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttasync_mutex);
 	sendThread_state = RUNNING;
@@ -1775,13 +1777,13 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 			MQTTAsync_unlock_mutex(mqttcommand_mutex);
 		}
 #if !defined(_WIN32) && !defined(_WIN64)
-		if ((rc = Thread_wait_cond(send_cond, 1)) != 0 && rc != ETIMEDOUT)
+		if ((rc = Thread_wait_cond(send_cond, timeout)) != 0 && rc != ETIMEDOUT)
 			Log(LOG_ERROR, -1, "Error %d waiting for condition variable", rc);
 #else
-		if ((rc = Thread_wait_sem(send_sem, 1000)) != 0 && rc != ETIMEDOUT)
+		if ((rc = Thread_wait_sem(send_sem, timeout)) != 0 && rc != ETIMEDOUT)
 			Log(LOG_ERROR, -1, "Error %d waiting for semaphore", rc);
 #endif
-
+		timeout = 1000; /* 1 second for follow on waits */
 		MQTTAsync_checkTimeouts();
 	}
 	sendThread_state = STOPPING;

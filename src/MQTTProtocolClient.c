@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2021 IBM Corp. and Ian Craggs
+ * Copyright (c) 2009, 2022 IBM Corp. and Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -314,7 +314,7 @@ void MQTTProtocol_removePublication(Publications* p)
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePublishes(void* pack, int sock)
+int MQTTProtocol_handlePublishes(void* pack, SOCKET sock)
 {
 	Publish* publish = (Publish*)pack;
 	Clients* client = NULL;
@@ -427,7 +427,7 @@ exit:
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePubacks(void* pack, int sock)
+int MQTTProtocol_handlePubacks(void* pack, SOCKET sock)
 {
 	Puback* puback = (Puback*)pack;
 	Clients* client = NULL;
@@ -473,7 +473,7 @@ int MQTTProtocol_handlePubacks(void* pack, int sock)
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePubrecs(void* pack, int sock)
+int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock)
 {
 	Pubrec* pubrec = (Pubrec*)pack;
 	Clients* client = NULL;
@@ -542,7 +542,7 @@ int MQTTProtocol_handlePubrecs(void* pack, int sock)
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePubrels(void* pack, int sock)
+int MQTTProtocol_handlePubrels(void* pack, SOCKET sock)
 {
 	Pubrel* pubrel = (Pubrel*)pack;
 	Clients* client = NULL;
@@ -623,7 +623,7 @@ int MQTTProtocol_handlePubrels(void* pack, int sock)
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePubcomps(void* pack, int sock)
+int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock)
 {
 	Pubcomp* pubcomp = (Pubcomp*)pack;
 	Clients* client = NULL;
@@ -974,7 +974,7 @@ void MQTTProtocol_freeMessageList(List* msgList)
  * occur here are ignored.
  * @param socket the socket that is available for writing
  */
-void MQTTProtocol_writeAvailable(int socket)
+void MQTTProtocol_writeAvailable(SOCKET socket)
 {
 	Clients* client = NULL;
 	ListElement* current = NULL;

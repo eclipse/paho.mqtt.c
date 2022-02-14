@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs
+ * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs, and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -55,12 +55,12 @@ int MQTTProtocol_connect(const char* ip_address, Clients* acClients, int websock
 		MQTTProperties* connectProperties, MQTTProperties* willProperties);
 #endif
 #endif
-int MQTTProtocol_handlePingresps(void* pack, int sock);
+int MQTTProtocol_handlePingresps(void* pack, SOCKET sock);
 int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss, int msgID,
 		MQTTSubscribe_options* opts, MQTTProperties* props);
-int MQTTProtocol_handleSubacks(void* pack, int sock);
+int MQTTProtocol_handleSubacks(void* pack, SOCKET sock);
 int MQTTProtocol_unsubscribe(Clients* client, List* topics, int msgID, MQTTProperties* props);
-int MQTTProtocol_handleUnsubacks(void* pack, int sock);
-int MQTTProtocol_handleDisconnects(void* pack, int sock);
+int MQTTProtocol_handleUnsubacks(void* pack, SOCKET sock);
+int MQTTProtocol_handleDisconnects(void* pack, SOCKET sock);
 
 #endif

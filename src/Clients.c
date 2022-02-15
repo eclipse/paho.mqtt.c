@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2013 IBM Corp.
+ * Copyright (c) 2009, 2022 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -51,5 +51,5 @@ int clientSocketCompare(void* a, void* b)
 {
 	Clients* client = (Clients*)a;
 	/*printf("comparing %d with %d\n", (char*)a, (char*)b); */
-	return client->net.socket == *(int*)b;
+	return client->net.socket == *(SOCKET*)b;
 }

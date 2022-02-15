@@ -277,6 +277,7 @@ void test1_onUnsubscribe(void* context, MQTTAsync_successData* response)
 	MyLog(LOGA_DEBUG, "In onUnsubscribe onSuccess callback %p", c);
 	opts.onSuccess = test1_onDisconnect;
 	opts.context = c;
+	opts.timeout = 1000;
 
 	rc = MQTTAsync_disconnect(c, &opts);
 	assert("Disconnect successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -554,6 +555,7 @@ void test3_onUnsubscribe(void* context, MQTTAsync_successData* response)
 	MyLog(LOGA_DEBUG, "In onUnsubscribe onSuccess callback \"%s\"", cd->clientid);
 	opts.onSuccess = test3_onDisconnect;
 	opts.context = cd;
+	opts.timeout = 1000;
 
 	rc = MQTTAsync_disconnect(cd->c, &opts);
 	assert("Disconnect successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -1176,6 +1178,7 @@ void test7_onUnsubscribe(void* context, MQTTAsync_successData* response)
 	MyLog(LOGA_DEBUG, "In onUnsubscribe onSuccess callback %p", c);
 	opts.onSuccess = test7_onDisconnect;
 	opts.context = c;
+	opts.timeout = 1000;
 
 	rc = MQTTAsync_disconnect(c, &opts);
 	assert("Disconnect successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);

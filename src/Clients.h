@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2021 IBM Corp. and Ian Craggs
+ * Copyright (c) 2009, 2022 IBM Corp. and Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -24,15 +24,16 @@
 
 #include <stdint.h>
 #include "MQTTTime.h"
-#if defined(OPENSSL)
 #if defined(_WIN32) || defined(_WIN64)
 #include <winsock2.h>
 #endif
+#if defined(OPENSSL)
 #include <openssl/ssl.h>
 #endif
 #include "MQTTClient.h"
 #include "LinkedList.h"
 #include "MQTTClientPersistence.h"
+#include "Socket.h"
 
 /**
  * Stored publication data to minimize copying
@@ -77,7 +78,7 @@ typedef struct
 
 typedef struct
 {
-	int socket;
+	SOCKET socket;
 	START_TIME_TYPE lastSent;
 	START_TIME_TYPE lastReceived;
 	START_TIME_TYPE lastPing;

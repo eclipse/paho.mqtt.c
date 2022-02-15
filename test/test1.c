@@ -805,7 +805,14 @@ int test4_run(int qos)
 		}
 	}
 
-	MQTTClient_yield();  /* allow any unfinished protocol exchanges to finish */
+	/* call yield a few times until unfinished protocol exchanges are finished */
+	count = 0;
+	do
+	{
+		MQTTClient_yield();
+		rc = MQTTClient_getPendingDeliveryTokens(c, &tokens);
+		assert("getPendingDeliveryTokens rc == 0", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+	} while (tokens != NULL && ++count < 10);
 
 	rc = MQTTClient_getPendingDeliveryTokens(c, &tokens);
 	assert("getPendingDeliveryTokens rc == 0", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);

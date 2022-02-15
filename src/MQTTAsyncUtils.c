@@ -60,7 +60,7 @@ static int MQTTAsync_deliverMessage(MQTTAsyncs* m, char* topicName, size_t topic
 static int MQTTAsync_disconnect_internal(MQTTAsync handle, int timeout);
 static int cmdMessageIDCompare(void* a, void* b);
 static void MQTTAsync_retry(void);
-static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc);
+static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc);
 static int MQTTAsync_connecting(MQTTAsyncs* m);
 
 extern MQTTProtocol state; /* defined in MQTTAsync.c */
@@ -983,7 +983,7 @@ void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* command)
 /**
  * Call Socket_noPendingWrites(int socket) with protection by socket_mutex, see https://github.com/eclipse/paho.mqtt.c/issues/385
  */
-static int MQTTAsync_Socket_noPendingWrites(int socket)
+static int MQTTAsync_Socket_noPendingWrites(SOCKET socket)
 {
     int rc;
     MQTTAsync_lock_mutex(socket_mutex);
@@ -1066,7 +1066,7 @@ static void MQTTAsync_freeCommand(MQTTAsync_queuedCommand *command)
 }
 
 
-void MQTTAsync_writeComplete(int socket, int rc)
+void MQTTAsync_writeComplete(SOCKET socket, int rc)
 {
 	ListElement* found = NULL;
 
@@ -1762,6 +1762,8 @@ exit:
 
 thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 {
+	int timeout = 10; /* first time in we have a small timeout.  Gets things started more quickly */
+
 	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttasync_mutex);
 	sendThread_state = RUNNING;
@@ -1784,13 +1786,13 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 			MQTTAsync_unlock_mutex(mqttcommand_mutex);
 		}
 #if !defined(_WIN32) && !defined(_WIN64)
-		if ((rc = Thread_wait_cond(send_cond, 1)) != 0 && rc != ETIMEDOUT)
+		if ((rc = Thread_wait_cond(send_cond, timeout)) != 0 && rc != ETIMEDOUT)
 			Log(LOG_ERROR, -1, "Error %d waiting for condition variable", rc);
 #else
-		if ((rc = Thread_wait_sem(send_sem, 1000)) != 0 && rc != ETIMEDOUT)
+		if ((rc = Thread_wait_sem(send_sem, timeout)) != 0 && rc != ETIMEDOUT)
 			Log(LOG_ERROR, -1, "Error %d waiting for semaphore", rc);
 #endif
-
+		timeout = 1000; /* 1 second for follow on waits */
 		MQTTAsync_checkTimeouts();
 	}
 	sendThread_state = STOPPING;
@@ -1988,7 +1990,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 	while (!MQTTAsync_tostop)
 	{
 		int rc = SOCKET_ERROR;
-		int sock = -1;
+		SOCKET sock = -1;
 		MQTTAsyncs* m = NULL;
 		MQTTPacket* pack = NULL;
 
@@ -2891,19 +2893,12 @@ exit:
 }
 
 
-static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
+static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 {
-	struct timeval tp = {0L, 0L};
 	MQTTPacket* pack = NULL;
+	int rc1 = 0;
 
 	FUNC_ENTRY;
-	if (timeout > 0L)
-	{
-		tp.tv_sec = timeout / 1000;
-		tp.tv_usec = (timeout % 1000) * 1000; /* this field is microseconds! */
-	}
-
-	int rc1 = 0;
 #if defined(OPENSSL)
 	if ((*sock = SSLSocket_getPendingRead()) == -1)
 	{
@@ -2911,12 +2906,12 @@ static MQTTPacket* MQTTAsync_cycle(int* sock, unsigned long timeout, int* rc)
 		int should_stop = 0;
 
 		/* 0 from getReadySocket indicates no work to do, rc -1 == error */
-		*sock = Socket_getReadySocket(0, &tp, socket_mutex, &rc1);
+		*sock = Socket_getReadySocket(0, (int)timeout, socket_mutex, &rc1);
 		*rc = rc1;
 		MQTTAsync_lock_mutex(mqttasync_mutex);
 		should_stop = MQTTAsync_tostop;
 		MQTTAsync_unlock_mutex(mqttasync_mutex);
-		if (!should_stop && *sock == 0 && (tp.tv_sec > 0L || tp.tv_usec > 0L))
+		if (!should_stop && *sock == 0 && (timeout > 0L))
 			MQTTAsync_sleep(100L);
 #if defined(OPENSSL)
 	}

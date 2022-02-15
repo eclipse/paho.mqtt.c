@@ -1025,7 +1025,7 @@ IF (PAHO_WITH_SSL)
 		
 		ADD_TEST(
 			NAME test5-6-multiple-connections-static
-			COMMAND test5-static "--test_no" "9" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+			COMMAND test5-static "--test_no" "9" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt" --verbose
 		)
 		
 		ADD_TEST(
@@ -1040,7 +1040,7 @@ IF (PAHO_WITH_SSL)
 		
 		ADD_TEST(
 			NAME test5-7-ws-big-messages-static
-			COMMAND test5-static "--test_no" "10" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+			COMMAND test5-static "--test_no" "10" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt" --verbose
 		)
 		
 		ADD_TEST(
@@ -1226,7 +1226,7 @@ IF (PAHO_WITH_SSL)
 		
 		ADD_TEST(
 			NAME test5-7-ws-big-messages
-			COMMAND test5 "--test_no" "10" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+			COMMAND test5 "--test_no" "10" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt" --verbose
 		)
 		
 		ADD_TEST(
@@ -1399,7 +1399,7 @@ IF (PAHO_BUILD_STATIC)
 	
 	ADD_TEST(
 		NAME test8-6-blocked-acks-static
-		COMMAND test8-static "--test_no" "8" "--connection" ${MQTT_TEST_BROKER} "--size" "500000"
+		COMMAND test8-static "--test_no" "8" "--connection" ${MQTT_TEST_BROKER} "--size" "500000" --verbose
 	)
 	
 	SET_TESTS_PROPERTIES(
@@ -1463,7 +1463,7 @@ IF (PAHO_BUILD_SHARED)
 	
 	ADD_TEST(
 		NAME test8-6-blocked-acks
-		COMMAND test8 "--test_no" "8" "--connection" ${MQTT_TEST_BROKER} "--size" "500000"
+		COMMAND test8 "--test_no" "8" "--connection" ${MQTT_TEST_BROKER} "--size" "500000" --verbose
 	)
 	
 	SET_TESTS_PROPERTIES(

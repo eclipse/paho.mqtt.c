@@ -52,7 +52,7 @@ build_script:
 
     nmake
 
-    ctest -T test -VV
+    ctest -T test -VV -R test95-5ws-offline-buffering-max-buffered
 
     cd ..
 

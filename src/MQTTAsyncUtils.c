@@ -667,7 +667,7 @@ int MQTTAsync_restoreCommands(MQTTAsyncs* client)
 					if (cmd->command.type == PUBLISH)
 					{
 						client->noBufferedMessages++;
-						//printf("2 Number of buffered messages now %d\n", client->noBufferedMessages);
+						printf("2 Number of buffered messages now %d\n", client->noBufferedMessages);
 					}
 				}
 			}
@@ -903,7 +903,7 @@ int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size)
 			else
 			{
 				command->client->noBufferedMessages++;
-				//printf("1 Number of buffered messages now %d\n", command->client->noBufferedMessages);
+				printf("1 Number of buffered messages now %d\n", command->client->noBufferedMessages);
 			}
 		}
 	}
@@ -1233,7 +1233,7 @@ static int MQTTAsync_processCommand(void)
 		if (command->command.type == PUBLISH)
 		{
 			command->client->noBufferedMessages--;
-			//printf("-- Number of buffered messages now %d\n", command->client->noBufferedMessages);
+			printf("-- Number of buffered messages now %d\n", command->client->noBufferedMessages);
 		}
 		ListDetach(MQTTAsync_commands, command);
 #if !defined(NO_PERSISTENCE)

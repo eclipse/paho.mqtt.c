@@ -888,23 +888,26 @@ char *SSLSocket_getdata(SSL* ssl, SOCKET socket, size_t bytes, size_t* actual_le
 
 	buf = SocketBuffer_getQueuedData(socket, bytes, actual_len);
 
-	ERR_clear_error();
-	if ((*rc = SSL_read(ssl, buf + (*actual_len), (int)(bytes - (*actual_len)))) < 0)
+	if (*actual_len != bytes)
 	{
-		*rc = SSLSocket_error("SSL_read - getdata", ssl, socket, *rc, NULL, NULL);
-		if (*rc != SSL_ERROR_WANT_READ && *rc != SSL_ERROR_WANT_WRITE)
+		ERR_clear_error();
+		if ((*rc = SSL_read(ssl, buf + (*actual_len), (int)(bytes - (*actual_len)))) < 0)
+		{
+			*rc = SSLSocket_error("SSL_read - getdata", ssl, socket, *rc, NULL, NULL);
+			if (*rc != SSL_ERROR_WANT_READ && *rc != SSL_ERROR_WANT_WRITE)
+			{
+				buf = NULL;
+				goto exit;
+			}
+		}
+		else if (*rc == 0) /* rc 0 means the other end closed the socket */
 		{
 			buf = NULL;
 			goto exit;
 		}
+		else
+			*actual_len += *rc;
 	}
-	else if (*rc == 0) /* rc 0 means the other end closed the socket */
-	{
-		buf = NULL;
-		goto exit;
-	}
-	else
-		*actual_len += *rc;
 
 	if (*actual_len == bytes)
 	{

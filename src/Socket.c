@@ -879,7 +879,7 @@ int Socket_close(SOCKET socket)
 	else
 	{
 		Log(LOG_ERROR, -1, "Failed to remove socket %d", socket);
-		rc = -1;
+		rc = SOCKET_ERROR;
 		goto exit;
 	}
 	if (socket + 1 >= mod_s.maxfdp1)
@@ -956,7 +956,7 @@ exit:
  *  @param port the TCP port
  *  @param sock returns the new socket
  *  @param timeout the timeout in milliseconds
- *  @return completion code
+ *  @return completion code 0=good, SOCKET_ERROR=fail
  */
 #if defined(__GNUC__) && defined(__linux__)
 int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock, long timeout)
@@ -980,7 +980,7 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 	struct addrinfo hints = {0, AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP, 0, NULL, NULL, NULL};
 
 	FUNC_ENTRY;
-	*sock = -1;
+	*sock = SOCKET_ERROR;
 	memset(&address6, '\0', sizeof(address6));
 
 	if (addr[0] == '[')
@@ -1034,7 +1034,7 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 		}
 
 		if (res == NULL)
-			rc = -1;
+			rc = SOCKET_ERROR;
 		else
 #if defined(AF_INET6)
 		if (res->ai_family == AF_INET6)
@@ -1053,12 +1053,15 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 			address.sin_addr = ((struct sockaddr_in*)(res->ai_addr))->sin_addr;
 		}
 		else
-			rc = -1;
+			rc = SOCKET_ERROR;
 
 		freeaddrinfo(result);
 	}
 	else
-	  	Log(LOG_ERROR, -1, "getaddrinfo failed for addr %s with rc %d", addr_mem, rc);
+	{
+		Log(LOG_ERROR, -1, "getaddrinfo failed for addr %s with rc %d", addr_mem, rc);
+		rc = SOCKET_ERROR;
+	}
 
 	if (rc != 0)
 		Log(LOG_ERROR, -1, "%s is not a valid IP address", addr_mem);
@@ -1126,7 +1129,7 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
             if (rc != 0 && (rc != EINPROGRESS) && (rc != EWOULDBLOCK))
             {
             	Socket_close(*sock); /* close socket and remove from our list of sockets */
-                *sock = -1; /* as initialized before */
+                *sock = SOCKET_ERROR; /* as initialized before */
             }
 		}
 	}

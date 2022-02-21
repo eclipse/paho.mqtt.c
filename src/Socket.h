@@ -160,4 +160,8 @@ void Socket_setWriteCompleteCallback(Socket_writeComplete*);
 typedef void Socket_writeAvailable(SOCKET socket);
 void Socket_setWriteAvailableCallback(Socket_writeAvailable*);
 
+#if defined(__linux__)
+int   clientSocket_checkConnect(int socket);
+#endif 
+
 #endif /* SOCKET_H */

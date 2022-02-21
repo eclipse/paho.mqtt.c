@@ -942,9 +942,6 @@ void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* command)
 	/* wait for all inflight message flows to finish, up to timeout */;
 	if (m->c->outboundMsgs->count == 0 || MQTTTime_elapsed(command->start_time) >= (ELAPSED_TIME_TYPE)command->details.dis.timeout)
 	{
-#if defined(__linux__)
-		clientSocket_checkConnect(m->c);
-#endif
 		int was_connected = m->c->connected;
 		MQTTAsync_closeSession(m->c, command->details.dis.reasonCode, &command->properties);
 		if (command->details.dis.internal)
@@ -1584,9 +1581,6 @@ exit:
 
 static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 {
-#if defined(__linux__)
-	clientSocket_checkConnect(m->c);
-#endif
 	int was_connected = m->c->connected;
 	FUNC_ENTRY;
 
@@ -2357,9 +2351,6 @@ static void MQTTAsync_closeOnly(Clients* client, enum MQTTReasonCodes reasonCode
 	client->good = 0;
 	client->ping_outstanding = 0;
 	client->ping_due = 0;	
-#if defined(__linux__)
-	clientSocket_checkConnect(client);
-#endif
 	if (client->net.socket > 0)
 	{
 		MQTTProtocol_checkPendingWrites();
@@ -2927,6 +2918,9 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 			m = (MQTTAsync)(MQTTAsync_handles->current->content);
 		if (m != NULL)
 		{
+#if defined(__linux__)
+		m->connected=	clientSocket_checkConnect(m->c->net.socket);
+#endif
 			Log(TRACE_MINIMUM, -1, "m->c->connect_state = %d", m->c->connect_state);
 			if (m->c->connect_state == TCP_IN_PROGRESS || m->c->connect_state == SSL_IN_PROGRESS || m->c->connect_state == WEBSOCKET_IN_PROGRESS)
 				*rc = MQTTAsync_connecting(m);

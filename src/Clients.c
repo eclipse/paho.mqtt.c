@@ -24,10 +24,6 @@
 #include "Clients.h"
 #include <string.h>
 #include <stdio.h>
-#if defined(__linux__)
-#include <netinet/tcp.h>
-#include <netinet/in.h>
-#endif
 
 /**
  * List callback function for comparing clients by clientid
@@ -56,24 +52,3 @@ int clientSocketCompare(void* a, void* b)
 	return client->net.socket == *(SOCKET*)b;
 }
 
-#if defined(__linux__)
-/**
- * Check client's  tcp state and set client's connected  , it linux only!
- * @param Clients
- */
-void  clientSocket_checkConnect(Clients* c)
-{
-	int sock = c->net.socket;
-	if (sock <= 0)
-		c->connected = 0;
-	struct tcp_info info;
-	int len = sizeof(info);
-	getsockopt(sock, IPPROTO_TCP, TCP_INFO, &info, (socklen_t*)&len);
-	if ((info.tcpi_state == TCP_ESTABLISHED)) {
-		c->connected = 1;
-	}
-	else {
-		c->connected = 0;
-	}
-}
-#endif

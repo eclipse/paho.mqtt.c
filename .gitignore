@@ -7,3 +7,5 @@
 /.vs
 /out/build/x64-Debug
 /out/build
+/src/.vs
+/src/out/build

@@ -43,7 +43,10 @@
 #include <ctype.h>
 
 #include "Heap.h"
-
+#if defined(__linux__)
+#include <netinet/tcp.h>
+#include <netinet/in.h>
+#endif
 #if defined(USE_SELECT)
 int isReady(int socket, fd_set* read_set, fd_set* write_set);
 int Socket_continueWrites(fd_set* pwset, int* socket, mutex_type mutex);
@@ -1407,6 +1410,28 @@ char* Socket_getpeer(SOCKET sock)
 	return Socket_getaddrname((struct sockaddr*)&sa, sock);
 }
 
+#if defined(__linux__)
+/**
+ * Check client's  tcp state and set client's connected  , it linux only!
+ * @param Clients
+ */
+int   clientSocket_checkConnect(int socket)
+{
+	int  connected = -1;
+	if (socket <= 0)
+		connected = 0;
+	struct tcp_info info;
+	int len = sizeof(info);
+	getsockopt(socket, IPPROTO_TCP, TCP_INFO, &info, (socklen_t*)&len);
+	if ((info.tcpi_state == TCP_ESTABLISHED)) {
+		connected = 1;
+	}
+	else {
+		connected = 0;
+	}
+	return connected;
+}
+#endif
 
 #if defined(Socket_TEST)
 

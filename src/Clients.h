@@ -159,6 +159,7 @@ typedef struct
 
 int clientIDCompare(void* a, void* b);
 int clientSocketCompare(void* a, void* b);
+
 /**
  * Configuration data related to all clients
  */

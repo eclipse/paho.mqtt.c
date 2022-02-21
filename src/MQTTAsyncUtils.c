@@ -37,7 +37,6 @@
 #include "WebSocket.h"
 #include "Proxy.h"
 
-
 static int clientSockCompare(void* a, void* b);
 static int MQTTAsync_checkConn(MQTTAsync_command* command, MQTTAsyncs* client);
 #if !defined(NO_PERSISTENCE)
@@ -933,6 +932,7 @@ void MQTTAsync_startConnectRetry(MQTTAsyncs* m)
 		m->currentInterval = MQTTAsync_randomJitter(m->currentIntervalBase, m->minRetryInterval, m->maxRetryInterval);
 	}
 }
+
 
 void MQTTAsync_checkDisconnect(MQTTAsync handle, MQTTAsync_command* command)
 {
@@ -2350,11 +2350,11 @@ static void MQTTAsync_closeOnly(Clients* client, enum MQTTReasonCodes reasonCode
 	FUNC_ENTRY;
 	client->good = 0;
 	client->ping_outstanding = 0;
-	client->ping_due = 0;	
+	client->ping_due = 0;
 	if (client->net.socket > 0)
 	{
 		MQTTProtocol_checkPendingWrites();
-		if (client->connected &&  Socket_noPendingWrites(client->net.socket))
+		if (client->connected && Socket_noPendingWrites(client->net.socket))
 			MQTTPacket_send_disconnect(client, reasonCode, props);
 		MQTTAsync_lock_mutex(socket_mutex);
 		WebSocket_close(&client->net, WebSocket_CLOSE_NORMAL, NULL);

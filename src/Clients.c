@@ -22,8 +22,10 @@
 
 
 #include "Clients.h"
+
 #include <string.h>
 #include <stdio.h>
+
 
 /**
  * List callback function for comparing clients by clientid

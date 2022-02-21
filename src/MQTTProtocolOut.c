@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2021 IBM Corp., Ian Craggs
+ * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -55,11 +55,14 @@ extern ClientStates* bstate;
  */
 size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic, int default_port)
 {
-	char* colon_pos = strrchr(uri, ':'); /* reverse find to allow for ':' in IPv6 addresses */
 	char* buf = (char*)uri;
+	char* colon_pos;
 	size_t len;
+	char* topic_pos;
 
 	FUNC_ENTRY;
+	colon_pos = strrchr(uri, ':'); /* reverse find to allow for ':' in IPv6 addresses */
+
 	if (uri[0] == '[')
 	{  /* ip v6 */
 		if (colon_pos < strrchr(uri, ']'))
@@ -77,13 +80,17 @@ size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic, 
 		*port = default_port;
 	}
 
-	/* try and find topic portion */
-	if ( topic )
+	/* find any topic portion */
+	topic_pos = (char*)uri;
+	if (colon_pos)
+		topic_pos = colon_pos;
+	topic_pos = strchr(topic_pos, '/');
+	if (topic_pos)
 	{
-		const char* addr_start = uri;
-		if ( colon_pos )
-			addr_start = colon_pos;
-		*topic = strchr( addr_start, '/' );
+		if (topic)
+			*topic = topic_pos;
+		if (!colon_pos)
+			len = topic_pos - uri;
 	}
 
 	if (buf[len - 1] == ']')
@@ -278,9 +285,11 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 #endif
 	else {
 #if defined(OPENSSL)
-		addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL, ssl ? SECURE_MQTT_DEFAULT_PORT : MQTT_DEFAULT_PORT);
+		addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL, ssl ?
+				(websocket ? WSS_DEFAULT_PORT : SECURE_MQTT_DEFAULT_PORT) :
+				(websocket ? WS_DEFAULT_PORT : MQTT_DEFAULT_PORT) );
 #else
-		addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL, MQTT_DEFAULT_PORT);
+		addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL, websocket ? WS_DEFAULT_PORT : MQTT_DEFAULT_PORT);
 #endif
 #if defined(__GNUC__) && defined(__linux__)
 		if (timeout < 0)
@@ -324,7 +333,10 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 		}
 		if ( websocket )
 		{
-			rc = WebSocket_connect( &aClient->net, ip_address );
+#if defined(OPENSSL)
+			rc = WebSocket_connect(&aClient->net, ssl, ip_address);
+#endif
+			rc = WebSocket_connect(&aClient->net, 0, ip_address);
 			if ( rc == TCPSOCKET_INTERRUPTED )
 				aClient->connect_state = WEBSOCKET_IN_PROGRESS; /* Websocket connect called - wait for completion */
 		}
@@ -350,7 +362,7 @@ exit:
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePingresps(void* pack, int sock)
+int MQTTProtocol_handlePingresps(void* pack, SOCKET sock)
 {
 	Clients* client = NULL;
 	int rc = TCPSOCKET_COMPLETE;
@@ -391,7 +403,7 @@ int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss, int msgID,
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handleSubacks(void* pack, int sock)
+int MQTTProtocol_handleSubacks(void* pack, SOCKET sock)
 {
 	Suback* suback = (Suback*)pack;
 	Clients* client = NULL;
@@ -429,7 +441,7 @@ int MQTTProtocol_unsubscribe(Clients* client, List* topics, int msgID, MQTTPrope
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handleUnsubacks(void* pack, int sock)
+int MQTTProtocol_handleUnsubacks(void* pack, SOCKET sock)
 {
 	Unsuback* unsuback = (Unsuback*)pack;
 	Clients* client = NULL;
@@ -450,7 +462,7 @@ int MQTTProtocol_handleUnsubacks(void* pack, int sock)
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handleDisconnects(void* pack, int sock)
+int MQTTProtocol_handleDisconnects(void* pack, SOCKET sock)
 {
 	Ack* disconnect = (Ack*)pack;
 	Clients* client = NULL;

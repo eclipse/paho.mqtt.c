@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2021 IBM Corp., Ian Craggs and others
+ * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -486,7 +486,7 @@ void MQTTAsync_destroy(MQTTAsync* handle)
 
 	if (m->c)
 	{
-		int saved_socket = m->c->net.socket;
+		SOCKET saved_socket = m->c->net.socket;
 		char* saved_clientid = MQTTStrdup(m->c->clientID);
 #if !defined(NO_PERSISTENCE)
 		MQTTPersistence_close(m->c);

@@ -30,7 +30,7 @@ jobs:
       - name: run tests
         run: |
           cd build.paho
-          ctest -VV --timeout 600
+          ctest -VV --timeout 600 
       - name: clean up
         run: |
           killall python3 || true

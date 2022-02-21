@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2021 IBM Corp. and Ian Craggs
+ * Copyright (c) 2009, 2022 IBM Corp. and Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -314,7 +314,7 @@ void MQTTProtocol_removePublication(Publications* p)
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePublishes(void* pack, int sock)
+int MQTTProtocol_handlePublishes(void* pack, SOCKET sock)
 {
 	Publish* publish = (Publish*)pack;
 	Clients* client = NULL;
@@ -338,13 +338,11 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 
 	if (publish->header.bits.qos == 1)
 	{
-		/* if we get a socket error from sending the puback, should we ignore the publication? */
 		Protocol_processPublication(publish, client, 1);
   
 		if (socketHasPendingWrites)
 			rc = MQTTProtocol_queueAck(client, PUBACK, publish->msgId);
 		else
-		/* send puback before processing the publications because a lot of return publications could fill up the socket buffer */
 			rc = MQTTPacket_send_puback(publish->MQTTVersion, publish->msgId, &client->net, client->clientID);
 	}
 	else if (publish->header.bits.qos == 2)
@@ -382,11 +380,6 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 		} else
 			ListAppend(client->inboundMsgs, m, sizeof(Messages) + len);
 
-		if (socketHasPendingWrites)
-			rc = MQTTProtocol_queueAck(client, PUBREC, publish->msgId);
-		else
-			rc = MQTTPacket_send_pubrec(publish->MQTTVersion, publish->msgId, &client->net, client->clientID);
-
 		if (m->MQTTVersion >= MQTTVERSION_5 && already_received == 0)
 		{
 			Publish publish1;
@@ -416,7 +409,10 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 			}
 			memcpy(m->publish->payload, temp, m->publish->payloadlen);
 		}
-		rc = MQTTPacket_send_pubrec(publish->MQTTVersion, publish->msgId, &client->net, client->clientID);
+		if (socketHasPendingWrites)
+			rc = MQTTProtocol_queueAck(client, PUBREC, publish->msgId);
+		else
+			rc = MQTTPacket_send_pubrec(publish->MQTTVersion, publish->msgId, &client->net, client->clientID);
 		publish->topic = NULL;
 	}
 exit:
@@ -431,7 +427,7 @@ exit:
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePubacks(void* pack, int sock)
+int MQTTProtocol_handlePubacks(void* pack, SOCKET sock)
 {
 	Puback* puback = (Puback*)pack;
 	Clients* client = NULL;
@@ -477,11 +473,12 @@ int MQTTProtocol_handlePubacks(void* pack, int sock)
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePubrecs(void* pack, int sock)
+int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock)
 {
 	Pubrec* pubrec = (Pubrec*)pack;
 	Clients* client = NULL;
 	int rc = TCPSOCKET_COMPLETE;
+	int send_pubrel = 1; /* boolean to send PUBREL or not */
 
 	FUNC_ENTRY;
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
@@ -523,15 +520,22 @@ int MQTTProtocol_handlePubrecs(void* pack, int sock)
 					MQTTProperties_free(&m->properties);
 				ListRemove(client->outboundMsgs, m);
 				(++state.msgs_sent);
+				send_pubrel = 0; /* in MQTT v5, stop the exchange if there is an error reported */
 			}
 			else
 			{
-				rc = MQTTPacket_send_pubrel(pubrec->MQTTVersion, pubrec->msgId, 0, &client->net, client->clientID);
 				m->nextMessageType = PUBCOMP;
 				m->lastTouch = MQTTTime_now();
 			}
 		}
 	}
+	if (!send_pubrel)
+		; /* only don't send ack on MQTT v5 PUBREC error, otherwise send ack under all circumstances because MQTT state can get out of step */
+	else if (!Socket_noPendingWrites(sock))
+		rc = MQTTProtocol_queueAck(client, PUBREL, pubrec->msgId);
+	else
+		rc = MQTTPacket_send_pubrel(pubrec->MQTTVersion, pubrec->msgId, 0, &client->net, client->clientID);
+
 	if (pubrec->MQTTVersion >= MQTTVERSION_5)
 		MQTTProperties_free(&pubrec->properties);
 	free(pack);
@@ -546,7 +550,7 @@ int MQTTProtocol_handlePubrecs(void* pack, int sock)
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePubrels(void* pack, int sock)
+int MQTTProtocol_handlePubrels(void* pack, SOCKET sock)
 {
 	Pubrel* pubrel = (Pubrel*)pack;
 	Clients* client = NULL;
@@ -561,11 +565,6 @@ int MQTTProtocol_handlePubrels(void* pack, int sock)
 	{
 		if (pubrel->header.bits.dup == 0)
 			Log(TRACE_MIN, 3, NULL, "PUBREL", client->clientID, pubrel->msgId);
-		else if (!Socket_noPendingWrites(sock))
-			rc = MQTTProtocol_queueAck(client, PUBCOMP, pubrel->msgId);
-		else
-			/* Apparently this is "normal" behaviour, so we don't need to issue a warning */
-			rc = MQTTPacket_send_pubcomp(pubrel->MQTTVersion, pubrel->msgId, &client->net, client->clientID);
 	}
 	else
 	{
@@ -579,12 +578,6 @@ int MQTTProtocol_handlePubrels(void* pack, int sock)
 			Publish publish;
 
 			memset(&publish, '\0', sizeof(publish));
-
-			/* send pubcomp before processing the publications because a lot of return publications could fill up the socket buffer */
-			if (!Socket_noPendingWrites(sock))
-				rc = MQTTProtocol_queueAck(client, PUBCOMP, pubrel->msgId);
-			else
-				rc = MQTTPacket_send_pubcomp(pubrel->MQTTVersion, pubrel->msgId, &client->net, client->clientID);
 
 			publish.header.bits.qos = m->qos;
 			publish.header.bits.retain = m->retain;
@@ -612,9 +605,14 @@ int MQTTProtocol_handlePubrels(void* pack, int sock)
 				ListRemove(&(state.publications), m->publish);
 			ListRemove(client->inboundMsgs, m);
 			++(state.msgs_received);
-			rc = MQTTPacket_send_pubcomp(pubrel->MQTTVersion, pubrel->msgId, &client->net, client->clientID);
 		}
 	}
+	/* Send ack under all circumstances because MQTT state can get out of step - this standard also says to do this */
+	if (!Socket_noPendingWrites(sock))
+		rc = MQTTProtocol_queueAck(client, PUBCOMP, pubrel->msgId);
+	else
+		rc = MQTTPacket_send_pubcomp(pubrel->MQTTVersion, pubrel->msgId, &client->net, client->clientID);
+
 	if (pubrel->MQTTVersion >= MQTTVERSION_5)
 		MQTTProperties_free(&pubrel->properties);
 	free(pack);
@@ -629,7 +627,7 @@ int MQTTProtocol_handlePubrels(void* pack, int sock)
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePubcomps(void* pack, int sock)
+int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock)
 {
 	Pubcomp* pubcomp = (Pubcomp*)pack;
 	Clients* client = NULL;
@@ -980,7 +978,7 @@ void MQTTProtocol_freeMessageList(List* msgList)
  * occur here are ignored.
  * @param socket the socket that is available for writing
  */
-void MQTTProtocol_writeAvailable(int socket)
+void MQTTProtocol_writeAvailable(SOCKET socket)
 {
 	Clients* client = NULL;
 	ListElement* current = NULL;
@@ -1002,6 +1000,9 @@ void MQTTProtocol_writeAvailable(int socket)
 				break;
 			case PUBREC:
 				rc = MQTTPacket_send_pubrec(client->MQTTVersion, ackReq->messageId, &client->net, client->clientID);
+				break;
+			case PUBREL:
+				rc = MQTTPacket_send_pubrel(client->MQTTVersion, ackReq->messageId, 0, &client->net, client->clientID);
 				break;
 			case PUBCOMP:
 				rc = MQTTPacket_send_pubcomp(client->MQTTVersion, ackReq->messageId, &client->net, client->clientID);

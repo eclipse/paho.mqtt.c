@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018, 2021 Wind River Systems, Inc., Ian Craggs and others
+ * Copyright (c) 2018, 2022 Wind River Systems, Inc., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -369,6 +369,7 @@ static void WebSocket_unmaskData(size_t idx, PacketBuffers* bufs)
  * sends out a websocket request on the given uri
  *
  * @param[in]      net                 network connection
+ * @param[in]      ssl                 ssl flag
  * @param[in]      uri                 uri to connect to
  *
  * @retval SOCKET_ERROR                on failure
@@ -376,7 +377,7 @@ static void WebSocket_unmaskData(size_t idx, PacketBuffers* bufs)
  *
  * @see WebSocket_upgrade
  */
-int WebSocket_connect( networkHandles *net, const char *uri)
+int WebSocket_connect( networkHandles *net, int ssl, const char *uri)
 {
 	int rc;
 	char *buf = NULL;
@@ -413,7 +414,7 @@ int WebSocket_connect( networkHandles *net, const char *uri)
 	Base64_encode( net->websocket_key, 25u, uuid, sizeof(uuid_t) );
 #endif /* else if defined(_WIN32) || defined(_WIN64) */
 
-	hostname_len = MQTTProtocol_addressPort(uri, &port, &topic, WS_DEFAULT_PORT);
+	hostname_len = MQTTProtocol_addressPort(uri, &port, &topic, ssl ? WSS_DEFAULT_PORT : WS_DEFAULT_PORT);
 
 	/* if no topic, use default */
 	if ( !topic )
@@ -779,7 +780,7 @@ char *WebSocket_getRawSocketData(networkHandles *net, size_t bytes, size_t* actu
 			*actual_len = bytes;
 			rv = frame_buffer + frame_buffer_index;
 			frame_buffer_index += bytes;
-
+			*rc = (int)bytes;
 			goto exit;
 		}
 		else

@@ -52,7 +52,7 @@ build_script:
 
     nmake
 
-    ctest -T test -VV
+    ctest -T test -VV 
 
     cd ..
 

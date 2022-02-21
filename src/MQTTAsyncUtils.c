@@ -2919,7 +2919,7 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 		if (m != NULL)
 		{
 #if defined(__linux__)
-		m->connected=	clientSocket_checkConnect(m->c->net.socket);
+			m->c->connected = clientSocket_checkConnect(m->c->net.socket);
 #endif
 			Log(TRACE_MINIMUM, -1, "m->c->connect_state = %d", m->c->connect_state);
 			if (m->c->connect_state == TCP_IN_PROGRESS || m->c->connect_state == SSL_IN_PROGRESS || m->c->connect_state == WEBSOCKET_IN_PROGRESS)

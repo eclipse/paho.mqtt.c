@@ -53,4 +53,3 @@ int clientSocketCompare(void* a, void* b)
 	/*printf("comparing %d with %d\n", (char*)a, (char*)b); */
 	return client->net.socket == *(SOCKET*)b;
 }
-

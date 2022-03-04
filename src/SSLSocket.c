@@ -1102,4 +1102,15 @@ int SSLSocket_continueWrite(pending_writes* pw)
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
+
+
+int SSLSocket_abortWrite(pending_writes* pw)
+{
+	int rc = 0;
+
+	FUNC_ENTRY;
+	free(pw->iovecs[0].iov_base);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
 #endif

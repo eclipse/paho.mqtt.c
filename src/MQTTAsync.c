@@ -340,7 +340,7 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 		}
 	}
 
-	if (options->maxBufferedMessages <= 0)
+	if (options && options->maxBufferedMessages <= 0)
 	{
 		rc = MQTTASYNC_MAX_BUFFERED;
 		goto exit;

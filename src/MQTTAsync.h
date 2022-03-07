@@ -193,6 +193,11 @@
  * for the previous connect or disconnect command to be complete.
  */
 #define MQTTASYNC_COMMAND_IGNORED -18
+ /*
+  * Return code: maxBufferedMessages in the connect options must be >= 0
+  */
+ #define MQTTASYNC_MAX_BUFFERED -19
+
 /**
  * Default MQTT version to connect with.  Use 3.1.1 then fall back to 3.1
  */
@@ -950,7 +955,9 @@ typedef struct
 	int struct_version;
 	/** Whether to allow messages to be sent when the client library is not connected. */
 	int sendWhileDisconnected;
-	/** The maximum number of messages allowed to be buffered while not connected. */
+	/** The maximum number of messages allowed to be buffered. This is intended to be used to
+	 * limit the number of messages queued while the client is not connected. It also applies
+	 * when the client is connected, however, so has to be greater than 0. */
 	int maxBufferedMessages;
 	/** Whether the MQTT version is 3.1, 3.1.1, or 5.  To use V5, this must be set.
 	 *  MQTT V5 has to be chosen here, because during the create call the message persistence

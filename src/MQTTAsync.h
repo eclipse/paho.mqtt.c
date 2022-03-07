@@ -1696,7 +1696,8 @@ LIBMQTT_API void MQTTAsync_setTraceLevel(enum MQTTASYNC_TRACE_LEVELS level);
 
 /**
   * This is a callback function prototype which must be implemented if you want
-  * to receive trace information.
+  * to receive trace information. Do not invoke any other Paho API calls in this
+  * callback function - unpredictable behavior may result.
   * @param level the trace level of the message returned
   * @param message the trace message.  This is a pointer to a static buffer which
   * will be overwritten on each call.  You must copy the data if you want to keep

@@ -1656,7 +1656,7 @@ int test5(struct Options options)
 	}
 
 	createOptions.sendWhileDisconnected = 0;
-	createOptions.maxBufferedMessages = 0;
+	createOptions.maxBufferedMessages = 1;
 	createOptions.MQTTVersion = MQTTVERSION_5;
 	rc = MQTTAsync_createWithOptions(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT,
 			NULL, &createOptions);
@@ -1826,7 +1826,7 @@ int test6(struct Options options)
 	}
 
 	createOptions.sendWhileDisconnected = 0;
-	createOptions.maxBufferedMessages = 0;
+	createOptions.maxBufferedMessages = 1;
 	createOptions.MQTTVersion = MQTTVERSION_5;
 	rc = MQTTAsync_createWithOptions(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT,
 			NULL, &createOptions);

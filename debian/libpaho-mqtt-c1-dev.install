@@ -1,0 +1,14 @@
+usr/include/MQTTAsync.h
+usr/include/MQTTClient.h
+usr/include/MQTTClientPersistence.h
+usr/include/MQTTExportDeclarations.h
+usr/include/MQTTProperties.h
+usr/include/MQTTReasonCodes.h
+usr/include/MQTTSubscribeOpts.h
+usr/lib/*/cmake/eclipse-paho-mqtt-c/eclipse-paho-mqtt-cConfig-none.cmake
+usr/lib/*/cmake/eclipse-paho-mqtt-c/eclipse-paho-mqtt-cConfig.cmake
+usr/lib/*/cmake/eclipse-paho-mqtt-c/eclipse-paho-mqtt-cConfigVersion.cmake
+usr/lib/*/libpaho-mqtt3a.so
+usr/lib/*/libpaho-mqtt3as.so
+usr/lib/*/libpaho-mqtt3c.so
+usr/lib/*/libpaho-mqtt3cs.so

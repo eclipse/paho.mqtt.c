@@ -1,0 +1,2 @@
+extend-diff-ignore = ".*\.user|build(32|64)?"
+tar-ignore = "debian/gbp.conf"

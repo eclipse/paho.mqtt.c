@@ -1,0 +1,9 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --buildsystem=cmake
+
+override_dh_auto_test:
+
+override_dh_auto_configure:
+	dh_auto_configure -- -DPAHO_HIGH_PERFORMANCE=ON -DPAHO_WITH_SSL=ON

@@ -1,0 +1,3 @@
+usr/share/doc/*/*
+usr/share/doc/*/samples/*
+usr/bin/MQTTVersion

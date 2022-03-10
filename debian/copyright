@@ -1,0 +1,18 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Eclipse Paho MQTT C Client Library
+Source: https://github.com/eclipse/paho.mqtt.c.git
+
+Files: *
+Copyright: 2022 Eclipse Paho MQTT C client library authors
+License: EPL-2.0 or EDL-1.0
+ This program and the accompanying materials
+ are made available under the terms of the Eclipse Public License v2.0
+ and Eclipse Distribution License v1.0 which accompany this distribution.
+ .
+ The Eclipse Public License is available at
+ https://www.eclipse.org/legal/epl-2.0/
+ and the Eclipse Distribution License is available at
+ http://www.eclipse.org/org/documents/edl-v10.php.
+ .
+ For an explanation of what dual-licensing means to you, see:
+ https://www.eclipse.org/legal/eplfaq.php#DUALLIC

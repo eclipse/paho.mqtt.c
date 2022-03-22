@@ -751,18 +751,16 @@ void MQTTProtocol_keepalive(START_TIME_TYPE now)
 static void MQTTProtocol_retries(START_TIME_TYPE now, Clients* client, int regardless)
 {
 	ListElement* outcurrent = NULL;
-	static int connect_count = 0;
-	static int connect_sent = 0;
 
 	FUNC_ENTRY;
 
 	if (!regardless && client->retryInterval <= 0 && /* 0 or -ive retryInterval turns off retry except on reconnect */
-			connect_sent == connect_count)
+			client->connect_sent == client->connect_count)
 		goto exit;
 
 	if (regardless)
-		connect_count = client->outboundMsgs->count; /* remember the number of messages to retry on connect */
-	else if (connect_sent < connect_count) /* continue a connect retry which didn't complete first time around */
+		client->connect_count = client->outboundMsgs->count; /* remember the number of messages to retry on connect */
+	else if (client->connect_sent < client->connect_count) /* continue a connect retry which didn't complete first time around */
 		regardless = 1;
 
 	while (client && ListNextElement(client->outboundMsgs, &outcurrent) &&
@@ -773,7 +771,7 @@ static void MQTTProtocol_retries(START_TIME_TYPE now, Clients* client, int regar
 		if (regardless || MQTTTime_difftime(now, m->lastTouch) > (DIFF_TIME_TYPE)(max(client->retryInterval, 10) * 1000))
 		{
 			if (regardless)
-				++connect_sent;
+				++client->connect_sent;
 			if (m->qos == 1 || (m->qos == 2 && m->nextMessageType == PUBREC))
 			{
 				Publish publish;

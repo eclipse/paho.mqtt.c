@@ -132,11 +132,13 @@ typedef struct
 	networkHandles net;             /**< network info for this client */
 	int msgID;                      /**< the MQTT message id */
 	int keepAliveInterval;          /**< the MQTT keep alive interval */
-	int retryInterval;
+	int retryInterval;              /**< the MQTT retry interval for QoS > 0 */
 	int maxInflightMessages;        /**< the max number of inflight outbound messages we allow */
 	willMessages* will;             /**< the MQTT will message, if any */
 	List* inboundMsgs;              /**< inbound in flight messages */
 	List* outboundMsgs;				/**< outbound in flight messages */
+	int connect_count;              /**< the number of outbound messages on reconnect - to ensure we send them all */
+	int connect_sent;               /**< the current number of outbound messages on reconnect that we've sent */
 	List* messageQueue;             /**< inbound complete but undelivered messages */
 	List* outboundQueue;            /**< outbound queued messages */
 	unsigned int qentry_seqno;

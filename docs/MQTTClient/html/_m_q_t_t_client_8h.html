@@ -973,7 +973,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>This is a callback function prototype which must be implemented if you want to receive trace information. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>This is a callback function prototype which must be implemented if you want to receive trace information. Do not invoke any other Paho API calls in this callback function - unpredictable behavior may result. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">level</td><td>the trace level of the message returned </td></tr>
     <tr><td class="paramname">message</td><td>the trace message. This is a pointer to a static buffer which will be overwritten on each call. You must copy the data if you want to keep it for later. </td></tr>
@@ -2500,7 +2500,7 @@ Functions</h2></td></tr>
 <div class="ttc" id="a_m_q_t_t_client_8h_html_af8b176fa4d5b89789767ce972338e1e3"><div class="ttname"><a href="_m_q_t_t_client_8h.html#af8b176fa4d5b89789767ce972338e1e3">MQTTVERSION_5</a></div><div class="ttdeci">#define MQTTVERSION_5</div><div class="ttdef"><b>Definition:</b> MQTTClient.h:216</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 24 2021 18:05:54 for Paho MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Mar 28 2022 12:36:40 for Paho MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

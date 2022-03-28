@@ -151,6 +151,8 @@ Macros</h2></td></tr>
 <tr class="separator:a47b3aed75983f48a503e1cad6c862004"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8278cf4b50dd818c31fa12e45f074b5c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_m_q_t_t_async_8h.html#a8278cf4b50dd818c31fa12e45f074b5c">MQTTASYNC_COMMAND_IGNORED</a>&#160;&#160;&#160;-18</td></tr>
 <tr class="separator:a8278cf4b50dd818c31fa12e45f074b5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2efee8e190e2c3690c680bde060f78ab"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_m_q_t_t_async_8h.html#a2efee8e190e2c3690c680bde060f78ab">MQTTASYNC_MAX_BUFFERED</a>&#160;&#160;&#160;-19</td></tr>
+<tr class="separator:a2efee8e190e2c3690c680bde060f78ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75b80b01f98d5a1ffa2a4d42995a8397"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_m_q_t_t_async_8h.html#a75b80b01f98d5a1ffa2a4d42995a8397">MQTTVERSION_DEFAULT</a>&#160;&#160;&#160;0</td></tr>
 <tr class="separator:a75b80b01f98d5a1ffa2a4d42995a8397"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4603b988e76872e1f23f135d225ce2fb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_m_q_t_t_async_8h.html#a4603b988e76872e1f23f135d225ce2fb">MQTTVERSION_3_1</a>&#160;&#160;&#160;3</td></tr>
@@ -601,6 +603,20 @@ Functions</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">#define MQTTASYNC_COMMAND_IGNORED&#160;&#160;&#160;-18</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2efee8e190e2c3690c680bde060f78ab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2efee8e190e2c3690c680bde060f78ab">&#9670;&nbsp;</a></span>MQTTASYNC_MAX_BUFFERED</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define MQTTASYNC_MAX_BUFFERED&#160;&#160;&#160;-19</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1146,7 +1162,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>This is a callback function, which will be called when the client library receives a disconnect packet.</p>
+<p>This is a callback function, which will be called when the client library receives a disconnect packet from the server. This applies to MQTT V5 and above only.</p>
 <p><b>Note:</b> Neither <a class="el" href="_m_q_t_t_async_8h.html#a5462c4618d0a229116db5fbadacf95d2">MQTTAsync_create()</a> nor <a class="el" href="_m_q_t_t_async_8h.html#ad5562f9dc71fbd93d25ad20b328cb887">MQTTAsync_destroy()</a> should be called within this callback. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">context</td><td>A pointer to the <em>context</em> value originally passed to <a class="el" href="_m_q_t_t_async_8h.html#ae9ae8d61023e7029ef5a19f5219c3599">MQTTAsync_setCallbacks()</a>, which contains any application-specific context. </td></tr>
@@ -1308,7 +1324,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>This is a callback function prototype which must be implemented if you want to receive trace information. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>This is a callback function prototype which must be implemented if you want to receive trace information. Do not invoke any other Paho API calls in this callback function - unpredictable behavior may result. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">level</td><td>the trace level of the message returned </td></tr>
     <tr><td class="paramname">message</td><td>the trace message. This is a pointer to a static buffer which will be overwritten on each call. You must copy the data if you want to keep it for later. </td></tr>
@@ -2631,11 +2647,11 @@ Functions</h2></td></tr>
 </div>
 </div><!-- contents -->
 <div class="ttc" id="a_m_q_t_t_reason_codes_8h_html_aba6db0fccfa3f8972ea48117b8b2a279a63b379af5fba8c0512b381a4dbe26969"><div class="ttname"><a href="_m_q_t_t_reason_codes_8h.html#aba6db0fccfa3f8972ea48117b8b2a279a63b379af5fba8c0512b381a4dbe26969">MQTTREASONCODE_SUCCESS</a></div><div class="ttdeci">@ MQTTREASONCODE_SUCCESS</div><div class="ttdef"><b>Definition:</b> MQTTReasonCodes.h:38</div></div>
-<div class="ttc" id="a_m_q_t_t_async_8h_html_af8b176fa4d5b89789767ce972338e1e3"><div class="ttname"><a href="_m_q_t_t_async_8h.html#af8b176fa4d5b89789767ce972338e1e3">MQTTVERSION_5</a></div><div class="ttdeci">#define MQTTVERSION_5</div><div class="ttdef"><b>Definition:</b> MQTTAsync.h:211</div></div>
-<div class="ttc" id="a_m_q_t_t_async_8h_html_a75b80b01f98d5a1ffa2a4d42995a8397"><div class="ttname"><a href="_m_q_t_t_async_8h.html#a75b80b01f98d5a1ffa2a4d42995a8397">MQTTVERSION_DEFAULT</a></div><div class="ttdeci">#define MQTTVERSION_DEFAULT</div><div class="ttdef"><b>Definition:</b> MQTTAsync.h:199</div></div>
+<div class="ttc" id="a_m_q_t_t_async_8h_html_af8b176fa4d5b89789767ce972338e1e3"><div class="ttname"><a href="_m_q_t_t_async_8h.html#af8b176fa4d5b89789767ce972338e1e3">MQTTVERSION_5</a></div><div class="ttdeci">#define MQTTVERSION_5</div><div class="ttdef"><b>Definition:</b> MQTTAsync.h:216</div></div>
+<div class="ttc" id="a_m_q_t_t_async_8h_html_a75b80b01f98d5a1ffa2a4d42995a8397"><div class="ttname"><a href="_m_q_t_t_async_8h.html#a75b80b01f98d5a1ffa2a4d42995a8397">MQTTVERSION_DEFAULT</a></div><div class="ttdeci">#define MQTTVERSION_DEFAULT</div><div class="ttdef"><b>Definition:</b> MQTTAsync.h:204</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 24 2021 18:05:54 for Paho Asynchronous MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Mar 28 2022 12:36:40 for Paho Asynchronous MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

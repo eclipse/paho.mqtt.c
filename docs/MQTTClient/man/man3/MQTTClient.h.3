@@ -1,4 +1,4 @@
-.TH "MQTTClient.h" 3 "Mon May 24 2021" "Paho MQTT C Client Library" \" -*- nroff -*-
+.TH "MQTTClient.h" 3 "Mon Mar 28 2022" "Paho MQTT C Client Library" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -481,7 +481,7 @@ This is a callback function, the MQTT V5 version of \fBMQTTClient_deliveryComple
 .SS "typedef struct \fBMQTTResponse\fP \fBMQTTResponse\fP"
 MQTT version 5\&.0 response information 
 .SS "typedef void MQTTClient_traceCallback(enum \fBMQTTCLIENT_TRACE_LEVELS\fP level, char *message)"
-This is a callback function prototype which must be implemented if you want to receive trace information\&. 
+This is a callback function prototype which must be implemented if you want to receive trace information\&. Do not invoke any other Paho API calls in this callback function - unpredictable behavior may result\&. 
 .PP
 \fBParameters\fP
 .RS 4

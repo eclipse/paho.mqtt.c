@@ -67,7 +67,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <a href="_m_q_t_t_client_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">/*******************************************************************************</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment"> * Copyright (c) 2009, 2021 IBM Corp., Ian Craggs and others</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment"> * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs and others</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"> *</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment"> * All rights reserved. This program and the accompanying materials</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment"> * are made available under the terms of the Eclipse Public License v2.0</span></div>
@@ -425,20 +425,20 @@ $(function() {
 <div class="line"><a name="l01405"></a><span class="lineno"> 1405</span>&#160;LIBMQTT_API <span class="keywordtype">void</span> <a class="code" href="_m_q_t_t_client_8h.html#a4dfa35d29db54b10b15b8ac2d9a778be">MQTTClient_setTraceLevel</a>(<span class="keyword">enum</span> <a class="code" href="_m_q_t_t_client_8h.html#aa0ae95caa9c16d152b5036b1bac2e09b">MQTTCLIENT_TRACE_LEVELS</a> level);</div>
 <div class="line"><a name="l01406"></a><span class="lineno"> 1406</span>&#160; </div>
 <div class="line"><a name="l01407"></a><span class="lineno"> 1407</span>&#160; </div>
-<div class="line"><a name="l01416"></a><span class="lineno"><a class="line" href="_m_q_t_t_client_8h.html#afa5758290a1162e5135bca97bbfd5774"> 1416</a></span>&#160;<span class="keyword">typedef</span> <span class="keywordtype">void</span> <a class="code" href="_m_q_t_t_client_8h.html#afa5758290a1162e5135bca97bbfd5774">MQTTClient_traceCallback</a>(<span class="keyword">enum</span> <a class="code" href="_m_q_t_t_client_8h.html#aa0ae95caa9c16d152b5036b1bac2e09b">MQTTCLIENT_TRACE_LEVELS</a> level, <span class="keywordtype">char</span>* message);</div>
-<div class="line"><a name="l01417"></a><span class="lineno"> 1417</span>&#160; </div>
-<div class="line"><a name="l01424"></a><span class="lineno"> 1424</span>&#160;LIBMQTT_API <span class="keywordtype">void</span> <a class="code" href="_m_q_t_t_client_8h.html#a22870f94aa4cb1827626612f1ded7c69">MQTTClient_setTraceCallback</a>(<a class="code" href="_m_q_t_t_client_8h.html#afa5758290a1162e5135bca97bbfd5774">MQTTClient_traceCallback</a>* callback);</div>
-<div class="line"><a name="l01425"></a><span class="lineno"> 1425</span>&#160; </div>
-<div class="line"><a name="l01433"></a><span class="lineno"> 1433</span>&#160;LIBMQTT_API <span class="keywordtype">int</span> <a class="code" href="_m_q_t_t_client_8h.html#a96067a2fb74d2a61c7e93015629548e0">MQTTClient_setCommandTimeout</a>(<a class="code" href="_m_q_t_t_client_8h.html#a7649e3913f9a216424d296f88a969c59">MQTTClient</a> handle, <span class="keywordtype">unsigned</span> <span class="keywordtype">long</span> milliSeconds);</div>
-<div class="line"><a name="l01434"></a><span class="lineno"> 1434</span>&#160; </div>
-<div class="line"><a name="l01440"></a><span class="lineno"> 1440</span>&#160;LIBMQTT_API <span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code" href="_m_q_t_t_client_8h.html#a9defda2979f6fedaae64fd85f5c2f617">MQTTClient_strerror</a>(<span class="keywordtype">int</span> code);</div>
-<div class="line"><a name="l01441"></a><span class="lineno"> 1441</span>&#160; </div>
-<div class="line"><a name="l01442"></a><span class="lineno"> 1442</span>&#160;<span class="preprocessor">#if defined(__cplusplus)</span></div>
-<div class="line"><a name="l01443"></a><span class="lineno"> 1443</span>&#160;     }</div>
-<div class="line"><a name="l01444"></a><span class="lineno"> 1444</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l01445"></a><span class="lineno"> 1445</span>&#160; </div>
-<div class="line"><a name="l01446"></a><span class="lineno"> 1446</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l01447"></a><span class="lineno"> 1447</span>&#160; </div>
+<div class="line"><a name="l01417"></a><span class="lineno"><a class="line" href="_m_q_t_t_client_8h.html#afa5758290a1162e5135bca97bbfd5774"> 1417</a></span>&#160;<span class="keyword">typedef</span> <span class="keywordtype">void</span> <a class="code" href="_m_q_t_t_client_8h.html#afa5758290a1162e5135bca97bbfd5774">MQTTClient_traceCallback</a>(<span class="keyword">enum</span> <a class="code" href="_m_q_t_t_client_8h.html#aa0ae95caa9c16d152b5036b1bac2e09b">MQTTCLIENT_TRACE_LEVELS</a> level, <span class="keywordtype">char</span>* message);</div>
+<div class="line"><a name="l01418"></a><span class="lineno"> 1418</span>&#160; </div>
+<div class="line"><a name="l01425"></a><span class="lineno"> 1425</span>&#160;LIBMQTT_API <span class="keywordtype">void</span> <a class="code" href="_m_q_t_t_client_8h.html#a22870f94aa4cb1827626612f1ded7c69">MQTTClient_setTraceCallback</a>(<a class="code" href="_m_q_t_t_client_8h.html#afa5758290a1162e5135bca97bbfd5774">MQTTClient_traceCallback</a>* callback);</div>
+<div class="line"><a name="l01426"></a><span class="lineno"> 1426</span>&#160; </div>
+<div class="line"><a name="l01434"></a><span class="lineno"> 1434</span>&#160;LIBMQTT_API <span class="keywordtype">int</span> <a class="code" href="_m_q_t_t_client_8h.html#a96067a2fb74d2a61c7e93015629548e0">MQTTClient_setCommandTimeout</a>(<a class="code" href="_m_q_t_t_client_8h.html#a7649e3913f9a216424d296f88a969c59">MQTTClient</a> handle, <span class="keywordtype">unsigned</span> <span class="keywordtype">long</span> milliSeconds);</div>
+<div class="line"><a name="l01435"></a><span class="lineno"> 1435</span>&#160; </div>
+<div class="line"><a name="l01441"></a><span class="lineno"> 1441</span>&#160;LIBMQTT_API <span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code" href="_m_q_t_t_client_8h.html#a9defda2979f6fedaae64fd85f5c2f617">MQTTClient_strerror</a>(<span class="keywordtype">int</span> code);</div>
+<div class="line"><a name="l01442"></a><span class="lineno"> 1442</span>&#160; </div>
+<div class="line"><a name="l01443"></a><span class="lineno"> 1443</span>&#160;<span class="preprocessor">#if defined(__cplusplus)</span></div>
+<div class="line"><a name="l01444"></a><span class="lineno"> 1444</span>&#160;     }</div>
+<div class="line"><a name="l01445"></a><span class="lineno"> 1445</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l01446"></a><span class="lineno"> 1446</span>&#160; </div>
+<div class="line"><a name="l01447"></a><span class="lineno"> 1447</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l01448"></a><span class="lineno"> 1448</span>&#160; </div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="a_m_q_t_t_properties_8h_html"><div class="ttname"><a href="_m_q_t_t_properties_8h.html">MQTTProperties.h</a></div></div>
 <div class="ttc" id="astruct_m_q_t_t_client__will_options_html_a35738099155a0e4f54050da474bab2e7"><div class="ttname"><a href="struct_m_q_t_t_client__will_options.html#a35738099155a0e4f54050da474bab2e7">MQTTClient_willOptions::qos</a></div><div class="ttdeci">int qos</div><div class="ttdef"><b>Definition:</b> MQTTClient.h:631</div></div>
@@ -494,7 +494,7 @@ $(function() {
 <div class="ttc" id="astruct_m_q_t_t_client__connect_options_html_a0761a5e5be0383882e42924de8e51f82"><div class="ttname"><a href="struct_m_q_t_t_client__connect_options.html#a0761a5e5be0383882e42924de8e51f82">MQTTClient_connectOptions::struct_version</a></div><div class="ttdeci">int struct_version</div><div class="ttdef"><b>Definition:</b> MQTTClient.h:820</div></div>
 <div class="ttc" id="a_m_q_t_t_client_8h_html_a4dfa35d29db54b10b15b8ac2d9a778be"><div class="ttname"><a href="_m_q_t_t_client_8h.html#a4dfa35d29db54b10b15b8ac2d9a778be">MQTTClient_setTraceLevel</a></div><div class="ttdeci">void MQTTClient_setTraceLevel(enum MQTTCLIENT_TRACE_LEVELS level)</div></div>
 <div class="ttc" id="a_m_q_t_t_client_8h_html_aa0ae95caa9c16d152b5036b1bac2e09ba35626cc4876d074c4c21f8c4f54fdf38"><div class="ttname"><a href="_m_q_t_t_client_8h.html#aa0ae95caa9c16d152b5036b1bac2e09ba35626cc4876d074c4c21f8c4f54fdf38">MQTTCLIENT_TRACE_FATAL</a></div><div class="ttdeci">@ MQTTCLIENT_TRACE_FATAL</div><div class="ttdef"><b>Definition:</b> MQTTClient.h:1396</div></div>
-<div class="ttc" id="a_m_q_t_t_client_8h_html_afa5758290a1162e5135bca97bbfd5774"><div class="ttname"><a href="_m_q_t_t_client_8h.html#afa5758290a1162e5135bca97bbfd5774">MQTTClient_traceCallback</a></div><div class="ttdeci">void MQTTClient_traceCallback(enum MQTTCLIENT_TRACE_LEVELS level, char *message)</div><div class="ttdef"><b>Definition:</b> MQTTClient.h:1416</div></div>
+<div class="ttc" id="a_m_q_t_t_client_8h_html_afa5758290a1162e5135bca97bbfd5774"><div class="ttname"><a href="_m_q_t_t_client_8h.html#afa5758290a1162e5135bca97bbfd5774">MQTTClient_traceCallback</a></div><div class="ttdeci">void MQTTClient_traceCallback(enum MQTTCLIENT_TRACE_LEVELS level, char *message)</div><div class="ttdef"><b>Definition:</b> MQTTClient.h:1417</div></div>
 <div class="ttc" id="astruct_m_q_t_t_client__connect_options_html_aa82629005937abd92e97084a428cd61f"><div class="ttname"><a href="struct_m_q_t_t_client__connect_options.html#aa82629005937abd92e97084a428cd61f">MQTTClient_connectOptions::serverURIcount</a></div><div class="ttdeci">int serverURIcount</div><div class="ttdef"><b>Definition:</b> MQTTClient.h:901</div></div>
 <div class="ttc" id="a_m_q_t_t_client_8h_html_a9c1c28258f0d5c6a44ff53a98618f5f3"><div class="ttname"><a href="_m_q_t_t_client_8h.html#a9c1c28258f0d5c6a44ff53a98618f5f3">MQTTClient_subscribe</a></div><div class="ttdeci">int MQTTClient_subscribe(MQTTClient handle, const char *topic, int qos)</div></div>
 <div class="ttc" id="a_m_q_t_t_client_8h_html_a73e49030fd8b7074aa1aa45669b7fe8d"><div class="ttname"><a href="_m_q_t_t_client_8h.html#a73e49030fd8b7074aa1aa45669b7fe8d">MQTTClient_deliveryToken</a></div><div class="ttdeci">int MQTTClient_deliveryToken</div><div class="ttdef"><b>Definition:</b> MQTTClient.h:258</div></div>
@@ -574,7 +574,7 @@ $(function() {
 <div class="ttc" id="a_m_q_t_t_client_8h_html_a9a0518d9ca924d12c1329dbe3de5f2b6"><div class="ttname"><a href="_m_q_t_t_client_8h.html#a9a0518d9ca924d12c1329dbe3de5f2b6">MQTTClient_create</a></div><div class="ttdeci">int MQTTClient_create(MQTTClient *handle, const char *serverURI, const char *clientId, int persistence_type, void *persistence_context)</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 24 2021 18:05:54 for Paho MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Mar 28 2022 12:36:40 for Paho MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

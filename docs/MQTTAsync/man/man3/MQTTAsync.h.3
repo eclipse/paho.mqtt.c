@@ -1,4 +1,4 @@
-.TH "MQTTAsync.h" 3 "Mon May 24 2021" "Paho Asynchronous MQTT C Client Library" \" -*- nroff -*-
+.TH "MQTTAsync.h" 3 "Mon Mar 28 2022" "Paho Asynchronous MQTT C Client Library" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -122,6 +122,9 @@ MQTTAsync.h
 .br
 .ti -1c
 .RI "#define \fBMQTTASYNC_COMMAND_IGNORED\fP   \-18"
+.br
+.ti -1c
+.RI "#define \fBMQTTASYNC_MAX_BUFFERED\fP   \-19"
 .br
 .ti -1c
 .RI "#define \fBMQTTVERSION_DEFAULT\fP   0"
@@ -404,6 +407,8 @@ Return code: call not applicable to the client's version of MQTT
 Return code: 0 length will topic 
 .SS "#define MQTTASYNC_COMMAND_IGNORED   \-18"
 
+.SS "#define MQTTASYNC_MAX_BUFFERED   \-19"
+
 .SS "#define MQTTVERSION_DEFAULT   0"
 Default MQTT version to connect with\&. Use 3\&.1\&.1 then fall back to 3\&.1 
 .SS "#define MQTTVERSION_3_1   3"
@@ -574,7 +579,7 @@ This is a callback function, which will be called when the client library succes
 .PP
 
 .SS "typedef void MQTTAsync_disconnected(void *context, \fBMQTTProperties\fP *properties, enum \fBMQTTReasonCodes\fP reasonCode)"
-This is a callback function, which will be called when the client library receives a disconnect packet\&.
+This is a callback function, which will be called when the client library receives a disconnect packet from the server\&. This applies to MQTT V5 and above only\&.
 .PP
 \fBNote:\fP Neither \fBMQTTAsync_create()\fP nor \fBMQTTAsync_destroy()\fP should be called within this callback\&. 
 .PP
@@ -659,7 +664,7 @@ Structure to define call options\&. For MQTT 5\&.0 there is input data as well a
 .SS "typedef struct \fBMQTTAsync_responseOptions\fP \fBMQTTAsync_callOptions\fP"
 A synonym for responseOptions to better reflect its usage since MQTT 5\&.0 
 .SS "typedef void MQTTAsync_traceCallback(enum \fBMQTTASYNC_TRACE_LEVELS\fP level, char *message)"
-This is a callback function prototype which must be implemented if you want to receive trace information\&. 
+This is a callback function prototype which must be implemented if you want to receive trace information\&. Do not invoke any other Paho API calls in this callback function - unpredictable behavior may result\&. 
 .PP
 \fBParameters\fP
 .RS 4

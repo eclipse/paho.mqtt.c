@@ -1,0 +1,13 @@
+<map id="Socket_putdatas" name="Socket_putdatas">
+<area shape="rect" id="node1" title="Attempts to write a series of buffers to a socket in one system call so that they are sent as one pac..." alt="" coords="5,107,125,133"/>
+<area shape="rect" id="node2" href="$LinkedList_8c.html#abc7a28449893dfa775c2f709349968b4" title="Append an item to a list." alt="" coords="404,5,492,32"/>
+<area shape="rect" id="node4" href="$Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="593,183,637,209"/>
+<area shape="rect" id="node5" href="$Socket_8c.html#a457d9a6a9d8e886c46fcd0c096f45614" title="Indicate whether any data is pending outbound for a socket." alt="" coords="179,107,347,133"/>
+<area shape="rect" id="node9" href="$Socket_8c.html#a550291985042dc080825ab27b16894fb" title="Attempts to write a series of iovec buffers to a socket in one system call so that they are sent as o..." alt="" coords="210,208,315,235"/>
+<area shape="rect" id="node11" href="$SocketBuffer_8c.html#aa61a564b814b06d9cfd3fe9ce7ab1cf7" title="A socket write was interrupted so store the remaining data." alt="" coords="173,5,352,32"/>
+<area shape="rect" id="node3" href="$LinkedList_8c.html#a321a3598d6979c7af3f995b77ea2cec3" title="Append an already allocated ListElement and content to a list." alt="" coords="544,5,687,32"/>
+<area shape="rect" id="node6" href="$LinkedList_8c.html#a1738915a6d6f10022e9ee1481c0ae452" title="List callback function for comparing integers." alt="" coords="405,107,491,133"/>
+<area shape="rect" id="node7" href="$LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="401,56,495,83"/>
+<area shape="rect" id="node8" href="$LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="556,56,675,83"/>
+<area shape="rect" id="node10" href="$Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="400,208,496,235"/>
+</map>

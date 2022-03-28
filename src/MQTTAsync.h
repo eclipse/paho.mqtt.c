@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2021 IBM Corp., Ian Craggs and others
+ * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -29,7 +29,7 @@
  * @cond MQTTAsync_main
  * @mainpage Asynchronous MQTT client library for C
  *
- * &copy; Copyright 2009, 2021 IBM Corp., Ian Craggs and others
+ * &copy; Copyright 2009, 2022 IBM Corp., Ian Craggs and others
  *
  * @brief An Asynchronous MQTT client library for C.
  *
@@ -193,6 +193,11 @@
  * for the previous connect or disconnect command to be complete.
  */
 #define MQTTASYNC_COMMAND_IGNORED -18
+ /*
+  * Return code: maxBufferedMessages in the connect options must be >= 0
+  */
+ #define MQTTASYNC_MAX_BUFFERED -19
+
 /**
  * Default MQTT version to connect with.  Use 3.1.1 then fall back to 3.1
  */
@@ -421,7 +426,7 @@ typedef void MQTTAsync_connected(void* context, char* cause);
 
 /**
  * This is a callback function, which will be called when the client
- * library receives a disconnect packet.
+ * library receives a disconnect packet from the server. This applies to MQTT V5 and above only.
  *
  * <b>Note:</b> Neither MQTTAsync_create() nor MQTTAsync_destroy() should be
  * called within this callback.
@@ -950,7 +955,9 @@ typedef struct
 	int struct_version;
 	/** Whether to allow messages to be sent when the client library is not connected. */
 	int sendWhileDisconnected;
-	/** The maximum number of messages allowed to be buffered while not connected. */
+	/** The maximum number of messages allowed to be buffered. This is intended to be used to
+	 * limit the number of messages queued while the client is not connected. It also applies
+	 * when the client is connected, however, so has to be greater than 0. */
 	int maxBufferedMessages;
 	/** Whether the MQTT version is 3.1, 3.1.1, or 5.  To use V5, this must be set.
 	 *  MQTT V5 has to be chosen here, because during the create call the message persistence
@@ -1345,11 +1352,11 @@ typedef struct
 	 */
 	const MQTTAsync_nameValue* httpHeaders;
 	/**
-	 * HTTP proxy for websockets
+	 * HTTP proxy
 	 */
 	const char* httpProxy;
 	/**
-	 * HTTPS proxy for websockets
+	 * HTTPS proxy
 	 */
 	const char* httpsProxy;
 } MQTTAsync_connectOptions;
@@ -1696,7 +1703,8 @@ LIBMQTT_API void MQTTAsync_setTraceLevel(enum MQTTASYNC_TRACE_LEVELS level);
 
 /**
   * This is a callback function prototype which must be implemented if you want
-  * to receive trace information.
+  * to receive trace information. Do not invoke any other Paho API calls in this
+  * callback function - unpredictable behavior may result.
   * @param level the trace level of the message returned
   * @param message the trace message.  This is a pointer to a static buffer which
   * will be overwritten on each call.  You must copy the data if you want to keep
@@ -1888,7 +1896,7 @@ LIBMQTT_API const char* MQTTAsync_strerror(int code);
 #include <OsWrapper.h>
 #endif
 
-#define ADDRESS     "tcp://mqtt.eclipse.org:1883"
+#define ADDRESS     "tcp://mqtt.eclipseprojects.io:1883"
 #define CLIENTID    "ExampleClientPub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"
@@ -2059,7 +2067,7 @@ int main(int argc, char* argv[])
 #include <OsWrapper.h>
 #endif
 
-#define ADDRESS     "tcp://mqtt.eclipse.org:1883"
+#define ADDRESS     "tcp://mqtt.eclipseprojects.io:1883"
 #define CLIENTID    "ExampleClientSub"
 #define TOPIC       "MQTT Examples"
 #define PAYLOAD     "Hello World!"

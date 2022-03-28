@@ -151,6 +151,7 @@ PAHO_WITH_SSL | FALSE | Flag that defines whether to build ssl-enabled binaries 
 OPENSSL_ROOT_DIR | "" (system default) | Directory containing your OpenSSL installation (i.e. `/usr/local` when headers are in `/usr/local/include` and libraries are in `/usr/local/lib`)
 PAHO_BUILD_DOCUMENTATION | FALSE | Create and install the HTML based API documentation (requires Doxygen)
 PAHO_BUILD_SAMPLES | FALSE | Build sample programs
+PAHO_ENABLE_TESTING | TRUE | Build test and run
 MQTT_TEST_BROKER | tcp://localhost:1883 | MQTT connection URL for a broker to use during test execution
 MQTT_TEST_PROXY | tcp://localhost:1883 | Hostname of the test proxy to use
 MQTT_SSL_HOSTNAME | localhost | Hostname of a test SSL MQTT broker to use

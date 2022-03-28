@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2021 IBM Corp., Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -66,6 +66,7 @@ static const char *protocol_message_list[] =
 	"%d %s -> PUBLISH qos: 0 retained: %d rc: %d payload len(%d): %.*s", /* 27 */
 	"%d %s -> DISCONNECT (%d)", /* 28 */
 	"Socket error for client identifier %s, socket %d, peer address %s; ending connection", /* 29 */
+	"%d %s <- DISCONNECT (%d)", /* 30 */
 };
 
 static const char *trace_message_list[] =

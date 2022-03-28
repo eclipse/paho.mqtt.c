@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2020 IBM Corp.
+ * Copyright (c) 2012, 2022 IBM Corp., Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -73,12 +73,12 @@ struct Options
 	int start_port;
 } options =
 {
-	"ssl://m2m.eclipse.org:18883",
-	"ssl://m2m.eclipse.org:18884",
-	"ssl://m2m.eclipse.org:18887",
-	"ssl://m2m.eclipse.org:18885",
-	"ssl://m2m.eclipse.org:18886",
-	"ssl://m2m.eclipse.org:18888",
+	"ssl://localhost:18883",
+	"ssl://localhost:18884",
+	"ssl://localhost:18887",
+	"ssl://localhost:18885",
+	"ssl://localhost:18886",
+	"ssl://localhost:18888",
 	NULL, // "../../../test/ssl/client.pem",
 	NULL,
 	NULL, // "../../../test/ssl/test-root-ca.crt",
@@ -529,6 +529,7 @@ void asyncTestOnUnsubscribe(void* context, MQTTAsync_successData* response)
 	MyLog(LOGA_DEBUG, "In asyncTestOnUnsubscribe callback, %s", tc->clientid);
 	opts.onSuccess = asyncTestOnDisconnect;
 	opts.context = tc;
+	opts.timeout = 1000;
 
 	rc = MQTTAsync_disconnect(tc->client, &opts);
 }
@@ -2294,7 +2295,7 @@ int test7(struct Options options)
 	tc.subscribed = 0;
 	tc.testFinished = 0;
 
-	opts.keepAliveInterval = 20;
+	opts.keepAliveInterval = 60;
 	opts.cleansession = 1;
 	//opts.username = "testuser";
 	//opts.password = "testpassword";
@@ -2326,7 +2327,7 @@ int test7(struct Options options)
 	if (rc != MQTTASYNC_SUCCESS)
 		goto exit;
 
-	while (test7OnUnsubscribed == 0 && test7OnPublishSuccessCount < options.message_count)
+	while (tc.testFinished == 0 && test7OnUnsubscribed == 0 && test7OnPublishSuccessCount < options.message_count)
 #if defined(_WIN32)
 		Sleep(100);
 #else

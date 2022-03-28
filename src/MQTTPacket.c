@@ -816,10 +816,11 @@ void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t 
 		pack->rc = MQTTREASONCODE_SUCCESS;
 		pack->properties = props;
 
-		if (datalen > 2)
+		/* disconnect has no msgid */
+		if (datalen > 2 || (pack->header.bits.type == DISCONNECT && datalen > 0))
 			pack->rc = readChar(&curdata); /* reason code */
 
-		if (datalen > 3)
+		if (datalen > 3 || (pack->header.bits.type == DISCONNECT && datalen > 1))
 		{
 			if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
 			{

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2021 IBM Corp., Ian Craggs and others
+ * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -340,6 +340,12 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 		}
 	}
 
+	if (options && options->maxBufferedMessages <= 0)
+	{
+		rc = MQTTASYNC_MAX_BUFFERED;
+		goto exit;
+	}
+
 	if (options && (strncmp(options->struct_id, "MQCO", 4) != 0 ||
 					options->struct_version < 0 || options->struct_version > 2))
 	{
@@ -356,6 +362,7 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 		bstate->clients = ListInitialize();
 		Socket_outInitialize();
 		Socket_setWriteCompleteCallback(MQTTAsync_writeComplete);
+		Socket_setWriteAvailableCallback(MQTTProtocol_writeAvailable);
 		MQTTAsync_handles = ListInitialize();
 		MQTTAsync_commands = ListInitialize();
 #if defined(OPENSSL)
@@ -408,9 +415,10 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 	m->c->outboundMsgs = ListInitialize();
 	m->c->inboundMsgs = ListInitialize();
 	m->c->messageQueue = ListInitialize();
+	m->c->outboundQueue = ListInitialize();
 	m->c->clientID = MQTTStrdup(clientId);
 	if (m->c->context == NULL || m->c->outboundMsgs == NULL || m->c->inboundMsgs == NULL ||
-			m->c->messageQueue == NULL || m->c->clientID == NULL)
+			m->c->messageQueue == NULL || m->c->outboundQueue == NULL || m->c->clientID == NULL)
 	{
 		rc = PAHO_MEMORY_ERROR;
 		goto exit;
@@ -484,7 +492,7 @@ void MQTTAsync_destroy(MQTTAsync* handle)
 
 	if (m->c)
 	{
-		int saved_socket = m->c->net.socket;
+		SOCKET saved_socket = m->c->net.socket;
 		char* saved_clientid = MQTTStrdup(m->c->clientID);
 #if !defined(NO_PERSISTENCE)
 		MQTTPersistence_close(m->c);
@@ -627,8 +635,6 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	m->connect.context = options->context;
 	m->connectTimeout = options->connectTimeout;
 
-	MQTTAsync_tostop = 0;
-
 	/* don't lock async mutex if we are being called from a callback */
 	thread_id = Thread_getid();
 	if (thread_id != sendThread_id && thread_id != receiveThread_id)
@@ -636,6 +642,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		MQTTAsync_lock_mutex(mqttasync_mutex);
 		locked = 1;
 	}
+	MQTTAsync_tostop = 0;
 	if (sendThread_state != STARTING && sendThread_state != RUNNING)
 	{
 		sendThread_state = STARTING;
@@ -1425,6 +1432,7 @@ int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens)
 
 	FUNC_ENTRY;
 	MQTTAsync_lock_mutex(mqttasync_mutex);
+	MQTTAsync_lock_mutex(mqttcommand_mutex);
 	*tokens = NULL;
 
 	if (m == NULL)
@@ -1438,7 +1446,7 @@ int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens)
 	{
 		MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)(current->content);
 
-		if (cmd->client == m)
+		if (cmd->client == m && cmd->command.type == PUBLISH)
 			count++;
 	}
 	if (m->c)
@@ -1459,7 +1467,7 @@ int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens)
 	{
 		MQTTAsync_queuedCommand* cmd = (MQTTAsync_queuedCommand*)(current->content);
 
-		if (cmd->client == m)
+		if (cmd->client == m  && cmd->command.type == PUBLISH)
 			(*tokens)[count++] = cmd->command.token;
 	}
 
@@ -1476,6 +1484,7 @@ int MQTTAsync_getPendingTokens(MQTTAsync handle, MQTTAsync_token **tokens)
 	(*tokens)[count] = -1; /* indicate end of list */
 
 exit:
+	MQTTAsync_unlock_mutex(mqttcommand_mutex);
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -1777,6 +1786,8 @@ const char* MQTTAsync_strerror(int code)
       return "Zero length will topic on connect";
     case MQTTASYNC_COMMAND_IGNORED:
       return "Connect or disconnect command ignored";
+    case MQTTASYNC_MAX_BUFFERED:
+      return "maxBufferedMessages in the connect options must be >= 0";
   }
 
   chars = snprintf(buf, sizeof(buf), "Unknown error code %d", code);

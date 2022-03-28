@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2020 IBM Corp. and others
+ * Copyright (c) 2012, 2022 IBM Corp., Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -57,8 +57,8 @@ struct Options
 	int test_no;
 } options =
 {
-	"mqtt.eclipse.org:1883",
 	"localhost:1883",
+	"localhost:1884",
 	0,
 	0,
 };
@@ -1656,7 +1656,7 @@ int test5(struct Options options)
 	}
 
 	createOptions.sendWhileDisconnected = 0;
-	createOptions.maxBufferedMessages = 0;
+	createOptions.maxBufferedMessages = 1;
 	createOptions.MQTTVersion = MQTTVERSION_5;
 	rc = MQTTAsync_createWithOptions(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT,
 			NULL, &createOptions);
@@ -1826,7 +1826,7 @@ int test6(struct Options options)
 	}
 
 	createOptions.sendWhileDisconnected = 0;
-	createOptions.maxBufferedMessages = 0;
+	createOptions.maxBufferedMessages = 1;
 	createOptions.MQTTVersion = MQTTVERSION_5;
 	rc = MQTTAsync_createWithOptions(&d, options.connection, clientidd, MQTTCLIENT_PERSISTENCE_DEFAULT,
 			NULL, &createOptions);

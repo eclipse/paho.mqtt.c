@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp. and others
+ * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -55,7 +55,7 @@ struct Options
 	int iterations;
 } options =
 {
-	"tcp://m2m.eclipse.org:1883",
+	"tcp://localhost:1883",
 	NULL,
 	0,
 	0,

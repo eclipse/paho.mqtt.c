@@ -10,7 +10,7 @@ Vcs-Git: https://github.com/eclipse/paho.mqtt.c.git
 Package: libpaho-mqtt-c1-dev
 Section: libdevel
 Architecture: any
-Depends:  ${misc:Depends}, libpaho-mqtt3a1 (= ${binary:Version}), libpaho-mqtt3c1 (= ${binary:Version}), libpaho-mqtt3as1 (= ${binary:Version}), libpaho-mqtt3cs1 (= ${binary:Version})
+Depends:  ${misc:Depends}, libssl-dev (>= 1.1), libpaho-mqtt3a1 (= ${binary:Version}), libpaho-mqtt3c1 (= ${binary:Version}), libpaho-mqtt3as1 (= ${binary:Version}), libpaho-mqtt3cs1 (= ${binary:Version})
 Description: Eclipse Paho MQTT C Client Library - development files
  Development package of the Eclipse Paho MQTT C client library.
  Includes the C headers and CMake files.

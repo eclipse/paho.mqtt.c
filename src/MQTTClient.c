@@ -800,10 +800,10 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 	long timeout = 10L; /* first time in we have a small timeout.  Gets things started more quickly */
 
 	FUNC_ENTRY;
-	running = 1;
-	run_id = Thread_getid();
-
 	Thread_lock_mutex(mqttclient_mutex);
+
+	run_id = Thread_getid();
+	running = 1;
 	while (!tostop)
 	{
 		int rc = SOCKET_ERROR;
@@ -1183,13 +1183,26 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 	resp.reasonCode = SOCKET_ERROR;
 	if (m->ma && !running)
 	{
+		int count = 0;
+
 		Thread_start(MQTTClient_run, handle);
 		if (MQTTTime_elapsed(start) >= millisecsTimeout)
 		{
 			rc = SOCKET_ERROR;
 			goto exit;
 		}
-		MQTTTime_sleep(100L);
+
+		while (!running && ++count < 5)
+		{
+			Thread_unlock_mutex(mqttclient_mutex);
+			MQTTTime_sleep(100L);
+			Thread_lock_mutex(mqttclient_mutex);
+		}
+		if (!running)
+		{
+			rc = SOCKET_ERROR;
+			goto exit;
+		}
 	}
 
 	Log(TRACE_MIN, -1, "Connecting to serverURI %s with MQTT version %d", serverURI, MQTTVersion);
@@ -2585,6 +2598,7 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 	MQTTPacket* pack = NULL;
 	MQTTClients* m = handle;
 	START_TIME_TYPE start = MQTTTime_start_clock();
+	int is_running = 0; /* local copy of running */
 
 	FUNC_ENTRY;
 	if (((MQTTClients*)handle) == NULL || timeout <= 0L)
@@ -2593,7 +2607,11 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 		goto exit;
 	}
 
-	if (running)
+	Thread_lock_mutex(mqttclient_mutex);
+	is_running = running;
+	Thread_unlock_mutex(mqttclient_mutex);
+
+	if (is_running)
 	{
 		if (packet_type == CONNECT)
 		{

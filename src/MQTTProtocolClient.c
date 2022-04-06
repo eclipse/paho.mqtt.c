@@ -754,8 +754,14 @@ static void MQTTProtocol_retries(START_TIME_TYPE now, Clients* client, int regar
 
 	FUNC_ENTRY;
 
-	if (!regardless && client->retryInterval <= 0) /* 0 or -ive retryInterval turns off retry except on reconnect */
+	if (!regardless && client->retryInterval <= 0 && /* 0 or -ive retryInterval turns off retry except on reconnect */
+			client->connect_sent == client->connect_count)
 		goto exit;
+
+	if (regardless)
+		client->connect_count = client->outboundMsgs->count; /* remember the number of messages to retry on connect */
+	else if (client->connect_sent < client->connect_count) /* continue a connect retry which didn't complete first time around */
+		regardless = 1;
 
 	while (client && ListNextElement(client->outboundMsgs, &outcurrent) &&
 		   client->connected && client->good &&        /* client is connected and has no errors */
@@ -764,6 +770,8 @@ static void MQTTProtocol_retries(START_TIME_TYPE now, Clients* client, int regar
 		Messages* m = (Messages*)(outcurrent->content);
 		if (regardless || MQTTTime_difftime(now, m->lastTouch) > (DIFF_TIME_TYPE)(max(client->retryInterval, 10) * 1000))
 		{
+			if (regardless)
+				++client->connect_sent;
 			if (m->qos == 1 || (m->qos == 2 && m->nextMessageType == PUBREC))
 			{
 				Publish publish;
@@ -808,7 +816,6 @@ static void MQTTProtocol_retries(START_TIME_TYPE now, Clients* client, int regar
 				else
 					m->lastTouch = MQTTTime_now();
 			}
-			/* break; why not do all retries at once? */
 		}
 	}
 exit:

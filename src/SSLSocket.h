@@ -48,5 +48,6 @@ int SSLSocket_connect(SSL* ssl, SOCKET sock, const char* hostname, int verify, i
 
 SOCKET SSLSocket_getPendingRead(void);
 int SSLSocket_continueWrite(pending_writes* pw);
+int SSLSocket_abortWrite(pending_writes* pw);
 
 #endif

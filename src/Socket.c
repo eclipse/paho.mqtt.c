@@ -644,7 +644,7 @@ exit:
 
 /**
  *  Indicate whether any data is pending outbound for a socket.
- *  @return boolean - true == data pending.
+ *  @return boolean - true == no pending data.
  */
 int Socket_noPendingWrites(SOCKET socket)
 {
@@ -1262,7 +1262,10 @@ int Socket_abortWrite(SOCKET socket)
 
 #if defined(OPENSSL)
 	if (pw->ssl)
+	{
+		rc = SSLSocket_abortWrite(pw);
 		goto exit;
+	}
 #endif
 
 	for (i = 0; i < pw->count; i++)

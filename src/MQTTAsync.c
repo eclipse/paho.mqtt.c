@@ -340,6 +340,12 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 		}
 	}
 
+	if (options && options->maxBufferedMessages <= 0)
+	{
+		rc = MQTTASYNC_MAX_BUFFERED;
+		goto exit;
+	}
+
 	if (options && (strncmp(options->struct_id, "MQCO", 4) != 0 ||
 					options->struct_version < 0 || options->struct_version > 2))
 	{
@@ -1780,6 +1786,8 @@ const char* MQTTAsync_strerror(int code)
       return "Zero length will topic on connect";
     case MQTTASYNC_COMMAND_IGNORED:
       return "Connect or disconnect command ignored";
+    case MQTTASYNC_MAX_BUFFERED:
+      return "maxBufferedMessages in the connect options must be >= 0";
   }
 
   chars = snprintf(buf, sizeof(buf), "Unknown error code %d", code);

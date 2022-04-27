@@ -1290,7 +1290,7 @@ int test7(struct Options options)
 
 	opts.will = &wopts;
 	opts.will->message = "will message";
-	opts.will->qos = 1;
+	opts.will->qos = subsqos;
 	opts.will->retained = 0;
 	opts.will->topicName = "will topic";
 	opts.will = NULL;
@@ -1333,7 +1333,7 @@ int test7(struct Options options)
 
 	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
 	pubmsg.payloadlen = 11;
-	pubmsg.qos = 2;
+	pubmsg.qos = subsqos;
 	pubmsg.retained = 0;
 	rc = MQTTAsync_send(c, test_topic, pubmsg.payloadlen, pubmsg.payload, pubmsg.qos, pubmsg.retained, &ropts);
 	MyLog(LOGA_DEBUG, "Token was %d", ropts.token);
@@ -1346,7 +1346,7 @@ int test7(struct Options options)
 
 	test7_messageCount = 0;
 	int i = 0;
-	pubmsg.qos = 2;
+	pubmsg.qos = subsqos;
 	for (i = 0; i < msg_count; ++i)
 	{
 		pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";

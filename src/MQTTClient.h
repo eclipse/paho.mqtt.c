@@ -686,6 +686,15 @@ typedef struct
 	/** The password to load the client's privateKey if encrypted. */
 	const char* privateKeyPassword;
 
+	/** Key mode "ENG" for engine or "PEM" for pem format Only used if struct_version is >= 6.*/
+	const char* keyType;
+
+    /** engineId for SSL Only used if struct_version is >= 6.*/
+    const char* engineId;
+
+    /** engine config file Only used if struct_version is >= 6.*/
+    const char* engineConfFile;
+
 	/**
 	* The list of cipher suites that the client will present to the server during the SSL handshake. For a
 	* full explanation of the cipher list format, please see the OpenSSL on-line documentation:
@@ -767,7 +776,7 @@ typedef struct
 	unsigned int protos_len;
 } MQTTClient_SSLOptions;
 
-#define MQTTClient_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 5, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL, NULL, NULL, 0, NULL, 0 }
+#define MQTTClient_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 6, NULL, NULL, NULL, NULL, "PEM", NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL, NULL, NULL, 0, NULL, 0 }
 
 /**
   * MQTTClient_libraryInfo is used to store details relating to the currently used

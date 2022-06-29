@@ -1582,9 +1582,12 @@ exit:
 static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 {
 	int was_connected = m->c->connected;
+	int more_to_try = 0;
+	int connectionLost_called = 0;
 	FUNC_ENTRY;
 
-	if (MQTTAsync_checkConn(&m->connect, m))
+	more_to_try = MQTTAsync_checkConn(&m->connect, m);
+	if (more_to_try)
 	{
 		MQTTAsync_queuedCommand* conn;
 
@@ -1593,6 +1596,7 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 		{
 			Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
 				(*(m->cl))(m->clContext, NULL);
+			connectionLost_called = 1;
 		}
 		/* put the connect command back to the head of the command queue, using the next serverURI */
 		if ((conn = malloc(sizeof(MQTTAsync_queuedCommand))) == NULL)
@@ -1613,12 +1617,14 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 		else
 			conn->command.details.conn.currentURI++;
 
-		MQTTAsync_addCommand(conn, sizeof(m->connect));
+		if (MQTTAsync_addCommand(conn, sizeof(m->connect)) != MQTTASYNC_SUCCESS)
+			more_to_try = 0; /* go into retry mode if CONNECT command add fails */
 	}
-	else
+
+	if (!more_to_try)
 	{
 		MQTTAsync_closeSession(m->c, MQTTREASONCODE_SUCCESS, NULL);
-		if (m->cl && was_connected)
+		if (connectionLost_called == 0 && m->cl && was_connected)
 		{
 			Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
 				(*(m->cl))(m->clContext, NULL);
@@ -2604,7 +2610,7 @@ static int MQTTAsync_disconnect_internal(MQTTAsync handle, int timeout)
 
 void MQTTProtocol_closeSession(Clients* c, int sendwill)
 {
-	MQTTAsync_disconnect_internal((MQTTAsync)c->context, 0);
+	MQTTAsync_closeSession(c, MQTTREASONCODE_SUCCESS, NULL);
 }
 
 

@@ -791,7 +791,8 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		}
 		if (m->c->sslopts->struct_version >= 5)
 		{
-			m->c->sslopts->protos = MQTTStrdup(options->ssl->protos);
+			if (options->ssl->protos)
+				m->c->sslopts->protos = MQTTStrdup(options->ssl->protos);
 			m->c->sslopts->protos_len = options->ssl->protos_len;
 		}
 	}

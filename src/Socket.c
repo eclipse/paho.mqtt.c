@@ -944,6 +944,9 @@ int Socket_close(SOCKET socket)
 	ListRemoveItem(mod_s.connect_pending, &socket, intcompare);
 	ListRemoveItem(mod_s.write_pending, &socket, intcompare);
 
+	if (mod_s.nfds == 0)
+		goto exit;
+
 	fd = bsearch(&socket, mod_s.fds_read, (size_t)mod_s.nfds, sizeof(mod_s.fds_read[0]), cmpsockfds);
 	if (fd)
 	{

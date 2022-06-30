@@ -2178,6 +2178,7 @@ int test7MessageArrived(void* context, char* topicName, int topicLen,
 		opts.context = tc;
 
 		rc = MQTTAsync_sendMessage(tc->client, tc->topic, &pubmsg, &opts);
+		assert("Publish successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	}
 	else if (message_count < options.message_count)
 	{
@@ -2192,6 +2193,7 @@ int test7MessageArrived(void* context, char* topicName, int topicLen,
 		opts.onFailure = test7OnPublishFailure;
 		opts.context = tc;
 		rc = MQTTAsync_sendMessage(tc->client, tc->topic, &pubmsg, &opts);
+		assert("Publish successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	}
 	else
 	{
@@ -2237,6 +2239,7 @@ void test7OnSubscribe(void* context, MQTTAsync_successData* response)
 
 	rc = MQTTAsync_send(tc->client, tc->topic, pubmsg.payloadlen, pubmsg.payload,
 			pubmsg.qos, pubmsg.retained, &opts);
+	assert("Publish successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 }
 
 void test7OnConnect(void* context, MQTTAsync_successData* response)

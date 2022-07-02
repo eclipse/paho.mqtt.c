@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2021 IBM Corp. and Ian Craggs
+ * Copyright (c) 2009, 2022 IBM Corp. and Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -132,7 +132,10 @@ void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
 	}
 
 	if (actual_len < remaining_length)
+	{
 		*error = TCPSOCKET_INTERRUPTED;
+		net->lastReceived = MQTTTime_now();
+	}
 	else
 	{
 		ptype = header.bits.type;

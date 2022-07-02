@@ -156,6 +156,9 @@ char* Socket_getpeer(SOCKET sock);
 void Socket_addPendingWrite(SOCKET socket);
 void Socket_clearPendingWrite(SOCKET socket);
 
+typedef void Socket_writeContinue(SOCKET socket);
+void Socket_setWriteContinueCallback(Socket_writeContinue*);
+
 typedef void Socket_writeComplete(SOCKET socket, int rc);
 void Socket_setWriteCompleteCallback(Socket_writeComplete*);
 

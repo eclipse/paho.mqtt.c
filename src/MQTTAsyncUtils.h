@@ -169,6 +169,7 @@ void MQTTAsync_closeSession(Clients* client, enum MQTTReasonCodes reasonCode, MQ
 int MQTTAsync_disconnect1(MQTTAsync handle, const MQTTAsync_disconnectOptions* options, int internal);
 int MQTTAsync_assignMsgId(MQTTAsyncs* m);
 int MQTTAsync_getNoBufferedMessages(MQTTAsyncs* m);
+void MQTTAsync_writeContinue(SOCKET socket);
 void MQTTAsync_writeComplete(SOCKET socket, int rc);
 void setRetryLoopInterval(int keepalive);
 

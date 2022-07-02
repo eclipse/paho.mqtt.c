@@ -1060,6 +1060,19 @@ static void MQTTAsync_freeCommand(MQTTAsync_queuedCommand *command)
 }
 
 
+void MQTTAsync_writeContinue(SOCKET socket)
+{
+	ListElement* found = NULL;
+
+	if ((found = ListFindItem(MQTTAsync_handles, &socket, clientSockCompare)) != NULL)
+	{
+		MQTTAsyncs* m = (MQTTAsyncs*)(found->content);
+
+		m->c->net.lastSent = MQTTTime_now();
+	}
+}
+
+
 void MQTTAsync_writeComplete(SOCKET socket, int rc)
 {
 	ListElement* found = NULL;

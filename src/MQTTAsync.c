@@ -361,6 +361,7 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 		Log_initialize((Log_nameValue*)MQTTAsync_getVersionInfo());
 		bstate->clients = ListInitialize();
 		Socket_outInitialize();
+		Socket_setWriteContinueCallback(MQTTAsync_writeContinue);
 		Socket_setWriteCompleteCallback(MQTTAsync_writeComplete);
 		Socket_setWriteAvailableCallback(MQTTProtocol_writeAvailable);
 		MQTTAsync_handles = ListInitialize();

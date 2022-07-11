@@ -1062,6 +1062,7 @@ typedef struct
 	 * 2 means no ssl_error_context, ssl_error_cb
 	 * 3 means no ssl_psk_cb, ssl_psk_context, disableDefaultTrustStore
 	 * 4 means no protos, protos_len
+     * 5 means no ssl engine
 	 */
 	int struct_version;
 
@@ -1080,6 +1081,15 @@ typedef struct
 
 	/** The password to load the client's privateKey if encrypted. */
 	const char* privateKeyPassword;
+
+	/** Key mode "ENG" for engine or "PEM" for pem format Only used if struct_version is >= 6.*/
+	const char* keyType;
+
+    /** engineId for SSL Only used if struct_version is >= 6.*/
+    const char* engineId;
+
+    /** engine config file Only used if struct_version is >= 6.*/
+    const char* engineConfFile;
 
 	/**
 	* The list of cipher suites that the client will present to the server during the SSL handshake. For a
@@ -1162,7 +1172,7 @@ typedef struct
 	unsigned int protos_len;
 } MQTTAsync_SSLOptions;
 
-#define MQTTAsync_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 5, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL, NULL, NULL, 0, NULL, 0 }
+#define MQTTAsync_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 6, NULL, NULL, NULL, NULL, "PEM", NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL, NULL, NULL, 0, NULL, 0 }
 
 /** Utility structure where name/value pairs are needed */
 typedef struct

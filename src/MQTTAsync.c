@@ -746,8 +746,6 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 			if (m->c->sslopts->CApath)
 				free((void*)m->c->sslopts->CApath);
 		}
-		free((void*)m->c->sslopts);
-		m->c->sslopts = NULL;
         if (m->c->sslopts->struct_version >= 6) 
         {
             if (m->c->sslopts->keyType)
@@ -757,6 +755,8 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
             if (m->c->sslopts->engineConfFile)
                 free((void*)m->c->sslopts->engineConfFile);
         }
+		free((void*)m->c->sslopts);
+		m->c->sslopts = NULL;
 	}
 
 	if (options->struct_version != 0 && options->ssl)

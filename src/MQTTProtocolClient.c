@@ -936,6 +936,15 @@ void MQTTProtocol_freeClient(Clients* client)
 			if (client->sslopts->CApath)
 				free((void*)client->sslopts->CApath);
 		}
+        if (client->sslopts->struct_version >= 6) 
+        {
+            if (client->sslopts->keyType)
+                free((void*)client->sslopts->keyType);
+            if (client->sslopts->engineId)
+                free((void*)client->sslopts->engineId);
+            if (client->sslopts->engineConfFile)
+                free((void*)client->sslopts->engineConfFile);
+        }
 		free(client->sslopts);
                 client->sslopts = NULL;
 	}

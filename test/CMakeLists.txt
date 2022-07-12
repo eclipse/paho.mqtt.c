@@ -1732,10 +1732,10 @@ IF (PAHO_BUILD_STATIC)
 		COMMAND test95-static "--test_no" "2" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
 	)
 	
-	ADD_TEST(
-		NAME test95-3-offline-buffering-auto-reconnect-static
-		COMMAND test95-static "--test_no" "3" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
-	)
+	#ADD_TEST(
+	#	NAME test95-3-offline-buffering-auto-reconnect-static
+	#	COMMAND test95-static "--test_no" "3" "--connection" ${MQTT_TEST_BROKER} "--proxy_connection" ${MQTT_TEST_PROXY}
+	#)
 	
 	ADD_TEST(
 		NAME test95-4-offline-buffering-auto-reconnect-serverURIs-static
@@ -1755,7 +1755,7 @@ IF (PAHO_BUILD_STATIC)
 	SET_TESTS_PROPERTIES(
 		test95-1-offline-buffering-send-disconnected-static
 		test95-2-offline-buffering-send-disconnected-serverURIs-static
-		test95-3-offline-buffering-auto-reconnect-static
+		#test95-3-offline-buffering-auto-reconnect-static
 		test95-4-offline-buffering-auto-reconnect-serverURIs-static
 		test95-5-offline-buffering-max-buffered-static
 		test95-6-offline-buffering-max-buffered-binary-will-static

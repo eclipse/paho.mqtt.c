@@ -937,8 +937,13 @@ void MQTTProtocol_freeClient(Clients* client)
 			if (client->sslopts->CApath)
 				free((void*)client->sslopts->CApath);
 		}
+		if (client->sslopts->struct_version >= 5)
+		{
+			if (client->sslopts->protos)
+				free((void*)client->sslopts->protos);
+		}
 		free(client->sslopts);
-                client->sslopts = NULL;
+			client->sslopts = NULL;
 	}
 #endif
 	/* don't free the client structure itself... this is done elsewhere */

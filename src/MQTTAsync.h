@@ -1305,15 +1305,15 @@ typedef struct
 	  */
 	int MQTTVersion;
 	/**
-	  * Reconnect automatically in the case of a connection being lost?
+	  * Reconnect automatically in the case of a connection being lost. 0=false, 1=true
 	  */
 	int automaticReconnect;
 	/**
-	  * Minimum retry interval in seconds.  Doubled on each failed retry.
+	  * The minimum automatic reconnect retry interval in seconds. Doubled on each failed retry.
 	  */
 	int minRetryInterval;
 	/**
-	  * Maximum retry interval in seconds.  The doubling stops here on failed retries.
+	  * The maximum automatic reconnect retry interval in seconds. The doubling stops here on failed retries.
 	  */
 	int maxRetryInterval;
 	/**

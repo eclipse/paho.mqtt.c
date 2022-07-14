@@ -380,7 +380,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 #endif
 	FUNC_ENTRY;
 	if ((rc = Thread_lock_mutex(mqttclient_mutex)) != 0)
-		goto exit;
+		goto nounlock_exit;
 
 	if (serverURI == NULL || clientId == NULL)
 	{
@@ -509,6 +509,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 
 exit:
 	Thread_unlock_mutex(mqttclient_mutex);
+nounlock_exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

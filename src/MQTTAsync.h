@@ -728,7 +728,8 @@ typedef struct MQTTAsync_responseOptions
 	/**
     * A token is returned from the call.  It can be used to track
     * the state of this request, both in the callbacks and in future calls
-    * such as ::MQTTAsync_waitForCompletion.
+    * such as ::MQTTAsync_waitForCompletion. This is output only - any
+    * change by the application will be ignored.
     */
 	MQTTAsync_token token;
 	/**

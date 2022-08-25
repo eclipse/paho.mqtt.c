@@ -230,6 +230,18 @@ In this case the libraries and executable are not linked against OpenSSL Librari
 apt-get install gcc-mingw-w64-x86-64 gcc-mingw-w64-i686
 ```
 
+## Building paho-mqtt - Using vcpkg
+
+You can download and install paho-mqtt using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
+
+    git clone https://github.com/Microsoft/vcpkg.git
+    cd vcpkg
+    ./bootstrap-vcpkg.sh
+    ./vcpkg integrate install
+    ./vcpkg install paho-mqtt
+
+The paho-mqtt port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
+
 ## Microsoft Windows
 
 ### Calling convention

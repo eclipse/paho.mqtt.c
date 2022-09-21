@@ -20,9 +20,10 @@
 #include "MQTTPacket.h"
 #include "Thread.h"
 
-#define URI_TCP "tcp://"
-#define URI_WS  "ws://"
-#define URI_WSS "wss://"
+#define URI_TCP  "tcp://"
+#define URI_MQTT "mqtt://"
+#define URI_WS   "ws://"
+#define URI_WSS  "wss://"
 
 enum MQTTAsync_threadStates
 {

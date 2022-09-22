@@ -361,6 +361,7 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 		Log_initialize((Log_nameValue*)MQTTAsync_getVersionInfo());
 		bstate->clients = ListInitialize();
 		Socket_outInitialize();
+		Socket_setWriteContinueCallback(MQTTAsync_writeContinue);
 		Socket_setWriteCompleteCallback(MQTTAsync_writeComplete);
 		Socket_setWriteAvailableCallback(MQTTProtocol_writeAvailable);
 		MQTTAsync_handles = ListInitialize();
@@ -791,7 +792,8 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		}
 		if (m->c->sslopts->struct_version >= 5)
 		{
-			m->c->sslopts->protos = options->ssl->protos;
+			if (options->ssl->protos)
+				m->c->sslopts->protos = (const unsigned char*)MQTTStrdup((const char*)options->ssl->protos);
 			m->c->sslopts->protos_len = options->ssl->protos_len;
 		}
 	}

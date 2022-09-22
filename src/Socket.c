@@ -1203,6 +1203,13 @@ exit:
 	return rc;
 }
 
+static Socket_writeContinue* writecontinue = NULL;
+
+void Socket_setWriteContinueCallback(Socket_writeContinue* mywritecontinue)
+{
+	writecontinue = mywritecontinue;
+}
+
 static Socket_writeComplete* writecomplete = NULL;
 
 void Socket_setWriteCompleteCallback(Socket_writeComplete* mywritecomplete)
@@ -1400,6 +1407,9 @@ int Socket_continueWrites(SOCKET* sock, mutex_type mutex)
 		}
 		else
 			ListNextElement(mod_s.write_pending, &curpending);
+
+		if (rc == 0)
+			(*writecontinue)(socket);
 
 		if (rc == SOCKET_ERROR)
 		{

@@ -172,6 +172,8 @@ int MQTTAsync_getNoBufferedMessages(MQTTAsyncs* m);
 void MQTTAsync_writeContinue(SOCKET socket);
 void MQTTAsync_writeComplete(SOCKET socket, int rc);
 void setRetryLoopInterval(int keepalive);
+void MQTTAsync_NULLPublishResponses(MQTTAsyncs* m);
+void MQTTAsync_NULLPublishCommands(MQTTAsyncs* m);
 
 #if defined(_WIN32) || defined(_WIN64)
 #else

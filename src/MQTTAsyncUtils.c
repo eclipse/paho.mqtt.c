@@ -1053,6 +1053,7 @@ static void MQTTAsync_freeCommand1(MQTTAsync_queuedCommand *command)
 		free(command->key);
 }
 
+
 static void MQTTAsync_freeCommand(MQTTAsync_queuedCommand *command)
 {
 	MQTTAsync_freeCommand1(command);
@@ -1460,11 +1461,6 @@ static int MQTTAsync_processCommand(void)
 				}
 				command->client->pending_write = &command->command;
 			}
-		}
-		else
-		{
-			command->command.details.pub.payload = NULL; /* this will be freed by the protocol code */
-			command->command.details.pub.destinationName = NULL; /* this will be freed by the protocol code */
 		}
 		free(p); /* should this be done if the write isn't complete? */
 	}
@@ -2422,6 +2418,65 @@ static int clientStructCompare(void* a, void* b)
 }
 
 
+/*
+ * Set destinationName and payload to NULL in all responses
+ * for a client, so that these memory locations aren't freed twice as they
+ * are also stored by MQTTProtocol_storePublication.
+ * @param m the client to process
+ */
+void MQTTAsync_NULLPublishResponses(MQTTAsyncs* m)
+{
+	FUNC_ENTRY;
+	if (m->responses)
+	{
+		ListElement* cur_response = NULL;
+
+		while (ListNextElement(m->responses, &cur_response))
+		{
+			MQTTAsync_queuedCommand* command = (MQTTAsync_queuedCommand*)(cur_response->content);
+			if (command->command.type == PUBLISH)
+			{
+				/* these values are going to be freed in RemovePublication */
+				command->command.details.pub.destinationName = NULL;
+				command->command.details.pub.payload = NULL;
+			}
+		}
+	}
+	FUNC_EXIT;
+}
+
+
+/*
+ * Set destinationName and payload to NULL in all commands
+ * for a client, so that these memory locations aren't freed twice as they
+ * are also stored by MQTTProtocol_storePublication.
+ * @param m the client to process
+ */
+void MQTTAsync_NULLPublishCommands(MQTTAsyncs* m)
+{
+	ListElement* current = NULL;
+	ListElement *next = NULL;
+
+	FUNC_ENTRY;
+	current = ListNextElement(MQTTAsync_commands, &next);
+	ListNextElement(MQTTAsync_commands, &next);
+	while (current)
+	{
+		MQTTAsync_queuedCommand* command = (MQTTAsync_queuedCommand*)(current->content);
+
+		if (command->client == m && command->command.type == PUBLISH)
+		{
+			/* these values are going to be freed in RemovePublication */
+			command->command.details.pub.destinationName = NULL;
+			command->command.details.pub.payload = NULL;
+		}
+		current = next;
+		ListNextElement(MQTTAsync_commands, &next);
+	}
+	FUNC_EXIT;
+}
+
+
 /**
  * Clean the MQTT session data.  This includes the MQTT inflight messages, because
  * that is part of the MQTT state that will be cleared by the MQTT broker too.
@@ -2443,6 +2498,7 @@ static int MQTTAsync_cleanSession(Clients* client)
 	if ((found = ListFindItem(MQTTAsync_handles, client, clientStructCompare)) != NULL)
 	{
 		MQTTAsyncs* m = (MQTTAsyncs*)(found->content);
+		MQTTAsync_NULLPublishResponses(m);
 		MQTTAsync_freeResponses(m);
 	}
 	else
@@ -2964,6 +3020,7 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 					ackrc = 0,
 					mqttversion = 0;
 				MQTTProperties msgprops = MQTTProperties_initializer;
+				Publications* pubToRemove = NULL;
 
 				/* This block is so that the ack variable is local and isn't accidentally reused */
 				{
@@ -2981,11 +3038,11 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 				}
 
 				if (pack->header.bits.type == PUBCOMP)
-					*rc = MQTTProtocol_handlePubcomps(pack, *sock);
+					*rc = MQTTProtocol_handlePubcomps(pack, *sock, &pubToRemove);
 				else if (pack->header.bits.type == PUBREC)
-					*rc = MQTTProtocol_handlePubrecs(pack, *sock);
+					*rc = MQTTProtocol_handlePubrecs(pack, *sock, &pubToRemove);
 				else if (pack->header.bits.type == PUBACK)
-					*rc = MQTTProtocol_handlePubacks(pack, *sock);
+					*rc = MQTTProtocol_handlePubacks(pack, *sock, &pubToRemove);
 				if (!m)
 					Log(LOG_ERROR, -1, "PUBCOMP, PUBACK or PUBREC received for no client, msgid %d", msgid);
 				if (m && (msgtype != PUBREC || ackrc >= MQTTREASONCODE_UNSPECIFIED_ERROR))
@@ -3043,6 +3100,16 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 								Log(TRACE_MIN, -1, "Calling publish failure for client %s", m->c->clientID);
 								(*(command->command.onFailure5))(command->command.context, &data);
 							}
+							if (pubToRemove != NULL)
+							{
+								MQTTProtocol_removePublication(pubToRemove);
+								pubToRemove = NULL;
+								/* removePublication has freed the topic and payload memory, so here we indicate that
+								 * so freeCommand doesn't try to free them again.
+								 */
+								command->command.details.pub.destinationName = NULL;
+								command->command.details.pub.payload = NULL;
+							}
 							MQTTAsync_freeCommand(command);
 							break;
 						}
@@ -3050,6 +3117,8 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 					if (mqttversion >= MQTTVERSION_5)
 						MQTTProperties_free(&msgprops);
 				}
+				if (pubToRemove != NULL)
+					MQTTProtocol_removePublication(pubToRemove);
 			}
 			else if (pack->header.bits.type == PUBREL)
 				*rc = MQTTProtocol_handlePubrels(pack, *sock);

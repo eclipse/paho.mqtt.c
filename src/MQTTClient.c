@@ -1685,7 +1685,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 	MQTTClients* m = handle;
 	MQTTResponse response;
 
-	if (m->c->MQTTVersion >= MQTTVERSION_5)
+	if (m != NULL && m->c != NULL && m->c->MQTTVersion >= MQTTVERSION_5)
 		return MQTTCLIENT_WRONG_MQTT_VERSION;
 
 	response = MQTTClient_connectAll(handle, options, NULL, NULL);
@@ -1700,7 +1700,7 @@ MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connectOptions* o
 	MQTTClients* m = handle;
 	MQTTResponse response = MQTTResponse_initializer;
 
-	if (m->c->MQTTVersion < MQTTVERSION_5)
+	if (m != NULL && m->c != NULL && m->c->MQTTVersion < MQTTVERSION_5)
 	{
 		response.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
 		return response;
@@ -1727,7 +1727,7 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions*
 		goto exit;
 	}
 
-	if (options == NULL)
+	if (options == NULL || m == NULL || m->c == NULL)
 	{
 		rc.reasonCode = MQTTCLIENT_NULL_PARAMETER;
 		goto exit;
@@ -2116,7 +2116,7 @@ int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, i
 	MQTTClients* m = handle;
 	MQTTResponse response = MQTTResponse_initializer;
 
-	if (m->c->MQTTVersion >= MQTTVERSION_5)
+	if (m != NULL && m->c != NULL && m->c->MQTTVersion >= MQTTVERSION_5)
 		response.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
 	else
 		response = MQTTClient_subscribeMany5(handle, count, topic, qos, NULL, NULL);
@@ -2260,7 +2260,13 @@ exit:
 
 int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic)
 {
-	MQTTResponse response = MQTTClient_unsubscribeMany5(handle, count, topic, NULL);
+	MQTTClients* m = handle;
+	MQTTResponse response = MQTTResponse_initializer;
+
+	if (m != NULL && m->c != NULL && m->c->MQTTVersion >= MQTTVERSION_5)
+		response.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
+	else
+		response = MQTTClient_unsubscribeMany5(handle, count, topic, NULL);
 
 	return response.reasonCode;
 }
@@ -2477,7 +2483,7 @@ int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClie
 	if (strncmp(message->struct_id, "MQTM", 4) != 0 ||
 			(message->struct_version != 0 && message->struct_version != 1))
 		rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
-	else if (m->c->MQTTVersion >= MQTTVERSION_5)
+	else if (m != NULL && m->c != NULL && m->c->MQTTVersion >= MQTTVERSION_5)
 		rc.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
 	else
 		rc = MQTTClient_publishMessage5(handle, topicName, message, deliveryToken);
@@ -2564,7 +2570,7 @@ static MQTTPacket* MQTTClient_cycle(SOCKET* sock, ELAPSED_TIME_TYPE timeout, int
 					(*(m->published))(m->published_context, msgid, pack->header.bits.type, &ack.properties, ack.rc);
 				}
 				*rc = (pack->header.bits.type == PUBCOMP) ?
-					MQTTProtocol_handlePubcomps(pack, *sock) : MQTTProtocol_handlePubacks(pack, *sock);
+					MQTTProtocol_handlePubcomps(pack, *sock, NULL) : MQTTProtocol_handlePubacks(pack, *sock, NULL);
 				if (m && m->dc)
 				{
 					Log(TRACE_MIN, -1, "Calling deliveryComplete for client %s, msgid %d", m->c->clientID, msgid);
@@ -2581,7 +2587,7 @@ static MQTTPacket* MQTTClient_cycle(SOCKET* sock, ELAPSED_TIME_TYPE timeout, int
 					(*(m->published))(m->published_context, pubrec->msgId, pack->header.bits.type,
 							&pubrec->properties, pubrec->rc);
 				}
-				*rc = MQTTProtocol_handlePubrecs(pack, *sock);
+				*rc = MQTTProtocol_handlePubrecs(pack, *sock, NULL);
 			}
 			else if (pack->header.bits.type == PUBREL)
 				*rc = MQTTProtocol_handlePubrels(pack, *sock);

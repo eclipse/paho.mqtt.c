@@ -297,10 +297,16 @@ void MQTTProtocol_removePublication(Publications* p)
 	FUNC_ENTRY;
 	if (p && --(p->refcount) == 0)
 	{
-		free(p->payload);
-		p->payload = NULL;
-		free(p->topic);
-		p->topic = NULL;
+		if (p->payload)
+		{
+			free(p->payload);
+			p->payload = NULL;
+		}
+		if (p->topic)
+		{
+			free(p->topic);
+			p->topic = NULL;
+		}
 		ListRemove(&(state.publications), p);
 	}
 	FUNC_EXIT;
@@ -427,7 +433,7 @@ exit:
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePubacks(void* pack, SOCKET sock)
+int MQTTProtocol_handlePubacks(void* pack, SOCKET sock, Publications** pubToRemove)
 {
 	Puback* puback = (Puback*)pack;
 	Clients* client = NULL;
@@ -453,7 +459,10 @@ int MQTTProtocol_handlePubacks(void* pack, SOCKET sock)
 						(m->MQTTVersion >= MQTTVERSION_5) ? PERSISTENCE_V5_PUBLISH_SENT : PERSISTENCE_PUBLISH_SENT,
 								m->qos, puback->msgId);
 			#endif
-			MQTTProtocol_removePublication(m->publish);
+			if (pubToRemove != NULL)
+				*pubToRemove = m->publish;
+			else
+				MQTTProtocol_removePublication(m->publish);
 			if (m->MQTTVersion >= MQTTVERSION_5)
 				MQTTProperties_free(&m->properties);
 			ListRemove(client->outboundMsgs, m);
@@ -473,7 +482,7 @@ int MQTTProtocol_handlePubacks(void* pack, SOCKET sock)
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock)
+int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock, Publications** pubToRemove)
 {
 	Pubrec* pubrec = (Pubrec*)pack;
 	Clients* client = NULL;
@@ -515,7 +524,10 @@ int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock)
 							(pubrec->MQTTVersion >= MQTTVERSION_5) ? PERSISTENCE_V5_PUBLISH_SENT : PERSISTENCE_PUBLISH_SENT,
 							m->qos, pubrec->msgId);
 				#endif
-				MQTTProtocol_removePublication(m->publish);
+				if (pubToRemove != NULL)
+					*pubToRemove = m->publish;
+				else
+					MQTTProtocol_removePublication(m->publish);
 				if (m->MQTTVersion >= MQTTVERSION_5)
 					MQTTProperties_free(&m->properties);
 				ListRemove(client->outboundMsgs, m);
@@ -627,7 +639,7 @@ int MQTTProtocol_handlePubrels(void* pack, SOCKET sock)
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock)
+int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock, Publications** pubToRemove)
 {
 	Pubcomp* pubcomp = (Pubcomp*)pack;
 	Clients* client = NULL;
@@ -662,7 +674,10 @@ int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock)
 					if (rc != 0)
 						Log(LOG_ERROR, -1, "Error removing PUBCOMP for client id %s msgid %d from persistence", client->clientID, pubcomp->msgId);
 				#endif
-				MQTTProtocol_removePublication(m->publish);
+				if (pubToRemove != NULL)
+					*pubToRemove = m->publish;
+				else
+					MQTTProtocol_removePublication(m->publish);
 				if (m->MQTTVersion >= MQTTVERSION_5)
 					MQTTProperties_free(&m->properties);
 				ListRemove(client->outboundMsgs, m);

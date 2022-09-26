@@ -1774,6 +1774,7 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 	int timeout = 10; /* first time in we have a small timeout.  Gets things started more quickly */
 
 	FUNC_ENTRY;
+	Thread_set_name("MQTTAsync_send");
 	MQTTAsync_lock_mutex(mqttasync_mutex);
 	sendThread_state = RUNNING;
 	sendThread_id = Thread_getid();
@@ -1993,6 +1994,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 	long timeout = 10L; /* first time in we have a small timeout.  Gets things started more quickly */
 
 	FUNC_ENTRY;
+	Thread_set_name("MQTTAsync_rcv");
 	MQTTAsync_lock_mutex(mqttasync_mutex);
 	receiveThread_state = RUNNING;
 	receiveThread_id = Thread_getid();

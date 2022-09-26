@@ -801,6 +801,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 	long timeout = 10L; /* first time in we have a small timeout.  Gets things started more quickly */
 
 	FUNC_ENTRY;
+	Thread_set_name("MQTTClient_run");
 	Thread_lock_mutex(mqttclient_mutex);
 
 	run_id = Thread_getid();

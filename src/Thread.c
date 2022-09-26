@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2021 IBM Corp. and Ian Craggs
+ * Copyright (c) 2009, 2022 IBM Corp. and Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -77,6 +77,32 @@ void Thread_start(thread_fn fn, void* parameter)
 	pthread_attr_destroy(&attr);
 #endif
 	FUNC_EXIT;
+}
+
+
+int Thread_set_name(const char* thread_name)
+{
+	int rc = 0;
+	FUNC_ENTRY;
+
+#if defined(_WIN32) || defined(_WIN64)
+#if defined(_MSC_VER) && _MSC_VER >= 1920
+	rc = (int)SetThreadDescription(GetCurrentThread(), (PCWSTR)thread_name);
+#endif
+#elif defined(OSX)
+	// pthread_setname_np __API_AVAILABLE(macos(10.6), ios(3.2))
+#if defined(__APPLE__) && __MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6
+	rc = pthread_setname_np(thread_name);
+#endif
+#else
+#if defined(__GNUC__) && defined(__linux__)
+#if __GLIBC__ >= 2 && __GLIBC_MINOR__ >= 12
+	rc = pthread_setname_np(Thread_getid(), thread_name);
+#endif
+#endif
+#endif
+	FUNC_EXIT_RC(rc);
+	return rc;
 }
 
 

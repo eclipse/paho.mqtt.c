@@ -46,7 +46,7 @@
 
 #if defined(USE_SELECT)
 int isReady(int socket, fd_set* read_set, fd_set* write_set);
-int Socket_continueWrites(fd_set* pwset, int* socket, mutex_type mutex);
+int Socket_continueWrites(fd_set* pwset, SOCKET* socket, mutex_type mutex);
 #else
 int isReady(int index);
 int Socket_continueWrites(SOCKET* socket, mutex_type mutex);
@@ -198,7 +198,7 @@ void Socket_outTerminate(void)
  * Add a socket to the list of socket to check with select
  * @param newSd the new socket to add
  */
-int Socket_addSocket(int newSd)
+int Socket_addSocket(SOCKET newSd)
 {
 	int rc = 0;
 
@@ -212,7 +212,7 @@ int Socket_addSocket(int newSd)
 		}
 		else
 		{
-			int* pnewSd = (int*)malloc(sizeof(newSd));
+			SOCKET* pnewSd = (SOCKET*)malloc(sizeof(newSd));
 
 			if (!pnewSd)
 			{
@@ -227,7 +227,7 @@ int Socket_addSocket(int newSd)
 				goto exit;
 			}
 			FD_SET(newSd, &(mod_s.rset_saved));
-			mod_s.maxfdp1 = max(mod_s.maxfdp1, newSd + 1);
+			mod_s.maxfdp1 = max(mod_s.maxfdp1, (int)newSd + 1);
 			rc = Socket_setnonblocking(newSd);
 			if (rc == SOCKET_ERROR)
 				Log(LOG_ERROR, -1, "addSocket: setnonblocking");
@@ -373,9 +373,9 @@ int isReady(int index)
  *  @param rc a value other than 0 indicates an error of the returned socket
  *  @return the socket next ready, or 0 if none is ready
  */
-int Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* rc)
+SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* rc)
 {
-	int sock = 0;
+	SOCKET sock = 0;
 	*rc = 0;
 	int timeout_ms = 1000;
 
@@ -1352,7 +1352,7 @@ exit:
  *  @param sock in case of a socket error contains the affected socket
  *  @return completion code, 0 or SOCKET_ERROR
  */
-int Socket_continueWrites(fd_set* pwset, int* sock, mutex_type mutex)
+int Socket_continueWrites(fd_set* pwset, SOCKET* sock, mutex_type mutex)
 #else
 /**
  *  Continue any outstanding socket writes

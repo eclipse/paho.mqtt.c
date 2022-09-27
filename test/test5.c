@@ -74,11 +74,11 @@ struct Options
 } options =
 {
 	"ssl://localhost:18883",
-	"ssl://localhost:18884",
+	"mqtts://localhost:18884",
 	"ssl://localhost:18887",
-	"ssl://localhost:18885",
+	"mqtts://localhost:18885",
 	"ssl://localhost:18886",
-	"ssl://localhost:18888",
+	"mqtts://localhost:18888",
 	NULL, // "../../../test/ssl/client.pem",
 	NULL,
 	NULL, // "../../../test/ssl/test-root-ca.crt",

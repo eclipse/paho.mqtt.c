@@ -2080,6 +2080,11 @@ MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char* const
 			}
 			else
 			{
+				if (count < sub->qoss->count)
+				{
+					rc = MQTTCLIENT_FAILURE;
+					goto exit;
+				}
 				ListElement* current = NULL;
 				i = 0;
 				while (ListNextElement(sub->qoss, &current))

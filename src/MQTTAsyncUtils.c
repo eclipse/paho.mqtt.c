@@ -1291,6 +1291,8 @@ static int MQTTAsync_processCommand(void)
 
 					if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
 						serverURI += strlen(URI_TCP);
+					else if (strncmp(URI_MQTT, serverURI, strlen(URI_MQTT)) == 0)
+						serverURI += strlen(URI_MQTT);
 					else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
 					{
 						serverURI += strlen(URI_WS);
@@ -1300,6 +1302,11 @@ static int MQTTAsync_processCommand(void)
 					else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
 					{
 						serverURI += strlen(URI_SSL);
+						command->client->ssl = 1;
+					}
+					else if (strncmp(URI_MQTTS, serverURI, strlen(URI_MQTTS)) == 0)
+					{
+						serverURI += strlen(URI_MQTTS);
 						command->client->ssl = 1;
 					}
 					else if (strncmp(URI_WSS, serverURI, strlen(URI_WSS)) == 0)
@@ -2789,6 +2796,8 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 		/* skip URI scheme */
 		if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
 			serverURI += strlen(URI_TCP);
+		else if (strncmp(URI_MQTT, serverURI, strlen(URI_MQTT)) == 0)
+			serverURI += strlen(URI_MQTT);
 		else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
 		{
 			serverURI += strlen(URI_WS);
@@ -2800,6 +2809,11 @@ static int MQTTAsync_connecting(MQTTAsyncs* m)
 		else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
 		{
 			serverURI += strlen(URI_SSL);
+			default_port = SECURE_MQTT_DEFAULT_PORT;
+		}
+		else if (strncmp(URI_MQTTS, serverURI, strlen(URI_MQTTS)) == 0)
+		{
+			serverURI += strlen(URI_MQTTS);
 			default_port = SECURE_MQTT_DEFAULT_PORT;
 		}
 		else if (strncmp(URI_WSS, serverURI, strlen(URI_WSS)) == 0)

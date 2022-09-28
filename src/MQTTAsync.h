@@ -170,9 +170,14 @@
  */
 #define MQTTASYNC_SSL_NOT_SUPPORTED -13
 /**
- * Return code: protocol prefix in serverURI should be tcp://, ssl://, ws:// or wss://
- * The TLS enabled prefixes (ssl, wss) are only valid if the TLS version of the library
- * is linked with.
+ * Return code: protocol prefix in serverURI should be:
+ * @li @em tcp:// or @em mqtt:// - Insecure TCP
+ * @li @em ssl:// or @em mqtts:// - Encrypted SSL/TLS
+ * @li @em ws:// - Insecure websockets
+ * @li @em wss:// - Secure web sockets
+ *
+ * The TLS enabled prefixes (ssl, mqtts, wss) are only valid if the TLS
+ * version of the library is linked with.
  */
 #define MQTTASYNC_BAD_PROTOCOL -14
 /**
@@ -904,14 +909,22 @@ LIBMQTT_API int MQTTAsync_reconnect(MQTTAsync handle);
  * populated with a valid client reference following a successful return from
  * this function.
  * @param serverURI A null-terminated string specifying the server to
- * which the client will connect. It takes the form <i>protocol://host:port</i>.
- * <i>protocol</i> must be <i>tcp</i>, <i>ssl</i>, <i>ws</i> or <i>wss</i>.
- * The TLS enabled prefixes (ssl, wss) are only valid if a TLS version of
- * the library is linked with.
- * For <i>host</i>, you can
- * specify either an IP address or a host name. For instance, to connect to
- * a server running on the local machines with the default MQTT port, specify
- * <i>tcp://localhost:1883</i>.
+ * which the client will connect. It takes the form
+ * <i>protocol://host:port</i> where <i>protocol</i> must be:
+ * <br>
+ * @em tcp:// or @em mqtt:// - Insecure TCP
+ * <br>
+ * @em ssl:// or @em mqtts:// - Encrypted SSL/TLS
+ * <br>
+ * @em ws:// - Insecure websockets
+ * <br>
+ * @em wss:// - Secure web sockets
+ * <br>
+ * The TLS enabled prefixes (ssl, mqtts, wss) are only valid if a TLS
+ * version of the library is linked with.
+ * For <i>host</i>, you can specify either an IP address or a host name. For
+ * instance, to connect to a server running on the local machines with the
+ * default MQTT port, specify <i>tcp://localhost:1883</i>.
  * @param clientId The client identifier passed to the server when the
  * client connects to it. It is a null-terminated UTF-8 encoded string.
  * @param persistence_type The type of persistence to be used by the client:

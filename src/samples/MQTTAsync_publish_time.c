@@ -44,7 +44,7 @@
 
 
 // Better not to flood a public broker. Test against localhost.
-#define ADDRESS         "tcp://localhost:1883"
+#define ADDRESS         "mqtt://localhost:1883"
 
 #define CLIENTID        "ExampleClientTimePub"
 #define TOPIC           "data/time"

@@ -70,14 +70,16 @@
 #if defined(OPENSSL)
 #include <openssl/ssl.h>
 #else
-#define URI_SSL "ssl://"
+#define URI_SSL   "ssl://"
+#define URI_MQTTS "mqtts://"
 #endif
 
 #include "OsWrapper.h"
 
-#define URI_TCP "tcp://"
-#define URI_WS "ws://"
-#define URI_WSS "wss://"
+#define URI_TCP  "tcp://"
+#define URI_MQTT "mqtt://"
+#define URI_WS   "ws://"
+#define URI_WSS  "wss://"
 
 #include "VersionInfo.h"
 #include "WebSocket.h"
@@ -403,9 +405,11 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 	if (strstr(serverURI, "://") != NULL)
 	{
 		if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) != 0
+		 && strncmp(URI_MQTT, serverURI, strlen(URI_MQTT)) != 0
 		 && strncmp(URI_WS, serverURI, strlen(URI_WS)) != 0
 #if defined(OPENSSL)
-            && strncmp(URI_SSL, serverURI, strlen(URI_SSL)) != 0
+         && strncmp(URI_SSL, serverURI, strlen(URI_SSL)) != 0
+         && strncmp(URI_MQTTS, serverURI, strlen(URI_MQTTS)) != 0
 		 && strncmp(URI_WSS, serverURI, strlen(URI_WSS)) != 0
 #endif
 			)
@@ -448,6 +452,8 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 	m->commandTimeout = 10000L;
 	if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
 		serverURI += strlen(URI_TCP);
+	else if (strncmp(URI_MQTT, serverURI, strlen(URI_MQTT)) == 0)
+		serverURI += strlen(URI_MQTT);
 	else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
 	{
 		serverURI += strlen(URI_WS);
@@ -457,6 +463,16 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 	{
 #if defined(OPENSSL)
 		serverURI += strlen(URI_SSL);
+		m->ssl = 1;
+#else
+		rc = MQTTCLIENT_SSL_NOT_SUPPORTED;
+		goto exit;
+#endif
+	}
+	else if (strncmp(URI_MQTTS, serverURI, strlen(URI_MQTTS)) == 0)
+	{
+#if defined(OPENSSL)
+		serverURI += strlen(URI_MQTTS);
 		m->ssl = 1;
 #else
 		rc = MQTTCLIENT_SSL_NOT_SUPPORTED;
@@ -1830,6 +1846,8 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions*
 
 			if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
 				serverURI += strlen(URI_TCP);
+			else if (strncmp(URI_MQTT, serverURI, strlen(URI_MQTT)) == 0)
+				serverURI += strlen(URI_TCP);
 			else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
 			{
 				serverURI += strlen(URI_WS);
@@ -1839,6 +1857,11 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions*
 			else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
 			{
 				serverURI += strlen(URI_SSL);
+				m->ssl = 1;
+			}
+			else if (strncmp(URI_MQTTS, serverURI, strlen(URI_MQTTS)) == 0)
+			{
+				serverURI += strlen(URI_MQTTS);
 				m->ssl = 1;
 			}
 			else if (strncmp(URI_WSS, serverURI, strlen(URI_WSS)) == 0)

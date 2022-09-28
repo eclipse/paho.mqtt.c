@@ -2080,12 +2080,19 @@ MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char* const
 			}
 			else
 			{
-				ListElement* current = NULL;
-				i = 0;
-				while (ListNextElement(sub->qoss, &current))
+				ListElement *current = NULL;
+
+				/* if the returned count is greater than requested, it's an error*/
+				if (sub->qoss->count > count)
+					rc = MQTTCLIENT_FAILURE;
+				else
 				{
-					int* reqqos = (int*)(current->content);
-					qos[i++] = *reqqos;
+					i = 0;
+					while (ListNextElement(sub->qoss, &current))
+					{
+						int *reqqos = (int*) (current->content);
+						qos[i++] = *reqqos;
+					}
 				}
 				resp.reasonCode = rc;
 			}

@@ -304,6 +304,24 @@ You can download and install paho-mqtt using the [vcpkg](https://github.com/Micr
 
 The paho-mqtt port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
 
+## Fully static builds with musl libc
+
+(By Frank Pagliughi)
+
+[musl libc](https://musl.libc.org/) is is an implementation of the C standard library built on top of the Linux system call API, including interfaces defined in the base language standard, POSIX, and widely agreed-upon extensions.
+
+Users of the Rust library, which wraps this one, had been complaining that they could not compile using the musl build tools. Musl is a small std C lib that can be statically linked. With the latest Paho C library (and a very minor tweak to the build), we're now able to build Rust apps using musl and Paho C that are fully static; no runtime dependencies on the platform; not even on the standard C lib.
+
+$ ./async_publish
+Publishing a message on the 'test' topic
+
+$ ldd async_publish
+	not a dynamic executable
+
+So, for example, if maintaining a suite of apps for some newer and older embedded Linux boards, the same executables could be deployed without worry about the C ABI on the particular boards.
+
+Certainly C apps using the Paho library could do this also.
+
 ## Microsoft Windows
 
 ### Calling convention

@@ -27,7 +27,7 @@
 
 /**
  * @cond MQTTAsync_main
- * @mainpage Asynchronous MQTT client library for C
+ * @mainpage Asynchronous MQTT client library for C (MQTTAsync)
  *
  * &copy; Copyright 2009, 2022 IBM Corp., Ian Craggs and others
  *
@@ -1187,8 +1187,13 @@ typedef struct
 
 /**
  * MQTTAsync_connectOptions defines several settings that control the way the
- * client connects to an MQTT server.  Default values are set in
- * MQTTAsync_connectOptions_initializer.
+ * client connects to an MQTT server.
+ *
+ * Suitable default values are set in the following initializers:
+ * - MQTTAsync_connectOptions_initializer: for MQTT 3.1.1 non-WebSockets
+ * - MQTTAsync_connectOptions_initializer5: for MQTT 5.0 non-WebSockets
+ * - MQTTAsync_connectOptions_initializer_ws: for MQTT 3.1.1 WebSockets
+ * - MQTTAsync_connectOptions_initializer5_ws: for MQTT 5.0 WebSockets
  */
 typedef struct
 {
@@ -1375,16 +1380,23 @@ typedef struct
 	const char* httpsProxy;
 } MQTTAsync_connectOptions;
 
-
+/** Initializer for connect options for MQTT 3.1.1 non-WebSocket connections */
 #define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 8, 60, 1, 65535, NULL, NULL, NULL, 30, 0,\
 NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 
+/** Initializer for connect options for MQTT 5.0 non-WebSocket connections */
 #define MQTTAsync_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 8, 60, 0, 65535, NULL, NULL, NULL, 30, 0,\
 NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 
+/** Initializer for connect options for MQTT 3.1.1 WebSockets connections.
+  * The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts.
+  */
 #define MQTTAsync_connectOptions_initializer_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 1, 65535, NULL, NULL, NULL, 30, 0,\
 NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 
+/** Initializer for connect options for MQTT 5.0 WebSockets connections.
+  * The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts.
+  */
 #define MQTTAsync_connectOptions_initializer5_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 0, 65535, NULL, NULL, NULL, 30, 0,\
 NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 

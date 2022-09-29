@@ -40,7 +40,7 @@
  *
  * @endcond
  * @cond MQTTClient_main
- * @mainpage MQTT Client library for C
+ * @mainpage MQTT Client library for C (MQTTClient)
  * &copy; Copyright 2009, 2022 IBM Corp., Ian Craggs and others
  *
  * @brief An MQTT client library in C.
@@ -814,6 +814,12 @@ LIBMQTT_API MQTTClient_nameValue* MQTTClient_getVersionInfo(void);
  * values to 0 (NULL for pointers). A #keepAliveInterval setting of 0 prevents
  * correct operation of the client and so you <b>must</b> at least set a value
  * for #keepAliveInterval.
+ *
+ * Suitable default values are set in the following initializers:
+ * - MQTTClient_connectOptions_initializer: for MQTT 3.1.1 non-WebSockets
+ * - MQTTClient_connectOptions_initializer5: for MQTT 5.0 non-WebSockets
+ * - MQTTClient_connectOptions_initializer_ws: for MQTT 3.1.1 WebSockets
+ * - MQTTClient_connectOptions_initializer5_ws: for MQTT 5.0 WebSockets
  */
 typedef struct
 {
@@ -972,15 +978,23 @@ typedef struct
 	const char* httpsProxy;
 } MQTTClient_connectOptions;
 
+/** Initializer for connect options for MQTT 3.1.1 non-WebSocket connections */
 #define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 8, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
 0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL}
 
+/** Initializer for connect options for MQTT 5.0 non-WebSocket connections */
 #define MQTTClient_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 8, 60, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
 0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL, NULL, NULL}
 
+/** Initializer for connect options for MQTT 3.1.1 WebSockets connections.
+  * The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts.
+  */
 #define MQTTClient_connectOptions_initializer_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
 0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL}
 
+/** Initializer for connect options for MQTT 5.0 WebSockets connections.
+  * The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts.
+  */
 #define MQTTClient_connectOptions_initializer5_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
 0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL, NULL, NULL}
 

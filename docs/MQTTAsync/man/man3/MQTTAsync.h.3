@@ -1,4 +1,4 @@
-.TH "MQTTAsync.h" 3 "Mon Mar 28 2022" "Paho Asynchronous MQTT C Client Library" \" -*- nroff -*-
+.TH "MQTTAsync.h" 3 "Thu Sep 29 2022" "Paho Asynchronous MQTT C Client Library" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -398,7 +398,19 @@ Return code: no more messages can be buffered
 .SS "#define MQTTASYNC_SSL_NOT_SUPPORTED   \-13"
 Return code: Attempting SSL connection using non-SSL version of library 
 .SS "#define MQTTASYNC_BAD_PROTOCOL   \-14"
-Return code: protocol prefix in serverURI should be tcp://, ssl://, ws:// or wss:// The TLS enabled prefixes (ssl, wss) are only valid if the TLS version of the library is linked with\&. 
+Return code: protocol prefix in serverURI should be: 
+.PD 0
+
+.IP "\(bu" 2
+\fItcp://\fP or \fImqtt://\fP - Insecure TCP 
+.IP "\(bu" 2
+\fIssl://\fP or \fImqtts://\fP - Encrypted SSL/TLS 
+.IP "\(bu" 2
+\fIws://\fP - Insecure websockets 
+.IP "\(bu" 2
+\fIwss://\fP - Secure web sockets
+.PP
+The TLS enabled prefixes (ssl, mqtts, wss) are only valid if the TLS version of the library is linked with\&. 
 .SS "#define MQTTASYNC_BAD_MQTT_OPTION   \-15"
 Return code: don't use options for another version of MQTT 
 .SS "#define MQTTASYNC_WRONG_MQTT_VERSION   \-16"
@@ -456,6 +468,7 @@ Bad return code from subscribe, as defined in the 3\&.1\&.1 specification
 { {'M', 'Q', 'T', 'C'}, 8, 60, 1, 65535, NULL, NULL, NULL, 30, 0,\
 NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 .fi
+Initializer for connect options for MQTT 3\&.1\&.1 non-WebSocket connections 
 .SS "#define MQTTAsync_connectOptions_initializer5"
 \fBValue:\fP
 .PP
@@ -463,6 +476,7 @@ NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NU
 { {'M', 'Q', 'T', 'C'}, 8, 60, 0, 65535, NULL, NULL, NULL, 30, 0,\
 NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 .fi
+Initializer for connect options for MQTT 5\&.0 non-WebSocket connections 
 .SS "#define MQTTAsync_connectOptions_initializer_ws"
 \fBValue:\fP
 .PP
@@ -470,6 +484,7 @@ NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NU
 { {'M', 'Q', 'T', 'C'}, 8, 45, 1, 65535, NULL, NULL, NULL, 30, 0,\
 NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 .fi
+Initializer for connect options for MQTT 3\&.1\&.1 WebSockets connections\&. The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts\&. 
 .SS "#define MQTTAsync_connectOptions_initializer5_ws"
 \fBValue:\fP
 .PP
@@ -477,6 +492,7 @@ NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NU
 { {'M', 'Q', 'T', 'C'}, 8, 45, 0, 65535, NULL, NULL, NULL, 30, 0,\
 NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 .fi
+Initializer for connect options for MQTT 5\&.0 WebSockets connections\&. The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts\&. 
 .SS "#define MQTTAsync_disconnectOptions_initializer"
 \fBValue:\fP
 .PP
@@ -884,7 +900,17 @@ This function creates an MQTT client ready for connection to the specified serve
 .RS 4
 \fIhandle\fP A pointer to an \fBMQTTAsync\fP handle\&. The handle is populated with a valid client reference following a successful return from this function\&. 
 .br
-\fIserverURI\fP A null-terminated string specifying the server to which the client will connect\&. It takes the form \fIprotocol://host:port\fP\&. \fIprotocol\fP must be \fItcp\fP, \fIssl\fP, \fIws\fP or \fIwss\fP\&. The TLS enabled prefixes (ssl, wss) are only valid if a TLS version of the library is linked with\&. For \fIhost\fP, you can specify either an IP address or a host name\&. For instance, to connect to a server running on the local machines with the default MQTT port, specify \fItcp://localhost:1883\fP\&. 
+\fIserverURI\fP A null-terminated string specifying the server to which the client will connect\&. It takes the form \fIprotocol://host:port\fP where \fIprotocol\fP must be: 
+.br
+ \fItcp://\fP or \fImqtt://\fP - Insecure TCP 
+.br
+ \fIssl://\fP or \fImqtts://\fP - Encrypted SSL/TLS 
+.br
+ \fIws://\fP - Insecure websockets 
+.br
+ \fIwss://\fP - Secure web sockets 
+.br
+ The TLS enabled prefixes (ssl, mqtts, wss) are only valid if a TLS version of the library is linked with\&. For \fIhost\fP, you can specify either an IP address or a host name\&. For instance, to connect to a server running on the local machines with the default MQTT port, specify \fItcp://localhost:1883\fP\&. 
 .br
 \fIclientId\fP The client identifier passed to the server when the client connects to it\&. It is a null-terminated UTF-8 encoded string\&. 
 .br

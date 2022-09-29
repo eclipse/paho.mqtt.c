@@ -5,5 +5,5 @@ var searchData=
   ['array_2',['array',['../struct_m_q_t_t_properties.html#a3ac4c38b423393c1553dcf8b71e7dd58',1,'MQTTProperties']]],
   ['automatic_20reconnect_3',['Automatic Reconnect',['../auto_reconnect.html',1,'']]],
   ['automaticreconnect_4',['automaticReconnect',['../struct_m_q_t_t_async__connect_options.html#a7902ce4d11b96d8b19582bdd1f82b630',1,'MQTTAsync_connectOptions']]],
-  ['asynchronous_20mqtt_20client_20library_20for_20c_5',['Asynchronous MQTT client library for C',['../index.html',1,'']]]
+  ['asynchronous_20mqtt_20client_20library_20for_20c_20_28mqttasync_29_5',['Asynchronous MQTT client library for C (MQTTAsync)',['../index.html',1,'']]]
 ];

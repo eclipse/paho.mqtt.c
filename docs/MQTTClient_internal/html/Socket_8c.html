@@ -178,6 +178,9 @@ static int&#160;</td><td class="memItemRight" valign="bottom"><b>cmpsockfds</b> 
 <tr class="memitem:accf7d8d1529e31b2ad8286627cb662c0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#accf7d8d1529e31b2ad8286627cb662c0">Socket_new</a> (const char *addr, size_t addr_len, int port, SOCKET *sock)</td></tr>
 <tr class="memdesc:accf7d8d1529e31b2ad8286627cb662c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new socket and TCP connect to an address/port.  <a href="Socket_8c.html#accf7d8d1529e31b2ad8286627cb662c0">More...</a><br /></td></tr>
 <tr class="separator:accf7d8d1529e31b2ad8286627cb662c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5ea447d063056eac101f5193b4fbd17"><td class="memItemLeft" align="right" valign="top"><a id="ad5ea447d063056eac101f5193b4fbd17"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>Socket_setWriteContinueCallback</b> (Socket_writeContinue *mywritecontinue)</td></tr>
+<tr class="separator:ad5ea447d063056eac101f5193b4fbd17"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab053509afada9798dcaf8adaf16e1a59"><td class="memItemLeft" align="right" valign="top"><a id="ab053509afada9798dcaf8adaf16e1a59"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>Socket_setWriteCompleteCallback</b> (Socket_writeComplete *mywritecomplete)</td></tr>
 <tr class="separator:ab053509afada9798dcaf8adaf16e1a59"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -194,6 +197,9 @@ Variables</h2></td></tr>
 <a class="el" href="structSockets.html">Sockets</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a6caeed4a8d4f884c57a815034cee275e">mod_s</a></td></tr>
 <tr class="memdesc:a6caeed4a8d4f884c57a815034cee275e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure to hold all socket data for this module. <br /></td></tr>
 <tr class="separator:a6caeed4a8d4f884c57a815034cee275e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a520de5164419be36582ed8cb3f618bd2"><td class="memItemLeft" align="right" valign="top"><a id="a520de5164419be36582ed8cb3f618bd2"></a>
+static Socket_writeContinue *&#160;</td><td class="memItemRight" valign="bottom"><b>writecontinue</b> = NULL</td></tr>
+<tr class="separator:a520de5164419be36582ed8cb3f618bd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a98a7c7aa7a0e8abdf3141bf829bab8de"><td class="memItemLeft" align="right" valign="top"><a id="a98a7c7aa7a0e8abdf3141bf829bab8de"></a>
 static Socket_writeComplete *&#160;</td><td class="memItemRight" valign="bottom"><b>writecomplete</b> = NULL</td></tr>
 <tr class="separator:a98a7c7aa7a0e8abdf3141bf829bab8de"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1151,7 +1157,7 @@ Here is the call graph for this function:</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon Mar 28 2022 12:36:41 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Sep 29 2022 11:34:46 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

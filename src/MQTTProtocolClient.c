@@ -297,10 +297,16 @@ void MQTTProtocol_removePublication(Publications* p)
 	FUNC_ENTRY;
 	if (p && --(p->refcount) == 0)
 	{
-		free(p->payload);
-		p->payload = NULL;
-		free(p->topic);
-		p->topic = NULL;
+		if (p->payload)
+		{
+			free(p->payload);
+			p->payload = NULL;
+		}
+		if (p->topic)
+		{
+			free(p->topic);
+			p->topic = NULL;
+		}
 		ListRemove(&(state.publications), p);
 	}
 	FUNC_EXIT;
@@ -427,7 +433,7 @@ exit:
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePubacks(void* pack, SOCKET sock)
+int MQTTProtocol_handlePubacks(void* pack, SOCKET sock, Publications** pubToRemove)
 {
 	Puback* puback = (Puback*)pack;
 	Clients* client = NULL;
@@ -453,7 +459,10 @@ int MQTTProtocol_handlePubacks(void* pack, SOCKET sock)
 						(m->MQTTVersion >= MQTTVERSION_5) ? PERSISTENCE_V5_PUBLISH_SENT : PERSISTENCE_PUBLISH_SENT,
 								m->qos, puback->msgId);
 			#endif
-			MQTTProtocol_removePublication(m->publish);
+			if (pubToRemove != NULL)
+				*pubToRemove = m->publish;
+			else
+				MQTTProtocol_removePublication(m->publish);
 			if (m->MQTTVersion >= MQTTVERSION_5)
 				MQTTProperties_free(&m->properties);
 			ListRemove(client->outboundMsgs, m);
@@ -473,7 +482,7 @@ int MQTTProtocol_handlePubacks(void* pack, SOCKET sock)
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock)
+int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock, Publications** pubToRemove)
 {
 	Pubrec* pubrec = (Pubrec*)pack;
 	Clients* client = NULL;
@@ -515,7 +524,10 @@ int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock)
 							(pubrec->MQTTVersion >= MQTTVERSION_5) ? PERSISTENCE_V5_PUBLISH_SENT : PERSISTENCE_PUBLISH_SENT,
 							m->qos, pubrec->msgId);
 				#endif
-				MQTTProtocol_removePublication(m->publish);
+				if (pubToRemove != NULL)
+					*pubToRemove = m->publish;
+				else
+					MQTTProtocol_removePublication(m->publish);
 				if (m->MQTTVersion >= MQTTVERSION_5)
 					MQTTProperties_free(&m->properties);
 				ListRemove(client->outboundMsgs, m);
@@ -627,7 +639,7 @@ int MQTTProtocol_handlePubrels(void* pack, SOCKET sock)
  * @param sock the socket on which the packet was received
  * @return completion code
  */
-int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock)
+int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock, Publications** pubToRemove)
 {
 	Pubcomp* pubcomp = (Pubcomp*)pack;
 	Clients* client = NULL;
@@ -662,7 +674,10 @@ int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock)
 					if (rc != 0)
 						Log(LOG_ERROR, -1, "Error removing PUBCOMP for client id %s msgid %d from persistence", client->clientID, pubcomp->msgId);
 				#endif
-				MQTTProtocol_removePublication(m->publish);
+				if (pubToRemove != NULL)
+					*pubToRemove = m->publish;
+				else
+					MQTTProtocol_removePublication(m->publish);
 				if (m->MQTTVersion >= MQTTVERSION_5)
 					MQTTProperties_free(&m->properties);
 				ListRemove(client->outboundMsgs, m);
@@ -698,22 +713,23 @@ void MQTTProtocol_keepalive(START_TIME_TYPE now)
 
 		if (client->ping_outstanding == 1)
 		{
-			if (MQTTTime_difftime(now, client->net.lastPing) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1000))
+			if (MQTTTime_difftime(now, client->net.lastPing) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1500) &&
+				MQTTTime_difftime(now, client->net.lastReceived) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1500))
 			{
 				Log(TRACE_PROTOCOL, -1, "PINGRESP not received in keepalive interval for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
 				MQTTProtocol_closeSession(client, 1);
 			}
 		}
 		else if (client->ping_due == 1 &&
-			(MQTTTime_difftime(now, client->ping_due_time) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1000)))
+			(MQTTTime_difftime(now, client->ping_due_time) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1500)))
 		{
 			/* ping still outstanding after keep alive interval, so close session */
 			Log(TRACE_PROTOCOL, -1, "PINGREQ still outstanding for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
 			MQTTProtocol_closeSession(client, 1);
 
 		}
-		else if (MQTTTime_difftime(now, client->net.lastSent) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1000) ||
-					MQTTTime_difftime(now, client->net.lastReceived) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1000))
+		else if (MQTTTime_difftime(now, client->net.lastSent) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1000) &&
+				 MQTTTime_difftime(now, client->net.lastReceived) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1000))
 		{
 			if (Socket_noPendingWrites(client->net.socket))
 			{
@@ -936,8 +952,13 @@ void MQTTProtocol_freeClient(Clients* client)
 			if (client->sslopts->CApath)
 				free((void*)client->sslopts->CApath);
 		}
+		if (client->sslopts->struct_version >= 5)
+		{
+			if (client->sslopts->protos)
+				free((void*)client->sslopts->protos);
+		}
 		free(client->sslopts);
-                client->sslopts = NULL;
+			client->sslopts = NULL;
 	}
 #endif
 	/* don't free the client structure itself... this is done elsewhere */

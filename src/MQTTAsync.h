@@ -27,7 +27,7 @@
 
 /**
  * @cond MQTTAsync_main
- * @mainpage Asynchronous MQTT client library for C
+ * @mainpage Asynchronous MQTT client library for C (MQTTAsync)
  *
  * &copy; Copyright 2009, 2022 IBM Corp., Ian Craggs and others
  *
@@ -170,9 +170,14 @@
  */
 #define MQTTASYNC_SSL_NOT_SUPPORTED -13
 /**
- * Return code: protocol prefix in serverURI should be tcp://, ssl://, ws:// or wss://
- * The TLS enabled prefixes (ssl, wss) are only valid if the TLS version of the library
- * is linked with.
+ * Return code: protocol prefix in serverURI should be:
+ * @li @em tcp:// or @em mqtt:// - Insecure TCP
+ * @li @em ssl:// or @em mqtts:// - Encrypted SSL/TLS
+ * @li @em ws:// - Insecure websockets
+ * @li @em wss:// - Secure web sockets
+ *
+ * The TLS enabled prefixes (ssl, mqtts, wss) are only valid if the TLS
+ * version of the library is linked with.
  */
 #define MQTTASYNC_BAD_PROTOCOL -14
 /**
@@ -728,7 +733,8 @@ typedef struct MQTTAsync_responseOptions
 	/**
     * A token is returned from the call.  It can be used to track
     * the state of this request, both in the callbacks and in future calls
-    * such as ::MQTTAsync_waitForCompletion.
+    * such as ::MQTTAsync_waitForCompletion. This is output only - any
+    * change by the application will be ignored.
     */
 	MQTTAsync_token token;
 	/**
@@ -903,14 +909,22 @@ LIBMQTT_API int MQTTAsync_reconnect(MQTTAsync handle);
  * populated with a valid client reference following a successful return from
  * this function.
  * @param serverURI A null-terminated string specifying the server to
- * which the client will connect. It takes the form <i>protocol://host:port</i>.
- * <i>protocol</i> must be <i>tcp</i>, <i>ssl</i>, <i>ws</i> or <i>wss</i>.
- * The TLS enabled prefixes (ssl, wss) are only valid if a TLS version of
- * the library is linked with.
- * For <i>host</i>, you can
- * specify either an IP address or a host name. For instance, to connect to
- * a server running on the local machines with the default MQTT port, specify
- * <i>tcp://localhost:1883</i>.
+ * which the client will connect. It takes the form
+ * <i>protocol://host:port</i> where <i>protocol</i> must be:
+ * <br>
+ * @em tcp:// or @em mqtt:// - Insecure TCP
+ * <br>
+ * @em ssl:// or @em mqtts:// - Encrypted SSL/TLS
+ * <br>
+ * @em ws:// - Insecure websockets
+ * <br>
+ * @em wss:// - Secure web sockets
+ * <br>
+ * The TLS enabled prefixes (ssl, mqtts, wss) are only valid if a TLS
+ * version of the library is linked with.
+ * For <i>host</i>, you can specify either an IP address or a host name. For
+ * instance, to connect to a server running on the local machines with the
+ * default MQTT port, specify <i>tcp://localhost:1883</i>.
  * @param clientId The client identifier passed to the server when the
  * client connects to it. It is a null-terminated UTF-8 encoded string.
  * @param persistence_type The type of persistence to be used by the client:
@@ -1173,8 +1187,13 @@ typedef struct
 
 /**
  * MQTTAsync_connectOptions defines several settings that control the way the
- * client connects to an MQTT server.  Default values are set in
- * MQTTAsync_connectOptions_initializer.
+ * client connects to an MQTT server.
+ *
+ * Suitable default values are set in the following initializers:
+ * - MQTTAsync_connectOptions_initializer: for MQTT 3.1.1 non-WebSockets
+ * - MQTTAsync_connectOptions_initializer5: for MQTT 5.0 non-WebSockets
+ * - MQTTAsync_connectOptions_initializer_ws: for MQTT 3.1.1 WebSockets
+ * - MQTTAsync_connectOptions_initializer5_ws: for MQTT 5.0 WebSockets
  */
 typedef struct
 {
@@ -1305,15 +1324,15 @@ typedef struct
 	  */
 	int MQTTVersion;
 	/**
-	  * Reconnect automatically in the case of a connection being lost?
+	  * Reconnect automatically in the case of a connection being lost. 0=false, 1=true
 	  */
 	int automaticReconnect;
 	/**
-	  * Minimum retry interval in seconds.  Doubled on each failed retry.
+	  * The minimum automatic reconnect retry interval in seconds. Doubled on each failed retry.
 	  */
 	int minRetryInterval;
 	/**
-	  * Maximum retry interval in seconds.  The doubling stops here on failed retries.
+	  * The maximum automatic reconnect retry interval in seconds. The doubling stops here on failed retries.
 	  */
 	int maxRetryInterval;
 	/**
@@ -1361,16 +1380,23 @@ typedef struct
 	const char* httpsProxy;
 } MQTTAsync_connectOptions;
 
-
+/** Initializer for connect options for MQTT 3.1.1 non-WebSocket connections */
 #define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 8, 60, 1, 65535, NULL, NULL, NULL, 30, 0,\
 NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 
+/** Initializer for connect options for MQTT 5.0 non-WebSocket connections */
 #define MQTTAsync_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 8, 60, 0, 65535, NULL, NULL, NULL, 30, 0,\
 NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 
+/** Initializer for connect options for MQTT 3.1.1 WebSockets connections.
+  * The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts.
+  */
 #define MQTTAsync_connectOptions_initializer_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 1, 65535, NULL, NULL, NULL, 30, 0,\
 NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 
+/** Initializer for connect options for MQTT 5.0 WebSockets connections.
+  * The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts.
+  */
 #define MQTTAsync_connectOptions_initializer5_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 0, 65535, NULL, NULL, NULL, 30, 0,\
 NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 

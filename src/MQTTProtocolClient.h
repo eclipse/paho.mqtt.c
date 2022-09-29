@@ -40,10 +40,10 @@ void MQTTProtocol_removePublication(Publications* p);
 void Protocol_processPublication(Publish* publish, Clients* client, int allocatePayload);
 
 int MQTTProtocol_handlePublishes(void* pack, SOCKET sock);
-int MQTTProtocol_handlePubacks(void* pack, SOCKET sock);
-int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock);
+int MQTTProtocol_handlePubacks(void* pack, SOCKET sock, Publications** pubToRemove);
+int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock, Publications** pubToRemove);
 int MQTTProtocol_handlePubrels(void* pack, SOCKET sock);
-int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock);
+int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock, Publications** pubToRemove);
 
 void MQTTProtocol_closeSession(Clients* c, int sendwill);
 void MQTTProtocol_keepalive(START_TIME_TYPE);

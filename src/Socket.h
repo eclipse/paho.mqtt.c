@@ -123,12 +123,14 @@ typedef struct
 	fd_set pending_wset; /**< socket pending write set for select */
 #else
 	unsigned int nfds;         /**< no of file descriptors for poll */
-	struct pollfd* fds;        /**< poll read file descriptors */
+	struct pollfd* fds_read;        /**< poll read file descriptors */
+	struct pollfd* fds_write;
 
 	struct {
 		int cur_fd;            /**< index into the fds_saved array */
 		unsigned int nfds;	   /**< number of fds in the fds_saved array */
-		struct pollfd* fds;
+		struct pollfd* fds_write;
+		struct pollfd* fds_read;
 	} saved;
 #endif
 } Sockets;
@@ -153,6 +155,9 @@ char* Socket_getpeer(SOCKET sock);
 
 void Socket_addPendingWrite(SOCKET socket);
 void Socket_clearPendingWrite(SOCKET socket);
+
+typedef void Socket_writeContinue(SOCKET socket);
+void Socket_setWriteContinueCallback(Socket_writeContinue*);
 
 typedef void Socket_writeComplete(SOCKET socket, int rc);
 void Socket_setWriteCompleteCallback(Socket_writeComplete*);

@@ -328,9 +328,11 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 	if (strstr(serverURI, "://") != NULL)
 	{
 		if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) != 0
+		 && strncmp(URI_MQTT, serverURI, strlen(URI_MQTT)) != 0
 		 && strncmp(URI_WS, serverURI, strlen(URI_WS)) != 0
 #if defined(OPENSSL)
-            && strncmp(URI_SSL, serverURI, strlen(URI_SSL)) != 0
+		 && strncmp(URI_SSL, serverURI, strlen(URI_SSL)) != 0
+		 && strncmp(URI_MQTTS, serverURI, strlen(URI_MQTTS)) != 0
 		 && strncmp(URI_WSS, serverURI, strlen(URI_WSS)) != 0
 #endif
 			)
@@ -361,6 +363,7 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 		Log_initialize((Log_nameValue*)MQTTAsync_getVersionInfo());
 		bstate->clients = ListInitialize();
 		Socket_outInitialize();
+		Socket_setWriteContinueCallback(MQTTAsync_writeContinue);
 		Socket_setWriteCompleteCallback(MQTTAsync_writeComplete);
 		Socket_setWriteAvailableCallback(MQTTProtocol_writeAvailable);
 		MQTTAsync_handles = ListInitialize();
@@ -379,6 +382,8 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 	memset(m, '\0', sizeof(MQTTAsyncs));
 	if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
 		serverURI += strlen(URI_TCP);
+	else if (strncmp(URI_MQTT, serverURI, strlen(URI_MQTT)) == 0)
+		serverURI += strlen(URI_MQTT);
 	else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
 	{
 		serverURI += strlen(URI_WS);
@@ -388,6 +393,11 @@ int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const 
 	else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
 	{
 		serverURI += strlen(URI_SSL);
+		m->ssl = 1;
+	}
+	else if (strncmp(URI_MQTTS, serverURI, strlen(URI_MQTTS)) == 0)
+	{
+		serverURI += strlen(URI_MQTTS);
 		m->ssl = 1;
 	}
 	else if (strncmp(URI_WSS, serverURI, strlen(URI_WSS)) == 0)
@@ -486,7 +496,9 @@ void MQTTAsync_destroy(MQTTAsync* handle)
 
 	MQTTAsync_closeSession(m->c, MQTTREASONCODE_SUCCESS, NULL);
 
+	MQTTAsync_NULLPublishResponses(m);
 	MQTTAsync_freeResponses(m);
+	MQTTAsync_NULLPublishCommands(m);
 	MQTTAsync_freeCommands(m);
 	ListFree(m->responses);
 
@@ -791,7 +803,8 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		}
 		if (m->c->sslopts->struct_version >= 5)
 		{
-			m->c->sslopts->protos = options->ssl->protos;
+			if (options->ssl->protos)
+				m->c->sslopts->protos = (const unsigned char*)MQTTStrdup((const char*)options->ssl->protos);
 			m->c->sslopts->protos_len = options->ssl->protos_len;
 		}
 	}
@@ -804,11 +817,17 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 #endif
 
 	if (m->c->username)
+	{
 		free((void*)m->c->username);
+		m->c->username = NULL;
+	}
 	if (options->username)
 		m->c->username = MQTTStrdup(options->username);
 	if (m->c->password)
+	{
 		free((void*)m->c->password);
+		m->c->password = NULL;
+	}
 	if (options->password)
 	{
 		m->c->password = MQTTStrdup(options->password);

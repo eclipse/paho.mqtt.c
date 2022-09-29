@@ -46,7 +46,7 @@
 
 #if defined(USE_SELECT)
 int isReady(int socket, fd_set* read_set, fd_set* write_set);
-int Socket_continueWrites(fd_set* pwset, int* socket, mutex_type mutex);
+int Socket_continueWrites(fd_set* pwset, SOCKET* socket, mutex_type mutex);
 #else
 int isReady(int index);
 int Socket_continueWrites(SOCKET* socket, mutex_type mutex);
@@ -153,10 +153,12 @@ void Socket_outInitialize(void)
 	memcpy((void*)&(mod_s.rset_saved), (void*)&(mod_s.rset), sizeof(mod_s.rset_saved));
 #else
 	mod_s.nfds = 0;
-	mod_s.fds = NULL;
+	mod_s.fds_read = NULL;
+	mod_s.fds_write = NULL;
 
 	mod_s.saved.cur_fd = -1;
-	mod_s.saved.fds = NULL;
+	mod_s.saved.fds_write = NULL;
+	mod_s.saved.fds_read = NULL;
 	mod_s.saved.nfds = 0;
 #endif
 	FUNC_EXIT;
@@ -174,10 +176,14 @@ void Socket_outTerminate(void)
 #if defined(USE_SELECT)
 	ListFree(mod_s.clientsds);
 #else
-	if (mod_s.fds)
-		free(mod_s.fds);
-	if (mod_s.saved.fds)
-		free(mod_s.saved.fds);
+	if (mod_s.fds_read)
+		free(mod_s.fds_read);
+	if (mod_s.fds_write)
+		free(mod_s.fds_write);
+	if (mod_s.saved.fds_write)
+		free(mod_s.saved.fds_write);
+	if (mod_s.saved.fds_read)
+		free(mod_s.saved.fds_read);
 #endif
 	SocketBuffer_terminate();
 #if defined(_WIN32) || defined(_WIN64)
@@ -192,7 +198,7 @@ void Socket_outTerminate(void)
  * Add a socket to the list of socket to check with select
  * @param newSd the new socket to add
  */
-int Socket_addSocket(int newSd)
+int Socket_addSocket(SOCKET newSd)
 {
 	int rc = 0;
 
@@ -206,7 +212,7 @@ int Socket_addSocket(int newSd)
 		}
 		else
 		{
-			int* pnewSd = (int*)malloc(sizeof(newSd));
+			SOCKET* pnewSd = (SOCKET*)malloc(sizeof(newSd));
 
 			if (!pnewSd)
 			{
@@ -221,7 +227,7 @@ int Socket_addSocket(int newSd)
 				goto exit;
 			}
 			FD_SET(newSd, &(mod_s.rset_saved));
-			mod_s.maxfdp1 = max(mod_s.maxfdp1, newSd + 1);
+			mod_s.maxfdp1 = max(mod_s.maxfdp1, (int)newSd + 1);
 			rc = Socket_setnonblocking(newSd);
 			if (rc == SOCKET_ERROR)
 				Log(LOG_ERROR, -1, "addSocket: setnonblocking");
@@ -263,25 +269,38 @@ int Socket_addSocket(SOCKET newSd)
 
 	FUNC_ENTRY;
 	mod_s.nfds++;
-	if (mod_s.fds)
-		mod_s.fds = realloc(mod_s.fds, mod_s.nfds * sizeof(mod_s.fds[0]));
+	if (mod_s.fds_read)
+		mod_s.fds_read = realloc(mod_s.fds_read, mod_s.nfds * sizeof(mod_s.fds_read[0]));
 	else
-		mod_s.fds = malloc(mod_s.nfds * sizeof(mod_s.fds[0]));
-	if (!mod_s.fds)
+		mod_s.fds_read = malloc(mod_s.nfds * sizeof(mod_s.fds_read[0]));
+	if (!mod_s.fds_read)
+	{
+		rc = PAHO_MEMORY_ERROR;
+		goto exit;
+	}
+	if (mod_s.fds_write)
+		mod_s.fds_write = realloc(mod_s.fds_write, mod_s.nfds * sizeof(mod_s.fds_write[0]));
+	else
+		mod_s.fds_write = malloc(mod_s.nfds * sizeof(mod_s.fds_write[0]));
+	if (!mod_s.fds_read)
 	{
 		rc = PAHO_MEMORY_ERROR;
 		goto exit;
 	}
 
-	mod_s.fds[mod_s.nfds - 1].fd = newSd;
+	mod_s.fds_read[mod_s.nfds - 1].fd = newSd;
+	mod_s.fds_write[mod_s.nfds - 1].fd = newSd;
 #if defined(_WIN32) || defined(_WIN64)
-	mod_s.fds[mod_s.nfds - 1].events = POLLIN | POLLOUT;
+	mod_s.fds_read[mod_s.nfds - 1].events = POLLIN;
+	mod_s.fds_write[mod_s.nfds - 1].events = POLLOUT;
 #else
-	mod_s.fds[mod_s.nfds - 1].events = POLLIN | POLLOUT | POLLNVAL;
+	mod_s.fds_read[mod_s.nfds - 1].events = POLLIN | POLLNVAL;
+	mod_s.fds_write[mod_s.nfds - 1].events = POLLOUT;
 #endif
 
 	/* sort the poll fds array by socket number */
-	qsort(mod_s.fds, (size_t)mod_s.nfds, sizeof(mod_s.fds[0]), cmpfds);
+	qsort(mod_s.fds_read, (size_t)mod_s.nfds, sizeof(mod_s.fds_read[0]), cmpfds);
+	qsort(mod_s.fds_write, (size_t)mod_s.nfds, sizeof(mod_s.fds_write[0]), cmpfds);
 
 	rc = Socket_setnonblocking(newSd);
 	if (rc == SOCKET_ERROR)
@@ -325,19 +344,20 @@ int isReady(int socket, fd_set* read_set, fd_set* write_set)
 int isReady(int index)
 {
 	int rc = 1;
-	SOCKET* socket = &mod_s.saved.fds[index].fd;
+	SOCKET* socket = &mod_s.saved.fds_write[index].fd;
 
 	FUNC_ENTRY;
 
-	if ((mod_s.saved.fds[index].revents & POLLHUP) || (mod_s.saved.fds[index].revents & POLLNVAL))
+	if ((mod_s.saved.fds_read[index].revents & POLLHUP) || (mod_s.saved.fds_read[index].revents & POLLNVAL))
 		; /* signal work to be done if there is an error on the socket */
 	else if  (ListFindItem(mod_s.connect_pending, socket, intcompare) &&
-			(mod_s.saved.fds[index].revents & POLLOUT))
+			(mod_s.saved.fds_write[index].revents & POLLOUT))
 		ListRemoveItem(mod_s.connect_pending, socket, intcompare);
 	else
-		rc = (mod_s.saved.fds[index].revents & POLLIN) &&
-			 (mod_s.saved.fds[index].revents & POLLOUT) &&
+		rc = (mod_s.saved.fds_read[index].revents & POLLIN) &&
+			 (mod_s.saved.fds_write[index].revents & POLLOUT) &&
 			 Socket_noPendingWrites(*socket);
+
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -353,9 +373,9 @@ int isReady(int index)
  *  @param rc a value other than 0 indicates an error of the returned socket
  *  @return the socket next ready, or 0 if none is ready
  */
-int Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* rc)
+SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* rc)
 {
-	int sock = 0;
+	SOCKET sock = 0;
 	*rc = 0;
 	int timeout_ms = 1000;
 
@@ -487,15 +507,22 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 
 	if (mod_s.saved.cur_fd == -1)
 	{
+		int rc1 = 0;
+
 		if (mod_s.nfds != mod_s.saved.nfds)
 		{
 			mod_s.saved.nfds = mod_s.nfds;
-			if (mod_s.saved.fds)
-				mod_s.saved.fds = realloc(mod_s.saved.fds, mod_s.nfds * sizeof(struct pollfd));
+			if (mod_s.saved.fds_read)
+				mod_s.saved.fds_read = realloc(mod_s.saved.fds_read, mod_s.nfds * sizeof(struct pollfd));
 			else
-				mod_s.saved.fds = malloc(mod_s.nfds * sizeof(struct pollfd));
+				mod_s.saved.fds_read = malloc(mod_s.nfds * sizeof(struct pollfd));
+			if (mod_s.saved.fds_write)
+				mod_s.saved.fds_write = realloc(mod_s.saved.fds_write, mod_s.nfds * sizeof(struct pollfd));
+			else
+				mod_s.saved.fds_write = malloc(mod_s.nfds * sizeof(struct pollfd));
 		}
-		memcpy(mod_s.saved.fds, mod_s.fds, mod_s.nfds * sizeof(struct pollfd));
+		memcpy(mod_s.saved.fds_read, mod_s.fds_read, mod_s.nfds * sizeof(struct pollfd));
+		memcpy(mod_s.saved.fds_write, mod_s.fds_write, mod_s.nfds * sizeof(struct pollfd));
 
 		if (mod_s.saved.nfds == 0)
 		{
@@ -503,9 +530,17 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 			goto exit; /* no work to do */
 		}
 
+		/* Check pending write set for writeable sockets */
+		rc1 = poll(mod_s.saved.fds_write, mod_s.saved.nfds, 0);
+		if (rc1 > 0 && Socket_continueWrites(&sock, mutex) == SOCKET_ERROR)
+		{
+			*rc = SOCKET_ERROR;
+			goto exit;
+		}
+
 		/* Prevent performance issue by unlocking the socket_mutex while waiting for a ready socket. */
 		Thread_unlock_mutex(mutex);
-		*rc = poll(mod_s.saved.fds, mod_s.saved.nfds, timeout_ms);
+		*rc = poll(mod_s.saved.fds_read, mod_s.saved.nfds, timeout_ms);
 		Thread_lock_mutex(mutex);
 		if (*rc == SOCKET_ERROR)
 		{
@@ -514,13 +549,7 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 		}
 		Log(TRACE_MAX, -1, "Return code %d from poll", *rc);
 
-		if (Socket_continueWrites(&sock, mutex) == SOCKET_ERROR)
-		{
-			*rc = SOCKET_ERROR;
-			goto exit;
-		}
-
-		if (*rc == 0)
+		if (rc1 == 0 && *rc == 0)
 		{
 			sock = 0;
 			goto exit; /* no work to do */
@@ -540,7 +569,7 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 		sock = 0;
 	else
 	{
-		sock = mod_s.saved.fds[mod_s.saved.cur_fd].fd;
+		sock = mod_s.saved.fds_read[mod_s.saved.cur_fd].fd;
 		mod_s.saved.cur_fd = (mod_s.saved.cur_fd == mod_s.saved.nfds - 1) ? -1 : mod_s.saved.cur_fd + 1;
 	}
 exit:
@@ -915,25 +944,57 @@ int Socket_close(SOCKET socket)
 	ListRemoveItem(mod_s.connect_pending, &socket, intcompare);
 	ListRemoveItem(mod_s.write_pending, &socket, intcompare);
 
-	fd = bsearch(&socket, mod_s.fds, (size_t)mod_s.nfds, sizeof(mod_s.fds[0]), cmpsockfds);
+	if (mod_s.nfds == 0)
+		goto exit;
+
+	fd = bsearch(&socket, mod_s.fds_read, (size_t)mod_s.nfds, sizeof(mod_s.fds_read[0]), cmpsockfds);
 	if (fd)
 	{
-		struct pollfd* last_fd = &mod_s.fds[mod_s.nfds - 1];
+		struct pollfd* last_fd = &mod_s.fds_read[mod_s.nfds - 1];
 
 		if (--mod_s.nfds == 0)
 		{
-			free(mod_s.fds);
-			mod_s.fds = NULL;
+			free(mod_s.fds_read);
+			mod_s.fds_read = NULL;
 		}
 		else
 		{
 			if (fd != last_fd)
 			{
 				/* shift array to remove the socket in question */
-				memmove(fd, fd + 1, (mod_s.nfds - (fd - mod_s.fds)) * sizeof(mod_s.fds[0]));
+				memmove(fd, fd + 1, (mod_s.nfds - (fd - mod_s.fds_read)) * sizeof(mod_s.fds_read[0]));
 			}
-			mod_s.fds = realloc(mod_s.fds, sizeof(mod_s.fds[0]) * mod_s.nfds);
-			if (mod_s.fds == NULL)
+			mod_s.fds_read = realloc(mod_s.fds_read, sizeof(mod_s.fds_read[0]) * mod_s.nfds);
+			if (mod_s.fds_read == NULL)
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
+		}
+		Log(TRACE_MIN, -1, "Removed socket %d", socket);
+	}
+	else
+		Log(LOG_ERROR, -1, "Failed to remove socket %d", socket);
+
+	fd = bsearch(&socket, mod_s.fds_write, (size_t)(mod_s.nfds+1), sizeof(mod_s.fds_write[0]), cmpsockfds);
+	if (fd)
+	{
+		struct pollfd* last_fd = &mod_s.fds_write[mod_s.nfds];
+
+		if (mod_s.nfds == 0)
+		{
+			free(mod_s.fds_write);
+			mod_s.fds_write = NULL;
+		}
+		else
+		{
+			if (fd != last_fd)
+			{
+				/* shift array to remove the socket in question */
+				memmove(fd, fd + 1, (mod_s.nfds - (fd - mod_s.fds_write)) * sizeof(mod_s.fds_write[0]));
+			}
+			mod_s.fds_write = realloc(mod_s.fds_write, sizeof(mod_s.fds_write[0]) * mod_s.nfds);
+			if (mod_s.fds_write == NULL)
 			{
 				rc = PAHO_MEMORY_ERROR;
 				goto exit;
@@ -1142,6 +1203,12 @@ exit:
 	return rc;
 }
 
+static Socket_writeContinue* writecontinue = NULL;
+
+void Socket_setWriteContinueCallback(Socket_writeContinue* mywritecontinue)
+{
+	writecontinue = mywritecontinue;
+}
 
 static Socket_writeComplete* writecomplete = NULL;
 
@@ -1285,7 +1352,7 @@ exit:
  *  @param sock in case of a socket error contains the affected socket
  *  @return completion code, 0 or SOCKET_ERROR
  */
-int Socket_continueWrites(fd_set* pwset, int* sock, mutex_type mutex)
+int Socket_continueWrites(fd_set* pwset, SOCKET* sock, mutex_type mutex)
 #else
 /**
  *  Continue any outstanding socket writes
@@ -1311,7 +1378,7 @@ int Socket_continueWrites(SOCKET* sock, mutex_type mutex)
 		struct pollfd* fd;
 
 		/* find the socket in the fds structure */
-		fd = bsearch(&socket, mod_s.saved.fds, (size_t)mod_s.saved.nfds, sizeof(mod_s.saved.fds[0]), cmpsockfds);
+		fd = bsearch(&socket, mod_s.saved.fds_write, (size_t)mod_s.saved.nfds, sizeof(mod_s.saved.fds_write[0]), cmpsockfds);
 
 		if ((fd->revents & POLLOUT) && ((rc = Socket_continueWrite(socket)) != 0))
 #endif
@@ -1340,6 +1407,9 @@ int Socket_continueWrites(SOCKET* sock, mutex_type mutex)
 		}
 		else
 			ListNextElement(mod_s.write_pending, &curpending);
+
+		if (rc == 0)
+			(*writecontinue)(socket);
 
 		if (rc == SOCKET_ERROR)
 		{

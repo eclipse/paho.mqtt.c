@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2022 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -19,6 +19,15 @@
 
 #if !defined(THREAD_H)
 #define THREAD_H
+
+#if !defined(_WIN32) && !defined(_WIN64)
+#if defined(__GNUC__) && defined(__linux__)
+#if !defined(_GNU_SOURCE)
+// for pthread_setname
+	#define _GNU_SOURCE
+#endif
+#endif
+#endif
 
 #include "MQTTExportDeclarations.h"
 
@@ -60,6 +69,7 @@
 #endif
 
 LIBMQTT_API void Thread_start(thread_fn, void*);
+int Thread_set_name(const char* thread_name);
 
 LIBMQTT_API mutex_type Thread_create_mutex(int*);
 LIBMQTT_API int Thread_lock_mutex(mutex_type);

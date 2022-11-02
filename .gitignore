@@ -4,9 +4,3 @@
 *.swp
 *.pyc
 /build.paho
-/.vs
-/out/build/x64-Debug
-/out/build
-/src/.vs
-/src/out/build
-/src/.vscode

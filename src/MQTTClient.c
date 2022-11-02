@@ -70,14 +70,16 @@
 #if defined(OPENSSL)
 #include <openssl/ssl.h>
 #else
-#define URI_SSL "ssl://"
+#define URI_SSL   "ssl://"
+#define URI_MQTTS "mqtts://"
 #endif
 
 #include "OsWrapper.h"
 
-#define URI_TCP "tcp://"
-#define URI_WS "ws://"
-#define URI_WSS "wss://"
+#define URI_TCP  "tcp://"
+#define URI_MQTT "mqtt://"
+#define URI_WS   "ws://"
+#define URI_WSS  "wss://"
 
 #include "VersionInfo.h"
 #include "WebSocket.h"
@@ -380,7 +382,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 #endif
 	FUNC_ENTRY;
 	if ((rc = Thread_lock_mutex(mqttclient_mutex)) != 0)
-		goto exit;
+		goto nounlock_exit;
 
 	if (serverURI == NULL || clientId == NULL)
 	{
@@ -403,9 +405,11 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 	if (strstr(serverURI, "://") != NULL)
 	{
 		if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) != 0
+		 && strncmp(URI_MQTT, serverURI, strlen(URI_MQTT)) != 0
 		 && strncmp(URI_WS, serverURI, strlen(URI_WS)) != 0
 #if defined(OPENSSL)
-            && strncmp(URI_SSL, serverURI, strlen(URI_SSL)) != 0
+         && strncmp(URI_SSL, serverURI, strlen(URI_SSL)) != 0
+         && strncmp(URI_MQTTS, serverURI, strlen(URI_MQTTS)) != 0
 		 && strncmp(URI_WSS, serverURI, strlen(URI_WSS)) != 0
 #endif
 			)
@@ -448,6 +452,8 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 	m->commandTimeout = 10000L;
 	if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
 		serverURI += strlen(URI_TCP);
+	else if (strncmp(URI_MQTT, serverURI, strlen(URI_MQTT)) == 0)
+		serverURI += strlen(URI_MQTT);
 	else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
 	{
 		serverURI += strlen(URI_WS);
@@ -457,6 +463,16 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 	{
 #if defined(OPENSSL)
 		serverURI += strlen(URI_SSL);
+		m->ssl = 1;
+#else
+		rc = MQTTCLIENT_SSL_NOT_SUPPORTED;
+		goto exit;
+#endif
+	}
+	else if (strncmp(URI_MQTTS, serverURI, strlen(URI_MQTTS)) == 0)
+	{
+#if defined(OPENSSL)
+		serverURI += strlen(URI_MQTTS);
 		m->ssl = 1;
 #else
 		rc = MQTTCLIENT_SSL_NOT_SUPPORTED;
@@ -509,6 +525,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 
 exit:
 	Thread_unlock_mutex(mqttclient_mutex);
+nounlock_exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -800,6 +817,7 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 	long timeout = 10L; /* first time in we have a small timeout.  Gets things started more quickly */
 
 	FUNC_ENTRY;
+	Thread_set_name("MQTTClient_run");
 	Thread_lock_mutex(mqttclient_mutex);
 
 	run_id = Thread_getid();
@@ -1625,11 +1643,17 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 #endif
 
 	if (m->c->username)
+	{
 		free((void*)m->c->username);
+		m->c->username = NULL;
+	}
 	if (options->username)
 		m->c->username = MQTTStrdup(options->username);
 	if (m->c->password)
+	{
 		free((void*)m->c->password);
+		m->c->password = NULL;
+	}
 	if (options->password)
 	{
 		m->c->password = MQTTStrdup(options->password);
@@ -1678,7 +1702,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options)
 	MQTTClients* m = handle;
 	MQTTResponse response;
 
-	if (m->c->MQTTVersion >= MQTTVERSION_5)
+	if (m != NULL && m->c != NULL && m->c->MQTTVersion >= MQTTVERSION_5)
 		return MQTTCLIENT_WRONG_MQTT_VERSION;
 
 	response = MQTTClient_connectAll(handle, options, NULL, NULL);
@@ -1693,7 +1717,7 @@ MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connectOptions* o
 	MQTTClients* m = handle;
 	MQTTResponse response = MQTTResponse_initializer;
 
-	if (m->c->MQTTVersion < MQTTVERSION_5)
+	if (m != NULL && m->c != NULL && m->c->MQTTVersion < MQTTVERSION_5)
 	{
 		response.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
 		return response;
@@ -1720,7 +1744,7 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions*
 		goto exit;
 	}
 
-	if (options == NULL)
+	if (options == NULL || m == NULL || m->c == NULL)
 	{
 		rc.reasonCode = MQTTCLIENT_NULL_PARAMETER;
 		goto exit;
@@ -1822,6 +1846,8 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions*
 
 			if (strncmp(URI_TCP, serverURI, strlen(URI_TCP)) == 0)
 				serverURI += strlen(URI_TCP);
+			else if (strncmp(URI_MQTT, serverURI, strlen(URI_MQTT)) == 0)
+				serverURI += strlen(URI_TCP);
 			else if (strncmp(URI_WS, serverURI, strlen(URI_WS)) == 0)
 			{
 				serverURI += strlen(URI_WS);
@@ -1831,6 +1857,11 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions*
 			else if (strncmp(URI_SSL, serverURI, strlen(URI_SSL)) == 0)
 			{
 				serverURI += strlen(URI_SSL);
+				m->ssl = 1;
+			}
+			else if (strncmp(URI_MQTTS, serverURI, strlen(URI_MQTTS)) == 0)
+			{
+				serverURI += strlen(URI_MQTTS);
 				m->ssl = 1;
 			}
 			else if (strncmp(URI_WSS, serverURI, strlen(URI_WSS)) == 0)
@@ -1933,7 +1964,7 @@ static int MQTTClient_disconnect_internal(MQTTClient handle, int timeout)
  */
 void MQTTProtocol_closeSession(Clients* c, int sendwill)
 {
-	MQTTClient_disconnect_internal((MQTTClient)c->context, 0);
+	MQTTClient_closeSession(c, MQTTREASONCODE_SUCCESS, NULL);
 }
 
 
@@ -2072,12 +2103,19 @@ MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char* const
 			}
 			else
 			{
-				ListElement* current = NULL;
-				i = 0;
-				while (ListNextElement(sub->qoss, &current))
+				ListElement *current = NULL;
+
+				/* if the returned count is greater than requested, it's an error*/
+				if (sub->qoss->count > count)
+					rc = MQTTCLIENT_FAILURE;
+				else
 				{
-					int* reqqos = (int*)(current->content);
-					qos[i++] = *reqqos;
+					i = 0;
+					while (ListNextElement(sub->qoss, &current))
+					{
+						int *reqqos = (int*) (current->content);
+						qos[i++] = *reqqos;
+					}
 				}
 				resp.reasonCode = rc;
 			}
@@ -2109,7 +2147,7 @@ int MQTTClient_subscribeMany(MQTTClient handle, int count, char* const* topic, i
 	MQTTClients* m = handle;
 	MQTTResponse response = MQTTResponse_initializer;
 
-	if (m->c->MQTTVersion >= MQTTVERSION_5)
+	if (m != NULL && m->c != NULL && m->c->MQTTVersion >= MQTTVERSION_5)
 		response.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
 	else
 		response = MQTTClient_subscribeMany5(handle, count, topic, qos, NULL, NULL);
@@ -2253,7 +2291,13 @@ exit:
 
 int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char* const* topic)
 {
-	MQTTResponse response = MQTTClient_unsubscribeMany5(handle, count, topic, NULL);
+	MQTTClients* m = handle;
+	MQTTResponse response = MQTTResponse_initializer;
+
+	if (m != NULL && m->c != NULL && m->c->MQTTVersion >= MQTTVERSION_5)
+		response.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
+	else
+		response = MQTTClient_unsubscribeMany5(handle, count, topic, NULL);
 
 	return response.reasonCode;
 }
@@ -2470,7 +2514,7 @@ int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClie
 	if (strncmp(message->struct_id, "MQTM", 4) != 0 ||
 			(message->struct_version != 0 && message->struct_version != 1))
 		rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
-	else if (m->c->MQTTVersion >= MQTTVERSION_5)
+	else if (m != NULL && m->c != NULL && m->c->MQTTVersion >= MQTTVERSION_5)
 		rc.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
 	else
 		rc = MQTTClient_publishMessage5(handle, topicName, message, deliveryToken);
@@ -2557,7 +2601,7 @@ static MQTTPacket* MQTTClient_cycle(SOCKET* sock, ELAPSED_TIME_TYPE timeout, int
 					(*(m->published))(m->published_context, msgid, pack->header.bits.type, &ack.properties, ack.rc);
 				}
 				*rc = (pack->header.bits.type == PUBCOMP) ?
-					MQTTProtocol_handlePubcomps(pack, *sock) : MQTTProtocol_handlePubacks(pack, *sock);
+					MQTTProtocol_handlePubcomps(pack, *sock, NULL) : MQTTProtocol_handlePubacks(pack, *sock, NULL);
 				if (m && m->dc)
 				{
 					Log(TRACE_MIN, -1, "Calling deliveryComplete for client %s, msgid %d", m->c->clientID, msgid);
@@ -2574,7 +2618,7 @@ static MQTTPacket* MQTTClient_cycle(SOCKET* sock, ELAPSED_TIME_TYPE timeout, int
 					(*(m->published))(m->published_context, pubrec->msgId, pack->header.bits.type,
 							&pubrec->properties, pubrec->rc);
 				}
-				*rc = MQTTProtocol_handlePubrecs(pack, *sock);
+				*rc = MQTTProtocol_handlePubrecs(pack, *sock, NULL);
 			}
 			else if (pack->header.bits.type == PUBREL)
 				*rc = MQTTProtocol_handlePubrels(pack, *sock);

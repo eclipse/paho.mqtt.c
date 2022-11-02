@@ -920,7 +920,7 @@ int test5a(struct Options options)
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
 	int rc = 0;
 	char* test_topic = "C client test5a";
-	char* serverURIs[3] = {"tcp://localhost:1880", "tcp://localhost:1881", "tcp://localhost:1882"};
+	char* serverURIs[3] = {"tcp://localhost:1880", "mqtt://localhost:1881", "tcp://localhost:1882"};
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 5a - All HA connections out of service");
@@ -982,7 +982,7 @@ int test5b(struct Options options)
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
 	int rc = 0;
 	char* test_topic = "C client test5b";
-	char* serverURIs[3] = {"tcp://localhost:1880", "tcp://localhost:1881", options.connection};
+	char* serverURIs[3] = {"tcp://localhost:1880", "mqtt://localhost:1881", options.connection};
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 5b - All HA connections out of service except the last one");

@@ -791,8 +791,12 @@ int Socket_putdatas(SOCKET socket, char* buf0, size_t buf0len, PacketBuffers buf
 		iovecs[i+1].iov_len = (ULONG)bufs.buflens[i];
 		frees1[i+1] = bufs.frees[i];
 	}
-
-	if ((rc = Socket_writev(socket, iovecs, bufs.count+1, &bytes)) != SOCKET_ERROR)
+#if defined(__linux__) || defined(__unix__)
+	int _connect = clientSocket_checkConnect(socket);
+	if (_connect == 1 && (rc = Socket_writev(socket, iovecs, bufs.count + 1, &bytes)) != SOCKET_ERROR)
+#else
+	if ((rc = Socket_writev(socket, iovecs, bufs.count + 1, &bytes)) != SOCKET_ERROR)
+#endif
 	{
 		if (bytes == total)
 			rc = TCPSOCKET_COMPLETE;
@@ -1484,7 +1488,7 @@ char* Socket_getpeer(SOCKET sock)
 	return Socket_getaddrname((struct sockaddr*)&sa, sock);
 }
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__unix__)
 /**
  * Check client's  tcp state and set client's connected  , it linux only!
  * @param Clients

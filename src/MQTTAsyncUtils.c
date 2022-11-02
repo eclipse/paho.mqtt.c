@@ -3010,7 +3010,7 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 			m = (MQTTAsync)(MQTTAsync_handles->current->content);
 		if (m != NULL)
 		{
-#if defined(__linux__)
+#if defined(__linux__) || defined(__unix__)
 			m->c->connected = clientSocket_checkConnect(m->c->net.socket);
 #endif
 			Log(TRACE_MINIMUM, -1, "m->c->connect_state = %d", m->c->connect_state);

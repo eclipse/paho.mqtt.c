@@ -88,6 +88,11 @@
 const char *client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
 const char *client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
 
+struct conlost_sync_data {
+	sem_type sem;
+	void *m;
+};
+
 int MQTTClient_init(void);
 
 void MQTTClient_global_init(MQTTClient_init_options* inits)
@@ -701,9 +706,12 @@ static int clientSockCompare(void* a, void* b)
  */
 static thread_return_type WINAPI connectionLost_call(void* context)
 {
-	MQTTClients* m = (MQTTClients*)context;
+	struct conlost_sync_data *data = (struct conlost_sync_data *)context;
+	MQTTClients* m = (MQTTClients *)data->m;
 
 	(*(m->cl))(m->context, NULL);
+
+	Thread_post_sem(data->sem);
 	return 0;
 }
 
@@ -1915,6 +1923,9 @@ static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int call_conne
 	START_TIME_TYPE start;
 	int rc = MQTTCLIENT_SUCCESS;
 	int was_connected = 0;
+	struct conlost_sync_data sync = {
+		NULL, m
+	};
 
 	FUNC_ENTRY;
 	if (m == NULL || m->c == NULL)
@@ -1944,8 +1955,11 @@ exit:
 		MQTTClient_stop();
 	if (call_connection_lost && m->cl && was_connected)
 	{
+		sync.sem = Thread_create_sem(&rc);
 		Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
-		Thread_start(connectionLost_call, m);
+		Thread_start(connectionLost_call, &sync);
+		Thread_wait_sem(sync.sem, 5000);
+		Thread_destroy_sem(sync.sem);
 	}
 	FUNC_EXIT_RC(rc);
 	return rc;

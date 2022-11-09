@@ -1330,6 +1330,7 @@ static int MQTTAsync_processCommand(void)
 				command->command.details.conn.MQTTVersion = command->client->c->MQTTVersion;
 
 			Log(TRACE_PROTOCOL, -1, "Connecting to serverURI %s with MQTT version %d", serverURI, command->command.details.conn.MQTTVersion);
+			Thread_lock_mutex(socket_mutex);
 #if defined(OPENSSL)
 #if defined(__GNUC__) && defined(__linux__)
 			rc = MQTTProtocol_connect(serverURI, command->client->c, command->client->ssl, command->client->websocket,
@@ -1347,6 +1348,7 @@ static int MQTTAsync_processCommand(void)
 					command->command.details.conn.MQTTVersion, command->client->connectProps, command->client->willProps);
 #endif
 #endif
+			Thread_unlock_mutex(socket_mutex);
 
 			if (command->client->c->connect_state == NOT_IN_PROGRESS)
 				rc = SOCKET_ERROR;
@@ -2033,7 +2035,9 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 		if (m == NULL)
 		{
 			Log(LOG_ERROR, -1, "Client structure was NULL for socket %d - removing socket", sock);
+			MQTTAsync_lock_mutex(socket_mutex);
 			Socket_close(sock);
+			MQTTAsync_unlock_mutex(socket_mutex);
 			continue;
 		}
 		if (rc == SOCKET_ERROR)

@@ -271,8 +271,7 @@ int MQTTPacket_send_subscribe(List* topics, List* qoss, MQTTSubscribe_options* o
 	}
 	rc = MQTTPacket_send(&client->net, header, data, datalen, 1, client->MQTTVersion);
 	Log(LOG_PROTOCOL, 22, NULL, client->net.socket, client->clientID, msgid, rc);
-	if (rc != TCPSOCKET_INTERRUPTED)
-		free(data);
+	free(data);
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;

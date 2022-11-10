@@ -195,7 +195,7 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 {
 	int rc = SOCKET_ERROR;
 	size_t buf0len;
-	char *buf;
+	char *buf=NULL;
 	PacketBuffers packetbufs;
 
 	FUNC_ENTRY;
@@ -229,7 +229,6 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 	if (rc == TCPSOCKET_COMPLETE)
 		net->lastSent = MQTTTime_now();
 	
-	if (rc != TCPSOCKET_INTERRUPTED)
 	  free(buf);
 
 exit:

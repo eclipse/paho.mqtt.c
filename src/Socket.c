@@ -490,7 +490,7 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 
 	FUNC_ENTRY;
 	Thread_lock_mutex(mutex);
-	if (mod_s.nfds == 0 && mod_s.saved.nfds == 0)
+	if (mod_s.nfds == 0 || (mod_s.nfds == 0 && mod_s.saved.nfds == 0))
 		goto exit;
 
 	if (more_work)
@@ -521,14 +521,14 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 			else
 				mod_s.saved.fds_write = malloc(mod_s.nfds * sizeof(struct pollfd));
 		}
-		memcpy(mod_s.saved.fds_read, mod_s.fds_read, mod_s.nfds * sizeof(struct pollfd));
-		memcpy(mod_s.saved.fds_write, mod_s.fds_write, mod_s.nfds * sizeof(struct pollfd));
-
-		if (mod_s.saved.nfds == 0)
+		
+		if ( mod_s.fds_read == NULL || mod_s.fds_write == NULL)
 		{
 			sock = 0;
 			goto exit; /* no work to do */
 		}
+		memcpy(mod_s.saved.fds_read, mod_s.fds_read, mod_s.nfds * sizeof(struct pollfd));
+		memcpy(mod_s.saved.fds_write, mod_s.fds_write, mod_s.nfds * sizeof(struct pollfd));
 
 		/* Check pending write set for writeable sockets */
 		rc1 = poll(mod_s.saved.fds_write, mod_s.saved.nfds, 0);

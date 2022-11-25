@@ -66,6 +66,11 @@ int Socket_abortWrite(SOCKET socket);
 #define snprintf _snprintf
 #endif
 
+/*
+ * callback to select interfaces, if there is one
+ */
+static Socket_interfaceCallback* interfaceCallback = NULL;
+
 /**
  * Structure to hold all socket data for this module
  */
@@ -1039,6 +1044,8 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 #endif
 	struct addrinfo *result = NULL;
 	struct addrinfo hints = {0, AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP, 0, NULL, NULL, NULL};
+	int preferred_family = AF_INET;
+	char* interface_name = NULL;
 
 	FUNC_ENTRY;
 	*sock = SOCKET_ERROR;
@@ -1048,6 +1055,7 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 	{
 		++addr;
 		--addr_len;
+		preferred_family = AF_INET6;
 	}
 
 	if ((addr_mem = malloc( addr_len + 1u )) == NULL)
@@ -1057,6 +1065,33 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 	}
 	memcpy( addr_mem, addr, addr_len );
 	addr_mem[addr_len] = '\0';
+
+	/* if the select interface callback is set, call it with a list of interfaces and families */
+	if (interfaceCallback != NULL)
+	{
+		struct Socket_interface* interfaces;
+		struct Socket_interface interface = {NULL, AF_INET};
+		int count = Socket_getInterfaces(&interfaces);
+
+		if (count > 0)
+		{
+			int i = 0;
+
+			Log(TRACE_MIN, -1, "Calling interface callback with %d interfaces", count);
+			interface = (*interfaceCallback)(count, interfaces);
+			if (interface.family == AF_INET || interface.family == AF_INET6)
+				preferred_family = interface.family;
+			interface_name = interface.name;
+
+			if (interface_name != NULL)
+				Log(TRACE_MIN, -1, "Selected interface name is %s, family %s", interface_name,
+						(preferred_family == AF_INET6) ? "AF_INET6" : "AF_INET");
+
+			for (i = 0; i < count; ++i)
+				free(interfaces[i].name);
+			free(interfaces);
+		}
+	}
 
 #if 0 /*defined(__GNUC__) && defined(__linux__)*/
 	/* Commented out because the CI tests get intermittent ECONNABORTED return values
@@ -1088,8 +1123,8 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 		struct addrinfo* res = result;
 
 		while (res)
-		{	/* prefer ip4 addresses */
-			if (res->ai_family == AF_INET || res->ai_next == NULL)
+		{
+			if (res->ai_family == preferred_family || res->ai_next == NULL)
 				break;
 			res = res->ai_next;
 		}
@@ -1152,7 +1187,13 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 						Log(LOG_ERROR, -1, "Could not set SO_SNDBUF for socket %d", *sock);
 				}
 #endif
-			Log(TRACE_MIN, -1, "New socket %d for %s, port %d",	*sock, addr, port);
+
+        	if (interface_name)
+        	{
+        		Socket_setInterface(*sock, interface_name);
+        		free(interface_name);
+        	}
+        	Log(TRACE_MIN, -1, "New socket %d for %s, port %d",	*sock, addr, port);
 			if (Socket_addSocket(*sock) == SOCKET_ERROR)
 				rc = Socket_error("addSocket", *sock);
 			else
@@ -1480,6 +1521,114 @@ char* Socket_getpeer(SOCKET sock)
 	return Socket_getaddrname((struct sockaddr*)&sa, sock);
 }
 
+
+/**
+ * Returns an array of network interface names available
+ * @return number of entries in the interface array, or an error code if < 0
+ */
+int Socket_getInterfaces(struct Socket_interface** interface_array)
+{
+#if !defined(_WIN32) && !defined(_WIN64)
+	struct ifaddrs *ifaddr, *ifa;
+#endif
+	int count = 0;
+	int rc = 0;
+	struct Socket_interface* interfaces;
+
+	FUNC_ENTRY;
+#if !defined(_WIN32) && !defined(_WIN64)
+	if (getifaddrs(&ifaddr) == -1)
+	{
+		rc = Socket_error("getifaddrs", 0);
+		goto exit;
+	}
+
+	/* count how many interfaces to return */
+	count = 0;
+	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+	{
+		int family = 0;
+		if (ifa->ifa_addr == NULL)
+			continue;
+
+		family = ifa->ifa_addr->sa_family;
+		/* only return IPV4 and V6 interfaces */
+		if (family == AF_INET || family == AF_INET6)
+			count++;
+	}
+
+	if (count > 0) {
+		interfaces = malloc(sizeof(struct Socket_interface) * count);
+		if (interfaces == NULL)
+			rc = PAHO_MEMORY_ERROR;
+		else
+		{
+			int i = 0;
+			for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+			{
+				int family = 0;
+				if (ifa->ifa_addr == NULL)
+					continue;
+
+				family = ifa->ifa_addr->sa_family;
+				/* only return IPV4 and V6 interfaces */
+				if (family == AF_INET || family == AF_INET6)
+				{
+					interfaces[i].family = family;
+					interfaces[i].name = malloc(strlen(ifa->ifa_name) + 1);
+					if (interfaces[i].name == NULL)
+					{
+						/* free up any name fields we've already allocated */
+						for (i -= 1; i >= 0; --i)
+							free(interfaces[i].name);
+						rc = PAHO_MEMORY_ERROR;
+						break;
+					}
+					strcpy(interfaces[i].name, ifa->ifa_name);
+					i++;
+				}
+			}
+			*interface_array = interfaces;
+		}
+	}
+	freeifaddrs(ifaddr);
+	if (rc == 0)
+		rc = count;
+#endif
+exit:
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+/*
+ * Set the device for a socket
+ * @param sock the socket to set the interface on
+ * @param interface_name the string interface name
+ * @return 0 if successful, otherwise an error code
+ */
+int Socket_setInterface(SOCKET sock, char* interface_name) {
+	int rc = 0;
+
+	FUNC_ENTRY;
+#if defined(_WIN32) || defined(_WIN64)
+#elif defined(OSX)
+#else
+	if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, (void*)interface_name, strlen(interface_name)+1) == -1)
+	{
+		rc = Socket_error("SO_BINDTODEVICE", 0);
+		Log(LOG_ERROR, -1, "Could not set SO_BINDTODEVICE for socket %d %d\n", sock, rc);
+	}
+#endif
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+void Socket_setInterfaceCallback(Socket_interfaceCallback* callback)
+{
+	interfaceCallback = callback;
+}
 
 #if defined(Socket_TEST)
 

@@ -1862,3 +1862,9 @@ static void MQTTAsync_freeServerURIs(MQTTAsyncs* m)
 		free(m->serverURIs);
 	m->serverURIs = NULL;
 }
+
+
+void MQTTAsync_setInterfaceCallback(MQTTAsync_interfaceCallback* callback)
+{
+	Socket_setInterfaceCallback((Socket_interfaceCallback*)callback);
+}

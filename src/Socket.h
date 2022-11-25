@@ -59,6 +59,7 @@
 #endif
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <ifaddrs.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <stdio.h>
@@ -136,6 +137,11 @@ typedef struct
 } Sockets;
 
 
+struct Socket_interface {
+	char* name;
+	int family;
+};
+
 void Socket_outInitialize(void);
 void Socket_outTerminate(void);
 SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* rc);
@@ -164,5 +170,12 @@ void Socket_setWriteCompleteCallback(Socket_writeComplete*);
 
 typedef void Socket_writeAvailable(SOCKET socket);
 void Socket_setWriteAvailableCallback(Socket_writeAvailable*);
+
+int Socket_getInterfaces(struct Socket_interface** interface_array);
+int Socket_setInterface(SOCKET sock, char* interface_name);
+
+typedef struct Socket_interface Socket_interfaceCallback(int count, struct Socket_interface* interfaces);
+void Socket_setInterfaceCallback(Socket_interfaceCallback*);
+
 
 #endif /* SOCKET_H */

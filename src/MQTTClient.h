@@ -1402,6 +1402,13 @@ LIBMQTT_API void MQTTClient_freeMessage(MQTTClient_message** msg);
 LIBMQTT_API void MQTTClient_free(void* ptr);
 
 /**
+  * This function is used to allocate memory to be used or freed by the MQTT C client library,
+  * especially the data in the ::MQTTClient_interfaceCallback callback.
+  * @param size The size of the memory to be allocated.
+  */
+LIBMQTT_API void* MQTTClient_malloc(size_t size);
+
+/**
   * This function frees the memory allocated to an MQTT client (see
   * MQTTClient_create()). It should be called when the client is no longer
   * required.
@@ -1465,6 +1472,38 @@ LIBMQTT_API int MQTTClient_setCommandTimeout(MQTTClient handle, unsigned long mi
  * Do not free after use. Returns NULL if the error code is unknown.
  */
 LIBMQTT_API const char* MQTTClient_strerror(int code);
+
+/*
+ * Device interface structure, name and address family
+ */
+struct MQTTClient_interface {
+	char* name; /**< the interface name, or NULL to ignore */
+	int family; /**< the address family AF_INET or AF_INET6 */
+};
+
+/**
+  * Callback function prototype which must be implemented if you want
+  * to be able to select the TCP/IP interface (device) and socket family
+  * (ipv4 or ipv6).
+  *
+  * Return a non-NULL C string interface name if you want to choose.
+  * The memory must be allocated by the MQTTClient_malloc call, as
+  * it will be freed automatically.
+  *
+  * To choose a preferred socket family, set family to either AF_INET or
+  * AF_INET6 for IPv4 or IPv6 respectively. Any other value will be
+  * ignored and IPv4 will be the preferred default.
+  *
+  */
+typedef struct MQTTClient_interface MQTTClient_interfaceCallback(int count, struct MQTTClient_interface* interfaces);
+
+/**
+  * This function sets the trace callback if needed.  If set to NULL,
+  * no trace information will be returned.  The default trace level is
+  * MQTTASYNC_TRACE_MINIMUM.
+  * @param callback a pointer to the function which will handle the trace information
+  */
+LIBMQTT_API void MQTTClient_setInterfaceCallback(MQTTClient_interfaceCallback* callback);
 
 #if defined(__cplusplus)
      }

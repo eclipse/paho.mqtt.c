@@ -644,6 +644,19 @@ void MQTTClient_free(void* memory)
 }
 
 
+void* MQTTClient_malloc(size_t size)
+{
+	void* val;
+	int rc = 0;
+
+	FUNC_ENTRY;
+	val = malloc(size);
+	rc = (val != NULL);
+	FUNC_EXIT_RC(rc);
+	return val;
+}
+
+
 void MQTTResponse_free(MQTTResponse response)
 {
 	FUNC_ENTRY;
@@ -3089,3 +3102,12 @@ static void MQTTClient_writeComplete(SOCKET socket, int rc)
 	}
 	FUNC_EXIT;
 }
+
+
+void MQTTClient_setInterfaceCallback(MQTTClient_interfaceCallback* callback)
+{
+	Socket_setInterfaceCallback((Socket_interfaceCallback*)callback);
+}
+
+
+

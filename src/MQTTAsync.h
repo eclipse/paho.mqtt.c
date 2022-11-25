@@ -1762,6 +1762,39 @@ LIBMQTT_API MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void);
  */
 LIBMQTT_API const char* MQTTAsync_strerror(int code);
 
+/*
+ * Device interface structure, name and address family
+ */
+struct MQTTAsync_interface {
+	char* name; /**< the interface name, or NULL to ignore */
+	int family; /**< the address family AF_INET or AF_INET6 */
+};
+
+/**
+  * Callback function prototype which must be implemented if you want
+  * to be able to select the TCP/IP interface (device) and socket family
+  * (ipv4 or ipv6).
+  *
+  * Return a non-NULL C string interface name if you want to choose.
+  * The memory must be allocated by the MQTTClient_malloc call, as
+  * it will be freed automatically.
+  *
+  * To choose a preferred address family, set family to either AF_INET or
+  * AF_INET6 for IPv4 or IPv6 respectively. Any other value will be
+  * ignored and IPv4 will be the preferred default.
+  *
+  * @return interface structure with
+  */
+typedef struct MQTTAsync_interface MQTTAsync_interfaceCallback(int count, struct MQTTAsync_interface* interfaces);
+
+/**
+  * This function sets the trace callback if needed.  If set to NULL,
+  * no trace information will be returned.  The default trace level is
+  * MQTTASYNC_TRACE_MINIMUM.
+  * @param callback a pointer to the function which will handle the trace information
+  */
+LIBMQTT_API void MQTTAsync_setInterfaceCallback(MQTTAsync_interfaceCallback* callback);
+
 
 /*!
   * @cond MQTTAsync_main

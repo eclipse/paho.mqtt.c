@@ -368,6 +368,7 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 /*static int pubCompare(void* a, void* b); */
 static void MQTTProtocol_checkPendingWrites(void);
 static void MQTTClient_writeComplete(SOCKET socket, int rc);
+static void MQTTClient_writeContinue(SOCKET socket);
 
 
 int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, const char* clientId,
@@ -434,6 +435,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 		bstate->clients = ListInitialize();
 		Socket_outInitialize();
 		Socket_setWriteCompleteCallback(MQTTClient_writeComplete);
+		Socket_setWriteContinueCallback(MQTTClient_writeContinue);
 		Socket_setWriteAvailableCallback(MQTTProtocol_writeAvailable);
 		handles = ListInitialize();
 #if defined(OPENSSL)
@@ -3088,4 +3090,17 @@ static void MQTTClient_writeComplete(SOCKET socket, int rc)
 		m->c->net.lastSent = MQTTTime_now();
 	}
 	FUNC_EXIT;
+}
+
+
+static void MQTTClient_writeContinue(SOCKET socket)
+{
+	ListElement* found = NULL;
+
+	if ((found = ListFindItem(handles, &socket, clientSockCompare)) != NULL)
+	{
+		MQTTClients* m = (MQTTClients*)(found->content);
+
+		m->c->net.lastSent = MQTTTime_now();
+	}
 }

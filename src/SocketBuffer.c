@@ -193,12 +193,18 @@ char* SocketBuffer_getQueuedData(SOCKET socket, size_t bytes, size_t* actual_len
 		if (queue->datalen > 0)
 		{
 			void* newmem = malloc(bytes);
-
-			free(queue->buf);
-			queue->buf = newmem;
-			if (!newmem)
+			if (newmem)
+			{
+				memcpy(newmem, queue->buf, queue->datalen);
+				free(queue->buf);
+				queue->buf = newmem;
+			}
+			else
+			{
+				free(queue->buf);
+				queue->buf = NULL;
 				goto exit;
-			memcpy(newmem, queue->buf, queue->datalen);
+			}
 		}
 		else
 			queue->buf = realloc(queue->buf, bytes);

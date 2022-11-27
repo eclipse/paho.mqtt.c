@@ -1408,7 +1408,7 @@ int Socket_continueWrites(SOCKET* sock, mutex_type mutex)
 		else
 			ListNextElement(mod_s.write_pending, &curpending);
 
-		if (rc == 0)
+		if (writecontinue && rc == 0)
 			(*writecontinue)(socket);
 
 		if (rc == SOCKET_ERROR)

@@ -115,7 +115,7 @@ MQTTProtocol state;
 
 #if defined(_WIN32) || defined(_WIN64)
 static mutex_type mqttclient_mutex = NULL;
-static mutex_type socket_mutex = NULL;
+mutex_type socket_mutex = NULL;
 static mutex_type subscribe_mutex = NULL;
 static mutex_type unsubscribe_mutex = NULL;
 static mutex_type connect_mutex = NULL;

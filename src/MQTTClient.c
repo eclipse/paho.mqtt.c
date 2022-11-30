@@ -1980,7 +1980,7 @@ static int MQTTClient_disconnect_internal(MQTTClient handle, int timeout)
  */
 void MQTTProtocol_closeSession(Clients* c, int sendwill)
 {
-	MQTTClient_closeSession(c, MQTTREASONCODE_SUCCESS, NULL);
+	MQTTClient_disconnect_internal((MQTTClient)c->context, 0);
 }
 
 

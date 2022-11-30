@@ -657,7 +657,7 @@ static int MQTTPacket_send_ack(int MQTTVersion, int type, int msgid, int dup, ne
 	if (type == PUBREL)
 	    header.bits.qos = 1;
 	writeInt(&ptr, msgid);
-	rc = MQTTPacket_send(net, header, buf, 2, 1, MQTTVersion)) != TCPSOCKET_INTERRUPTED;
+	rc = MQTTPacket_send(net, header, buf, 2, 1, MQTTVersion);
 	free(buf);
 exit:
 	FUNC_EXIT_RC(rc);

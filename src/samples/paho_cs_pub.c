@@ -133,6 +133,15 @@ int messageArrived(void* context, char* topicName, int topicLen, MQTTClient_mess
 }
 
 
+void connectionLost(void* context, char* reason)
+{
+	MQTTClient client = (MQTTClient)context;
+	if (opts.verbose)
+		printf("ConnectionLost, reconnecting\n");
+	myconnect(client);
+}
+
+
 void trace_callback(enum MQTTCLIENT_TRACE_LEVELS level, char* message)
 {
 	fprintf(stderr, "Trace : %d, %s\n", level, message);
@@ -200,7 +209,7 @@ int main(int argc, char** argv)
     sigaction(SIGTERM, &sa, NULL);
 #endif
 
-	rc = MQTTClient_setCallbacks(client, NULL, NULL, messageArrived, NULL);
+	rc = MQTTClient_setCallbacks(client, client, connectionLost, messageArrived, NULL);
 	if (rc != MQTTCLIENT_SUCCESS)
 	{
 		if (!opts.quiet)

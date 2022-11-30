@@ -949,12 +949,9 @@ int MQTTAsync_reconnect(MQTTAsync handle)
 		if (m->shouldBeConnected)
 		{
 			m->reconnectNow = 1;
-			if (m->retrying == 0)
-			{
-				m->currentIntervalBase = m->minRetryInterval;
-				m->currentInterval = m->minRetryInterval;
-				m->retrying = 1;
-			}
+			m->currentIntervalBase = m->minRetryInterval;
+			m->currentInterval = m->minRetryInterval;
+			m->retrying = 1;
 			rc = MQTTASYNC_SUCCESS;
 		}
 	}

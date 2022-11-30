@@ -714,6 +714,7 @@ void MQTTProtocol_keepalive(START_TIME_TYPE now)
 		if (client->ping_outstanding == 1)
 		{
 			if (MQTTTime_difftime(now, client->net.lastPing) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1500) &&
+				/* if last received is more recent, we could be receiving a large packet */
 				MQTTTime_difftime(now, client->net.lastReceived) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1500))
 			{
 				Log(TRACE_PROTOCOL, -1, "PINGRESP not received in keepalive interval for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
@@ -723,13 +724,17 @@ void MQTTProtocol_keepalive(START_TIME_TYPE now)
 		else if (client->ping_due == 1 &&
 			(MQTTTime_difftime(now, client->ping_due_time) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1500)))
 		{
-			/* ping still outstanding after keep alive interval, so close session */
-			Log(TRACE_PROTOCOL, -1, "PINGREQ still outstanding for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
-			MQTTProtocol_closeSession(client, 1);
-
+			/* if the last received time is more recent than the ping due time, we could be receiving a large packet,
+			 * preventing the PINGRESP being received */
+			if (MQTTTime_difftime(now, client->ping_due_time) <= MQTTTime_difftime(now, client->net.lastReceived))
+			{
+				/* ping still outstanding after keep alive interval, so close session */
+				Log(TRACE_PROTOCOL, -1, "PINGREQ still outstanding for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
+				MQTTProtocol_closeSession(client, 1);
+			}
 		}
-		else if (MQTTTime_difftime(now, client->net.lastSent) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1000) &&
-				 MQTTTime_difftime(now, client->net.lastReceived) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1000))
+		else if (MQTTTime_difftime(now, client->net.lastSent) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1000))
+		/* the time since we last sent a packet, or part of a packet has exceeded the keep alive, so we need to send a ping */
 		{
 			if (Socket_noPendingWrites(client->net.socket))
 			{
@@ -751,6 +756,25 @@ void MQTTProtocol_keepalive(START_TIME_TYPE now)
 						client->clientID, client->net.socket);
 				client->ping_due = 1;
 				client->ping_due_time = now;
+			}
+		}
+		else if (MQTTTime_difftime(now, client->net.lastReceived) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1000))
+		/* the time since we last received any data has exceeded the keep alive, so we can send a ping to see if the server is alive */
+		{
+			/* Check that no writes are pending for the socket. If there are, forget about it, as this PING use is optional */
+			if (Socket_noPendingWrites(client->net.socket))
+			{
+				if (MQTTPacket_send_pingreq(&client->net, client->clientID) != TCPSOCKET_COMPLETE)
+				{
+					Log(TRACE_PROTOCOL, -1, "Error sending PINGREQ for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
+					MQTTProtocol_closeSession(client, 1);
+				}
+				else
+				{
+					client->ping_due = 0;
+					client->net.lastPing = now;
+					client->ping_outstanding = 1;
+				}
 			}
 		}
 	}

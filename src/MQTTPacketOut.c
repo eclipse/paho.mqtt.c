@@ -123,8 +123,7 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion,
 	Log(LOG_PROTOCOL, 0, NULL, client->net.socket, client->clientID,
 			MQTTVersion, client->cleansession, rc);
 exit:
-	if (rc != TCPSOCKET_INTERRUPTED)
-		free(buf);
+	free(buf);
 exit_nofree:
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -391,8 +390,7 @@ int MQTTPacket_send_unsubscribe(List* topics, MQTTProperties* props, int msgid, 
 		writeUTF(&ptr, (char*)(elem->content));
 	rc = MQTTPacket_send(&client->net, header, data, datalen, 1, client->MQTTVersion);
 	Log(LOG_PROTOCOL, 25, NULL, client->net.socket, client->clientID, msgid, rc);
-	if (rc != TCPSOCKET_INTERRUPTED)
-		free(data);
+	free(data);
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;

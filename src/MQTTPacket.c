@@ -282,8 +282,7 @@ int MQTTPacket_sends(networkHandles* net, Header header, PacketBuffers* bufs, in
 	if (rc == TCPSOCKET_COMPLETE)
 		net->lastSent = MQTTTime_now();
 	
-	if (rc != TCPSOCKET_INTERRUPTED)
-	  free(buf);
+	free(buf);
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -531,9 +530,8 @@ int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQT
 		writeChar(&ptr, reason);
 		if (props)
 			MQTTProperties_write(&ptr, props);
-		if ((rc = MQTTPacket_send(&client->net, header, buf, buflen, 1,
-				                   client->MQTTVersion)) != TCPSOCKET_INTERRUPTED)
-			free(buf);
+		rc = MQTTPacket_send(&client->net, header, buf, buflen, 1,client->MQTTVersion);
+		free(buf);
 	}
 	else
 		rc = MQTTPacket_send(&client->net, header, NULL, 0, 0, client->MQTTVersion);
@@ -659,8 +657,8 @@ static int MQTTPacket_send_ack(int MQTTVersion, int type, int msgid, int dup, ne
 	if (type == PUBREL)
 	    header.bits.qos = 1;
 	writeInt(&ptr, msgid);
-	if ((rc = MQTTPacket_send(net, header, buf, 2, 1, MQTTVersion)) != TCPSOCKET_INTERRUPTED)
-		free(buf);
+	rc = MQTTPacket_send(net, header, buf, 2, 1, MQTTVersion)) != TCPSOCKET_INTERRUPTED;
+	free(buf);
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -886,8 +884,7 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 		ptr = topiclen;
 		writeInt(&ptr, (int)lens[1]);
 		rc = MQTTPacket_sends(net, header, &packetbufs, pack->MQTTVersion);
-		if (rc != TCPSOCKET_INTERRUPTED)
-			free(bufs[2]);
+		free(bufs[2]);
 		memcpy(pack->mask, packetbufs.mask, sizeof(pack->mask));
 	}
 	else
@@ -909,8 +906,7 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 		Log(LOG_PROTOCOL, 10, NULL, net->socket, clientID, pack->msgId, qos, retained, rc, pack->payloadlen,
 				min(20, pack->payloadlen), pack->payload);
 exit_free:
-	if (rc != TCPSOCKET_INTERRUPTED)
-		free(topiclen);
+	free(topiclen);
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;

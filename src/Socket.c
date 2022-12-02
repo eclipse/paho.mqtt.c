@@ -41,6 +41,9 @@
 #include <string.h>
 #include <signal.h>
 #include <ctype.h>
+#if defined(OSX)
+#include <net/if.h>
+#endif
 
 #include "Heap.h"
 
@@ -59,6 +62,9 @@ int Socket_close_only(SOCKET socket);
 int Socket_continueWrite(SOCKET socket);
 char* Socket_getaddrname(struct sockaddr* sa, SOCKET sock);
 int Socket_abortWrite(SOCKET socket);
+int Socket_getInterfaces(struct Socket_interface** interface_array);
+int Socket_setInterface(SOCKET sock, char* interface_name, int family);
+
 
 #if defined(_WIN32) || defined(_WIN64)
 #define iov_len len
@@ -1038,13 +1044,14 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 #endif
 	int rc = SOCKET_ERROR;
 #if defined(_WIN32) || defined(_WIN64)
-	short family;
+	short family = AF_INET;
+	short preferred_family = AF_INET;
 #else
 	sa_family_t family = AF_INET;
+	sa_family_t preferred_family = AF_INET;
 #endif
 	struct addrinfo *result = NULL;
 	struct addrinfo hints = {0, AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP, 0, NULL, NULL, NULL};
-	int preferred_family = AF_INET;
 	char* interface_name = NULL;
 
 	FUNC_ENTRY;
@@ -1190,7 +1197,7 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 
         	if (interface_name)
         	{
-        		Socket_setInterface(*sock, interface_name);
+        		Socket_setInterface(*sock, interface_name, family);
         		free(interface_name);
         	}
         	Log(TRACE_MIN, -1, "New socket %d for %s, port %d",	*sock, addr, port);
@@ -1607,12 +1614,32 @@ exit:
  * @param interface_name the string interface name
  * @return 0 if successful, otherwise an error code
  */
-int Socket_setInterface(SOCKET sock, char* interface_name) {
+int Socket_setInterface(SOCKET sock, char* interface_name, int family) {
 	int rc = 0;
+#if defined(OSX)
+	int index = 0;
+#endif
 
 	FUNC_ENTRY;
 #if defined(_WIN32) || defined(_WIN64)
 #elif defined(OSX)
+	index = if_nametoindex(interface_name);
+	if (index == 0)
+		rc = SOCKET_ERROR;
+	if (family != AF_INET && family != AF_INET6)
+		rc = SOCKET_ERROR;
+	else
+	{
+		if (family == AF_INET)
+			rc = setsockopt(sock, IPPROTO_IP, IP_BOUND_IF, &index, sizeof(index));
+		else
+			rc = setsockopt(sock, IPPROTO_IPV6, IPV6_BOUND_IF, &index, sizeof(index));
+		if (rc == -1)
+		{
+			rc = Socket_error("IP_BOUND_IF", 0);
+			Log(LOG_ERROR, -1, "Could not set IP_BOUND_IF for socket %d %d\n", sock, rc);
+		}
+	}
 #else
 	if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, (void*)interface_name, strlen(interface_name)+1) == -1)
 	{

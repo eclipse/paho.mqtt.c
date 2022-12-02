@@ -171,9 +171,6 @@ void Socket_setWriteCompleteCallback(Socket_writeComplete*);
 typedef void Socket_writeAvailable(SOCKET socket);
 void Socket_setWriteAvailableCallback(Socket_writeAvailable*);
 
-int Socket_getInterfaces(struct Socket_interface** interface_array);
-int Socket_setInterface(SOCKET sock, char* interface_name);
-
 typedef struct Socket_interface Socket_interfaceCallback(int count, struct Socket_interface* interfaces);
 void Socket_setInterfaceCallback(Socket_interfaceCallback*);
 

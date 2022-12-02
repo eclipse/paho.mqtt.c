@@ -110,6 +110,9 @@ typedef struct MQTTAsync_struct
 	MQTTAsync_updateConnectOptions* updateConnectOptions;
 	void* updateConnectOptions_context;
 
+	MQTTAsync_selectInterface* selectInterface;
+	void* selectInterface_context;
+
 	/* Each time connect is called, we store the options that were used.  These are reused in
 	   any call to reconnect, or an automatic reconnect attempt */
 	MQTTAsync_command connect;		/* Connect operation properties */
@@ -175,6 +178,7 @@ void MQTTAsync_writeComplete(SOCKET socket, int rc);
 void setRetryLoopInterval(int keepalive);
 void MQTTAsync_NULLPublishResponses(MQTTAsyncs* m);
 void MQTTAsync_NULLPublishCommands(MQTTAsyncs* m);
+struct Socket_interface MQTTAsync_selectSocketInterface(SOCKET socket, int count, struct Socket_interface* interfaces);
 
 #if defined(_WIN32) || defined(_WIN64)
 #else

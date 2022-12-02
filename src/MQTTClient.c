@@ -319,6 +319,9 @@ typedef struct
 	MQTTClient_published* published;
 	void* published_context; /* the context to be associated with the disconnected callback*/
 
+	MQTTClient_selectInterface* selectInterface;
+	void* selectInterface_context;
+
 #if 0
 	MQTTClient_authHandle* auth_handle;
 	void* auth_handle_context; /* the context to be associated with the authHandle callback*/
@@ -3104,9 +3107,50 @@ static void MQTTClient_writeComplete(SOCKET socket, int rc)
 }
 
 
-void MQTTClient_setInterfaceCallback(MQTTClient_interfaceCallback* callback)
+struct Socket_interface MQTTClient_selectSocketInterface(SOCKET socket, int count, struct Socket_interface* interfaces)
 {
-	Socket_setInterfaceCallback((Socket_interfaceCallback*)callback);
+	ListElement* found = NULL;
+	struct Socket_interface choice = {NULL, AF_INET};
+
+	FUNC_ENTRY;
+	if ((found = ListFindItem(handles, &socket, clientSockCompare)) != NULL)
+	{
+		MQTTClients* m = (MQTTClients*)(found->content);
+
+		if (m->selectInterface)
+		{
+			struct MQTTClient_interface mqttclient_choice = (*m->selectInterface)(m->selectInterface_context,
+				count, (struct MQTTClient_interface*)interfaces);
+			choice.name = mqttclient_choice.name;
+			choice.family = mqttclient_choice.family;
+		}
+	}
+	FUNC_EXIT;
+	return choice;
+}
+
+
+int MQTTClient_setSelectInterface(MQTTClient handle, void* context, MQTTClient_selectInterface* callback)
+{
+	int rc = MQTTCLIENT_SUCCESS;
+	MQTTClients* m = handle;
+
+	FUNC_ENTRY;
+	Thread_lock_mutex(mqttclient_mutex);
+
+	if (m == NULL || m->c->connect_state != 0)
+		rc = MQTTCLIENT_FAILURE;
+	else
+	{
+		m->selectInterface_context = context;
+		m->selectInterface = callback;
+	}
+
+	Socket_setSelectInterfaceCallback(MQTTClient_selectSocketInterface);
+
+	Thread_unlock_mutex(mqttclient_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
 }
 
 

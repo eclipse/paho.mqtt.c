@@ -1494,16 +1494,20 @@ struct MQTTClient_interface {
   * AF_INET6 for IPv4 or IPv6 respectively. Any other value will be
   * ignored and IPv4 will be the preferred default.
   *
+  * @param context a pointer to data that will be passed to the callback
+  * @param count the number of entries in the interfaces array
+  * @param the array of interface structures
+  * @return interface structure with the choice made
   */
-typedef struct MQTTClient_interface MQTTClient_interfaceCallback(int count, struct MQTTClient_interface* interfaces);
+typedef struct MQTTClient_interface MQTTClient_selectInterface(void* context, int count, struct MQTTClient_interface* interfaces);
 
 /**
-  * This function sets the trace callback if needed.  If set to NULL,
-  * no trace information will be returned.  The default trace level is
-  * MQTTASYNC_TRACE_MINIMUM.
-  * @param callback a pointer to the function which will handle the trace information
+  * This function sets the callback to select the device interface, if needed.
+  * @param handle the client object to set the callback for
+  * @param a pointer to context data that will be passed to the callback
+  * @param callback a pointer to the function which will select the interface
   */
-LIBMQTT_API void MQTTClient_setInterfaceCallback(MQTTClient_interfaceCallback* callback);
+LIBMQTT_API int MQTTClient_setSelectInterface(MQTTClient handle, void* context, MQTTClient_selectInterface* callback);
 
 #if defined(__cplusplus)
      }

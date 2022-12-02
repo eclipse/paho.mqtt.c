@@ -1864,7 +1864,25 @@ static void MQTTAsync_freeServerURIs(MQTTAsyncs* m)
 }
 
 
-void MQTTAsync_setInterfaceCallback(MQTTAsync_interfaceCallback* callback)
+int MQTTAsync_setSelectInterface(MQTTAsync handle, void* context, MQTTAsync_selectInterface* callback)
 {
-	Socket_setInterfaceCallback((Socket_interfaceCallback*)callback);
+	int rc = MQTTASYNC_SUCCESS;
+	MQTTAsyncs* m = handle;
+
+	FUNC_ENTRY;
+	MQTTAsync_lock_mutex(mqttasync_mutex);
+
+	if (m == NULL || m->c->connect_state != 0)
+		rc = MQTTASYNC_FAILURE;
+	else
+	{
+		m->selectInterface_context = context;
+		m->selectInterface = callback;
+	}
+
+	Socket_setSelectInterfaceCallback(MQTTAsync_selectSocketInterface);
+
+	MQTTAsync_unlock_mutex(mqttasync_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
 }

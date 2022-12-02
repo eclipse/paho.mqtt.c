@@ -75,7 +75,7 @@ int Socket_setInterface(SOCKET sock, char* interface_name, int family);
 /*
  * callback to select interfaces, if there is one
  */
-static Socket_interfaceCallback* interfaceCallback = NULL;
+static Socket_selectInterface* interfaceCallback = NULL;
 
 /**
  * Structure to hold all socket data for this module
@@ -1052,7 +1052,6 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 #endif
 	struct addrinfo *result = NULL;
 	struct addrinfo hints = {0, AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP, 0, NULL, NULL, NULL};
-	char* interface_name = NULL;
 
 	FUNC_ENTRY;
 	*sock = SOCKET_ERROR;
@@ -1072,33 +1071,6 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 	}
 	memcpy( addr_mem, addr, addr_len );
 	addr_mem[addr_len] = '\0';
-
-	/* if the select interface callback is set, call it with a list of interfaces and families */
-	if (interfaceCallback != NULL)
-	{
-		struct Socket_interface* interfaces;
-		struct Socket_interface interface = {NULL, AF_INET};
-		int count = Socket_getInterfaces(&interfaces);
-
-		if (count > 0)
-		{
-			int i = 0;
-
-			Log(TRACE_MIN, -1, "Calling interface callback with %d interfaces", count);
-			interface = (*interfaceCallback)(count, interfaces);
-			if (interface.family == AF_INET || interface.family == AF_INET6)
-				preferred_family = interface.family;
-			interface_name = interface.name;
-
-			if (interface_name != NULL)
-				Log(TRACE_MIN, -1, "Selected interface name is %s, family %s", interface_name,
-						(preferred_family == AF_INET6) ? "AF_INET6" : "AF_INET");
-
-			for (i = 0; i < count; ++i)
-				free(interfaces[i].name);
-			free(interfaces);
-		}
-	}
 
 #if 0 /*defined(__GNUC__) && defined(__linux__)*/
 	/* Commented out because the CI tests get intermittent ECONNABORTED return values
@@ -1175,6 +1147,8 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 			rc = Socket_error("socket", *sock);
 		else
 		{
+			char* interface_name = NULL;
+
 #if defined(NOSIGPIPE)
 			int opt = 1;
 
@@ -1193,14 +1167,41 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 					if (setsockopt(*sock, SOL_SOCKET, SO_SNDBUF, (void*)&optsend, sizeof(optsend)) != 0)
 						Log(LOG_ERROR, -1, "Could not set SO_SNDBUF for socket %d", *sock);
 				}
-#endif
+	#endif
 
-        	if (interface_name)
-        	{
-        		Socket_setInterface(*sock, interface_name, family);
-        		free(interface_name);
-        	}
-        	Log(TRACE_MIN, -1, "New socket %d for %s, port %d",	*sock, addr, port);
+			/* if the select interface callback is set, call it with a list of interfaces and families */
+			if (interfaceCallback != NULL)
+			{
+				struct Socket_interface* interfaces;
+				struct Socket_interface interface = {NULL, AF_INET};
+				int count = Socket_getInterfaces(&interfaces);
+
+				if (count > 0)
+				{
+					int i = 0;
+
+					Log(TRACE_MIN, -1, "Calling interface callback with %d interfaces", count);
+					interface = (*interfaceCallback)(*sock, count, interfaces);
+					if (interface.family == AF_INET || interface.family == AF_INET6)
+						preferred_family = interface.family;
+					interface_name = interface.name;
+
+					if (interface_name != NULL)
+						Log(TRACE_MIN, -1, "Selected interface name is %s, family %s", interface_name,
+								(preferred_family == AF_INET6) ? "AF_INET6" : "AF_INET");
+
+					for (i = 0; i < count; ++i)
+						free(interfaces[i].name);
+					free(interfaces);
+				}
+			}
+
+			if (interface_name)
+			{
+				Socket_setInterface(*sock, interface_name, family);
+				free(interface_name);
+			}
+			Log(TRACE_MIN, -1, "New socket %d for %s, port %d",	*sock, addr, port);
 			if (Socket_addSocket(*sock) == SOCKET_ERROR)
 				rc = Socket_error("addSocket", *sock);
 			else
@@ -1612,6 +1613,7 @@ exit:
  * Set the device for a socket
  * @param sock the socket to set the interface on
  * @param interface_name the string interface name
+ * @param address family - needed for MacOS
  * @return 0 if successful, otherwise an error code
  */
 int Socket_setInterface(SOCKET sock, char* interface_name, int family) {
@@ -1652,7 +1654,7 @@ int Socket_setInterface(SOCKET sock, char* interface_name, int family) {
 }
 
 
-void Socket_setInterfaceCallback(Socket_interfaceCallback* callback)
+void Socket_setSelectInterfaceCallback(Socket_selectInterface* callback)
 {
 	interfaceCallback = callback;
 }

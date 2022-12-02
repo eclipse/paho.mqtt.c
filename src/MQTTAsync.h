@@ -1776,24 +1776,27 @@ struct MQTTAsync_interface {
   * (ipv4 or ipv6).
   *
   * Return a non-NULL C string interface name if you want to choose.
-  * The memory must be allocated by the MQTTClient_malloc call, as
+  * The memory must be allocated by the MQTTAsync_malloc call, as
   * it will be freed automatically.
   *
   * To choose a preferred address family, set family to either AF_INET or
   * AF_INET6 for IPv4 or IPv6 respectively. Any other value will be
   * ignored and IPv4 will be the preferred default.
   *
-  * @return interface structure with
+  * @param context a pointer to data that will be passed to the callback
+  * @param count the number of entries in the interfaces array
+  * @param the array of interface structures
+  * @return interface structure with the choice made
   */
-typedef struct MQTTAsync_interface MQTTAsync_interfaceCallback(int count, struct MQTTAsync_interface* interfaces);
+typedef struct MQTTAsync_interface MQTTAsync_selectInterface(void* context, int count, struct MQTTAsync_interface* interfaces);
 
 /**
-  * This function sets the trace callback if needed.  If set to NULL,
-  * no trace information will be returned.  The default trace level is
-  * MQTTASYNC_TRACE_MINIMUM.
-  * @param callback a pointer to the function which will handle the trace information
+  * This function sets the callback to select the device interface, if needed.
+  * @param handle the client object to set the callback for
+  * @param a pointer to context data that will be passed to the callback
+  * @param callback a pointer to the function which will select the interface
   */
-LIBMQTT_API void MQTTAsync_setInterfaceCallback(MQTTAsync_interfaceCallback* callback);
+LIBMQTT_API int MQTTAsync_setSelectInterface(MQTTAsync handle, void* context, MQTTAsync_selectInterface* callback);
 
 
 /*!

@@ -1187,6 +1187,29 @@ void MQTTAsync_writeComplete(SOCKET socket, int rc)
 }
 
 
+struct Socket_interface MQTTAsync_selectSocketInterface(SOCKET socket, int count, struct Socket_interface* interfaces)
+{
+	ListElement* found = NULL;
+	struct Socket_interface choice = {NULL, AF_INET};
+
+	FUNC_ENTRY;
+	if ((found = ListFindItem(MQTTAsync_handles, &socket, clientSockCompare)) != NULL)
+	{
+		MQTTAsyncs* m = (MQTTAsyncs*)(found->content);
+
+		if (m->selectInterface)
+		{
+			struct MQTTAsync_interface async_choice = (*(m->selectInterface))(m->selectInterface_context,
+				count, (struct MQTTAsync_interface*)interfaces);
+			choice.name = async_choice.name;
+			choice.family = async_choice.family;
+		}
+	}
+	FUNC_EXIT;
+	return choice;
+}
+
+
 static int MQTTAsync_processCommand(void)
 {
 	int rc = 0;

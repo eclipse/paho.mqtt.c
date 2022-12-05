@@ -39,6 +39,7 @@ char* Broker_recordFFDC(char* symptoms);
 #include <string.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <inttypes.h>
 
 #include "Heap.h"
 
@@ -57,8 +58,9 @@ static mutex_type heap_mutex = &heap_mutex_store;
 
 static heap_info state = {0, 0}; /**< global heap state information */
 
-typedef double eyecatcherType;
+typedef uint64_t eyecatcherType;
 static eyecatcherType eyecatcher = (eyecatcherType)0x8888888888888888;
+#define PRIeyecatcher PRIx64  /**< print eyecatcher in HEX notation */
 
 /*#define HEAP_STACK 1 */
 
@@ -224,7 +226,7 @@ static void checkEyecatchers(char* file, int line, void* p, size_t size)
 	eyecatcherType *sp = (eyecatcherType*)p;
 	char *cp = (char*)p;
 	eyecatcherType us;
-	static const char *msg = "Invalid %s eyecatcher %d in heap item at file %s line %d";
+	static const char *msg = "Invalid %s eyecatcher %" PRIeyecatcher " in heap item at file %s line %d";
 
 	if ((us = *--sp) != eyecatcher)
 		Log(LOG_ERROR, 13, msg, "start", us, file, line);

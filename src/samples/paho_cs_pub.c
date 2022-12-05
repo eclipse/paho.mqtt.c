@@ -139,6 +139,26 @@ void trace_callback(enum MQTTCLIENT_TRACE_LEVELS level, char* message)
 }
 
 
+struct MQTTClient_interface selectInterface(void* context, int count, struct MQTTClient_interface* interfaces)
+{
+	struct MQTTClient_interface choice = {NULL, 2};
+
+	for (int i = 0; i < count; ++i)
+	{
+		printf("name %s family %d\n", interfaces[i].name, interfaces[i].family);
+
+		/*if (strcmp(interfaces[i].name, "enp3s0") == 0)
+		{
+			choice.name = MQTTClient_malloc(strlen(interfaces[i].name) + 1);
+			strcpy(choice.name, interfaces[i].name);
+			break;
+		}*/
+	}
+
+	return choice;
+}
+
+
 int main(int argc, char** argv)
 {
 	MQTTClient client;
@@ -205,6 +225,14 @@ int main(int argc, char** argv)
 	{
 		if (!opts.quiet)
 			fprintf(stderr, "Failed to set callbacks, return code: %s\n", MQTTClient_strerror(rc));
+		exit(EXIT_FAILURE);
+	}
+
+	rc = MQTTClient_setSelectInterface(client, client, selectInterface);
+	if (rc != MQTTCLIENT_SUCCESS)
+	{
+		if (!opts.quiet)
+			fprintf(stderr, "Failed to set interface callback, return code: %s\n", MQTTClient_strerror(rc));
 		exit(EXIT_FAILURE);
 	}
 

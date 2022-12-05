@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2020 IBM Corp., and others
+ * Copyright (c) 2012, 2022 IBM Corp., and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -363,6 +363,26 @@ void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 }
 
 
+struct MQTTAsync_interface selectInterface(void* context, int count, struct MQTTAsync_interface* interfaces)
+{
+	struct MQTTAsync_interface choice = {NULL, 2};
+
+	for (int i = 0; i < count; ++i)
+	{
+		printf("name %s family %d\n", interfaces[i].name, interfaces[i].family);
+
+		/*if (strcmp(interfaces[i].name, "enp3s0") == 0)
+		{
+			choice.name = MQTTAsync_malloc(strlen(interfaces[i].name) + 1);
+			strcpy(choice.name, interfaces[i].name);
+			break;
+		}*/
+	}
+
+	return choice;
+}
+
+
 int main(int argc, char** argv)
 {
 	MQTTAsync_disconnectOptions disc_opts = MQTTAsync_disconnectOptions_initializer;
@@ -430,6 +450,14 @@ int main(int argc, char** argv)
 	{
 		if (!opts.quiet)
 			fprintf(stderr, "Failed to set callbacks, return code: %s\n", MQTTAsync_strerror(rc));
+		exit(EXIT_FAILURE);
+	}
+
+	rc = MQTTAsync_setSelectInterface(client, client, selectInterface);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		if (!opts.quiet)
+			fprintf(stderr, "Failed to set interface callback, return code: %s\n", MQTTAsync_strerror(rc));
 		exit(EXIT_FAILURE);
 	}
 

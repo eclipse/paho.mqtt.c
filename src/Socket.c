@@ -1536,7 +1536,11 @@ char* Socket_getpeer(SOCKET sock)
  */
 int Socket_getInterfaces(struct Socket_interface** interface_array)
 {
-#if !defined(_WIN32) && !defined(_WIN64)
+#if defined(_WIN32) || defined(_WIN64)
+	PIP_ADAPTER_ADDRESSES pAddresses;
+	ULONG size = 15000;
+	PIP_ADAPTER_ADDRESSES pCurrAddresses = NULL;
+#else
 	struct ifaddrs *ifaddr, *ifa;
 #endif
 	int count = 0;
@@ -1544,7 +1548,61 @@ int Socket_getInterfaces(struct Socket_interface** interface_array)
 	struct Socket_interface* interfaces;
 
 	FUNC_ENTRY;
-#if !defined(_WIN32) && !defined(_WIN64)
+#if defined(_WIN32) || defined(_WIN64)
+	pAddresses = (PIP_ADAPTER_ADDRESSES)malloc(size);
+
+	rc = GetAdaptersAddresses(AF_UNSPEC,
+			GAA_FLAG_SKIP_UNICAST | GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_INCLUDE_PREFIX,
+			NULL, pAddresses, &size);
+
+	if (rc != NO_ERROR)
+		Log(LOG_ERROR, -1, "Error from GetAdaptersAddresses %d", rc);
+	else
+	{
+		/* count how many interfaces to return */
+		pCurrAddresses = pAddresses;
+		while (pCurrAddresses)
+		{
+			count++;
+			pCurrAddresses = pCurrAddresses->Next;
+		}
+
+		if (count > 0)
+		{
+			interfaces = malloc(sizeof(struct Socket_interface) * count);
+			if (interfaces == NULL)
+				rc = PAHO_MEMORY_ERROR;
+			else
+			{
+				int i = 0;
+
+				pCurrAddresses = pAddresses;
+				while (pCurrAddresses)
+				{
+					/*printf("\tAdapter name: %s\n", pCurrAddresses->AdapterName);
+					printf("\tDescription: %wS\n", pCurrAddresses->Description);
+					printf("\tFriendly name: %wS\n", pCurrAddresses->FriendlyName);*/
+
+					interfaces[i].family = AF_UNSPEC;
+					interfaces[i].name = malloc(wcslen(pCurrAddresses->FriendlyName)*sizeof(wchar_t) + 1);
+					if (interfaces[i].name == NULL)
+					{
+						/* free up any name fields we've already allocated */
+						for (i -= 1; i >= 0; --i)
+							free(interfaces[i].name);
+						rc = PAHO_MEMORY_ERROR;
+						break;
+					}
+					wcscpy(interfaces[i].name, pCurrAddresses->FriendlyName);
+					i++;
+					pCurrAddresses = pCurrAddresses->Next;
+				}
+				*interface_array = interfaces;
+			}
+		}
+		free(pAddresses);
+	}
+#else
 	if (getifaddrs(&ifaddr) == -1)
 	{
 		rc = Socket_error("getifaddrs", 0);
@@ -1600,9 +1658,9 @@ int Socket_getInterfaces(struct Socket_interface** interface_array)
 		}
 	}
 	freeifaddrs(ifaddr);
+#endif
 	if (rc == 0)
 		rc = count;
-#endif
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;

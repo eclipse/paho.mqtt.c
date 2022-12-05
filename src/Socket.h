@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <iphlpapi.h>
 #define MAXHOSTNAMELEN 256
 #define poll WSAPoll
 #if !defined(SSLSOCKET_H)

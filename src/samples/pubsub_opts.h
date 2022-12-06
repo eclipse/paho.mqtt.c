@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2020 IBM Corp.
+ * Copyright (c) 2012, 2022 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -44,10 +44,12 @@ struct pubsub_opts
 	int retained;
 	char* username;
 	char* password;
+	int keepalive;
+	/* TCP options */
 	char* host;
 	char* port;
 	char* connection;
-	int keepalive;
+	char* bind_address;
 	/* will options */
 	char* will_topic;
 	char* will_payload;
@@ -80,7 +82,6 @@ typedef struct
 	const char* value;
 } pubsub_opts_nameValue;
 
-//void usage(struct pubsub_opts* opts, const char* version, const char* program_name);
 void usage(struct pubsub_opts* opts, pubsub_opts_nameValue* name_values, const char* program_name);
 int getopts(int argc, char** argv, struct pubsub_opts* opts);
 char* readfile(int* data_len, struct pubsub_opts* opts);

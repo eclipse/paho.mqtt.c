@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2018 IBM Corp.
+ * Copyright (c) 2012, 2022 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -43,12 +43,12 @@ void usage(struct pubsub_opts* opts, pubsub_opts_nameValue* name_values, const c
 	printVersionInfo(name_values);
 
 	printf("Usage: %s [topicname] [-t topic] [-c connection] [-h host] [-p port]\n"
-		   "       [-q qos] [-i clientid] [-u username] [-P password] [-k keepalive_timeout]\n"
+		   "       [-q qos] [-i clientid] [-u username] [-P password] [-k keepalive-timeout]\n"
 			, program_name);
 	printf("       [-V MQTT-version] [--quiet] [--trace trace-level]\n");
 	if (opts->publisher)
 	{
-		printf("       [-r] [-n] [-m message] [-f filename]\n");
+		printf("       [-r] [-n] [-m message] [-f filename] [-A bind-address]\n");
 		printf("       [--maxdatalen len] [--message-expiry seconds] [--user-property name value]\n");
 	}
 	else
@@ -83,6 +83,7 @@ void usage(struct pubsub_opts* opts, pubsub_opts_nameValue* name_values, const c
 	"  -u (--username)     : MQTT username. No default.\n"
 	"  -P (--password)     : MQTT password. No default.\n"
 	"  -k (--keepalive)    : MQTT keepalive timeout value. Default is %d seconds.\n"
+	"  -A                  : bind the outgoing connection to a specific interface.\n"
 	"  --delimiter         : delimiter string.  Default is \\n.\n",
 	opts->clientid,  opts->keepalive);
 
@@ -180,6 +181,13 @@ int getopts(int argc, char** argv, struct pubsub_opts* opts)
 		{
 			if (++count < argc)
 				opts->port = argv[count];
+			else
+				return 1;
+		}
+		else if (strcmp(argv[count], "-A") == 0)
+		{
+			if (++count < argc)
+				opts->bind_address = argv[count];
 			else
 				return 1;
 		}

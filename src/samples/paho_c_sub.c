@@ -64,7 +64,8 @@ struct pubsub_opts opts =
 {
 	0, 0, 0, 0, "\n", 100,  	/* debug/app options */
 	NULL, NULL, 1, 0, 0, /* message options */
-	MQTTVERSION_DEFAULT, NULL, "paho-c-sub", 0, 0, NULL, NULL, "localhost", "1883", NULL, 10, /* MQTT options */
+	MQTTVERSION_DEFAULT, NULL, "paho-c-sub", 0, 0, NULL, NULL, 10, /* MQTT options */
+	"localhost", "1883", NULL, NULL, /* TCP options */
 	NULL, NULL, 0, 0, /* will options */
 	0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, /* TLS options */
 	0, {NULL, NULL}, /* MQTT V5 options */
@@ -198,6 +199,26 @@ void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 }
 
 
+struct MQTTAsync_interface selectInterface(void* context, int count, struct MQTTAsync_interface* interfaces)
+{
+	struct MQTTAsync_interface choice = {NULL, 2};
+
+	for (int i = 0; i < count; ++i)
+	{
+		if (opts.verbose)
+			printf("Interface name %s family %d\n", interfaces[i].name, interfaces[i].family);
+
+		if (strcmp(interfaces[i].name, opts.bind_address) == 0)
+		{
+			choice.name = MQTTAsync_malloc(strlen(interfaces[i].name) + 1);
+			strcpy(choice.name, interfaces[i].name);
+			break;
+		}
+	}
+	return choice;
+}
+
+
 int main(int argc, char** argv)
 {
 	MQTTAsync client;
@@ -313,6 +334,17 @@ int main(int argc, char** argv)
 		ssl_opts.privateKeyPassword = opts.keypass;
 		ssl_opts.enabledCipherSuites = opts.ciphers;
 		conn_opts.ssl = &ssl_opts;
+	}
+
+	if (opts.bind_address)
+	{
+		rc = MQTTAsync_setSelectInterface(client, client, selectInterface);
+		if (rc != MQTTASYNC_SUCCESS)
+		{
+			if (!opts.quiet)
+				fprintf(stderr, "Failed to set interface callback, return code: %s\n", MQTTAsync_strerror(rc));
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)

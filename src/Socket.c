@@ -85,6 +85,8 @@ Sockets mod_s;
 static fd_set wset;
 #endif
 
+extern mutex_type socket_mutex;
+
 /**
  * Set a socket non-blocking, OS independently
  * @param sock the socket to set non-blocking
@@ -279,6 +281,7 @@ int Socket_addSocket(SOCKET newSd)
 	int rc = 0;
 
 	FUNC_ENTRY;
+	Thread_lock_mutex(socket_mutex);
 	mod_s.nfds++;
 	if (mod_s.fds_read)
 		mod_s.fds_read = realloc(mod_s.fds_read, mod_s.nfds * sizeof(mod_s.fds_read[0]));
@@ -318,6 +321,7 @@ int Socket_addSocket(SOCKET newSd)
 		Log(LOG_ERROR, -1, "addSocket: setnonblocking");
 
 exit:
+	Thread_unlock_mutex(socket_mutex);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -1218,6 +1222,7 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 				if (rc == EINPROGRESS || rc == EWOULDBLOCK)
 				{
 					SOCKET* pnewSd = (SOCKET*)malloc(sizeof(SOCKET));
+					ListElement* result = NULL;
 
 					if (!pnewSd)
 					{
@@ -1225,7 +1230,10 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 						goto exit;
 					}
 					*pnewSd = *sock;
-					if (!ListAppend(mod_s.connect_pending, pnewSd, sizeof(SOCKET)))
+					Thread_lock_mutex(socket_mutex);
+					result = ListAppend(mod_s.connect_pending, pnewSd, sizeof(SOCKET));
+					Thread_unlock_mutex(socket_mutex);
+					if (!result)
 					{
 						free(pnewSd);
 						rc = PAHO_MEMORY_ERROR;
@@ -1238,7 +1246,9 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
                as reported in https://github.com/eclipse/paho.mqtt.c/issues/135 */
             if (rc != 0 && (rc != EINPROGRESS) && (rc != EWOULDBLOCK))
             {
+				Thread_lock_mutex(socket_mutex);
             	Socket_close(*sock); /* close socket and remove from our list of sockets */
+				Thread_unlock_mutex(socket_mutex);
                 *sock = SOCKET_ERROR; /* as initialized before */
             }
 		}
@@ -1457,7 +1467,7 @@ int Socket_continueWrites(SOCKET* sock, mutex_type mutex)
 		else
 			ListNextElement(mod_s.write_pending, &curpending);
 
-		if (rc == 0)
+		if (writecontinue && rc == 0)
 			(*writecontinue)(socket);
 
 		if (rc == SOCKET_ERROR)

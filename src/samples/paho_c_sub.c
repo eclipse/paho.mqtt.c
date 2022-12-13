@@ -201,12 +201,17 @@ void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 
 struct MQTTAsync_interface selectInterface(void* context, int count, struct MQTTAsync_interface* interfaces)
 {
-	struct MQTTAsync_interface choice = {NULL, 2};
+	struct MQTTAsync_interface choice = {{'M', 'Q', 'I', 'N'}, 0, NULL, 2, 0, NULL};
 
 	for (int i = 0; i < count; ++i)
 	{
 		if (opts.verbose)
+		{
 			printf("Interface name %s family %d\n", interfaces[i].name, interfaces[i].family);
+			for (int j = 0; j < interfaces[i].address_count; ++j)
+				printf("%s ", interfaces[i].addresses[j]);
+			printf("\n");
+		}
 
 		if (strcmp(interfaces[i].name, opts.bind_address) == 0)
 		{

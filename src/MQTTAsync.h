@@ -1766,8 +1766,12 @@ LIBMQTT_API const char* MQTTAsync_strerror(int code);
  * Device interface structure, name and address family
  */
 struct MQTTAsync_interface {
+	char struct_id[4]; /** The eyecatcher for this structure. Must be MQIN. */
+	int struct_version; /** The version number of this structure. Must be 0. */
 	char* name; /**< the interface name, or NULL to ignore */
 	int family; /**< the address family AF_INET or AF_INET6 */
+	int address_count; /**< the number of addresses in the address array. 0 to ignore */
+	char** addresses; /**< an array of addresses connected to this interface */
 };
 
 /**

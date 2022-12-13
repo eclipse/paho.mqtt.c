@@ -1199,10 +1199,24 @@ struct Socket_interface MQTTAsync_selectSocketInterface(SOCKET socket, int count
 
 		if (m->selectInterface)
 		{
+			struct MQTTAsync_interface async_interfaces[count];
+			int i = 0;
+
+			for (i = 0; i < count; ++i)
+			{
+				memcpy(async_interfaces[i].struct_id, "MQIN", 4);
+				async_interfaces[i].struct_version = 0;
+				async_interfaces[i].family = interfaces[i].family;
+				async_interfaces[i].name = interfaces[i].name;
+				async_interfaces[i].address_count = interfaces[i].address_count;
+				async_interfaces[i].addresses = interfaces[i].addresses;
+			}
 			struct MQTTAsync_interface async_choice = (*(m->selectInterface))(m->selectInterface_context,
-				count, (struct MQTTAsync_interface*)interfaces);
+				count, async_interfaces);
 			choice.name = async_choice.name;
 			choice.family = async_choice.family;
+			choice.address_count = async_choice.address_count;
+			choice.addresses = async_choice.addresses;
 		}
 	}
 	FUNC_EXIT;

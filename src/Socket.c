@@ -64,6 +64,7 @@ char* Socket_getaddrname(struct sockaddr* sa, SOCKET sock);
 int Socket_abortWrite(SOCKET socket);
 int Socket_getInterfaces(struct Socket_interface** interface_array);
 int Socket_setInterface(SOCKET sock, char* interface_name, int family);
+static void Socket_freeInterfaces(struct Socket_interface* interfaces, int count);
 
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -1056,8 +1057,32 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 #endif
 	struct addrinfo *result = NULL;
 	struct addrinfo hints = {0, AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP, 0, NULL, NULL, NULL};
+	char* interface_name = NULL;
 
 	FUNC_ENTRY;
+	/* if the select interface callback is set, call it with a list of interfaces and families */
+	if (interfaceCallback != NULL)
+	{
+		struct Socket_interface* interfaces;
+		struct Socket_interface interface = {NULL, AF_INET, 0, NULL};
+		int count = Socket_getInterfaces(&interfaces);
+
+		if (count > 0)
+		{
+			Log(TRACE_MIN, -1, "Calling interface callback with %d interfaces", count);
+			interface = (*interfaceCallback)(*sock, count, interfaces);
+			if (interface.family == AF_INET || interface.family == AF_INET6)
+				preferred_family = interface.family;
+			interface_name = interface.name;
+
+			if (interface_name != NULL)
+				Log(TRACE_MIN, -1, "Selected interface name is %s, family %s", interface_name,
+						(preferred_family == AF_INET6) ? "AF_INET6" : "AF_INET");
+
+			Socket_freeInterfaces(interfaces, count);
+		}
+	}
+
 	*sock = SOCKET_ERROR;
 	memset(&address6, '\0', sizeof(address6));
 
@@ -1151,8 +1176,6 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 			rc = Socket_error("socket", *sock);
 		else
 		{
-			char* interface_name = NULL;
-
 #if defined(NOSIGPIPE)
 			int opt = 1;
 
@@ -1172,74 +1195,49 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 						Log(LOG_ERROR, -1, "Could not set SO_SNDBUF for socket %d", *sock);
 				}
 	#endif
-
-			/* if the select interface callback is set, call it with a list of interfaces and families */
-			if (interfaceCallback != NULL)
-			{
-				struct Socket_interface* interfaces;
-				struct Socket_interface interface = {NULL, AF_INET};
-				int count = Socket_getInterfaces(&interfaces);
-
-				if (count > 0)
-				{
-					int i = 0;
-
-					Log(TRACE_MIN, -1, "Calling interface callback with %d interfaces", count);
-					interface = (*interfaceCallback)(*sock, count, interfaces);
-					if (interface.family == AF_INET || interface.family == AF_INET6)
-						preferred_family = interface.family;
-					interface_name = interface.name;
-
-					if (interface_name != NULL)
-						Log(TRACE_MIN, -1, "Selected interface name is %s, family %s", interface_name,
-								(preferred_family == AF_INET6) ? "AF_INET6" : "AF_INET");
-
-					for (i = 0; i < count; ++i)
-						free(interfaces[i].name);
-					free(interfaces);
-				}
-			}
-
 			if (interface_name)
 			{
-				Socket_setInterface(*sock, interface_name, family);
+				rc = Socket_setInterface(*sock, interface_name, family);
 				free(interface_name);
 			}
-			Log(TRACE_MIN, -1, "New socket %d for %s, port %d",	*sock, addr, port);
-			if (Socket_addSocket(*sock) == SOCKET_ERROR)
-				rc = Socket_error("addSocket", *sock);
-			else
+			if (rc == 0)
 			{
-				/* this could complete immediately, even though we are non-blocking */
-				if (family == AF_INET)
-					rc = connect(*sock, (struct sockaddr*)&address, sizeof(address));
-	#if defined(AF_INET6)
+				Log(TRACE_MIN, -1, "New socket %d for %s, port %d",	*sock, addr, port);
+				if (Socket_addSocket(*sock) == SOCKET_ERROR)
+					rc = Socket_error("addSocket", *sock);
 				else
-					rc = connect(*sock, (struct sockaddr*)&address6, sizeof(address6));
-	#endif
-				if (rc == SOCKET_ERROR)
-					rc = Socket_error("connect", *sock);
-				if (rc == EINPROGRESS || rc == EWOULDBLOCK)
 				{
-					SOCKET* pnewSd = (SOCKET*)malloc(sizeof(SOCKET));
-					ListElement* result = NULL;
+					/* this could complete immediately, even though we are non-blocking */
+					if (family == AF_INET)
+						rc = connect(*sock, (struct sockaddr*)&address, sizeof(address));
+#if defined(AF_INET6)
+					else
+						rc = connect(*sock, (struct sockaddr*)&address6, sizeof(address6));
+#endif
+					if (rc == SOCKET_ERROR)
+						rc = Socket_error("connect", *sock);
+					if (rc == EINPROGRESS || rc == EWOULDBLOCK)
+					{
+						SOCKET* pnewSd = (SOCKET*)malloc(sizeof(SOCKET));
+						ListElement* result = NULL;
 
-					if (!pnewSd)
-					{
-						rc = PAHO_MEMORY_ERROR;
-						goto exit;
+						if (!pnewSd)
+						{
+							rc = PAHO_MEMORY_ERROR;
+							goto exit;
+						}
+						*pnewSd = *sock;
+						Thread_lock_mutex(socket_mutex);
+						result = ListAppend(mod_s.connect_pending, pnewSd, sizeof(SOCKET));
+						Thread_unlock_mutex(socket_mutex);
+						if (!result)
+						{
+							free(pnewSd);
+							rc = PAHO_MEMORY_ERROR;
+							goto exit;
+						}
+						Log(TRACE_MIN, 15, "Connect pending");
 					}
-					*pnewSd = *sock;
-					Thread_lock_mutex(socket_mutex);
-					result = ListAppend(mod_s.connect_pending, pnewSd, sizeof(SOCKET));
-					Thread_unlock_mutex(socket_mutex);
-					if (!result)
-					{
-						free(pnewSd);
-						rc = PAHO_MEMORY_ERROR;
-						goto exit;
-					}
-					Log(TRACE_MIN, 15, "Connect pending");
 				}
 			}
             /* Prevent socket leak by closing unusable sockets,
@@ -1509,12 +1507,29 @@ char* Socket_getaddrname(struct sockaddr* sa, SOCKET sock)
 	/* TODO: append the port information - format: [00:00:00::]:port */
 	/* strcpy(&addr_string[strlen(addr_string)], "what?"); */
 #else
-	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
 	size_t buflen = sizeof(addr_string) - strlen(addr_string);
+	if (sa->sa_family == AF_INET)
+	{
+		struct sockaddr_in *sin = (struct sockaddr_in *)sa;
 
-	inet_ntop(sin->sin_family, &sin->sin_addr, addr_string, ADDRLEN);
-	if (snprintf(&addr_string[strlen(addr_string)], buflen, ":%d", ntohs(sin->sin_port)) >= buflen)
-		addr_string[sizeof(addr_string)-1] = '\0'; /* just in case of snprintf buffer filling */
+		inet_ntop(sin->sin_family, &sin->sin_addr, addr_string, ADDRLEN);
+		if (sock != -1)
+		{
+			if (snprintf(&addr_string[strlen(addr_string)], buflen, ":%d", ntohs(sin->sin_port)) >= buflen)
+				addr_string[sizeof(addr_string)-1] = '\0'; /* just in case of snprintf buffer filling */
+		}
+	}
+	else
+	{
+		struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+
+		inet_ntop(sin6->sin6_family, &sin6->sin6_addr, addr_string, ADDRLEN);
+		if (sock != -1)
+		{
+			if (snprintf(&addr_string[strlen(addr_string)], buflen, ":%d", ntohs(sin6->sin6_port)) >= buflen)
+				addr_string[sizeof(addr_string)-1] = '\0'; /* just in case of snprintf buffer filling */
+		}
+	}
 #endif
 	return addr_string;
 }
@@ -1537,6 +1552,26 @@ char* Socket_getpeer(SOCKET sock)
 	}
 
 	return Socket_getaddrname((struct sockaddr*)&sa, sock);
+}
+
+
+static void Socket_freeInterfaces(struct Socket_interface* interfaces, int count)
+{
+	int i = 0;
+
+	/* free up any fields we've already allocated */
+	for (i = 0; i < count; ++i)
+	{
+		free(interfaces[i].name);
+		if (interfaces[i].address_count > 0)
+		{
+			int j = 0;
+			for (j = 0; j < interfaces[i].address_count; ++j)
+				free(interfaces[i].addresses[j]);
+			free(interfaces[i].addresses);
+		}
+	}
+	free(interfaces);
 }
 
 
@@ -1597,9 +1632,7 @@ int Socket_getInterfaces(struct Socket_interface** interface_array)
 					interfaces[i].name = malloc(wcslen(pCurrAddresses->FriendlyName)*sizeof(wchar_t) + 1);
 					if (interfaces[i].name == NULL)
 					{
-						/* free up any name fields we've already allocated */
-						for (i -= 1; i >= 0; --i)
-							free(interfaces[i].name);
+						Socket_freeInterfaces(interfaces, i);
 						rc = PAHO_MEMORY_ERROR;
 						break;
 					}
@@ -1619,53 +1652,109 @@ int Socket_getInterfaces(struct Socket_interface** interface_array)
 		goto exit;
 	}
 
-	/* count how many interfaces to return */
-	count = 0;
-	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+	count = 10; /* first guess */
+
+	interfaces = malloc(sizeof(struct Socket_interface) * count);
+	if (interfaces == NULL)
+		rc = PAHO_MEMORY_ERROR;
+	else
 	{
-		int family = 0;
-		if (ifa->ifa_addr == NULL)
-			continue;
-
-		family = ifa->ifa_addr->sa_family;
-		/* only return IPV4 and V6 interfaces */
-		if (family == AF_INET || family == AF_INET6)
-			count++;
-	}
-
-	if (count > 0) {
-		interfaces = malloc(sizeof(struct Socket_interface) * count);
-		if (interfaces == NULL)
-			rc = PAHO_MEMORY_ERROR;
-		else
+		int i = 0;
+		for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
 		{
-			int i = 0;
-			for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
-			{
-				int family = 0;
-				if (ifa->ifa_addr == NULL)
-					continue;
+			int family = 0;
+			if (ifa->ifa_addr == NULL)
+				continue;
 
-				family = ifa->ifa_addr->sa_family;
-				/* only return IPV4 and V6 interfaces */
-				if (family == AF_INET || family == AF_INET6)
+			family = ifa->ifa_addr->sa_family;
+			/* only return IPV4 and V6 interfaces */
+			if (family == AF_INET || family == AF_INET6)
+			{
+				/* see if we've got the same interface and family already */
+				int index = -1;
+				if (i > 0)
 				{
+					int j = 0;
+					for (j = 0; j < i; ++j)
+					{
+						if (interfaces[j].family == family &&
+								strcmp(interfaces[j].name, ifa->ifa_name) == 0)
+						{
+							//printf("matched %d %s\n", family, ifa->ifa_name);
+							index = j;
+							break;
+						}
+					}
+				}
+				if (index == -1) /* it's a new one */
+				{
+					char* address_string = NULL;
+
+					if (i + 1 > count)
+					{
+						struct Socket_interface* new_interfaces = NULL;
+
+						count += 10; /* make space for more interfaces */
+						new_interfaces = realloc(interfaces, sizeof(struct Socket_interface) * count);
+						if (new_interfaces == NULL)
+						{
+							Socket_freeInterfaces(interfaces, i);
+							rc = PAHO_MEMORY_ERROR;
+							break;
+						}
+						interfaces = new_interfaces;
+					}
+
 					interfaces[i].family = family;
 					interfaces[i].name = malloc(strlen(ifa->ifa_name) + 1);
 					if (interfaces[i].name == NULL)
 					{
-						/* free up any name fields we've already allocated */
-						for (i -= 1; i >= 0; --i)
-							free(interfaces[i].name);
+						Socket_freeInterfaces(interfaces, i);
 						rc = PAHO_MEMORY_ERROR;
 						break;
 					}
 					strcpy(interfaces[i].name, ifa->ifa_name);
+					//printf("%s %d %s\n", interfaces[i].name, family, Socket_getaddrname(ifa->ifa_addr, 0));
+					interfaces[i].address_count = 1;
+					interfaces[i].addresses = malloc(sizeof(char*));
+					address_string = Socket_getaddrname(ifa->ifa_addr, -1);
+					interfaces[i].addresses[0] = malloc(strlen(address_string) + 1);
+					if (interfaces[i].addresses[0] == NULL)
+					{
+						Socket_freeInterfaces(interfaces, -1);
+						rc = PAHO_MEMORY_ERROR;
+						break;
+					}
+					strcpy(interfaces[i].addresses[0], address_string);
 					i++;
 				}
+				else
+				{
+					char* address_string = NULL;
+
+					interfaces[index].address_count += 1;
+					interfaces[index].addresses = realloc(interfaces[index].addresses, sizeof(char*) * (interfaces[index].address_count + 1));
+					if (interfaces[index].addresses == NULL)
+					{
+						Socket_freeInterfaces(interfaces, i);
+						rc = PAHO_MEMORY_ERROR;
+						break;
+					}
+					address_string = Socket_getaddrname(ifa->ifa_addr, -1);
+					interfaces[index].addresses[interfaces[index].address_count - 1] = malloc(strlen(address_string) + 1);
+					if (interfaces[index].addresses[interfaces[index].address_count - 1] == NULL)
+					{
+						Socket_freeInterfaces(interfaces, -1);
+						rc = PAHO_MEMORY_ERROR;
+						break;
+					}
+					strcpy(interfaces[index].addresses[interfaces[index].address_count - 1], address_string);
+				}
 			}
-			*interface_array = interfaces;
 		}
+		// realloc interface array
+		count = i;
+		*interface_array = interfaces;
 	}
 	freeifaddrs(ifaddr);
 #endif
@@ -1711,7 +1800,7 @@ int Socket_setInterface(SOCKET sock, char* interface_name, int family) {
 		}
 	}
 #else
-	if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, (void*)interface_name, strlen(interface_name)+1) == -1)
+	if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, (void*)interface_name, strlen(interface_name) + 1) == -1)
 	{
 		rc = Socket_error("SO_BINDTODEVICE", 0);
 		Log(LOG_ERROR, -1, "Could not set SO_BINDTODEVICE for socket %d %d\n", sock, rc);

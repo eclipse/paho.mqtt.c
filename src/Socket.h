@@ -141,6 +141,8 @@ typedef struct
 struct Socket_interface {
 	char* name;
 	int family;
+	int address_count;
+	char** addresses;
 };
 
 void Socket_outInitialize(void);

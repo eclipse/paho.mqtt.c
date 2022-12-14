@@ -1190,7 +1190,7 @@ void MQTTAsync_writeComplete(SOCKET socket, int rc)
 struct Socket_interface MQTTAsync_selectSocketInterface(SOCKET socket, int count, struct Socket_interface* interfaces)
 {
 	ListElement* found = NULL;
-	struct Socket_interface choice = {NULL, AF_INET};
+	struct Socket_interface choice = {NULL, AF_INET, 0, NULL};
 
 	FUNC_ENTRY;
 	if ((found = ListFindItem(MQTTAsync_handles, &socket, clientSockCompare)) != NULL)
@@ -1199,9 +1199,15 @@ struct Socket_interface MQTTAsync_selectSocketInterface(SOCKET socket, int count
 
 		if (m->selectInterface)
 		{
-			struct MQTTAsync_interface async_interfaces[count];
+			struct MQTTAsync_interface* async_interfaces;
 			int i = 0;
 
+			async_interfaces = malloc(sizeof(struct MQTTAsync_interface) * count);
+			if (async_interfaces == NULL)
+			{
+				Log(LOG_ERROR, -1, "Error allocating memory for interfaces structure");
+				goto exit;
+			}
 			for (i = 0; i < count; ++i)
 			{
 				memcpy(async_interfaces[i].struct_id, "MQIN", 4);
@@ -1217,8 +1223,11 @@ struct Socket_interface MQTTAsync_selectSocketInterface(SOCKET socket, int count
 			choice.family = async_choice.family;
 			choice.address_count = async_choice.address_count;
 			choice.addresses = async_choice.addresses;
+
+			free(async_interfaces);
 		}
 	}
+exit:
 	FUNC_EXIT;
 	return choice;
 }

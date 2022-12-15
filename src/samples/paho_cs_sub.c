@@ -139,12 +139,19 @@ void trace_callback(enum MQTTCLIENT_TRACE_LEVELS level, char* message)
 
 struct MQTTClient_interface selectInterface(void* context, int count, struct MQTTClient_interface* interfaces)
 {
-	struct MQTTClient_interface choice = {NULL, 2};
+	struct MQTTClient_interface choice = {{'M', 'Q', 'I', 'N'}, 0, NULL, 2, 0, NULL};
 
 	for (int i = 0; i < count; ++i)
 	{
 		if (opts.verbose)
-			printf("Interface name %s family %d\n", interfaces[i].name, interfaces[i].family);
+		{
+			int j = 0;
+
+			printf("Interface name %s family %d addresses: ", interfaces[i].name, interfaces[i].family);
+			for (j = 0; j < interfaces[i].address_count; ++j)
+				printf("%s ", interfaces[i].addresses[j]);
+			printf("\n");
+		}
 
 		if (strcmp(interfaces[i].name, opts.bind_address) == 0)
 		{

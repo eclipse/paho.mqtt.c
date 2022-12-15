@@ -372,8 +372,10 @@ struct MQTTAsync_interface selectInterface(void* context, int count, struct MQTT
 	{
 		if (opts.verbose)
 		{
+			int j = 0;
+
 			printf("Interface name %s family %d addresses: ", interfaces[i].name, interfaces[i].family);
-			for (int j = 0; j < interfaces[i].address_count; ++j)
+			for (j = 0; j < interfaces[i].address_count; ++j)
 				printf("%s ", interfaces[i].addresses[j]);
 			printf("\n");
 		}

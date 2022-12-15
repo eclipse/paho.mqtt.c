@@ -3146,14 +3146,37 @@ struct Socket_interface MQTTClient_selectSocketInterface(SOCKET socket, int coun
 	{
 		MQTTClients* m = (MQTTClients*)(found->content);
 
-		if (m->selectInterface)
+		if (m && m->selectInterface)
 		{
-			struct MQTTClient_interface mqttclient_choice = (*m->selectInterface)(m->selectInterface_context,
-				count, (struct MQTTClient_interface*)interfaces);
-			choice.name = mqttclient_choice.name;
-			choice.family = mqttclient_choice.family;
+			struct MQTTClient_interface* client_interfaces;
+			int i = 0;
+
+			client_interfaces = malloc(sizeof(struct MQTTClient_interface) * count);
+			if (client_interfaces == NULL)
+			{
+				Log(LOG_ERROR, -1, "Error allocating memory for interfaces structure");
+				goto exit;
+			}
+			for (i = 0; i < count; ++i)
+			{
+				memcpy(client_interfaces[i].struct_id, "MQIN", 4);
+				client_interfaces[i].struct_version = 0;
+				client_interfaces[i].family = interfaces[i].family;
+				client_interfaces[i].name = interfaces[i].name;
+				client_interfaces[i].address_count = interfaces[i].address_count;
+				client_interfaces[i].addresses = interfaces[i].addresses;
+			}
+			struct MQTTClient_interface client_choice = (*(m->selectInterface))(m->selectInterface_context,
+				count, client_interfaces);
+			choice.name = client_choice.name;
+			choice.family = client_choice.family;
+			choice.address_count = client_choice.address_count;
+			choice.addresses = client_choice.addresses;
+
+			free(client_interfaces);
 		}
 	}
+exit:
 	FUNC_EXIT;
 	return choice;
 }

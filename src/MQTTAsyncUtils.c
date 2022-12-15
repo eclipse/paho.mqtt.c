@@ -1197,7 +1197,7 @@ struct Socket_interface MQTTAsync_selectSocketInterface(SOCKET socket, int count
 	{
 		MQTTAsyncs* m = (MQTTAsyncs*)(found->content);
 
-		if (m->selectInterface)
+		if (m && m->selectInterface)
 		{
 			struct MQTTAsync_interface* async_interfaces;
 			int i = 0;

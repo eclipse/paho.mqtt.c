@@ -1057,7 +1057,8 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 #endif
 	struct addrinfo *result = NULL;
 	struct addrinfo hints = {0, AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP, 0, NULL, NULL, NULL};
-	char* interface_name = NULL;
+	char* interface_name = NULL;    /* the name of the device to bind to, if any */
+	char* interface_address = NULL; /* the address of the interface to bind to, if any */
 
 	FUNC_ENTRY;
 	/* if the select interface callback is set, call it with a list of interfaces and families */
@@ -1074,6 +1075,8 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 			if (interface.family == AF_INET || interface.family == AF_INET6)
 				preferred_family = interface.family;
 			interface_name = interface.name;
+			if (interface.address_count == 1)
+				interface_address = interface.addresses[0];
 
 			if (interface_name != NULL)
 				Log(TRACE_MIN, -1, "Selected interface name is %s, family %s", interface_name,

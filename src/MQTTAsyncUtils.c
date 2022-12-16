@@ -2688,7 +2688,7 @@ static int MQTTAsync_disconnect_internal(MQTTAsync handle, int timeout)
 
 void MQTTProtocol_closeSession(Clients* c, int sendwill)
 {
-	MQTTAsync_closeSession(c, MQTTREASONCODE_SUCCESS, NULL);
+	nextOrClose((MQTTAsync)c->context, MQTTASYNC_DISCONNECTED, "MQTTProtocol_closeSession");
 }
 
 

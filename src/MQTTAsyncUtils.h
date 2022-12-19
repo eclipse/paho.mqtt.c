@@ -178,7 +178,7 @@ void MQTTAsync_writeComplete(SOCKET socket, int rc);
 void setRetryLoopInterval(int keepalive);
 void MQTTAsync_NULLPublishResponses(MQTTAsyncs* m);
 void MQTTAsync_NULLPublishCommands(MQTTAsyncs* m);
-struct Socket_interface MQTTAsync_selectSocketInterface(SOCKET socket, int count, struct Socket_interface* interfaces);
+struct Socket_interface_choice MQTTAsync_selectSocketInterface(SOCKET socket, int count, struct Socket_interface* interfaces);
 
 #if defined(_WIN32) || defined(_WIN64)
 #else

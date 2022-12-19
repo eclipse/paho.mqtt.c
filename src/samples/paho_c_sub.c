@@ -30,9 +30,11 @@
 #if defined(_WIN32)
 #include <windows.h>
 #define sleep Sleep
+#include <winsock2.h>
 #else
 #include <sys/time.h>
 #include <unistd.h>
+#include <sys/socket.h>
 #endif
 
 #if defined(_WRS_KERNEL)
@@ -199,9 +201,9 @@ void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 }
 
 
-struct MQTTAsync_interface selectInterface(void* context, int count, struct MQTTAsync_interface* interfaces)
+struct MQTTAsync_interface_choice selectInterface(void* context, int count, struct MQTTAsync_interface* interfaces)
 {
-	struct MQTTAsync_interface choice = {{'M', 'Q', 'I', 'N'}, 0, NULL, 2, 0, NULL};
+	struct MQTTAsync_interface_choice choice = {{'M', 'Q', 'I', 'C'}, 0, NULL, AF_INET, NULL};
 
 	for (int i = 0; i < count; ++i)
 	{
@@ -209,9 +211,9 @@ struct MQTTAsync_interface selectInterface(void* context, int count, struct MQTT
 		{
 			int j = 0;
 
-			printf("Interface name %s family %d addresses ", interfaces[i].name, interfaces[i].family);
+			printf("Interface name \"%s\" family %d addresses: \n", interfaces[i].name, interfaces[i].family);
 			for (j = 0; j < interfaces[i].address_count; ++j)
-				printf("%s ", interfaces[i].addresses[j]);
+				printf("\t%s %s\n", (interfaces[i].addresses[j].family == AF_INET) ? "IPv4" : "IPv6", interfaces[i].addresses[j].address);
 			printf("\n");
 		}
 

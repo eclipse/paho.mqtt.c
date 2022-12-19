@@ -1769,9 +1769,20 @@ struct MQTTAsync_interface {
 	char struct_id[4]; /** The eyecatcher for this structure. Must be MQIN. */
 	int struct_version; /** The version number of this structure. Must be 0. */
 	char* name; /**< the interface name, or NULL to ignore */
-	int family; /**< the address family AF_INET or AF_INET6 */
-	int address_count; /**< the number of addresses in the address array. 0 to ignore */
-	char** addresses; /**< an array of addresses connected to this interface */
+	int family; /**< the preferred address family AF_INET or AF_INET6 */
+	int address_count; /**< the number of addresses in the addresses array. 0 to ignore */
+	struct MQTTAsync_addresses {
+		int family; /**< the internet family of this address, AF_INET or AF_INET6 */
+		char* address; /**< the printable representation of the address */
+	} *addresses; /**< an array of addresses connected to this interface */
+};
+
+struct MQTTAsync_interface_choice {
+	char struct_id[4]; /** The eyecatcher for this structure. Must be MQIC. */
+	int struct_version; /** The version number of this structure. Must be 0. */
+	char* name; /**< the interface name, or NULL to ignore */
+	int family; /**< the preferred address family AF_INET or AF_INET6 */
+	char* address; /**< the number of addresses in the addresses array. 0 to ignore */
 };
 
 /**
@@ -1792,7 +1803,7 @@ struct MQTTAsync_interface {
   * @param the array of interface structures
   * @return interface structure with the choice made
   */
-typedef struct MQTTAsync_interface MQTTAsync_selectInterface(void* context, int count, struct MQTTAsync_interface* interfaces);
+typedef struct MQTTAsync_interface_choice MQTTAsync_selectInterface(void* context, int count, struct MQTTAsync_interface* interfaces);
 
 /**
   * This function sets the callback to select the device interface, if needed.

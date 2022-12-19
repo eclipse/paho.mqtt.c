@@ -3136,10 +3136,10 @@ static void MQTTClient_writeContinue(SOCKET socket)
 }
 
 
-struct Socket_interface MQTTClient_selectSocketInterface(SOCKET socket, int count, struct Socket_interface* interfaces)
+struct Socket_interface_choice MQTTClient_selectSocketInterface(SOCKET socket, int count, struct Socket_interface* interfaces)
 {
 	ListElement* found = NULL;
-	struct Socket_interface choice = {NULL, AF_INET};
+	struct Socket_interface_choice choice = {AF_INET, NULL, NULL};
 
 	FUNC_ENTRY;
 	if ((found = ListFindItem(handles, &socket, clientSockCompare)) != NULL)
@@ -3159,20 +3159,34 @@ struct Socket_interface MQTTClient_selectSocketInterface(SOCKET socket, int coun
 			}
 			for (i = 0; i < count; ++i)
 			{
+				int j = 0;
+
 				memcpy(client_interfaces[i].struct_id, "MQIN", 4);
 				client_interfaces[i].struct_version = 0;
 				client_interfaces[i].family = interfaces[i].family;
 				client_interfaces[i].name = interfaces[i].name;
 				client_interfaces[i].address_count = interfaces[i].address_count;
-				client_interfaces[i].addresses = interfaces[i].addresses;
+				client_interfaces[i].addresses = malloc(sizeof(interfaces[i].addresses[0]) * interfaces[i].address_count);
+				if (client_interfaces[i].addresses == NULL)
+				{
+					Log(LOG_ERROR, -1, "Error allocating memory for addresses structure");
+					goto free_interfaces;
+				}
+				for (j = 0; j < interfaces[i].address_count; ++j)
+				{
+					client_interfaces[i].addresses[j].address = interfaces[i].addresses[j].address;
+					client_interfaces[i].addresses[j].family = interfaces[i].addresses[j].family;
+				}
 			}
-			struct MQTTClient_interface client_choice = (*(m->selectInterface))(m->selectInterface_context,
+			struct MQTTClient_interface_choice client_choice = (*(m->selectInterface))(m->selectInterface_context,
 				count, client_interfaces);
 			choice.name = client_choice.name;
-			choice.family = client_choice.family;
-			choice.address_count = client_choice.address_count;
-			choice.addresses = client_choice.addresses;
+			choice.preferred_family = client_choice.family;
+			choice.address = client_choice.address;
 
+			for (i = 0; i < count; ++i)
+				free(client_interfaces[i].addresses);
+free_interfaces:
 			free(client_interfaces);
 		}
 	}

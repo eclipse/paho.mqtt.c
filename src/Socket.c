@@ -1058,25 +1058,23 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 	struct addrinfo *result = NULL;
 	struct addrinfo hints = {0, AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP, 0, NULL, NULL, NULL};
 	char* interface_name = NULL;    /* the name of the device to bind to, if any */
-	char* interface_address = NULL; /* the address of the interface to bind to, if any */
+	//char* interface_address = NULL; /* the address of the interface to bind to, if any */
 
 	FUNC_ENTRY;
 	/* if the select interface callback is set, call it with a list of interfaces and families */
 	if (interfaceCallback != NULL)
 	{
 		struct Socket_interface* interfaces;
-		struct Socket_interface interface = {NULL, AF_INET, 0, NULL};
+		struct Socket_interface_choice choice = {AF_UNSPEC, NULL, NULL};
 		int count = Socket_getInterfaces(&interfaces);
 
 		if (count > 0)
 		{
 			Log(TRACE_MIN, -1, "Calling interface callback with %d interfaces", count);
-			interface = (*interfaceCallback)(*sock, count, interfaces);
-			if (interface.family == AF_INET || interface.family == AF_INET6)
-				preferred_family = interface.family;
-			interface_name = interface.name;
-			if (interface.address_count == 1)
-				interface_address = interface.addresses[0];
+			choice = (*interfaceCallback)(*sock, count, interfaces);
+			if (choice.preferred_family == AF_INET || choice.preferred_family == AF_INET6)
+				preferred_family = choice.preferred_family;
+			interface_name = choice.name;
 
 			if (interface_name != NULL)
 				Log(TRACE_MIN, -1, "Selected interface name is %s, family %s", interface_name,
@@ -1563,14 +1561,22 @@ static void Socket_freeInterfaces(struct Socket_interface* interfaces, int count
 	int i = 0;
 
 	/* free up any fields we've already allocated */
+	if (interfaces == NULL)
+		return;
+
 	for (i = 0; i < count; ++i)
 	{
-		free(interfaces[i].name);
-		if (interfaces[i].address_count > 0)
+		if (interfaces[i].name)
+			free(interfaces[i].name);
+		if (interfaces[i].address_count > 0 && interfaces[i].addresses)
 		{
 			int j = 0;
+
 			for (j = 0; j < interfaces[i].address_count; ++j)
-				free(interfaces[i].addresses[j]);
+			{
+				if (interfaces[i].addresses[j].address)
+					free(interfaces[i].addresses[j].address);
+			}
 			free(interfaces[i].addresses);
 		}
 	}
@@ -1586,7 +1592,7 @@ int Socket_getInterfaces(struct Socket_interface** interface_array)
 {
 #if defined(_WIN32) || defined(_WIN64)
 	PIP_ADAPTER_ADDRESSES pAddresses;
-	ULONG size = 15000;
+	ULONG size = 0L;
 	PIP_ADAPTER_ADDRESSES pCurrAddresses = NULL;
 #else
 	struct ifaddrs *ifaddr, *ifa;
@@ -1597,57 +1603,104 @@ int Socket_getInterfaces(struct Socket_interface** interface_array)
 
 	FUNC_ENTRY;
 #if defined(_WIN32) || defined(_WIN64)
-	pAddresses = (PIP_ADAPTER_ADDRESSES)malloc(size);
-
-	rc = GetAdaptersAddresses(AF_UNSPEC,
-			GAA_FLAG_SKIP_UNICAST | GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_INCLUDE_PREFIX,
-			NULL, pAddresses, &size);
-
-	if (rc != NO_ERROR)
-		Log(LOG_ERROR, -1, "Error from GetAdaptersAddresses %d", rc);
-	else
+	/* get the size we need to allocate */
+	rc = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, NULL, &size);
+	if (rc != ERROR_BUFFER_OVERFLOW)
 	{
-		/* count how many interfaces to return */
-		pCurrAddresses = pAddresses;
-		while (pCurrAddresses)
-		{
-			count++;
-			pCurrAddresses = pCurrAddresses->Next;
-		}
+		Log(LOG_ERROR, -1, "Error from GetAdaptersAddresses %d", rc);
+		goto exit;
+	}
 
-		if (count > 0)
+	pAddresses = (PIP_ADAPTER_ADDRESSES)malloc(size);
+	if (pAddresses == NULL)
+	{
+		rc = PAHO_MEMORY_ERROR;
+		goto exit;
+	}
+
+	rc = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, pAddresses, &size);
+	if (rc != NO_ERROR)
+	{
+		Log(LOG_ERROR, -1, "Error from GetAdaptersAddresses %d", rc);
+		goto exit;
+	}
+
+	/* count how many interfaces to return */
+	pCurrAddresses = pAddresses;
+	while (pCurrAddresses)
+	{
+		count++;
+		pCurrAddresses = pCurrAddresses->Next;
+	}
+
+	if (count > 0)
+	{
+		interfaces = malloc(sizeof(struct Socket_interface) * count);
+		if (interfaces == NULL)
+			rc = PAHO_MEMORY_ERROR;
+		else
 		{
-			interfaces = malloc(sizeof(struct Socket_interface) * count);
-			if (interfaces == NULL)
-				rc = PAHO_MEMORY_ERROR;
-			else
+			int i = 0;
+
+			pCurrAddresses = pAddresses;
+			while (pCurrAddresses)
 			{
-				int i = 0;
+				size_t no_bytes = 0;
+				int address_count = 0;
+				int j = 0;
+				PIP_ADAPTER_UNICAST_ADDRESS ua = NULL;
 
-				pCurrAddresses = pAddresses;
-				while (pCurrAddresses)
+				/*printf("\tAdapter name: %s\n", pCurrAddresses->AdapterName);
+				printf("\tDescription: %wS\n", pCurrAddresses->Description);
+				printf("\tFriendly name: %wS\n", pCurrAddresses->FriendlyName);*/
+
+				no_bytes = wcstombs(NULL, pCurrAddresses->FriendlyName, 0) + 1;
+				interfaces[i].name = malloc(no_bytes);
+				if (interfaces[i].name == NULL)
 				{
-					/*printf("\tAdapter name: %s\n", pCurrAddresses->AdapterName);
-					printf("\tDescription: %wS\n", pCurrAddresses->Description);
-					printf("\tFriendly name: %wS\n", pCurrAddresses->FriendlyName);*/
+					Socket_freeInterfaces(interfaces, i);
+					rc = PAHO_MEMORY_ERROR;
+					break;
+				}
+				wcstombs(interfaces[i].name, pCurrAddresses->FriendlyName, no_bytes);
 
-					interfaces[i].family = AF_UNSPEC;
-					interfaces[i].name = malloc(wcslen(pCurrAddresses->FriendlyName)*sizeof(wchar_t) + 1);
-					if (interfaces[i].name == NULL)
+				interfaces[i].family = AF_UNSPEC; /* this is a return value only */
+
+				/* count addresses */
+				for (ua = pCurrAddresses->FirstUnicastAddress; ua; ua = ua->Next)
+					address_count++;
+				interfaces[i].address_count = address_count;
+				interfaces[i].addresses = malloc(sizeof(struct addresses) * address_count);
+				if (interfaces[i].addresses == NULL)
+				{
+					Socket_freeInterfaces(interfaces, i);
+					rc = PAHO_MEMORY_ERROR;
+					break;
+				}
+				memset(interfaces[i].addresses, '\0', sizeof(struct addresses) * address_count);
+				for (ua = pCurrAddresses->FirstUnicastAddress; ua; ua = ua->Next)
+				{
+					char* addrname = Socket_getaddrname(ua->Address.lpSockaddr, -1);
+
+					interfaces[i].addresses[j].address = malloc(strlen(addrname) + 1);
+					if (interfaces[i].addresses[j].address == NULL)
 					{
 						Socket_freeInterfaces(interfaces, i);
 						rc = PAHO_MEMORY_ERROR;
-						break;
+						goto free_addresses;
 					}
-					wcscpy(interfaces[i].name, pCurrAddresses->FriendlyName);
-					i++;
-					pCurrAddresses = pCurrAddresses->Next;
+					strcpy(interfaces[i].addresses[j].address, addrname);
+					interfaces[i].addresses[j].family = ua->Address.lpSockaddr->sa_family;
+					j++;
 				}
-				*interface_array = interfaces;
+				i++;
+				pCurrAddresses = pCurrAddresses->Next;
 			}
+			*interface_array = interfaces;
 		}
-		free(pAddresses);
 	}
+free_addresses:
+	free(pAddresses);
 #else
 	if (getifaddrs(&ifaddr) == -1)
 	{
@@ -1680,10 +1733,8 @@ int Socket_getInterfaces(struct Socket_interface** interface_array)
 					int j = 0;
 					for (j = 0; j < i; ++j)
 					{
-						if (interfaces[j].family == family &&
-								strcmp(interfaces[j].name, ifa->ifa_name) == 0)
+						if (strcmp(interfaces[j].name, ifa->ifa_name) == 0)
 						{
-							//printf("matched %d %s\n", family, ifa->ifa_name);
 							index = j;
 							break;
 						}
@@ -1708,7 +1759,6 @@ int Socket_getInterfaces(struct Socket_interface** interface_array)
 						interfaces = new_interfaces;
 					}
 
-					interfaces[i].family = family;
 					interfaces[i].name = malloc(strlen(ifa->ifa_name) + 1);
 					if (interfaces[i].name == NULL)
 					{
@@ -1719,16 +1769,17 @@ int Socket_getInterfaces(struct Socket_interface** interface_array)
 					strcpy(interfaces[i].name, ifa->ifa_name);
 					//printf("%s %d %s\n", interfaces[i].name, family, Socket_getaddrname(ifa->ifa_addr, 0));
 					interfaces[i].address_count = 1;
-					interfaces[i].addresses = malloc(sizeof(char*));
+					interfaces[i].addresses = malloc(sizeof(interfaces[i].addresses[0]));
 					address_string = Socket_getaddrname(ifa->ifa_addr, -1);
-					interfaces[i].addresses[0] = malloc(strlen(address_string) + 1);
-					if (interfaces[i].addresses[0] == NULL)
+					interfaces[i].addresses[0].address = malloc(strlen(address_string) + 1);
+					if (interfaces[i].addresses[0].address == NULL)
 					{
 						Socket_freeInterfaces(interfaces, -1);
 						rc = PAHO_MEMORY_ERROR;
 						break;
 					}
-					strcpy(interfaces[i].addresses[0], address_string);
+					strcpy(interfaces[i].addresses[0].address, address_string);
+					interfaces[i].addresses[0].family = family;
 					i++;
 				}
 				else
@@ -1736,7 +1787,7 @@ int Socket_getInterfaces(struct Socket_interface** interface_array)
 					char* address_string = NULL;
 
 					interfaces[index].address_count += 1;
-					interfaces[index].addresses = realloc(interfaces[index].addresses, sizeof(char*) * (interfaces[index].address_count + 1));
+					interfaces[index].addresses = realloc(interfaces[index].addresses, sizeof(interfaces[i].addresses[0]) * interfaces[index].address_count);
 					if (interfaces[index].addresses == NULL)
 					{
 						Socket_freeInterfaces(interfaces, i);
@@ -1744,14 +1795,15 @@ int Socket_getInterfaces(struct Socket_interface** interface_array)
 						break;
 					}
 					address_string = Socket_getaddrname(ifa->ifa_addr, -1);
-					interfaces[index].addresses[interfaces[index].address_count - 1] = malloc(strlen(address_string) + 1);
-					if (interfaces[index].addresses[interfaces[index].address_count - 1] == NULL)
+					interfaces[index].addresses[interfaces[index].address_count - 1].address = malloc(strlen(address_string) + 1);
+					if (interfaces[index].addresses[interfaces[index].address_count - 1].address == NULL)
 					{
 						Socket_freeInterfaces(interfaces, -1);
 						rc = PAHO_MEMORY_ERROR;
 						break;
 					}
-					strcpy(interfaces[index].addresses[interfaces[index].address_count - 1], address_string);
+					strcpy(interfaces[index].addresses[interfaces[index].address_count - 1].address, address_string);
+					interfaces[index].addresses[interfaces[index].address_count - 1].family = family;
 				}
 			}
 		}

@@ -1187,10 +1187,10 @@ void MQTTAsync_writeComplete(SOCKET socket, int rc)
 }
 
 
-struct Socket_interface MQTTAsync_selectSocketInterface(SOCKET socket, int count, struct Socket_interface* interfaces)
+struct Socket_interface_choice MQTTAsync_selectSocketInterface(SOCKET socket, int count, struct Socket_interface* interfaces)
 {
 	ListElement* found = NULL;
-	struct Socket_interface choice = {NULL, AF_INET, 0, NULL};
+	struct Socket_interface_choice choice = {AF_INET, NULL, NULL};
 
 	FUNC_ENTRY;
 	if ((found = ListFindItem(MQTTAsync_handles, &socket, clientSockCompare)) != NULL)
@@ -1210,20 +1210,34 @@ struct Socket_interface MQTTAsync_selectSocketInterface(SOCKET socket, int count
 			}
 			for (i = 0; i < count; ++i)
 			{
+				int j = 0;
+
 				memcpy(async_interfaces[i].struct_id, "MQIN", 4);
 				async_interfaces[i].struct_version = 0;
 				async_interfaces[i].family = interfaces[i].family;
 				async_interfaces[i].name = interfaces[i].name;
 				async_interfaces[i].address_count = interfaces[i].address_count;
-				async_interfaces[i].addresses = interfaces[i].addresses;
+				async_interfaces[i].addresses = malloc(sizeof(interfaces[i].addresses[0]) * interfaces[i].address_count);
+				if (async_interfaces[i].addresses == NULL)
+				{
+					Log(LOG_ERROR, -1, "Error allocating memory for addresses structure");
+					goto free_interfaces;
+				}
+				for (j = 0; j < interfaces[i].address_count; ++j)
+				{
+					async_interfaces[i].addresses[j].address = interfaces[i].addresses[j].address;
+					async_interfaces[i].addresses[j].family = interfaces[i].addresses[j].family;
+				}
 			}
-			struct MQTTAsync_interface async_choice = (*(m->selectInterface))(m->selectInterface_context,
+			struct MQTTAsync_interface_choice async_choice = (*(m->selectInterface))(m->selectInterface_context,
 				count, async_interfaces);
 			choice.name = async_choice.name;
-			choice.family = async_choice.family;
-			choice.address_count = async_choice.address_count;
-			choice.addresses = async_choice.addresses;
+			choice.preferred_family = async_choice.family;
+			choice.address = async_choice.address;
 
+			for (i = 0; i < count; ++i)
+				free(async_interfaces[i].addresses);
+free_interfaces:
 			free(async_interfaces);
 		}
 	}

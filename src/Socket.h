@@ -140,9 +140,18 @@ typedef struct
 
 struct Socket_interface {
 	char* name;
-	int family;
 	int address_count;
-	char** addresses;
+	int family;
+	struct addresses {
+		int family;
+		char* address;
+	} *addresses;
+};
+
+struct Socket_interface_choice {
+	int preferred_family; /**< preferred address family to use */
+	char* name; /**< name of interface to bind to */
+	char* address; /**< local address to bind to */
 };
 
 void Socket_outInitialize(void);
@@ -174,7 +183,7 @@ void Socket_setWriteCompleteCallback(Socket_writeComplete*);
 typedef void Socket_writeAvailable(SOCKET socket);
 void Socket_setWriteAvailableCallback(Socket_writeAvailable*);
 
-typedef struct Socket_interface Socket_selectInterface(SOCKET socket, int count, struct Socket_interface* interfaces);
+typedef struct Socket_interface_choice Socket_selectInterface(SOCKET socket, int count, struct Socket_interface* interfaces);
 void Socket_setSelectInterfaceCallback(Socket_selectInterface*);
 
 

@@ -1482,7 +1482,18 @@ struct MQTTClient_interface {
 	char* name; /**< the interface name, or NULL to ignore */
 	int family; /**< the address family AF_INET or AF_INET6 */
 	int address_count; /**< the number of addresses in the address array. 0 to ignore */
-	char** addresses; /**< an array of addresses connected to this interface */
+	struct MQTTClient_addresses {
+		int family; /**< the internet family of this address, AF_INET or AF_INET6 */
+		char* address; /**< the printable representation of the address */
+	} *addresses; /**< an array of addresses connected to this interface */
+};
+
+struct MQTTClient_interface_choice {
+	char struct_id[4]; /** The eyecatcher for this structure. Must be MQIC. */
+	int struct_version; /** The version number of this structure. Must be 0. */
+	char* name; /**< the interface name, or NULL to ignore */
+	int family; /**< the address family AF_INET or AF_INET6 */
+	char* address; /**< the printable representation of the address */
 };
 
 /**
@@ -1503,7 +1514,7 @@ struct MQTTClient_interface {
   * @param the array of interface structures
   * @return interface structure with the choice made
   */
-typedef struct MQTTClient_interface MQTTClient_selectInterface(void* context, int count, struct MQTTClient_interface* interfaces);
+typedef struct MQTTClient_interface_choice MQTTClient_selectInterface(void* context, int count, struct MQTTClient_interface* interfaces);
 
 /**
   * This function sets the callback to select the device interface, if needed.

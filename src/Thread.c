@@ -91,10 +91,11 @@ int Thread_set_name(const char* thread_name)
 
 #if defined(_WIN32) || defined(_WIN64)
 /* Using NTDDI_VERSION rather than WINVER for more detailed version targeting */
-#if NTDDI_VERSION >= NTDDI_WIN10_RS1
+/* Can't get this conditional compilation to work so remove it for now */
+/*#if NTDDI_VERSION >= NTDDI_WIN10_RS1
 	mbstowcs(wchars, thread_name, MAX_THREAD_NAME_LENGTH);
 	rc = (int)SetThreadDescription(GetCurrentThread(), wchars);
-#endif
+#endif*/
 #elif defined(OSX)
 	/* pthread_setname_np __API_AVAILABLE(macos(10.6), ios(3.2)) */
 #if defined(__APPLE__) && __MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6

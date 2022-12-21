@@ -88,6 +88,11 @@
 const char *client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
 const char *client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
 
+struct conlost_sync_data {
+	sem_type sem;
+	void *m;
+};
+
 int MQTTClient_init(void);
 
 void MQTTClient_global_init(MQTTClient_init_options* inits)
@@ -110,7 +115,7 @@ MQTTProtocol state;
 
 #if defined(_WIN32) || defined(_WIN64)
 static mutex_type mqttclient_mutex = NULL;
-static mutex_type socket_mutex = NULL;
+mutex_type socket_mutex = NULL;
 static mutex_type subscribe_mutex = NULL;
 static mutex_type unsubscribe_mutex = NULL;
 static mutex_type connect_mutex = NULL;
@@ -245,7 +250,7 @@ static pthread_mutex_t mqttclient_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 static mutex_type mqttclient_mutex = &mqttclient_mutex_store;
 
 static pthread_mutex_t socket_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-static mutex_type socket_mutex = &socket_mutex_store;
+mutex_type socket_mutex = &socket_mutex_store;
 
 static pthread_mutex_t subscribe_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 static mutex_type subscribe_mutex = &subscribe_mutex_store;
@@ -368,6 +373,7 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 /*static int pubCompare(void* a, void* b); */
 static void MQTTProtocol_checkPendingWrites(void);
 static void MQTTClient_writeComplete(SOCKET socket, int rc);
+static void MQTTClient_writeContinue(SOCKET socket);
 
 
 int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, const char* clientId,
@@ -434,6 +440,7 @@ int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, cons
 		bstate->clients = ListInitialize();
 		Socket_outInitialize();
 		Socket_setWriteCompleteCallback(MQTTClient_writeComplete);
+		Socket_setWriteContinueCallback(MQTTClient_writeContinue);
 		Socket_setWriteAvailableCallback(MQTTProtocol_writeAvailable);
 		handles = ListInitialize();
 #if defined(OPENSSL)
@@ -699,9 +706,12 @@ static int clientSockCompare(void* a, void* b)
  */
 static thread_return_type WINAPI connectionLost_call(void* context)
 {
-	MQTTClients* m = (MQTTClients*)context;
+	struct conlost_sync_data *data = (struct conlost_sync_data *)context;
+	MQTTClients* m = (MQTTClients *)data->m;
 
 	(*(m->cl))(m->context, NULL);
+
+	Thread_post_sem(data->sem);
 	return 0;
 }
 
@@ -1913,6 +1923,9 @@ static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int call_conne
 	START_TIME_TYPE start;
 	int rc = MQTTCLIENT_SUCCESS;
 	int was_connected = 0;
+	struct conlost_sync_data sync = {
+		NULL, m
+	};
 
 	FUNC_ENTRY;
 	if (m == NULL || m->c == NULL)
@@ -1942,8 +1955,11 @@ exit:
 		MQTTClient_stop();
 	if (call_connection_lost && m->cl && was_connected)
 	{
+		sync.sem = Thread_create_sem(&rc);
 		Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
-		Thread_start(connectionLost_call, m);
+		Thread_start(connectionLost_call, &sync);
+		Thread_wait_sem(sync.sem, 5000);
+		Thread_destroy_sem(sync.sem);
 	}
 	FUNC_EXIT_RC(rc);
 	return rc;
@@ -1964,7 +1980,7 @@ static int MQTTClient_disconnect_internal(MQTTClient handle, int timeout)
  */
 void MQTTProtocol_closeSession(Clients* c, int sendwill)
 {
-	MQTTClient_closeSession(c, MQTTREASONCODE_SUCCESS, NULL);
+	MQTTClient_disconnect_internal((MQTTClient)c->context, 0);
 }
 
 
@@ -3088,4 +3104,17 @@ static void MQTTClient_writeComplete(SOCKET socket, int rc)
 		m->c->net.lastSent = MQTTTime_now();
 	}
 	FUNC_EXIT;
+}
+
+
+static void MQTTClient_writeContinue(SOCKET socket)
+{
+	ListElement* found = NULL;
+
+	if ((found = ListFindItem(handles, &socket, clientSockCompare)) != NULL)
+	{
+		MQTTClients* m = (MQTTClients*)(found->content);
+
+		m->c->net.lastSent = MQTTTime_now();
+	}
 }

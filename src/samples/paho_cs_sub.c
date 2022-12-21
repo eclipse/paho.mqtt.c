@@ -223,7 +223,9 @@ int main(int argc, char** argv)
 		MQTTClient_message* message = NULL;
 
 		rc = MQTTClient_receive(client, &topicName, &topicLen, &message, 1000);
-		if (message)
+		if (rc == MQTTCLIENT_DISCONNECTED)
+			myconnect(client);
+		else if (message)
 		{
 			size_t delimlen = 0;
 
@@ -242,8 +244,6 @@ int main(int argc, char** argv)
 			MQTTClient_freeMessage(&message);
 			MQTTClient_free(topicName);
 		}
-		if (rc != 0)
-			myconnect(client);
 	}
 
 exit:

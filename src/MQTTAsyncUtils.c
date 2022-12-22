@@ -1232,7 +1232,7 @@ struct Socket_interface_choice MQTTAsync_selectSocketInterface(SOCKET socket, in
 			struct MQTTAsync_interface_choice async_choice = (*(m->selectInterface))(m->selectInterface_context,
 				count, async_interfaces);
 			choice.name = async_choice.name;
-			choice.preferred_family = async_choice.family;
+			choice.family = async_choice.family;
 			choice.address = async_choice.address;
 
 			for (i = 0; i < count; ++i)

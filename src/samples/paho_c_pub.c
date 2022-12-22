@@ -369,6 +369,7 @@ void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 struct MQTTAsync_interface_choice selectInterface(void* context, int count, struct MQTTAsync_interface* interfaces)
 {
 	struct MQTTAsync_interface_choice choice = {{'M', 'Q', 'I', 'C'}, 0, NULL, AF_INET, NULL};
+	int name_found = 0;
 
 	for (int i = 0; i < count; ++i)
 	{
@@ -386,8 +387,17 @@ struct MQTTAsync_interface_choice selectInterface(void* context, int count, stru
 		{
 			choice.name = MQTTAsync_malloc(strlen(interfaces[i].name) + 1);
 			strcpy(choice.name, interfaces[i].name);
+			name_found = 1;
 			break;
 		}
+	}
+
+	if (name_found == 0)
+	{
+		choice.address = MQTTAsync_malloc(strlen(opts.bind_address) + 1);
+		strcpy(choice.address, opts.bind_address);
+		if (strchr(opts.bind_address, ':') != NULL)
+			choice.family = AF_INET6;
 	}
 	return choice;
 }

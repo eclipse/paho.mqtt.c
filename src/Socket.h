@@ -149,8 +149,8 @@ struct Socket_interface {
 };
 
 struct Socket_interface_choice {
-	int preferred_family; /**< preferred address family to use */
-	char* name; /**< name of interface to bind to */
+	int family; /**< address family to use for bind (MacOS) */
+	char* name; /**< name of interface to bind to (not Windows) */
 	char* address; /**< local address to bind to */
 };
 

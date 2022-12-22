@@ -1780,9 +1780,9 @@ struct MQTTAsync_interface {
 struct MQTTAsync_interface_choice {
 	char struct_id[4]; /** The eyecatcher for this structure. Must be MQIC. */
 	int struct_version; /** The version number of this structure. Must be 0. */
-	char* name; /**< the interface name, or NULL to ignore */
-	int family; /**< the preferred address family AF_INET or AF_INET6 */
-	char* address; /**< the number of addresses in the addresses array. 0 to ignore */
+	char* name; /**< the interface name to bind to, or NULL to ignore */
+	int family; /**< the address family AF_INET or AF_INET6, to bind to (MacOS) */
+	char* address; /**< the network address to bind to, or NULL ignore */
 };
 
 /**

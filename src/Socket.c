@@ -64,6 +64,7 @@ char* Socket_getaddrname(struct sockaddr* sa, SOCKET sock);
 int Socket_abortWrite(SOCKET socket);
 int Socket_getInterfaces(struct Socket_interface** interface_array);
 int Socket_setInterface(SOCKET sock, char* interface_name, int family);
+int Socket_bind(SOCKET sock, char* bind_address, int family);
 static void Socket_freeInterfaces(struct Socket_interface* interfaces, int count);
 
 
@@ -132,7 +133,7 @@ int Socket_error(char* aString, SOCKET sock)
 	if (err != EINTR && err != EAGAIN && err != EINPROGRESS && err != EWOULDBLOCK)
 	{
 		if (strcmp(aString, "shutdown") != 0 || (err != ENOTCONN && err != ECONNRESET))
-			Log(TRACE_MINIMUM, -1, "Socket error %s(%d) in %s for socket %d", strerror(err), err, aString, sock);
+			Log(LOG_ERROR, -1, "Socket error %s(%d) in %s for socket %d", strerror(err), err, aString, sock);
 	}
 	return err;
 }
@@ -1049,16 +1050,16 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 #endif
 	int rc = SOCKET_ERROR;
 #if defined(_WIN32) || defined(_WIN64)
+	short interface_family = AF_INET;
 	short family = AF_INET;
-	short preferred_family = AF_INET;
 #else
+	sa_family_t interface_family = AF_INET;
 	sa_family_t family = AF_INET;
-	sa_family_t preferred_family = AF_INET;
 #endif
 	struct addrinfo *result = NULL;
 	struct addrinfo hints = {0, AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP, 0, NULL, NULL, NULL};
 	char* interface_name = NULL;    /* the name of the device to bind to, if any */
-	//char* interface_address = NULL; /* the address of the interface to bind to, if any */
+	char* bind_address = NULL; /* the address of the interface to bind to, if any */
 
 	FUNC_ENTRY;
 	/* if the select interface callback is set, call it with a list of interfaces and families */
@@ -1072,13 +1073,14 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 		{
 			Log(TRACE_MIN, -1, "Calling interface callback with %d interfaces", count);
 			choice = (*interfaceCallback)(*sock, count, interfaces);
-			if (choice.preferred_family == AF_INET || choice.preferred_family == AF_INET6)
-				preferred_family = choice.preferred_family;
+			if (choice.family == AF_INET || choice.family == AF_INET6)
+				interface_family = choice.family;
 			interface_name = choice.name;
+			bind_address = choice.address;
 
 			if (interface_name != NULL)
 				Log(TRACE_MIN, -1, "Selected interface name is %s, family %s", interface_name,
-						(preferred_family == AF_INET6) ? "AF_INET6" : "AF_INET");
+						(interface_family == AF_INET6) ? "AF_INET6" : "AF_INET");
 
 			Socket_freeInterfaces(interfaces, count);
 		}
@@ -1091,7 +1093,7 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 	{
 		++addr;
 		--addr_len;
-		preferred_family = AF_INET6;
+		family = AF_INET6;
 	}
 
 	if ((addr_mem = malloc( addr_len + 1u )) == NULL)
@@ -1133,7 +1135,7 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 
 		while (res)
 		{
-			if (res->ai_family == preferred_family || res->ai_next == NULL)
+			if (res->ai_family == family || res->ai_next == NULL)
 				break;
 			res = res->ai_next;
 		}
@@ -1198,8 +1200,17 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 	#endif
 			if (interface_name)
 			{
-				rc = Socket_setInterface(*sock, interface_name, family);
+				rc = Socket_setInterface(*sock, interface_name, interface_family);
 				free(interface_name);
+				if (bind_address)
+					free(bind_address);
+			}
+			else if (bind_address)
+			{
+				rc = Socket_bind(*sock, bind_address, interface_family);
+				free(bind_address);
+				if (interface_name)
+					free(interface_name);
 			}
 			if (rc == 0)
 			{
@@ -1861,6 +1872,56 @@ int Socket_setInterface(SOCKET sock, char* interface_name, int family) {
 		Log(LOG_ERROR, -1, "Could not set SO_BINDTODEVICE for socket %d %d\n", sock, rc);
 	}
 #endif
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+int Socket_bind(SOCKET sock, char* bind_address, int family)
+{
+	int rc = 0;
+
+	FUNC_ENTRY;
+	if (family == AF_INET)
+	{
+		struct sockaddr_in sockaddr;
+
+		memset(&sockaddr, '\0', sizeof(sockaddr));
+		if ((rc = inet_pton(AF_INET, bind_address, &sockaddr.sin_addr)) == 1)
+		{
+			sockaddr.sin_family = AF_INET;
+			rc = bind(sock, &sockaddr, sizeof(sockaddr));
+			if (rc != 0)
+				rc = Socket_error("bind", sock);
+		}
+		else
+		{
+			if (rc == 0)
+				Log(LOG_ERROR, -1, "bind address does not contain valid address");
+			else if (rc == -1)
+				rc = Socket_error("inet_pton", sock);
+		}
+	}
+	else if (family == AF_INET6)
+	{
+		struct sockaddr_in6 sockaddr;
+
+		memset(&sockaddr, '\0', sizeof(sockaddr));
+		if ((rc = inet_pton(AF_INET6, bind_address, &sockaddr.sin6_addr.s6_addr)) == 1)
+		{
+			sockaddr.sin6_family = AF_INET6;
+			rc = bind(sock, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
+			if (rc != 0)
+				rc = Socket_error("bind", sock);
+		}
+		else
+		{
+			if (rc == 0)
+				Log(LOG_ERROR, -1, "bind address does not contain valid address");
+			else if (rc == -1)
+				rc = Socket_error("inet_pton", sock);
+		}
+	}
 	FUNC_EXIT_RC(rc);
 	return rc;
 }

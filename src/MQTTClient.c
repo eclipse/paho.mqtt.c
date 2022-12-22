@@ -3181,7 +3181,7 @@ struct Socket_interface_choice MQTTClient_selectSocketInterface(SOCKET socket, i
 			struct MQTTClient_interface_choice client_choice = (*(m->selectInterface))(m->selectInterface_context,
 				count, client_interfaces);
 			choice.name = client_choice.name;
-			choice.preferred_family = client_choice.family;
+			choice.family = client_choice.family;
 			choice.address = client_choice.address;
 
 			for (i = 0; i < count; ++i)

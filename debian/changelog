@@ -1,3 +1,240 @@
+paho-mqtt-c1 (1.3.12-1) unstable; urgency=medium
+
+  [ Sven Gambel ]
+  * Add generic proxy support.
+
+  [ Victor Rosca ]
+  * Fix MQTTAsync_terminate(), to re-check the number of handles after re-acquisition of  mqttasync_mutex, and refrain from deleting the global variables if the number of handles is no longer zero.
+
+  [ vm-vloz ]
+  * Fix disconnect when there are pending writes
+
+  [ Ian Craggs ]
+  * Change ordering of acks to after processing incoming message
+  * Try building with Github actions
+  * Fix yaml
+  * Use sudo to install doxygen
+  * Run tests from the right place
+  * Run on ubuntu 18.04 instead
+  * Set directory for build packaging
+
+  [ ajit bansal ]
+  * Issue:With MQTTCLIENT_PERSISTENCE_DEFAULT the paho code crashes for MQTTVERSION_5 #1108
+
+  [ Ian Craggs ]
+  * Add MacOS builds
+  * Correct MacOS OpenSSL location
+  * Add test for blocked acks
+  * Debug test
+  * Better test debug
+  * Test8 debug
+  * Shorten message size for test8/test8
+
+  [ Sven Gambel ]
+  * Update Proxy.c
+  * Credit author of the original implementation
+
+  [ Ian Craggs ]
+  * Switch to MacOS 11 for Github actions
+  * Revert to macos-latest
+
+  [ Vince Chan ]
+  * Fix spelling error in environment variable for osx job
+
+  [ Yurii Nakonechnyi ]
+  * Updated README.md - added description for CMake option PAHO_ENABLE_TESTING
+
+  [ Ian Craggs ]
+  * Update to MQTTAsync_subscribe sample #1104
+  * Correct .PHONY targets in Makefile #1159
+  * Change -lpthread to -pthread #1160
+  * Allow waitfor timeout parameter to be negative #1170
+  * Add handling for incoming MQTT V5 disconnect #1163
+
+  [ Andrey Starodubtsev ]
+  * Prevent calling `SSL_read` with `num == 0`
+
+  [ Ian Craggs ]
+  * Fix some potential locking issues #1169
+
+  [ Locez ]
+  * bugfix: fix double free for qos0 publish
+
+  [ Ian Craggs ]
+  * Update out of date mqtt server hostnames
+  * Add a loop in test15 test 4 to allow more time for protocol exchanges to complete
+  * Parse websocket URLs with topic and no port properly #1185
+  * Set default port for WSS to 443 #1048
+  * Set default port for WSS to 443 #1048
+
+  [ Daniel Starikov ]
+  * Fix for issue #1190 use-after-free when discarding the oldest message with persistence
+
+  [ Ian Craggs ]
+  * Use poll instead of select #1033
+  * Fix clash of commits that resulted in some QoS2 packets being sent twice
+  * Fix clash of commits that resulted in some QoS2 packets being sent twice
+  * Add OpenSSL version conditional around set security level
+  * Fix some errors in the poll implementation
+  * Add some debugging
+  * Add test debug and lengthen some timeouts
+  * Add further poll debug
+  * Some more test adjustments
+  * Narrow down test debug
+  * More debugging
+  * Fix MacOS compile warnings
+  * Debug
+  * Debug variation
+  * Debug variation
+  * Don't build high perf on Linux (for debug)
+  * Fix return code from getrawsocketdata
+  * Remove debugging for Linux/MacOS
+  * Don't call poll if no sockets
+  * Add test8 debug
+  * Debug for test 8
+  * More test8 debug
+  * Some locking for callbacks
+  * Fix test8 and remove debug printfs
+  * Remove test8 extra trace
+  * Reinstate all Windows tests
+  * Fix memmove length calculation
+  * Fix return code from getrawsocketdata
+  * Some locking for callbacks
+  * Correct freeing of some persistence buffers
+  * Correct freeing of some persistence buffers
+  * Correct freeing of some persistence buffers
+  * Allow old select code to be used optionally
+  * Fix select timeout calculation
+  * Avoid slow connect in MQTTAsync #1039
+  * Debug for Windows
+  * Increase debug tests
+  * More testing
+  * Run all tests
+  * Remove debug again
+
+  [ Ashechol ]
+  * Update paho_cs_sub.c
+  * Update paho_cs_pub.c
+  * Update paho_cs_pub.c
+
+  [ Ian Craggs ]
+  * Update copyright statements in changed samples
+
+  [ 10km ]
+  * Update CMakeLists.txt
+
+  [ Ian Craggs ]
+  * Send QoS 2 responses under more circumstances #1114
+  * Ensure return code from Socket_new is SOCKET_ERROR on error #1192
+  * Free data on SSL abort write #1206
+  * If first round of commit retries doesn't finish, complete it later #1203
+  * Add warning about API calls in trace callback #1200
+  * Don't allow maxBufferedMessages to be set to 0 #1193
+  * Ensure options aren't null #1193
+  * Update tests so they don't try to assign a now invalid value #1193
+  * Make #1203 fix work across multiple clients
+  * Update patch version number
+  * Update docs for 1.3.10
+  * Add workflows for linux and mac artifacts
+  * Rename workflow files
+  * Correct indentation in workflow files
+  * Correct linux build artifact filename
+  * Add funding button
+  * Protect running variable #1214
+  * Add security and code of conduct directly
+  * Set username and password fields to NULL if not used #1227
+  * To avoid a startup delay, don't increase cycle read timeout until some work is ready
+  * Fix some timing issues in some scenarios for the poll implementation
+
+  [ fpagliughi ]
+  * Update of README with hints on using CMake for MQTT client apps.
+
+  [ TonyC-code ]
+  * Update MQTTAsync.c
+
+  [ Ian Craggs ]
+  * Ensure reconnect attempts continue if connect command add fails #1215
+  * Skip close code when socket count is 0 for the poll implementation
+  * Point to correct doc location #1240
+
+  [ TonyC-code ]
+  * Update MQTTAsync.c
+
+  [ Ian Craggs ]
+  * Add some NULL checks on parameters #1233
+  * Add debug for some tests
+  * Add some assertions to test5
+  * Add test trace debug
+  * Change trace level
+  * Ping processing when sockets being used by large messages
+  * Remove debug from CI tests
+  * Free allocated protos field if necessary
+  * Improve automatic reconnect parameter documentation
+  * Don't call unlock if lock fails #1235
+
+  [ Finlay Morrison ]
+  * Fixed error in comment
+
+  [ Ian Craggs ]
+  * Explain that token in responseOptions is output only #1238
+
+  [ chenzhenhua5 ]
+  * Fix array out of bound issue when receive invalid suback packet.
+
+  [ fpagliughi ]
+  * Added URI protocol prefixes, 'mqtt://' for TCP, and 'mqtts://' for SSL/TLS.
+
+  [ Ian Craggs ]
+  * Allow topic and payload to be returned in publish onSuccess/onFailure callbacks #1133
+  * Fix some types to allow USE_SELECT to build on Windows #1271
+  * Add thread names if possible #1100
+  * Fix install list #1260
+
+  [ fpagliughi ]
+  * Added documentation for mqtt:// and mqtts:// protocols. Changed some tests and samples to use them.
+
+  [ Ian Craggs ]
+  * Fix up suback count check
+
+  [ Jonliu1993 ]
+  * Add vcpkg installation instructions
+
+  [ Ian Craggs ]
+  * Add Frank's musl thoughts to README #901
+
+  [ Finlay Morrison ]
+  * fixed error in comment
+
+  [ Ian Craggs ]
+  * Add doc to highlight WebSocket connect option initializers #724
+  * Update version to 1.3.11
+  * Update docs
+  * Update artifact workflows
+  * Don't call writeContinue if not set #1286 #1293 #1286
+  * Fix up keep alive processing #1277 #1276
+  * Reset reconnect intervals on MQTTAsync_reconnect #1274
+  * Add reconnect to paho_cs_pub sample #1294
+
+  [ Neil Horman ]
+  * Ensure connection lost callbacks are complte prior to disconnect end
+
+  [ Tony Jiang ]
+  * fix to realloc memory if any queued data should be copied into new buffer #1303
+
+  [ Ian Craggs ]
+  * Protect data structure alteration when creating sockets #1219 #1290
+  * Protect data structure alteration when creating sockets #1219 #1290 - part 2
+  * Ensure connectionLost/retry etc is invoked after keepalive disconnect #1276
+
+  [ Axel Sommerfeldt ]
+  * checkEyecatchers() used to crash if a heap problem was detected
+
+  [ Ian Craggs ]
+  * Convert thread name to wide chars #1280 and correct conditional compilation #1275
+  * Correct windows conditional compilation #1275
+
+ -- Ethan Trevor <ethan@nandlab.com>  Fri, 30 Dec 2022 14:05:01 +0100
+
 paho-mqtt-c1 (1.3.9-3) unstable; urgency=medium
 
   * Development package depends on libssl-dev.

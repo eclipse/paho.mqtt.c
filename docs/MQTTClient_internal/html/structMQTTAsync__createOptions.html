@@ -86,9 +86,8 @@ Data Fields</h2></td></tr>
 int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structMQTTAsync__createOptions.html#a7142a01ee58f39a950f8627c4bb05318">sendWhileDisconnected</a></td></tr>
 <tr class="memdesc:a7142a01ee58f39a950f8627c4bb05318"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether to allow messages to be sent when the client library is not connected. <br /></td></tr>
 <tr class="separator:a7142a01ee58f39a950f8627c4bb05318"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a39d76a63782adbd9526bad0b33603522"><td class="memItemLeft" align="right" valign="top"><a id="a39d76a63782adbd9526bad0b33603522"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structMQTTAsync__createOptions.html#a39d76a63782adbd9526bad0b33603522">maxBufferedMessages</a></td></tr>
-<tr class="memdesc:a39d76a63782adbd9526bad0b33603522"><td class="mdescLeft">&#160;</td><td class="mdescRight">The maximum number of messages allowed to be buffered while not connected. <br /></td></tr>
+<tr class="memitem:a39d76a63782adbd9526bad0b33603522"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structMQTTAsync__createOptions.html#a39d76a63782adbd9526bad0b33603522">maxBufferedMessages</a></td></tr>
+<tr class="memdesc:a39d76a63782adbd9526bad0b33603522"><td class="mdescLeft">&#160;</td><td class="mdescRight">The maximum number of messages allowed to be buffered.  <a href="structMQTTAsync__createOptions.html#a39d76a63782adbd9526bad0b33603522">More...</a><br /></td></tr>
 <tr class="separator:a39d76a63782adbd9526bad0b33603522"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a538f8ca0715d75b79be91e8050a44402"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structMQTTAsync__createOptions.html#a538f8ca0715d75b79be91e8050a44402">MQTTVersion</a></td></tr>
 <tr class="memdesc:a538f8ca0715d75b79be91e8050a44402"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the MQTT version is 3.1, 3.1.1, or 5.  <a href="structMQTTAsync__createOptions.html#a538f8ca0715d75b79be91e8050a44402">More...</a><br /></td></tr>
@@ -110,6 +109,23 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>persistQoS0</b></td></
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Options for the ::MQTTAsync_createWithOptions call. </p>
 </div><h2 class="groupheader">Field Documentation</h2>
+<a id="a39d76a63782adbd9526bad0b33603522"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a39d76a63782adbd9526bad0b33603522">&#9670;&nbsp;</a></span>maxBufferedMessages</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int MQTTAsync_createOptions::maxBufferedMessages</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The maximum number of messages allowed to be buffered. </p>
+<p>This is intended to be used to limit the number of messages queued while the client is not connected. It also applies when the client is connected, however, so has to be greater than 0. </p>
+
+</div>
+</div>
 <a id="a538f8ca0715d75b79be91e8050a44402"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a538f8ca0715d75b79be91e8050a44402">&#9670;&nbsp;</a></span>MQTTVersion</h2>
 
@@ -168,7 +184,7 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>persistQoS0</b></td></
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 24 2021 18:05:54 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Sep 29 2022 11:34:46 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

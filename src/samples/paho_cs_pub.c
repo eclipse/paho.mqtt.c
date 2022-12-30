@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2020 IBM Corp.
+ * Copyright (c) 2012, 2022 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -52,7 +52,7 @@ struct pubsub_opts opts =
 };
 
 
-int myconnect(MQTTClient* client)
+int myconnect(MQTTClient client)
 {
 	MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;
@@ -133,6 +133,15 @@ int messageArrived(void* context, char* topicName, int topicLen, MQTTClient_mess
 }
 
 
+void connectionLost(void* context, char* reason)
+{
+	MQTTClient client = (MQTTClient)context;
+	if (opts.verbose)
+		printf("ConnectionLost, reconnecting\n");
+	myconnect(client);
+}
+
+
 void trace_callback(enum MQTTCLIENT_TRACE_LEVELS level, char* message)
 {
 	fprintf(stderr, "Trace : %d, %s\n", level, message);
@@ -200,7 +209,7 @@ int main(int argc, char** argv)
     sigaction(SIGTERM, &sa, NULL);
 #endif
 
-	rc = MQTTClient_setCallbacks(client, NULL, NULL, messageArrived, NULL);
+	rc = MQTTClient_setCallbacks(client, client, connectionLost, messageArrived, NULL);
 	if (rc != MQTTCLIENT_SUCCESS)
 	{
 		if (!opts.quiet)

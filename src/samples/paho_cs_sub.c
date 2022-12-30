@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2020 IBM Corp., and others
+ * Copyright (c) 2012, 2022 IBM Corp., and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -49,7 +49,7 @@ struct pubsub_opts opts =
 };
 
 
-int myconnect(MQTTClient* client)
+int myconnect(MQTTClient client)
 {
 	MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
 	MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;
@@ -223,7 +223,9 @@ int main(int argc, char** argv)
 		MQTTClient_message* message = NULL;
 
 		rc = MQTTClient_receive(client, &topicName, &topicLen, &message, 1000);
-		if (message)
+		if (rc == MQTTCLIENT_DISCONNECTED)
+			myconnect(client);
+		else if (message)
 		{
 			size_t delimlen = 0;
 
@@ -242,8 +244,6 @@ int main(int argc, char** argv)
 			MQTTClient_freeMessage(&message);
 			MQTTClient_free(topicName);
 		}
-		if (rc != 0)
-			myconnect(&client);
 	}
 
 exit:

@@ -60,9 +60,9 @@ struct Options
     int reconnect_period;
 } options =
 {
-    "tcp://mqtt.eclipse.org:1883",
-    NULL,
     "tcp://localhost:1883",
+    NULL,
+    "tcp://localhost:1884",
     "cli/test",
     NULL,
     NULL,

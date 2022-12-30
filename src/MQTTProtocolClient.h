@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2022 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -39,11 +39,11 @@ int MQTTProtocol_assignMsgId(Clients* client);
 void MQTTProtocol_removePublication(Publications* p);
 void Protocol_processPublication(Publish* publish, Clients* client, int allocatePayload);
 
-int MQTTProtocol_handlePublishes(void* pack, int sock);
-int MQTTProtocol_handlePubacks(void* pack, int sock);
-int MQTTProtocol_handlePubrecs(void* pack, int sock);
-int MQTTProtocol_handlePubrels(void* pack, int sock);
-int MQTTProtocol_handlePubcomps(void* pack, int sock);
+int MQTTProtocol_handlePublishes(void* pack, SOCKET sock);
+int MQTTProtocol_handlePubacks(void* pack, SOCKET sock, Publications** pubToRemove);
+int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock, Publications** pubToRemove);
+int MQTTProtocol_handlePubrels(void* pack, SOCKET sock);
+int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock, Publications** pubToRemove);
 
 void MQTTProtocol_closeSession(Clients* c, int sendwill);
 void MQTTProtocol_keepalive(START_TIME_TYPE);
@@ -54,6 +54,8 @@ void MQTTProtocol_freeMessageList(List* msgList);
 
 char* MQTTStrncpy(char *dest, const char* src, size_t num);
 char* MQTTStrdup(const char* src);
+
+void MQTTProtocol_writeAvailable(SOCKET socket);
 
 //#define MQTTStrdup(src) MQTTStrncpy(malloc(strlen(src)+1), src, strlen(src)+1)
 

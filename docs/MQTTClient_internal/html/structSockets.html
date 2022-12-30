@@ -78,34 +78,14 @@ Collaboration diagram for Sockets:</div>
 <div class="dyncontent">
 <div class="center"><img src="structSockets__coll__graph.png" border="0" usemap="#Sockets_coll__map" alt="Collaboration graph"/></div>
 <map name="Sockets_coll__map" id="Sockets_coll__map">
-<area shape="rect" title="Structure to hold all socket data for the module." alt="" coords="33,245,104,272"/>
+<area shape="rect" title="Structure to hold all socket data for the module." alt="" coords="33,231,104,257"/>
+<area shape="rect" href="structList.html" title="Structure to hold all data for one list." alt="" coords="47,127,91,153"/>
 <area shape="rect" href="structListElementStruct.html" title="Structure to hold all data for one list element." alt="" coords="5,7,132,33"/>
-<area shape="rect" href="structList.html" title="Structure to hold all data for one list." alt="" coords="153,127,197,153"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr class="memitem:aa56708bbaf392eb8d372d01f6bd2e7e8"><td class="memItemLeft" align="right" valign="top"><a id="aa56708bbaf392eb8d372d01f6bd2e7e8"></a>
-fd_set&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSockets.html#aa56708bbaf392eb8d372d01f6bd2e7e8">rset</a></td></tr>
-<tr class="memdesc:aa56708bbaf392eb8d372d01f6bd2e7e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket read set (see select doc) <br /></td></tr>
-<tr class="separator:aa56708bbaf392eb8d372d01f6bd2e7e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e2c4da3be7756df304ed1aaef86b894"><td class="memItemLeft" align="right" valign="top"><a id="a1e2c4da3be7756df304ed1aaef86b894"></a>
-fd_set&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSockets.html#a1e2c4da3be7756df304ed1aaef86b894">rset_saved</a></td></tr>
-<tr class="memdesc:a1e2c4da3be7756df304ed1aaef86b894"><td class="mdescLeft">&#160;</td><td class="mdescRight">saved socket read set <br /></td></tr>
-<tr class="separator:a1e2c4da3be7756df304ed1aaef86b894"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af528092a8513ffbb0d3c342503835a47"><td class="memItemLeft" align="right" valign="top"><a id="af528092a8513ffbb0d3c342503835a47"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSockets.html#af528092a8513ffbb0d3c342503835a47">maxfdp1</a></td></tr>
-<tr class="memdesc:af528092a8513ffbb0d3c342503835a47"><td class="mdescLeft">&#160;</td><td class="mdescRight">max descriptor used +1 (again see select doc) <br /></td></tr>
-<tr class="separator:af528092a8513ffbb0d3c342503835a47"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7dc0c5bf258cdb8dc1617a7a122caa7e"><td class="memItemLeft" align="right" valign="top"><a id="a7dc0c5bf258cdb8dc1617a7a122caa7e"></a>
-<a class="el" href="structList.html">List</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSockets.html#a7dc0c5bf258cdb8dc1617a7a122caa7e">clientsds</a></td></tr>
-<tr class="memdesc:a7dc0c5bf258cdb8dc1617a7a122caa7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">list of client socket descriptors <br /></td></tr>
-<tr class="separator:a7dc0c5bf258cdb8dc1617a7a122caa7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a310c298235783930aaa043a85e556b51"><td class="memItemLeft" align="right" valign="top"><a id="a310c298235783930aaa043a85e556b51"></a>
-<a class="el" href="structListElementStruct.html">ListElement</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSockets.html#a310c298235783930aaa043a85e556b51">cur_clientsds</a></td></tr>
-<tr class="memdesc:a310c298235783930aaa043a85e556b51"><td class="mdescLeft">&#160;</td><td class="mdescRight">current client socket descriptor (iterator) <br /></td></tr>
-<tr class="separator:a310c298235783930aaa043a85e556b51"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1b74c5f7fd463159318d2ef3c8fcee6"><td class="memItemLeft" align="right" valign="top"><a id="ac1b74c5f7fd463159318d2ef3c8fcee6"></a>
 <a class="el" href="structList.html">List</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSockets.html#ac1b74c5f7fd463159318d2ef3c8fcee6">connect_pending</a></td></tr>
 <tr class="memdesc:ac1b74c5f7fd463159318d2ef3c8fcee6"><td class="mdescLeft">&#160;</td><td class="mdescRight">list of sockets for which a connect is pending <br /></td></tr>
@@ -114,20 +94,62 @@ int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struc
 <a class="el" href="structList.html">List</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSockets.html#a852db7c3edf654d8ee451be18b3f5743">write_pending</a></td></tr>
 <tr class="memdesc:a852db7c3edf654d8ee451be18b3f5743"><td class="mdescLeft">&#160;</td><td class="mdescRight">list of sockets for which a write is pending <br /></td></tr>
 <tr class="separator:a852db7c3edf654d8ee451be18b3f5743"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a410464774efcdea446293ed6d4ea9c94"><td class="memItemLeft" align="right" valign="top"><a id="a410464774efcdea446293ed6d4ea9c94"></a>
-fd_set&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSockets.html#a410464774efcdea446293ed6d4ea9c94">pending_wset</a></td></tr>
-<tr class="memdesc:a410464774efcdea446293ed6d4ea9c94"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket pending write set for select <br /></td></tr>
-<tr class="separator:a410464774efcdea446293ed6d4ea9c94"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9bee5974437201a4b7728955de2ebd50"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSockets.html#a9bee5974437201a4b7728955de2ebd50">nfds</a></td></tr>
+<tr class="memdesc:a9bee5974437201a4b7728955de2ebd50"><td class="mdescLeft">&#160;</td><td class="mdescRight">no of file descriptors for poll  <a href="structSockets.html#a9bee5974437201a4b7728955de2ebd50">More...</a><br /></td></tr>
+<tr class="separator:a9bee5974437201a4b7728955de2ebd50"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e91e6577708542a4aab9c43976f7923"><td class="memItemLeft" align="right" valign="top"><a id="a9e91e6577708542a4aab9c43976f7923"></a>
+struct pollfd *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structSockets.html#a9e91e6577708542a4aab9c43976f7923">fds_read</a></td></tr>
+<tr class="memdesc:a9e91e6577708542a4aab9c43976f7923"><td class="mdescLeft">&#160;</td><td class="mdescRight">poll read file descriptors <br /></td></tr>
+<tr class="separator:a9e91e6577708542a4aab9c43976f7923"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6d20a690336a18c8d832d1eff3a6a02f"><td class="memItemLeft" align="right" valign="top"><a id="a6d20a690336a18c8d832d1eff3a6a02f"></a>
+struct pollfd *&#160;</td><td class="memItemRight" valign="bottom"><b>fds_write</b></td></tr>
+<tr class="separator:a6d20a690336a18c8d832d1eff3a6a02f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9541b61559daa5f23fe63576e44f63aa"><td class="memItemLeft" ><a id="a9541b61559daa5f23fe63576e44f63aa"></a>
+struct {</td></tr>
+<tr class="memitem:a790baeb63c2dd4807d9a88019a820939"><td class="memItemLeft" >
+&#160;&#160;&#160;int&#160;&#160;&#160;<a class="el" href="structSockets.html#a4ebc1178e3d1516f31b7dbc276cfde2b">cur_fd</a></td></tr>
+<tr class="memdesc:a790baeb63c2dd4807d9a88019a820939"><td class="mdescLeft">&#160;</td><td class="mdescRight">index into the fds_saved array <br /></td></tr>
+<tr class="separator:a790baeb63c2dd4807d9a88019a820939"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8495253a8afdc9328b22e43469565584"><td class="memItemLeft" >
+&#160;&#160;&#160;unsigned int&#160;&#160;&#160;<a class="el" href="structSockets.html#a9bee5974437201a4b7728955de2ebd50">nfds</a></td></tr>
+<tr class="memdesc:a8495253a8afdc9328b22e43469565584"><td class="mdescLeft">&#160;</td><td class="mdescRight">number of fds in the fds_saved array <br /></td></tr>
+<tr class="separator:a8495253a8afdc9328b22e43469565584"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9b00c4836433b27fc2ffdea7a47588a"><td class="memItemLeft" >
+&#160;&#160;&#160;struct pollfd *&#160;&#160;&#160;<b>fds_write</b></td></tr>
+<tr class="separator:ad9b00c4836433b27fc2ffdea7a47588a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac14fafaad85ed6a8587fa494e2284fee"><td class="memItemLeft" >
+&#160;&#160;&#160;struct pollfd *&#160;&#160;&#160;<b>fds_read</b></td></tr>
+<tr class="separator:ac14fafaad85ed6a8587fa494e2284fee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9541b61559daa5f23fe63576e44f63aa"><td class="memItemLeft" valign="top">}&#160;</td><td class="memItemRight" valign="bottom"><b>saved</b></td></tr>
+<tr class="separator:a9541b61559daa5f23fe63576e44f63aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Structure to hold all socket data for the module. </p>
-</div><hr/>The documentation for this struct was generated from the following file:<ul>
+</div><h2 class="groupheader">Field Documentation</h2>
+<a id="a9bee5974437201a4b7728955de2ebd50"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9bee5974437201a4b7728955de2ebd50">&#9670;&nbsp;</a></span>nfds</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned int Sockets::nfds</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>no of file descriptors for poll </p>
+<p>number of fds in the fds_saved array </p>
+
+</div>
+</div>
+<hr/>The documentation for this struct was generated from the following file:<ul>
 <li>Socket.h</li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 24 2021 18:05:54 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Sep 29 2022 11:34:46 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

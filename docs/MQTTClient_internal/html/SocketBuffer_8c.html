@@ -117,36 +117,36 @@ int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socke
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#a4a8d6188b4775789810a44396d05cf19">SocketBuffer_terminate</a> (void)</td></tr>
 <tr class="memdesc:a4a8d6188b4775789810a44396d05cf19"><td class="mdescLeft">&#160;</td><td class="mdescRight">Terminate the socketBuffer module. <br /></td></tr>
 <tr class="separator:a4a8d6188b4775789810a44396d05cf19"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0601e12cab5b7c4777df10ca6d38a41b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#a0601e12cab5b7c4777df10ca6d38a41b">SocketBuffer_cleanup</a> (int socket)</td></tr>
-<tr class="memdesc:a0601e12cab5b7c4777df10ca6d38a41b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cleanup any buffers for a specific socket.  <a href="SocketBuffer_8c.html#a0601e12cab5b7c4777df10ca6d38a41b">More...</a><br /></td></tr>
-<tr class="separator:a0601e12cab5b7c4777df10ca6d38a41b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a2e0c916232521098ff734d556c3b68"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#a8a2e0c916232521098ff734d556c3b68">SocketBuffer_getQueuedData</a> (int socket, size_t <a class="el" href="utf-8_8c.html#acce1763ab1d2658c7e6593c128565303">bytes</a>, size_t *actual_len)</td></tr>
-<tr class="memdesc:a8a2e0c916232521098ff734d556c3b68"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get any queued data for a specific socket.  <a href="SocketBuffer_8c.html#a8a2e0c916232521098ff734d556c3b68">More...</a><br /></td></tr>
-<tr class="separator:a8a2e0c916232521098ff734d556c3b68"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a08102e2e43746ccd1ab26739b5841a7c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#a08102e2e43746ccd1ab26739b5841a7c">SocketBuffer_getQueuedChar</a> (int socket, char *c)</td></tr>
-<tr class="memdesc:a08102e2e43746ccd1ab26739b5841a7c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get any queued character for a specific socket.  <a href="SocketBuffer_8c.html#a08102e2e43746ccd1ab26739b5841a7c">More...</a><br /></td></tr>
-<tr class="separator:a08102e2e43746ccd1ab26739b5841a7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaac8b43c1ab5d20eb8e6b95de6e80671"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#aaac8b43c1ab5d20eb8e6b95de6e80671">SocketBuffer_interrupted</a> (int socket, size_t actual_len)</td></tr>
-<tr class="memdesc:aaac8b43c1ab5d20eb8e6b95de6e80671"><td class="mdescLeft">&#160;</td><td class="mdescRight">A socket read was interrupted so we need to queue data.  <a href="SocketBuffer_8c.html#aaac8b43c1ab5d20eb8e6b95de6e80671">More...</a><br /></td></tr>
-<tr class="separator:aaac8b43c1ab5d20eb8e6b95de6e80671"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d007b15408ae802c78bc69f115cf91e"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#a0d007b15408ae802c78bc69f115cf91e">SocketBuffer_complete</a> (int socket)</td></tr>
-<tr class="memdesc:a0d007b15408ae802c78bc69f115cf91e"><td class="mdescLeft">&#160;</td><td class="mdescRight">A socket read has now completed so we can get rid of the queue.  <a href="SocketBuffer_8c.html#a0d007b15408ae802c78bc69f115cf91e">More...</a><br /></td></tr>
-<tr class="separator:a0d007b15408ae802c78bc69f115cf91e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a94cbb0db8ba0834a7f1c6e2eb938b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#a8a94cbb0db8ba0834a7f1c6e2eb938b4">SocketBuffer_queueChar</a> (int socket, char c)</td></tr>
-<tr class="memdesc:a8a94cbb0db8ba0834a7f1c6e2eb938b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queued a Charactor to a specific socket.  <a href="SocketBuffer_8c.html#a8a94cbb0db8ba0834a7f1c6e2eb938b4">More...</a><br /></td></tr>
-<tr class="separator:a8a94cbb0db8ba0834a7f1c6e2eb938b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9a92acaaec423c44227e3dd978223529"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#a9a92acaaec423c44227e3dd978223529">SocketBuffer_pendingWrite</a> (int socket, int count, iobuf *iovecs, int *frees, size_t total, size_t <a class="el" href="utf-8_8c.html#acce1763ab1d2658c7e6593c128565303">bytes</a>)</td></tr>
-<tr class="memdesc:a9a92acaaec423c44227e3dd978223529"><td class="mdescLeft">&#160;</td><td class="mdescRight">A socket write was interrupted so store the remaining data.  <a href="SocketBuffer_8c.html#a9a92acaaec423c44227e3dd978223529">More...</a><br /></td></tr>
-<tr class="separator:a9a92acaaec423c44227e3dd978223529"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f22a1ac450cb1805e2ab8f2ae3da80e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structpending__writes.html">pending_writes</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#a5f22a1ac450cb1805e2ab8f2ae3da80e">SocketBuffer_getWrite</a> (int socket)</td></tr>
-<tr class="memdesc:a5f22a1ac450cb1805e2ab8f2ae3da80e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get any queued write data for a specific socket.  <a href="SocketBuffer_8c.html#a5f22a1ac450cb1805e2ab8f2ae3da80e">More...</a><br /></td></tr>
-<tr class="separator:a5f22a1ac450cb1805e2ab8f2ae3da80e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a893ce45cf77f7d66c3f27c831ccf8124"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#a893ce45cf77f7d66c3f27c831ccf8124">SocketBuffer_writeComplete</a> (int socket)</td></tr>
-<tr class="memdesc:a893ce45cf77f7d66c3f27c831ccf8124"><td class="mdescLeft">&#160;</td><td class="mdescRight">A socket write has now completed so we can get rid of the queue.  <a href="SocketBuffer_8c.html#a893ce45cf77f7d66c3f27c831ccf8124">More...</a><br /></td></tr>
-<tr class="separator:a893ce45cf77f7d66c3f27c831ccf8124"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2b11bdc6ca61051b8edaed5620735602"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structpending__writes.html">pending_writes</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#a2b11bdc6ca61051b8edaed5620735602">SocketBuffer_updateWrite</a> (int socket, char *topic, char *payload)</td></tr>
-<tr class="memdesc:a2b11bdc6ca61051b8edaed5620735602"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the queued write data for a socket in the case of QoS 0 messages.  <a href="SocketBuffer_8c.html#a2b11bdc6ca61051b8edaed5620735602">More...</a><br /></td></tr>
-<tr class="separator:a2b11bdc6ca61051b8edaed5620735602"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb5eae96f4c62d1e6fefed8d078ecba8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#abb5eae96f4c62d1e6fefed8d078ecba8">SocketBuffer_cleanup</a> (SOCKET socket)</td></tr>
+<tr class="memdesc:abb5eae96f4c62d1e6fefed8d078ecba8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cleanup any buffers for a specific socket.  <a href="SocketBuffer_8c.html#abb5eae96f4c62d1e6fefed8d078ecba8">More...</a><br /></td></tr>
+<tr class="separator:abb5eae96f4c62d1e6fefed8d078ecba8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afcc9b9b6bd255b0a6e4c7e4f5a36bb37"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#afcc9b9b6bd255b0a6e4c7e4f5a36bb37">SocketBuffer_getQueuedData</a> (SOCKET socket, size_t <a class="el" href="utf-8_8c.html#abf4b7aec66b165e9a0a8e3a4ad69f863">bytes</a>, size_t *actual_len)</td></tr>
+<tr class="memdesc:afcc9b9b6bd255b0a6e4c7e4f5a36bb37"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get any queued data for a specific socket.  <a href="SocketBuffer_8c.html#afcc9b9b6bd255b0a6e4c7e4f5a36bb37">More...</a><br /></td></tr>
+<tr class="separator:afcc9b9b6bd255b0a6e4c7e4f5a36bb37"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a999ec229faa4b2e2c0f7db87693bc1f8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#a999ec229faa4b2e2c0f7db87693bc1f8">SocketBuffer_getQueuedChar</a> (SOCKET socket, char *c)</td></tr>
+<tr class="memdesc:a999ec229faa4b2e2c0f7db87693bc1f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get any queued character for a specific socket.  <a href="SocketBuffer_8c.html#a999ec229faa4b2e2c0f7db87693bc1f8">More...</a><br /></td></tr>
+<tr class="separator:a999ec229faa4b2e2c0f7db87693bc1f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a412a40b44b12901e63e662ac0e5be0af"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#a412a40b44b12901e63e662ac0e5be0af">SocketBuffer_interrupted</a> (SOCKET socket, size_t actual_len)</td></tr>
+<tr class="memdesc:a412a40b44b12901e63e662ac0e5be0af"><td class="mdescLeft">&#160;</td><td class="mdescRight">A socket read was interrupted so we need to queue data.  <a href="SocketBuffer_8c.html#a412a40b44b12901e63e662ac0e5be0af">More...</a><br /></td></tr>
+<tr class="separator:a412a40b44b12901e63e662ac0e5be0af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b7b6acbf2ec65796c32da7fd55c3ee8"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#a8b7b6acbf2ec65796c32da7fd55c3ee8">SocketBuffer_complete</a> (SOCKET socket)</td></tr>
+<tr class="memdesc:a8b7b6acbf2ec65796c32da7fd55c3ee8"><td class="mdescLeft">&#160;</td><td class="mdescRight">A socket read has now completed so we can get rid of the queue.  <a href="SocketBuffer_8c.html#a8b7b6acbf2ec65796c32da7fd55c3ee8">More...</a><br /></td></tr>
+<tr class="separator:a8b7b6acbf2ec65796c32da7fd55c3ee8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f6bac9a46fd116e58071ff49152d716"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#a2f6bac9a46fd116e58071ff49152d716">SocketBuffer_queueChar</a> (SOCKET socket, char c)</td></tr>
+<tr class="memdesc:a2f6bac9a46fd116e58071ff49152d716"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queued a Charactor to a specific socket.  <a href="SocketBuffer_8c.html#a2f6bac9a46fd116e58071ff49152d716">More...</a><br /></td></tr>
+<tr class="separator:a2f6bac9a46fd116e58071ff49152d716"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa61a564b814b06d9cfd3fe9ce7ab1cf7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#aa61a564b814b06d9cfd3fe9ce7ab1cf7">SocketBuffer_pendingWrite</a> (SOCKET socket, int count, iobuf *iovecs, int *frees, size_t total, size_t <a class="el" href="utf-8_8c.html#abf4b7aec66b165e9a0a8e3a4ad69f863">bytes</a>)</td></tr>
+<tr class="memdesc:aa61a564b814b06d9cfd3fe9ce7ab1cf7"><td class="mdescLeft">&#160;</td><td class="mdescRight">A socket write was interrupted so store the remaining data.  <a href="SocketBuffer_8c.html#aa61a564b814b06d9cfd3fe9ce7ab1cf7">More...</a><br /></td></tr>
+<tr class="separator:aa61a564b814b06d9cfd3fe9ce7ab1cf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a524311e577a7225a09fb944904c17886"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structpending__writes.html">pending_writes</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#a524311e577a7225a09fb944904c17886">SocketBuffer_getWrite</a> (SOCKET socket)</td></tr>
+<tr class="memdesc:a524311e577a7225a09fb944904c17886"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get any queued write data for a specific socket.  <a href="SocketBuffer_8c.html#a524311e577a7225a09fb944904c17886">More...</a><br /></td></tr>
+<tr class="separator:a524311e577a7225a09fb944904c17886"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae8667990c5933c3af9b90a163bba34dc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#ae8667990c5933c3af9b90a163bba34dc">SocketBuffer_writeComplete</a> (SOCKET socket)</td></tr>
+<tr class="memdesc:ae8667990c5933c3af9b90a163bba34dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">A socket write has now completed so we can get rid of the queue.  <a href="SocketBuffer_8c.html#ae8667990c5933c3af9b90a163bba34dc">More...</a><br /></td></tr>
+<tr class="separator:ae8667990c5933c3af9b90a163bba34dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7ba9075e011f49302304ce7b2d8e5b59"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structpending__writes.html">pending_writes</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuffer_8c.html#a7ba9075e011f49302304ce7b2d8e5b59">SocketBuffer_updateWrite</a> (SOCKET socket, char *topic, char *payload)</td></tr>
+<tr class="memdesc:a7ba9075e011f49302304ce7b2d8e5b59"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the queued write data for a socket in the case of QoS 0 messages.  <a href="SocketBuffer_8c.html#a7ba9075e011f49302304ce7b2d8e5b59">More...</a><br /></td></tr>
+<tr class="separator:a7ba9075e011f49302304ce7b2d8e5b59"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
@@ -205,8 +205,8 @@ static <a class="el" href="structList.html">List</a>&#160;</td><td class="memIte
 
 </div>
 </div>
-<a id="a0601e12cab5b7c4777df10ca6d38a41b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0601e12cab5b7c4777df10ca6d38a41b">&#9670;&nbsp;</a></span>SocketBuffer_cleanup()</h2>
+<a id="abb5eae96f4c62d1e6fefed8d078ecba8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abb5eae96f4c62d1e6fefed8d078ecba8">&#9670;&nbsp;</a></span>SocketBuffer_cleanup()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -214,7 +214,7 @@ static <a class="el" href="structList.html">List</a>&#160;</td><td class="memIte
         <tr>
           <td class="memname">void SocketBuffer_cleanup </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em></td><td>)</td>
           <td></td>
         </tr>
@@ -231,12 +231,12 @@ static <a class="el" href="structList.html">List</a>&#160;</td><td class="memIte
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="SocketBuffer_8c_a0601e12cab5b7c4777df10ca6d38a41b_cgraph.png" border="0" usemap="#SocketBuffer_8c_a0601e12cab5b7c4777df10ca6d38a41b_cgraph" alt=""/></div>
-<map name="SocketBuffer_8c_a0601e12cab5b7c4777df10ca6d38a41b_cgraph" id="SocketBuffer_8c_a0601e12cab5b7c4777df10ca6d38a41b_cgraph">
+<div class="center"><img src="SocketBuffer_8c_abb5eae96f4c62d1e6fefed8d078ecba8_cgraph.png" border="0" usemap="#SocketBuffer_8c_abb5eae96f4c62d1e6fefed8d078ecba8_cgraph" alt=""/></div>
+<map name="SocketBuffer_8c_abb5eae96f4c62d1e6fefed8d078ecba8_cgraph" id="SocketBuffer_8c_abb5eae96f4c62d1e6fefed8d078ecba8_cgraph">
 <area shape="rect" title="Cleanup any buffers for a specific socket." alt="" coords="5,56,155,83"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="777,5,872,32"/>
 <area shape="rect" href="LinkedList_8c.html#a8430370b2b15c56ec95bb8e7e36753a5" title="Removes and frees an item in a list by comparing the pointer to the content." alt="" coords="473,31,565,57"/>
-<area shape="rect" href="SocketBuffer_8c.html#a893ce45cf77f7d66c3f27c831ccf8124" title="A socket write has now completed so we can get rid of the queue." alt="" coords="203,81,389,108"/>
+<area shape="rect" href="SocketBuffer_8c.html#ae8667990c5933c3af9b90a163bba34dc" title="A socket write has now completed so we can get rid of the queue." alt="" coords="203,81,389,108"/>
 <area shape="rect" href="SocketBuffer_8c.html#acebc1cbb93be4588f33b04ed404f6dbf" title="List callback function for comparing socket_queues by socket." alt="" coords="241,132,351,159"/>
 <area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="920,5,1039,32"/>
 <area shape="rect" href="LinkedList_8c.html#ab82181e0c1d96954f82dee67cee41296" title="Removes and optionally frees an element in a list by comparing the content." alt="" coords="648,31,729,57"/>
@@ -247,8 +247,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a0d007b15408ae802c78bc69f115cf91e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0d007b15408ae802c78bc69f115cf91e">&#9670;&nbsp;</a></span>SocketBuffer_complete()</h2>
+<a id="a8b7b6acbf2ec65796c32da7fd55c3ee8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8b7b6acbf2ec65796c32da7fd55c3ee8">&#9670;&nbsp;</a></span>SocketBuffer_complete()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -256,7 +256,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">char* SocketBuffer_complete </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em></td><td>)</td>
           <td></td>
         </tr>
@@ -274,8 +274,8 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="SocketBuffer_8c_a0d007b15408ae802c78bc69f115cf91e_cgraph.png" border="0" usemap="#SocketBuffer_8c_a0d007b15408ae802c78bc69f115cf91e_cgraph" alt=""/></div>
-<map name="SocketBuffer_8c_a0d007b15408ae802c78bc69f115cf91e_cgraph" id="SocketBuffer_8c_a0d007b15408ae802c78bc69f115cf91e_cgraph">
+<div class="center"><img src="SocketBuffer_8c_a8b7b6acbf2ec65796c32da7fd55c3ee8_cgraph.png" border="0" usemap="#SocketBuffer_8c_a8b7b6acbf2ec65796c32da7fd55c3ee8_cgraph" alt=""/></div>
+<map name="SocketBuffer_8c_a8b7b6acbf2ec65796c32da7fd55c3ee8_cgraph" id="SocketBuffer_8c_a8b7b6acbf2ec65796c32da7fd55c3ee8_cgraph">
 <area shape="rect" title="A socket read has now completed so we can get rid of the queue." alt="" coords="5,81,163,108"/>
 <area shape="rect" href="LinkedList_8c.html#ab2bcc1897abf1d98490ea81c474dba52" title="Removes but does not free an item in a list by comparing the pointer to the content." alt="" coords="246,5,331,32"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="544,31,639,57"/>
@@ -288,8 +288,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a08102e2e43746ccd1ab26739b5841a7c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a08102e2e43746ccd1ab26739b5841a7c">&#9670;&nbsp;</a></span>SocketBuffer_getQueuedChar()</h2>
+<a id="a999ec229faa4b2e2c0f7db87693bc1f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a999ec229faa4b2e2c0f7db87693bc1f8">&#9670;&nbsp;</a></span>SocketBuffer_getQueuedChar()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -297,7 +297,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">int SocketBuffer_getQueuedChar </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
@@ -326,8 +326,8 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="SocketBuffer_8c_a08102e2e43746ccd1ab26739b5841a7c_cgraph.png" border="0" usemap="#SocketBuffer_8c_a08102e2e43746ccd1ab26739b5841a7c_cgraph" alt=""/></div>
-<map name="SocketBuffer_8c_a08102e2e43746ccd1ab26739b5841a7c_cgraph" id="SocketBuffer_8c_a08102e2e43746ccd1ab26739b5841a7c_cgraph">
+<div class="center"><img src="SocketBuffer_8c_a999ec229faa4b2e2c0f7db87693bc1f8_cgraph.png" border="0" usemap="#SocketBuffer_8c_a999ec229faa4b2e2c0f7db87693bc1f8_cgraph" alt=""/></div>
+<map name="SocketBuffer_8c_a999ec229faa4b2e2c0f7db87693bc1f8_cgraph" id="SocketBuffer_8c_a999ec229faa4b2e2c0f7db87693bc1f8_cgraph">
 <area shape="rect" title="Get any queued character for a specific socket." alt="" coords="5,56,200,83"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="256,5,351,32"/>
 <area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="281,56,325,83"/>
@@ -338,8 +338,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a8a2e0c916232521098ff734d556c3b68"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8a2e0c916232521098ff734d556c3b68">&#9670;&nbsp;</a></span>SocketBuffer_getQueuedData()</h2>
+<a id="afcc9b9b6bd255b0a6e4c7e4f5a36bb37"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afcc9b9b6bd255b0a6e4c7e4f5a36bb37">&#9670;&nbsp;</a></span>SocketBuffer_getQueuedData()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -347,7 +347,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">char* SocketBuffer_getQueuedData </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
@@ -383,8 +383,8 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="SocketBuffer_8c_a8a2e0c916232521098ff734d556c3b68_cgraph.png" border="0" usemap="#SocketBuffer_8c_a8a2e0c916232521098ff734d556c3b68_cgraph" alt=""/></div>
-<map name="SocketBuffer_8c_a8a2e0c916232521098ff734d556c3b68_cgraph" id="SocketBuffer_8c_a8a2e0c916232521098ff734d556c3b68_cgraph">
+<div class="center"><img src="SocketBuffer_8c_afcc9b9b6bd255b0a6e4c7e4f5a36bb37_cgraph.png" border="0" usemap="#SocketBuffer_8c_afcc9b9b6bd255b0a6e4c7e4f5a36bb37_cgraph" alt=""/></div>
+<map name="SocketBuffer_8c_afcc9b9b6bd255b0a6e4c7e4f5a36bb37_cgraph" id="SocketBuffer_8c_afcc9b9b6bd255b0a6e4c7e4f5a36bb37_cgraph">
 <area shape="rect" title="Get any queued data for a specific socket." alt="" coords="5,31,200,57"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="256,5,351,32"/>
 <area shape="rect" href="SocketBuffer_8c.html#acebc1cbb93be4588f33b04ed404f6dbf" title="List callback function for comparing socket_queues by socket." alt="" coords="248,56,359,83"/>
@@ -394,8 +394,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a5f22a1ac450cb1805e2ab8f2ae3da80e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f22a1ac450cb1805e2ab8f2ae3da80e">&#9670;&nbsp;</a></span>SocketBuffer_getWrite()</h2>
+<a id="a524311e577a7225a09fb944904c17886"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a524311e577a7225a09fb944904c17886">&#9670;&nbsp;</a></span>SocketBuffer_getWrite()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -403,7 +403,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname"><a class="el" href="structpending__writes.html">pending_writes</a>* SocketBuffer_getWrite </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em></td><td>)</td>
           <td></td>
         </tr>
@@ -421,8 +421,8 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="SocketBuffer_8c_a5f22a1ac450cb1805e2ab8f2ae3da80e_cgraph.png" border="0" usemap="#SocketBuffer_8c_a5f22a1ac450cb1805e2ab8f2ae3da80e_cgraph" alt=""/></div>
-<map name="SocketBuffer_8c_a5f22a1ac450cb1805e2ab8f2ae3da80e_cgraph" id="SocketBuffer_8c_a5f22a1ac450cb1805e2ab8f2ae3da80e_cgraph">
+<div class="center"><img src="SocketBuffer_8c_a524311e577a7225a09fb944904c17886_cgraph.png" border="0" usemap="#SocketBuffer_8c_a524311e577a7225a09fb944904c17886_cgraph" alt=""/></div>
+<map name="SocketBuffer_8c_a524311e577a7225a09fb944904c17886_cgraph" id="SocketBuffer_8c_a524311e577a7225a09fb944904c17886_cgraph">
 <area shape="rect" title="Get any queued write data for a specific socket." alt="" coords="5,31,157,57"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="239,5,334,32"/>
 <area shape="rect" href="SocketBuffer_8c.html#a39f1ee9c98bc12a7be4d7a40b03550d5" title="List callback function for comparing pending_writes by socket." alt="" coords="205,56,368,83"/>
@@ -432,8 +432,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="aaac8b43c1ab5d20eb8e6b95de6e80671"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaac8b43c1ab5d20eb8e6b95de6e80671">&#9670;&nbsp;</a></span>SocketBuffer_interrupted()</h2>
+<a id="a412a40b44b12901e63e662ac0e5be0af"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a412a40b44b12901e63e662ac0e5be0af">&#9670;&nbsp;</a></span>SocketBuffer_interrupted()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -441,7 +441,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">void SocketBuffer_interrupted </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
@@ -469,8 +469,8 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="SocketBuffer_8c_aaac8b43c1ab5d20eb8e6b95de6e80671_cgraph.png" border="0" usemap="#SocketBuffer_8c_aaac8b43c1ab5d20eb8e6b95de6e80671_cgraph" alt=""/></div>
-<map name="SocketBuffer_8c_aaac8b43c1ab5d20eb8e6b95de6e80671_cgraph" id="SocketBuffer_8c_aaac8b43c1ab5d20eb8e6b95de6e80671_cgraph">
+<div class="center"><img src="SocketBuffer_8c_a412a40b44b12901e63e662ac0e5be0af_cgraph.png" border="0" usemap="#SocketBuffer_8c_a412a40b44b12901e63e662ac0e5be0af_cgraph" alt=""/></div>
+<map name="SocketBuffer_8c_a412a40b44b12901e63e662ac0e5be0af_cgraph" id="SocketBuffer_8c_a412a40b44b12901e63e662ac0e5be0af_cgraph">
 <area shape="rect" title="A socket read was interrupted so we need to queue data." alt="" coords="5,81,171,108"/>
 <area shape="rect" href="LinkedList_8c.html#abc7a28449893dfa775c2f709349968b4" title="Append an item to a list." alt="" coords="254,5,342,32"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="251,56,345,83"/>
@@ -483,8 +483,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a9a92acaaec423c44227e3dd978223529"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9a92acaaec423c44227e3dd978223529">&#9670;&nbsp;</a></span>SocketBuffer_pendingWrite()</h2>
+<a id="aa61a564b814b06d9cfd3fe9ce7ab1cf7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa61a564b814b06d9cfd3fe9ce7ab1cf7">&#9670;&nbsp;</a></span>SocketBuffer_pendingWrite()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -492,7 +492,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">int SocketBuffer_pendingWrite </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
@@ -548,8 +548,8 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="SocketBuffer_8c_a9a92acaaec423c44227e3dd978223529_cgraph.png" border="0" usemap="#SocketBuffer_8c_a9a92acaaec423c44227e3dd978223529_cgraph" alt=""/></div>
-<map name="SocketBuffer_8c_a9a92acaaec423c44227e3dd978223529_cgraph" id="SocketBuffer_8c_a9a92acaaec423c44227e3dd978223529_cgraph">
+<div class="center"><img src="SocketBuffer_8c_aa61a564b814b06d9cfd3fe9ce7ab1cf7_cgraph.png" border="0" usemap="#SocketBuffer_8c_aa61a564b814b06d9cfd3fe9ce7ab1cf7_cgraph" alt=""/></div>
+<map name="SocketBuffer_8c_aa61a564b814b06d9cfd3fe9ce7ab1cf7_cgraph" id="SocketBuffer_8c_aa61a564b814b06d9cfd3fe9ce7ab1cf7_cgraph">
 <area shape="rect" title="A socket write was interrupted so store the remaining data." alt="" coords="5,5,184,32"/>
 <area shape="rect" href="LinkedList_8c.html#abc7a28449893dfa775c2f709349968b4" title="Append an item to a list." alt="" coords="232,5,320,32"/>
 <area shape="rect" href="LinkedList_8c.html#a321a3598d6979c7af3f995b77ea2cec3" title="Append an already allocated ListElement and content to a list." alt="" coords="368,5,511,32"/>
@@ -558,8 +558,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a8a94cbb0db8ba0834a7f1c6e2eb938b4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8a94cbb0db8ba0834a7f1c6e2eb938b4">&#9670;&nbsp;</a></span>SocketBuffer_queueChar()</h2>
+<a id="a2f6bac9a46fd116e58071ff49152d716"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f6bac9a46fd116e58071ff49152d716">&#9670;&nbsp;</a></span>SocketBuffer_queueChar()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -567,7 +567,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">void SocketBuffer_queueChar </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
@@ -595,8 +595,8 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="SocketBuffer_8c_a8a94cbb0db8ba0834a7f1c6e2eb938b4_cgraph.png" border="0" usemap="#SocketBuffer_8c_a8a94cbb0db8ba0834a7f1c6e2eb938b4_cgraph" alt=""/></div>
-<map name="SocketBuffer_8c_a8a94cbb0db8ba0834a7f1c6e2eb938b4_cgraph" id="SocketBuffer_8c_a8a94cbb0db8ba0834a7f1c6e2eb938b4_cgraph">
+<div class="center"><img src="SocketBuffer_8c_a2f6bac9a46fd116e58071ff49152d716_cgraph.png" border="0" usemap="#SocketBuffer_8c_a2f6bac9a46fd116e58071ff49152d716_cgraph" alt=""/></div>
+<map name="SocketBuffer_8c_a2f6bac9a46fd116e58071ff49152d716_cgraph" id="SocketBuffer_8c_a2f6bac9a46fd116e58071ff49152d716_cgraph">
 <area shape="rect" title="Queued a Charactor to a specific socket." alt="" coords="5,56,172,83"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="228,5,323,32"/>
 <area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="253,56,297,83"/>
@@ -607,8 +607,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a2b11bdc6ca61051b8edaed5620735602"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2b11bdc6ca61051b8edaed5620735602">&#9670;&nbsp;</a></span>SocketBuffer_updateWrite()</h2>
+<a id="a7ba9075e011f49302304ce7b2d8e5b59"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ba9075e011f49302304ce7b2d8e5b59">&#9670;&nbsp;</a></span>SocketBuffer_updateWrite()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -616,7 +616,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname"><a class="el" href="structpending__writes.html">pending_writes</a>* SocketBuffer_updateWrite </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
@@ -652,8 +652,8 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="SocketBuffer_8c_a2b11bdc6ca61051b8edaed5620735602_cgraph.png" border="0" usemap="#SocketBuffer_8c_a2b11bdc6ca61051b8edaed5620735602_cgraph" alt=""/></div>
-<map name="SocketBuffer_8c_a2b11bdc6ca61051b8edaed5620735602_cgraph" id="SocketBuffer_8c_a2b11bdc6ca61051b8edaed5620735602_cgraph">
+<div class="center"><img src="SocketBuffer_8c_a7ba9075e011f49302304ce7b2d8e5b59_cgraph.png" border="0" usemap="#SocketBuffer_8c_a7ba9075e011f49302304ce7b2d8e5b59_cgraph" alt=""/></div>
+<map name="SocketBuffer_8c_a7ba9075e011f49302304ce7b2d8e5b59_cgraph" id="SocketBuffer_8c_a7ba9075e011f49302304ce7b2d8e5b59_cgraph">
 <area shape="rect" title="Update the queued write data for a socket in the case of QoS 0 messages." alt="" coords="5,31,179,57"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="261,5,355,32"/>
 <area shape="rect" href="SocketBuffer_8c.html#a39f1ee9c98bc12a7be4d7a40b03550d5" title="List callback function for comparing pending_writes by socket." alt="" coords="227,56,389,83"/>
@@ -663,8 +663,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a893ce45cf77f7d66c3f27c831ccf8124"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a893ce45cf77f7d66c3f27c831ccf8124">&#9670;&nbsp;</a></span>SocketBuffer_writeComplete()</h2>
+<a id="ae8667990c5933c3af9b90a163bba34dc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae8667990c5933c3af9b90a163bba34dc">&#9670;&nbsp;</a></span>SocketBuffer_writeComplete()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -672,7 +672,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">int SocketBuffer_writeComplete </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em></td><td>)</td>
           <td></td>
         </tr>
@@ -690,8 +690,8 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="SocketBuffer_8c_a893ce45cf77f7d66c3f27c831ccf8124_cgraph.png" border="0" usemap="#SocketBuffer_8c_a893ce45cf77f7d66c3f27c831ccf8124_cgraph" alt=""/></div>
-<map name="SocketBuffer_8c_a893ce45cf77f7d66c3f27c831ccf8124_cgraph" id="SocketBuffer_8c_a893ce45cf77f7d66c3f27c831ccf8124_cgraph">
+<div class="center"><img src="SocketBuffer_8c_ae8667990c5933c3af9b90a163bba34dc_cgraph.png" border="0" usemap="#SocketBuffer_8c_ae8667990c5933c3af9b90a163bba34dc_cgraph" alt=""/></div>
+<map name="SocketBuffer_8c_ae8667990c5933c3af9b90a163bba34dc_cgraph" id="SocketBuffer_8c_ae8667990c5933c3af9b90a163bba34dc_cgraph">
 <area shape="rect" title="A socket write has now completed so we can get rid of the queue." alt="" coords="5,31,192,57"/>
 <area shape="rect" href="LinkedList_8c.html#a4bb7c34fe9a5832d65f530091e0fad0d" title="Removes and frees an element in a list by comparing the content." alt="" coords="262,5,381,32"/>
 <area shape="rect" href="SocketBuffer_8c.html#a39f1ee9c98bc12a7be4d7a40b03550d5" title="List callback function for comparing pending_writes by socket." alt="" coords="240,56,403,83"/>
@@ -744,7 +744,7 @@ Here is the call graph for this function:</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 24 2021 18:05:54 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Sep 29 2022 11:34:46 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

@@ -1,4 +1,4 @@
-.TH "MQTTClient.h" 3 "Mon May 24 2021" "Paho MQTT C Client Library" \" -*- nroff -*-
+.TH "MQTTClient.h" 3 "Thu Sep 29 2022" "Paho MQTT C Client Library" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -329,7 +329,19 @@ Return code: Attempting SSL connection using non-SSL version of library
 .SS "#define MQTTCLIENT_BAD_MQTT_VERSION   \-11"
 Return code: unrecognized MQTT version 
 .SS "#define MQTTCLIENT_BAD_PROTOCOL   \-14"
-Return code: protocol prefix in serverURI should be tcp://, ssl://, ws:// or wss:// The TLS enabled prefixes (ssl, wss) are only valid if a TLS version of the library is linked with\&. 
+Return code: protocol prefix in serverURI should be: 
+.PD 0
+
+.IP "\(bu" 2
+\fItcp://\fP or \fImqtt://\fP - Insecure TCP 
+.IP "\(bu" 2
+\fIssl://\fP or \fImqtts://\fP - Encrypted SSL/TLS 
+.IP "\(bu" 2
+\fIws://\fP - Insecure websockets 
+.IP "\(bu" 2
+\fIwss://\fP - Secure web sockets The TLS enabled prefixes (ssl, mqtts, wss) are only valid if a TLS version of the library is linked with\&. 
+.PP
+
 .SS "#define MQTTCLIENT_BAD_MQTT_OPTION   \-15"
 Return code: option not applicable to the requested version of MQTT 
 .SS "#define MQTTCLIENT_WRONG_MQTT_VERSION   \-16"
@@ -371,6 +383,7 @@ Bad return code from subscribe, as defined in the 3\&.1\&.1 specification
 { {'M', 'Q', 'T', 'C'}, 8, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
 0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL}
 .fi
+Initializer for connect options for MQTT 3\&.1\&.1 non-WebSocket connections 
 .SS "#define MQTTClient_connectOptions_initializer5"
 \fBValue:\fP
 .PP
@@ -378,6 +391,7 @@ Bad return code from subscribe, as defined in the 3\&.1\&.1 specification
 { {'M', 'Q', 'T', 'C'}, 8, 60, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
 0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL, NULL, NULL}
 .fi
+Initializer for connect options for MQTT 5\&.0 non-WebSocket connections 
 .SS "#define MQTTClient_connectOptions_initializer_ws"
 \fBValue:\fP
 .PP
@@ -385,6 +399,7 @@ Bad return code from subscribe, as defined in the 3\&.1\&.1 specification
 { {'M', 'Q', 'T', 'C'}, 8, 45, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
 0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL}
 .fi
+Initializer for connect options for MQTT 3\&.1\&.1 WebSockets connections\&. The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts\&. 
 .SS "#define MQTTClient_connectOptions_initializer5_ws"
 \fBValue:\fP
 .PP
@@ -392,6 +407,7 @@ Bad return code from subscribe, as defined in the 3\&.1\&.1 specification
 { {'M', 'Q', 'T', 'C'}, 8, 45, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
 0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL, NULL, NULL}
 .fi
+Initializer for connect options for MQTT 5\&.0 WebSockets connections\&. The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts\&. 
 .SS "#define MQTTResponse_initializer   {1, \fBMQTTREASONCODE_SUCCESS\fP, 0, NULL, NULL}"
 
 .SH "Typedef Documentation"
@@ -481,7 +497,7 @@ This is a callback function, the MQTT V5 version of \fBMQTTClient_deliveryComple
 .SS "typedef struct \fBMQTTResponse\fP \fBMQTTResponse\fP"
 MQTT version 5\&.0 response information 
 .SS "typedef void MQTTClient_traceCallback(enum \fBMQTTCLIENT_TRACE_LEVELS\fP level, char *message)"
-This is a callback function prototype which must be implemented if you want to receive trace information\&. 
+This is a callback function prototype which must be implemented if you want to receive trace information\&. Do not invoke any other Paho API calls in this callback function - unpredictable behavior may result\&. 
 .PP
 \fBParameters\fP
 .RS 4
@@ -567,7 +583,17 @@ This function creates an MQTT client ready for connection to the specified serve
 .RS 4
 \fIhandle\fP A pointer to an \fBMQTTClient\fP handle\&. The handle is populated with a valid client reference following a successful return from this function\&. 
 .br
-\fIserverURI\fP A null-terminated string specifying the server to which the client will connect\&. It takes the form \fIprotocol://host:port\fP\&. Currently, \fIprotocol\fP must be \fItcp\fP, \fIssl\fP, \fIws\fP or \fIwss\fP\&. The TLS enabled prefixes (ssl, wss) are only valid if a TLS version of the library is linked with\&. For \fIhost\fP, you can specify either an IP address or a host name\&. For instance, to connect to a server running on the local machines with the default MQTT port, specify \fItcp://localhost:1883\fP\&. 
+\fIserverURI\fP A null-terminated string specifying the server to which the client will connect\&. It takes the form \fIprotocol://host:port\fP\&. Currently, \fIprotocol\fP must be: 
+.br
+ \fItcp://\fP or \fImqtt://\fP - Insecure TCP 
+.br
+ \fIssl://\fP or \fImqtts://\fP - Encrypted SSL/TLS 
+.br
+ \fIws://\fP - Insecure websockets 
+.br
+ \fIwss://\fP - Secure web sockets 
+.br
+ The TLS enabled prefixes (ssl, mqtts, wss) are only valid if a TLS version of the library is linked with\&. For \fIhost\fP, you can specify either an IP address or a host name\&. For instance, to connect to a server running on the local machines with the default MQTT port, specify \fItcp://localhost:1883\fP\&. 
 .br
 \fIclientId\fP The client identifier passed to the server when the client connects to it\&. It is a null-terminated UTF-8 encoded string\&. 
 .br

@@ -89,6 +89,7 @@ $(function() {
 <code>#include &quot;OsWrapper.h&quot;</code><br />
 <code>#include &quot;VersionInfo.h&quot;</code><br />
 <code>#include &quot;WebSocket.h&quot;</code><br />
+<code>#include &quot;Proxy.h&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for MQTTClient.c:</div>
 <div class="dyncontent">
@@ -116,9 +117,15 @@ Macros</h2></td></tr>
 <tr class="memitem:a62b7ecff86a928a545160725cc9e2430"><td class="memItemLeft" align="right" valign="top"><a id="a62b7ecff86a928a545160725cc9e2430"></a>
 #define&#160;</td><td class="memItemRight" valign="bottom"><b>URI_SSL</b>&#160;&#160;&#160;&quot;ssl://&quot;</td></tr>
 <tr class="separator:a62b7ecff86a928a545160725cc9e2430"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab0a2eaec459e41189e500536109bbe85"><td class="memItemLeft" align="right" valign="top"><a id="ab0a2eaec459e41189e500536109bbe85"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>URI_MQTTS</b>&#160;&#160;&#160;&quot;mqtts://&quot;</td></tr>
+<tr class="separator:ab0a2eaec459e41189e500536109bbe85"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aff8054f166c9eb81b4e7695bc7f1ec79"><td class="memItemLeft" align="right" valign="top"><a id="aff8054f166c9eb81b4e7695bc7f1ec79"></a>
 #define&#160;</td><td class="memItemRight" valign="bottom"><b>URI_TCP</b>&#160;&#160;&#160;&quot;tcp://&quot;</td></tr>
 <tr class="separator:aff8054f166c9eb81b4e7695bc7f1ec79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61fc7ec5121ebee456c2f4bf445e5965"><td class="memItemLeft" align="right" valign="top"><a id="a61fc7ec5121ebee456c2f4bf445e5965"></a>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>URI_MQTT</b>&#160;&#160;&#160;&quot;mqtt://&quot;</td></tr>
+<tr class="separator:a61fc7ec5121ebee456c2f4bf445e5965"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5771cb458542c28e7bd49a92f2840828"><td class="memItemLeft" align="right" valign="top"><a id="a5771cb458542c28e7bd49a92f2840828"></a>
 #define&#160;</td><td class="memItemRight" valign="bottom"><b>URI_WS</b>&#160;&#160;&#160;&quot;ws://&quot;</td></tr>
 <tr class="separator:a5771cb458542c28e7bd49a92f2840828"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -184,18 +191,18 @@ static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href
 <tr class="memitem:a355caa079d8293b37b8e2c9c367e4563"><td class="memItemLeft" align="right" valign="top"><a id="a355caa079d8293b37b8e2c9c367e4563"></a>
 static void&#160;</td><td class="memItemRight" valign="bottom"><b>MQTTClient_retry</b> (void)</td></tr>
 <tr class="separator:a355caa079d8293b37b8e2c9c367e4563"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8c53af79b01e3594998f4d9d9c0dc5b3"><td class="memItemLeft" align="right" valign="top"><a id="a8c53af79b01e3594998f4d9d9c0dc5b3"></a>
-static <a class="el" href="structMQTTPacket.html">MQTTPacket</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>MQTTClient_cycle</b> (int *sock, ELAPSED_TIME_TYPE timeout, int *rc)</td></tr>
-<tr class="separator:a8c53af79b01e3594998f4d9d9c0dc5b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af231d6a62622fe410a2571d70555a07a"><td class="memItemLeft" align="right" valign="top"><a id="af231d6a62622fe410a2571d70555a07a"></a>
-static <a class="el" href="structMQTTPacket.html">MQTTPacket</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>MQTTClient_waitfor</b> (MQTTClient handle, int packet_type, int *rc, ELAPSED_TIME_TYPE timeout)</td></tr>
-<tr class="separator:af231d6a62622fe410a2571d70555a07a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a872934d31b4a5e81ad329496dfcbe629"><td class="memItemLeft" align="right" valign="top"><a id="a872934d31b4a5e81ad329496dfcbe629"></a>
+static <a class="el" href="structMQTTPacket.html">MQTTPacket</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>MQTTClient_cycle</b> (SOCKET *sock, ELAPSED_TIME_TYPE timeout, int *rc)</td></tr>
+<tr class="separator:a872934d31b4a5e81ad329496dfcbe629"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61a15c5181fd620f696fb91d05303cd3"><td class="memItemLeft" align="right" valign="top"><a id="a61a15c5181fd620f696fb91d05303cd3"></a>
+static <a class="el" href="structMQTTPacket.html">MQTTPacket</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>MQTTClient_waitfor</b> (MQTTClient handle, int packet_type, int *rc, int64_t timeout)</td></tr>
+<tr class="separator:a61a15c5181fd620f696fb91d05303cd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acdcf1aefca1dbb3d1b3d36c9bbaf3760"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="MQTTClient_8c.html#acdcf1aefca1dbb3d1b3d36c9bbaf3760">MQTTProtocol_checkPendingWrites</a> (void)</td></tr>
 <tr class="memdesc:acdcf1aefca1dbb3d1b3d36c9bbaf3760"><td class="mdescLeft">&#160;</td><td class="mdescRight">See if any pending writes have been completed, and cleanup if so.  <a href="MQTTClient_8c.html#acdcf1aefca1dbb3d1b3d36c9bbaf3760">More...</a><br /></td></tr>
 <tr class="separator:acdcf1aefca1dbb3d1b3d36c9bbaf3760"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af3b789556a01b63563d1d100dce58ceb"><td class="memItemLeft" align="right" valign="top"><a id="af3b789556a01b63563d1d100dce58ceb"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>MQTTClient_writeComplete</b> (int socket, int rc)</td></tr>
-<tr class="separator:af3b789556a01b63563d1d100dce58ceb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a208d79938a67d7ba66284ad3d2d0819b"><td class="memItemLeft" align="right" valign="top"><a id="a208d79938a67d7ba66284ad3d2d0819b"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>MQTTClient_writeComplete</b> (SOCKET socket, int rc)</td></tr>
+<tr class="separator:a208d79938a67d7ba66284ad3d2d0819b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ade24f717a9b39d38b081e1d5e0db1661"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="MQTTClient_8c.html#ade24f717a9b39d38b081e1d5e0db1661">MQTTClient_createWithOptions</a> (MQTTClient *handle, const char *serverURI, const char *clientId, int persistence_type, void *persistence_context, <a class="el" href="structMQTTClient__createOptions.html">MQTTClient_createOptions</a> *options)</td></tr>
 <tr class="memdesc:ade24f717a9b39d38b081e1d5e0db1661"><td class="mdescLeft">&#160;</td><td class="mdescRight">A version of :<a class="el" href="MQTTClient_8c.html#a9a0518d9ca924d12c1329dbe3de5f2b6" title="This function creates an MQTT client ready for connection to the specified server and using the speci...">MQTTClient_create()</a> with additional options.  <a href="MQTTClient_8c.html#ade24f717a9b39d38b081e1d5e0db1661">More...</a><br /></td></tr>
 <tr class="separator:ade24f717a9b39d38b081e1d5e0db1661"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -648,7 +655,12 @@ static int&#160;</td><td class="memItemRight" valign="bottom"><b>retryLoopInterv
 <p>See also <a class="el" href="MQTTClient_8c.html#ae700c3f5cfea3813264ce95e7c8cf498" title="This function frees the memory allocated to an MQTT client (see MQTTClient_create()).">MQTTClient_destroy()</a>. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">handle</td><td>A pointer to an ::MQTTClient handle. The handle is populated with a valid client reference following a successful return from this function. </td></tr>
-    <tr><td class="paramname">serverURI</td><td>A null-terminated string specifying the server to which the client will connect. It takes the form <em>protocol://host:port</em>. Currently, <em>protocol</em> must be <em>tcp</em>, <em>ssl</em>, <em>ws</em> or <em>wss</em>. The TLS enabled prefixes (ssl, wss) are only valid if a TLS version of the library is linked with. For <em>host</em>, you can specify either an IP address or a host name. For instance, to connect to a server running on the local machines with the default MQTT port, specify <em>tcp://localhost:1883</em>. </td></tr>
+    <tr><td class="paramname">serverURI</td><td>A null-terminated string specifying the server to which the client will connect. It takes the form <em>protocol://host:port</em>. Currently, <em>protocol</em> must be: <br  />
+ <em>tcp://</em> or <em>mqtt://</em> - Insecure TCP <br  />
+ <em>ssl://</em> or <em>mqtts://</em> - Encrypted SSL/TLS <br  />
+ <em>ws://</em> - Insecure websockets <br  />
+ <em>wss://</em> - Secure web sockets <br  />
+ The TLS enabled prefixes (ssl, mqtts, wss) are only valid if a TLS version of the library is linked with. For <em>host</em>, you can specify either an IP address or a host name. For instance, to connect to a server running on the local machines with the default MQTT port, specify <em>tcp://localhost:1883</em>. </td></tr>
     <tr><td class="paramname">clientId</td><td>The client identifier passed to the server when the client connects to it. It is a null-terminated UTF-8 encoded string. </td></tr>
     <tr><td class="paramname">persistence_type</td><td>The type of persistence to be used by the client: <br  />
  <a class="el" href="MQTTClientPersistence_8h.html#ae01e089313a65ac4661ed216b6ac00fa" title="This persistence_type value specifies a memory-based persistence mechanism (see MQTTClient_create()).">MQTTCLIENT_PERSISTENCE_NONE</a>: Use in-memory persistence. If the device or system on which the client is running fails or is switched off, the current state of any in-flight messages is lost and some messages may not be delivered even at QoS1 and QoS2. <br  />
@@ -2201,7 +2213,7 @@ Here is the call graph for this function:</div>
 <area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="931,17,1049,44"/>
 <area shape="rect" href="LinkedList_8c.html#a8430370b2b15c56ec95bb8e7e36753a5" title="Removes and frees an item in a list by comparing the pointer to the content." alt="" coords="519,43,611,69"/>
 <area shape="rect" href="MQTTProtocolClient_8c.html#a900fa28a8774ad6f5535104bb62e7abf" title="Remove stored message data." alt="" coords="249,93,471,120"/>
-<area shape="rect" href="Socket_8c.html#ae95673b434f2c489ecefe4688c80be2d" title="Indicate whether any data is pending outbound for a socket." alt="" coords="276,144,444,171"/>
+<area shape="rect" href="Socket_8c.html#a457d9a6a9d8e886c46fcd0c096f45614" title="Indicate whether any data is pending outbound for a socket." alt="" coords="276,144,444,171"/>
 <area shape="rect" href="LinkedList_8c.html#ab82181e0c1d96954f82dee67cee41296" title="Removes and optionally frees an element in a list by comparing the content." alt="" coords="659,43,740,69"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="788,43,883,69"/>
 <area shape="rect" href="LinkedList_8c.html#a1738915a6d6f10022e9ee1481c0ae452" title="List callback function for comparing integers." alt="" coords="521,144,608,171"/>
@@ -2267,7 +2279,7 @@ Here is the call graph for this function:</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 24 2021 18:05:54 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Sep 29 2022 11:34:46 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

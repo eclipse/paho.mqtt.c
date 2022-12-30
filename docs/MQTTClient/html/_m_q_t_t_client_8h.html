@@ -460,7 +460,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Return code: protocol prefix in serverURI should be tcp://, ssl://, ws:// or wss:// The TLS enabled prefixes (ssl, wss) are only valid if a TLS version of the library is linked with. </p>
+<p>Return code: protocol prefix in serverURI should be: </p><ul>
+<li><em>tcp://</em> or <em>mqtt://</em> - Insecure TCP </li>
+<li><em>ssl://</em> or <em>mqtts://</em> - Encrypted SSL/TLS </li>
+<li><em>ws://</em> - Insecure websockets </li>
+<li><em>wss://</em> - Secure web sockets The TLS enabled prefixes (ssl, mqtts, wss) are only valid if a TLS version of the library is linked with. </li>
+</ul>
 
 </div>
 </div>
@@ -723,7 +728,8 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line">{ {<span class="charliteral">&#39;M&#39;</span>, <span class="charliteral">&#39;Q&#39;</span>, <span class="charliteral">&#39;T&#39;</span>, <span class="charliteral">&#39;C&#39;</span>}, 8, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\</div>
 <div class="line">0, NULL, <a class="code" href="_m_q_t_t_client_8h.html#a75b80b01f98d5a1ffa2a4d42995a8397">MQTTVERSION_DEFAULT</a>, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL}</div>
-</div><!-- fragment -->
+</div><!-- fragment --><p>Initializer for connect options for MQTT 3.1.1 non-WebSocket connections </p>
+
 </div>
 </div>
 <a id="a1f0c7608262ac9c00cb94e9c8f9fc984"></a>
@@ -739,7 +745,8 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line">{ {<span class="charliteral">&#39;M&#39;</span>, <span class="charliteral">&#39;Q&#39;</span>, <span class="charliteral">&#39;T&#39;</span>, <span class="charliteral">&#39;C&#39;</span>}, 8, 60, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\</div>
 <div class="line">0, NULL, <a class="code" href="_m_q_t_t_client_8h.html#af8b176fa4d5b89789767ce972338e1e3">MQTTVERSION_5</a>, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL, NULL, NULL}</div>
-</div><!-- fragment -->
+</div><!-- fragment --><p>Initializer for connect options for MQTT 5.0 non-WebSocket connections </p>
+
 </div>
 </div>
 <a id="a0a98fda162a78ee8c8cbd7d9d39494f4"></a>
@@ -755,7 +762,8 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line">{ {<span class="charliteral">&#39;M&#39;</span>, <span class="charliteral">&#39;Q&#39;</span>, <span class="charliteral">&#39;T&#39;</span>, <span class="charliteral">&#39;C&#39;</span>}, 8, 45, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\</div>
 <div class="line">0, NULL, <a class="code" href="_m_q_t_t_client_8h.html#a75b80b01f98d5a1ffa2a4d42995a8397">MQTTVERSION_DEFAULT</a>, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL}</div>
-</div><!-- fragment -->
+</div><!-- fragment --><p>Initializer for connect options for MQTT 3.1.1 WebSockets connections. The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts. </p>
+
 </div>
 </div>
 <a id="a8c37c9f77f0b67e2520c8f91acf1afea"></a>
@@ -771,7 +779,8 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line">{ {<span class="charliteral">&#39;M&#39;</span>, <span class="charliteral">&#39;Q&#39;</span>, <span class="charliteral">&#39;T&#39;</span>, <span class="charliteral">&#39;C&#39;</span>}, 8, 45, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\</div>
 <div class="line">0, NULL, <a class="code" href="_m_q_t_t_client_8h.html#af8b176fa4d5b89789767ce972338e1e3">MQTTVERSION_5</a>, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL, NULL, NULL}</div>
-</div><!-- fragment -->
+</div><!-- fragment --><p>Initializer for connect options for MQTT 5.0 WebSockets connections. The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts. </p>
+
 </div>
 </div>
 <a id="a17f171200136bcfa933eb50ef21531a7"></a>
@@ -973,7 +982,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>This is a callback function prototype which must be implemented if you want to receive trace information. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>This is a callback function prototype which must be implemented if you want to receive trace information. Do not invoke any other Paho API calls in this callback function - unpredictable behavior may result. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">level</td><td>the trace level of the message returned </td></tr>
     <tr><td class="paramname">message</td><td>the trace message. This is a pointer to a static buffer which will be overwritten on each call. You must copy the data if you want to keep it for later. </td></tr>
@@ -1208,7 +1217,12 @@ Functions</h2></td></tr>
 <p>This function creates an MQTT client ready for connection to the specified server and using the specified persistent storage (see <a class="el" href="struct_m_q_t_t_client__persistence.html" title="A structure containing the function pointers to a persistence implementation and the context or state...">MQTTClient_persistence</a>). See also <a class="el" href="_m_q_t_t_client_8h.html#ae700c3f5cfea3813264ce95e7c8cf498">MQTTClient_destroy()</a>. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">handle</td><td>A pointer to an <a class="el" href="_m_q_t_t_client_8h.html#a7649e3913f9a216424d296f88a969c59">MQTTClient</a> handle. The handle is populated with a valid client reference following a successful return from this function. </td></tr>
-    <tr><td class="paramname">serverURI</td><td>A null-terminated string specifying the server to which the client will connect. It takes the form <em>protocol://host:port</em>. Currently, <em>protocol</em> must be <em>tcp</em>, <em>ssl</em>, <em>ws</em> or <em>wss</em>. The TLS enabled prefixes (ssl, wss) are only valid if a TLS version of the library is linked with. For <em>host</em>, you can specify either an IP address or a host name. For instance, to connect to a server running on the local machines with the default MQTT port, specify <em>tcp://localhost:1883</em>. </td></tr>
+    <tr><td class="paramname">serverURI</td><td>A null-terminated string specifying the server to which the client will connect. It takes the form <em>protocol://host:port</em>. Currently, <em>protocol</em> must be: <br  />
+ <em>tcp://</em> or <em>mqtt://</em> - Insecure TCP <br  />
+ <em>ssl://</em> or <em>mqtts://</em> - Encrypted SSL/TLS <br  />
+ <em>ws://</em> - Insecure websockets <br  />
+ <em>wss://</em> - Secure web sockets <br  />
+ The TLS enabled prefixes (ssl, mqtts, wss) are only valid if a TLS version of the library is linked with. For <em>host</em>, you can specify either an IP address or a host name. For instance, to connect to a server running on the local machines with the default MQTT port, specify <em>tcp://localhost:1883</em>. </td></tr>
     <tr><td class="paramname">clientId</td><td>The client identifier passed to the server when the client connects to it. It is a null-terminated UTF-8 encoded string. </td></tr>
     <tr><td class="paramname">persistence_type</td><td>The type of persistence to be used by the client: <br  />
  <a class="el" href="_m_q_t_t_client_persistence_8h.html#ae01e089313a65ac4661ed216b6ac00fa">MQTTCLIENT_PERSISTENCE_NONE</a>: Use in-memory persistence. If the device or system on which the client is running fails or is switched off, the current state of any in-flight messages is lost and some messages may not be delivered even at QoS1 and QoS2. <br  />
@@ -2496,11 +2510,11 @@ Functions</h2></td></tr>
 </div>
 </div>
 </div><!-- contents -->
-<div class="ttc" id="a_m_q_t_t_client_8h_html_a75b80b01f98d5a1ffa2a4d42995a8397"><div class="ttname"><a href="_m_q_t_t_client_8h.html#a75b80b01f98d5a1ffa2a4d42995a8397">MQTTVERSION_DEFAULT</a></div><div class="ttdeci">#define MQTTVERSION_DEFAULT</div><div class="ttdef"><b>Definition:</b> MQTTClient.h:204</div></div>
-<div class="ttc" id="a_m_q_t_t_client_8h_html_af8b176fa4d5b89789767ce972338e1e3"><div class="ttname"><a href="_m_q_t_t_client_8h.html#af8b176fa4d5b89789767ce972338e1e3">MQTTVERSION_5</a></div><div class="ttdeci">#define MQTTVERSION_5</div><div class="ttdef"><b>Definition:</b> MQTTClient.h:216</div></div>
+<div class="ttc" id="a_m_q_t_t_client_8h_html_a75b80b01f98d5a1ffa2a4d42995a8397"><div class="ttname"><a href="_m_q_t_t_client_8h.html#a75b80b01f98d5a1ffa2a4d42995a8397">MQTTVERSION_DEFAULT</a></div><div class="ttdeci">#define MQTTVERSION_DEFAULT</div><div class="ttdef"><b>Definition:</b> MQTTClient.h:208</div></div>
+<div class="ttc" id="a_m_q_t_t_client_8h_html_af8b176fa4d5b89789767ce972338e1e3"><div class="ttname"><a href="_m_q_t_t_client_8h.html#af8b176fa4d5b89789767ce972338e1e3">MQTTVERSION_5</a></div><div class="ttdeci">#define MQTTVERSION_5</div><div class="ttdef"><b>Definition:</b> MQTTClient.h:220</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 24 2021 18:05:54 for Paho MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Sep 29 2022 11:34:45 for Paho MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

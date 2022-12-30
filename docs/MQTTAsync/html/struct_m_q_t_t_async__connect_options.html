@@ -138,7 +138,13 @@ Data Fields</h2></td></tr>
 <tr class="separator:a388b78d8a75658928238f700f207ad92"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p><a class="el" href="struct_m_q_t_t_async__connect_options.html">MQTTAsync_connectOptions</a> defines several settings that control the way the client connects to an MQTT server. Default values are set in MQTTAsync_connectOptions_initializer. </p>
+<div class="textblock"><p><a class="el" href="struct_m_q_t_t_async__connect_options.html">MQTTAsync_connectOptions</a> defines several settings that control the way the client connects to an MQTT server.</p>
+<p>Suitable default values are set in the following initializers:</p><ul>
+<li>MQTTAsync_connectOptions_initializer: for MQTT 3.1.1 non-WebSockets</li>
+<li>MQTTAsync_connectOptions_initializer5: for MQTT 5.0 non-WebSockets</li>
+<li>MQTTAsync_connectOptions_initializer_ws: for MQTT 3.1.1 WebSockets</li>
+<li>MQTTAsync_connectOptions_initializer5_ws: for MQTT 5.0 WebSockets </li>
+</ul>
 </div><h2 class="groupheader">Field Documentation</h2>
 <a id="aa5326df180cb23c59afbcab711a06479"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa5326df180cb23c59afbcab711a06479">&#9670;&nbsp;</a></span>struct_id</h2>
@@ -409,7 +415,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Reconnect automatically in the case of a connection being lost? </p>
+<p>Reconnect automatically in the case of a connection being lost. 0=false, 1=true </p>
 
 </div>
 </div>
@@ -424,7 +430,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Minimum retry interval in seconds. Doubled on each failed retry. </p>
+<p>The minimum automatic reconnect retry interval in seconds. Doubled on each failed retry. </p>
 
 </div>
 </div>
@@ -439,7 +445,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Maximum retry interval in seconds. The doubling stops here on failed retries. </p>
+<p>The maximum automatic reconnect retry interval in seconds. The doubling stops here on failed retries. </p>
 
 </div>
 </div>
@@ -588,7 +594,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>HTTP proxy for websockets </p>
+<p>HTTP proxy </p>
 
 </div>
 </div>
@@ -603,7 +609,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>HTTPS proxy for websockets </p>
+<p>HTTPS proxy </p>
 
 </div>
 </div>
@@ -613,7 +619,7 @@ Data Fields</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 24 2021 18:05:54 for Paho Asynchronous MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Sep 29 2022 11:34:45 for Paho Asynchronous MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

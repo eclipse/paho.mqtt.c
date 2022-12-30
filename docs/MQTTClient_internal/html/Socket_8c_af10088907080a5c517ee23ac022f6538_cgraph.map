@@ -1,0 +1,6 @@
+<map id="Socket_getpeer" name="Socket_getpeer">
+<area shape="rect" id="node1" title="Get information about the other end connected to a socket." alt="" coords="5,31,119,57"/>
+<area shape="rect" id="node2" href="$Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="191,5,287,32"/>
+<area shape="rect" id="node4" href="$Socket_8c.html#a212e51c4ce12e19be59c4d0f93cfb5d9" title="Convert a numeric address to character string." alt="" coords="167,56,312,83"/>
+<area shape="rect" id="node3" href="$Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="360,5,404,32"/>
+</map>

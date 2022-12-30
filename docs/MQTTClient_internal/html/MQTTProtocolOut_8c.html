@@ -79,6 +79,7 @@ $(function() {
 <code>#include &quot;StackTrace.h&quot;</code><br />
 <code>#include &quot;Heap.h&quot;</code><br />
 <code>#include &quot;WebSocket.h&quot;</code><br />
+<code>#include &quot;Proxy.h&quot;</code><br />
 <code>#include &quot;Base64.h&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for MQTTProtocolOut.c:</div>
@@ -106,21 +107,24 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>MQTTProtocol_setHTTPPr
 <tr class="memitem:ad9baf307647cbe6516eadbbe975cda8c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="MQTTProtocolOut_8c.html#ad9baf307647cbe6516eadbbe975cda8c">MQTTProtocol_connect</a> (const char *ip_address, <a class="el" href="structClients.html">Clients</a> *aClient, int websocket, int MQTTVersion, <a class="el" href="structMQTTProperties.html">MQTTProperties</a> *connectProperties, <a class="el" href="structMQTTProperties.html">MQTTProperties</a> *willProperties)</td></tr>
 <tr class="memdesc:ad9baf307647cbe6516eadbbe975cda8c"><td class="mdescLeft">&#160;</td><td class="mdescRight">MQTT outgoing connect processing for a client.  <a href="MQTTProtocolOut_8c.html#ad9baf307647cbe6516eadbbe975cda8c">More...</a><br /></td></tr>
 <tr class="separator:ad9baf307647cbe6516eadbbe975cda8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad18afa4a9025c7b84ac23450cdbd0976"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="MQTTProtocolOut_8c.html#ad18afa4a9025c7b84ac23450cdbd0976">MQTTProtocol_handlePingresps</a> (void *pack, int sock)</td></tr>
-<tr class="memdesc:ad18afa4a9025c7b84ac23450cdbd0976"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process an incoming pingresp packet for a socket.  <a href="MQTTProtocolOut_8c.html#ad18afa4a9025c7b84ac23450cdbd0976">More...</a><br /></td></tr>
-<tr class="separator:ad18afa4a9025c7b84ac23450cdbd0976"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad298c92c74b5f1acda774fc95e3d61c3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="MQTTProtocolOut_8c.html#ad298c92c74b5f1acda774fc95e3d61c3">MQTTProtocol_handlePingresps</a> (void *pack, SOCKET sock)</td></tr>
+<tr class="memdesc:ad298c92c74b5f1acda774fc95e3d61c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process an incoming pingresp packet for a socket.  <a href="MQTTProtocolOut_8c.html#ad298c92c74b5f1acda774fc95e3d61c3">More...</a><br /></td></tr>
+<tr class="separator:ad298c92c74b5f1acda774fc95e3d61c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a460d021d06dd24cf975dfe20e17ab1ba"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="MQTTProtocolOut_8c.html#a460d021d06dd24cf975dfe20e17ab1ba">MQTTProtocol_subscribe</a> (<a class="el" href="structClients.html">Clients</a> *client, <a class="el" href="structList.html">List</a> *topics, <a class="el" href="structList.html">List</a> *qoss, int msgID, <a class="el" href="structMQTTSubscribe__options.html">MQTTSubscribe_options</a> *opts, <a class="el" href="structMQTTProperties.html">MQTTProperties</a> *props)</td></tr>
 <tr class="memdesc:a460d021d06dd24cf975dfe20e17ab1ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">MQTT outgoing subscribe processing for a client.  <a href="MQTTProtocolOut_8c.html#a460d021d06dd24cf975dfe20e17ab1ba">More...</a><br /></td></tr>
 <tr class="separator:a460d021d06dd24cf975dfe20e17ab1ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a662c001eb1105428b5cf8474ae4c0456"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="MQTTProtocolOut_8c.html#a662c001eb1105428b5cf8474ae4c0456">MQTTProtocol_handleSubacks</a> (void *pack, int sock)</td></tr>
-<tr class="memdesc:a662c001eb1105428b5cf8474ae4c0456"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process an incoming suback packet for a socket.  <a href="MQTTProtocolOut_8c.html#a662c001eb1105428b5cf8474ae4c0456">More...</a><br /></td></tr>
-<tr class="separator:a662c001eb1105428b5cf8474ae4c0456"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5424115bf427436c2d40058f15261ed0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="MQTTProtocolOut_8c.html#a5424115bf427436c2d40058f15261ed0">MQTTProtocol_handleSubacks</a> (void *pack, SOCKET sock)</td></tr>
+<tr class="memdesc:a5424115bf427436c2d40058f15261ed0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process an incoming suback packet for a socket.  <a href="MQTTProtocolOut_8c.html#a5424115bf427436c2d40058f15261ed0">More...</a><br /></td></tr>
+<tr class="separator:a5424115bf427436c2d40058f15261ed0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69083f5a059d129d1030140ec1cd3d58"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="MQTTProtocolOut_8c.html#a69083f5a059d129d1030140ec1cd3d58">MQTTProtocol_unsubscribe</a> (<a class="el" href="structClients.html">Clients</a> *client, <a class="el" href="structList.html">List</a> *topics, int msgID, <a class="el" href="structMQTTProperties.html">MQTTProperties</a> *props)</td></tr>
 <tr class="memdesc:a69083f5a059d129d1030140ec1cd3d58"><td class="mdescLeft">&#160;</td><td class="mdescRight">MQTT outgoing unsubscribe processing for a client.  <a href="MQTTProtocolOut_8c.html#a69083f5a059d129d1030140ec1cd3d58">More...</a><br /></td></tr>
 <tr class="separator:a69083f5a059d129d1030140ec1cd3d58"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acefb6038412bccf253bdc3f18fbfaf47"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="MQTTProtocolOut_8c.html#acefb6038412bccf253bdc3f18fbfaf47">MQTTProtocol_handleUnsubacks</a> (void *pack, int sock)</td></tr>
-<tr class="memdesc:acefb6038412bccf253bdc3f18fbfaf47"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process an incoming unsuback packet for a socket.  <a href="MQTTProtocolOut_8c.html#acefb6038412bccf253bdc3f18fbfaf47">More...</a><br /></td></tr>
-<tr class="separator:acefb6038412bccf253bdc3f18fbfaf47"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b9648549a1a132eecadb74df2e84f57"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="MQTTProtocolOut_8c.html#a0b9648549a1a132eecadb74df2e84f57">MQTTProtocol_handleUnsubacks</a> (void *pack, SOCKET sock)</td></tr>
+<tr class="memdesc:a0b9648549a1a132eecadb74df2e84f57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process an incoming unsuback packet for a socket.  <a href="MQTTProtocolOut_8c.html#a0b9648549a1a132eecadb74df2e84f57">More...</a><br /></td></tr>
+<tr class="separator:a0b9648549a1a132eecadb74df2e84f57"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4f914518a8e2d68cc9d9fbb2c22cdf6f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="MQTTProtocolOut_8c.html#a4f914518a8e2d68cc9d9fbb2c22cdf6f">MQTTProtocol_handleDisconnects</a> (void *pack, SOCKET sock)</td></tr>
+<tr class="memdesc:a4f914518a8e2d68cc9d9fbb2c22cdf6f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process an incoming disconnect packet for a socket.  <a href="MQTTProtocolOut_8c.html#a4f914518a8e2d68cc9d9fbb2c22cdf6f">More...</a><br /></td></tr>
+<tr class="separator:a4f914518a8e2d68cc9d9fbb2c22cdf6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
@@ -248,8 +252,56 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ad18afa4a9025c7b84ac23450cdbd0976"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad18afa4a9025c7b84ac23450cdbd0976">&#9670;&nbsp;</a></span>MQTTProtocol_handlePingresps()</h2>
+<a id="a4f914518a8e2d68cc9d9fbb2c22cdf6f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4f914518a8e2d68cc9d9fbb2c22cdf6f">&#9670;&nbsp;</a></span>MQTTProtocol_handleDisconnects()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int MQTTProtocol_handleDisconnects </td>
+          <td>(</td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>pack</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">SOCKET&#160;</td>
+          <td class="paramname"><em>sock</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Process an incoming disconnect packet for a socket. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pack</td><td>pointer to the disconnect packet </td></tr>
+    <tr><td class="paramname">sock</td><td>the socket on which the packet was received </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>completion code </dd></dl>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="MQTTProtocolOut_8c_a4f914518a8e2d68cc9d9fbb2c22cdf6f_cgraph.png" border="0" usemap="#MQTTProtocolOut_8c_a4f914518a8e2d68cc9d9fbb2c22cdf6f_cgraph" alt=""/></div>
+<map name="MQTTProtocolOut_8c_a4f914518a8e2d68cc9d9fbb2c22cdf6f_cgraph" id="MQTTProtocolOut_8c_a4f914518a8e2d68cc9d9fbb2c22cdf6f_cgraph">
+<area shape="rect" title="Process an incoming disconnect packet for a socket." alt="" coords="5,5,229,32"/>
+<area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="277,5,372,32"/>
+<area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="420,5,539,32"/>
+</map>
+</div>
+
+</div>
+</div>
+<a id="ad298c92c74b5f1acda774fc95e3d61c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad298c92c74b5f1acda774fc95e3d61c3">&#9670;&nbsp;</a></span>MQTTProtocol_handlePingresps()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -263,7 +315,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>sock</em>&#160;</td>
         </tr>
         <tr>
@@ -286,8 +338,8 @@ Variables</h2></td></tr>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="MQTTProtocolOut_8c_ad18afa4a9025c7b84ac23450cdbd0976_cgraph.png" border="0" usemap="#MQTTProtocolOut_8c_ad18afa4a9025c7b84ac23450cdbd0976_cgraph" alt=""/></div>
-<map name="MQTTProtocolOut_8c_ad18afa4a9025c7b84ac23450cdbd0976_cgraph" id="MQTTProtocolOut_8c_ad18afa4a9025c7b84ac23450cdbd0976_cgraph">
+<div class="center"><img src="MQTTProtocolOut_8c_ad298c92c74b5f1acda774fc95e3d61c3_cgraph.png" border="0" usemap="#MQTTProtocolOut_8c_ad298c92c74b5f1acda774fc95e3d61c3_cgraph" alt=""/></div>
+<map name="MQTTProtocolOut_8c_ad298c92c74b5f1acda774fc95e3d61c3_cgraph" id="MQTTProtocolOut_8c_ad298c92c74b5f1acda774fc95e3d61c3_cgraph">
 <area shape="rect" title="Process an incoming pingresp packet for a socket." alt="" coords="5,5,216,32"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="264,5,359,32"/>
 <area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="407,5,525,32"/>
@@ -296,8 +348,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a662c001eb1105428b5cf8474ae4c0456"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a662c001eb1105428b5cf8474ae4c0456">&#9670;&nbsp;</a></span>MQTTProtocol_handleSubacks()</h2>
+<a id="a5424115bf427436c2d40058f15261ed0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5424115bf427436c2d40058f15261ed0">&#9670;&nbsp;</a></span>MQTTProtocol_handleSubacks()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -311,7 +363,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>sock</em>&#160;</td>
         </tr>
         <tr>
@@ -334,8 +386,8 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="MQTTProtocolOut_8c_a662c001eb1105428b5cf8474ae4c0456_cgraph.png" border="0" usemap="#MQTTProtocolOut_8c_a662c001eb1105428b5cf8474ae4c0456_cgraph" alt=""/></div>
-<map name="MQTTProtocolOut_8c_a662c001eb1105428b5cf8474ae4c0456_cgraph" id="MQTTProtocolOut_8c_a662c001eb1105428b5cf8474ae4c0456_cgraph">
+<div class="center"><img src="MQTTProtocolOut_8c_a5424115bf427436c2d40058f15261ed0_cgraph.png" border="0" usemap="#MQTTProtocolOut_8c_a5424115bf427436c2d40058f15261ed0_cgraph" alt=""/></div>
+<map name="MQTTProtocolOut_8c_a5424115bf427436c2d40058f15261ed0_cgraph" id="MQTTProtocolOut_8c_a5424115bf427436c2d40058f15261ed0_cgraph">
 <area shape="rect" title="Process an incoming suback packet for a socket." alt="" coords="5,5,208,32"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="256,5,351,32"/>
 <area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="399,5,517,32"/>
@@ -344,8 +396,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="acefb6038412bccf253bdc3f18fbfaf47"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acefb6038412bccf253bdc3f18fbfaf47">&#9670;&nbsp;</a></span>MQTTProtocol_handleUnsubacks()</h2>
+<a id="a0b9648549a1a132eecadb74df2e84f57"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b9648549a1a132eecadb74df2e84f57">&#9670;&nbsp;</a></span>MQTTProtocol_handleUnsubacks()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -359,7 +411,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>sock</em>&#160;</td>
         </tr>
         <tr>
@@ -382,8 +434,8 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="MQTTProtocolOut_8c_acefb6038412bccf253bdc3f18fbfaf47_cgraph.png" border="0" usemap="#MQTTProtocolOut_8c_acefb6038412bccf253bdc3f18fbfaf47_cgraph" alt=""/></div>
-<map name="MQTTProtocolOut_8c_acefb6038412bccf253bdc3f18fbfaf47_cgraph" id="MQTTProtocolOut_8c_acefb6038412bccf253bdc3f18fbfaf47_cgraph">
+<div class="center"><img src="MQTTProtocolOut_8c_a0b9648549a1a132eecadb74df2e84f57_cgraph.png" border="0" usemap="#MQTTProtocolOut_8c_a0b9648549a1a132eecadb74df2e84f57_cgraph" alt=""/></div>
+<map name="MQTTProtocolOut_8c_a0b9648549a1a132eecadb74df2e84f57_cgraph" id="MQTTProtocolOut_8c_a0b9648549a1a132eecadb74df2e84f57_cgraph">
 <area shape="rect" title="Process an incoming unsuback packet for a socket." alt="" coords="5,5,224,32"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="272,5,367,32"/>
 <area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="415,5,533,32"/>
@@ -512,7 +564,7 @@ Here is the call graph for this function:</div>
 <area shape="rect" href="MQTTPacket_8c.html#a07aa0146eda3d32979142e7df8ad5fc3" title="Writes an integer as 2 bytes to an output buffer." alt="" coords="718,233,783,260"/>
 <area shape="rect" href="MQTTPacket_8c.html#af0fcaa11ac05ce448a433a53f9cae420" title="Writes a &quot;UTF&quot; string to an output buffer." alt="" coords="500,259,576,285"/>
 <area shape="rect" href="MQTTPacket_8c.html#aadd77a4fa1b2d5c7791e3542c56af856" title="Encodes the message length according to the MQTT algorithm." alt="" coords="676,56,825,83"/>
-<area shape="rect" href="MQTTPersistence_8c.html#a879b91862bb099e16ca81e57ba36e3fe" title="Adds a record to the persistent store." alt="" coords="653,107,848,133"/>
+<area shape="rect" href="MQTTPersistence_8c.html#a18eab666c3e6aecd92a6c8f10df808e3" title="Adds a record to the persistent store." alt="" coords="653,107,848,133"/>
 <area shape="rect" href="MQTTPacket_8c.html#a132d2d5b304d37cd2348a973f7b315de" title="Calculates an integer from two bytes read from the input buffer." alt="" coords="719,157,782,184"/>
 </map>
 </div>
@@ -579,7 +631,7 @@ Here is the call graph for this function:</div>
 <area shape="rect" href="MQTTPacket_8c.html#a07aa0146eda3d32979142e7df8ad5fc3" title="Writes an integer as 2 bytes to an output buffer." alt="" coords="745,208,810,235"/>
 <area shape="rect" href="MQTTPacket_8c.html#af0fcaa11ac05ce448a433a53f9cae420" title="Writes a &quot;UTF&quot; string to an output buffer." alt="" coords="527,208,603,235"/>
 <area shape="rect" href="MQTTPacket_8c.html#aadd77a4fa1b2d5c7791e3542c56af856" title="Encodes the message length according to the MQTT algorithm." alt="" coords="703,56,852,83"/>
-<area shape="rect" href="MQTTPersistence_8c.html#a879b91862bb099e16ca81e57ba36e3fe" title="Adds a record to the persistent store." alt="" coords="680,107,875,133"/>
+<area shape="rect" href="MQTTPersistence_8c.html#a18eab666c3e6aecd92a6c8f10df808e3" title="Adds a record to the persistent store." alt="" coords="680,107,875,133"/>
 <area shape="rect" href="MQTTPacket_8c.html#a132d2d5b304d37cd2348a973f7b315de" title="Calculates an integer from two bytes read from the input buffer." alt="" coords="746,157,809,184"/>
 </map>
 </div>
@@ -589,7 +641,7 @@ Here is the call graph for this function:</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 24 2021 18:05:54 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Sep 29 2022 11:34:46 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

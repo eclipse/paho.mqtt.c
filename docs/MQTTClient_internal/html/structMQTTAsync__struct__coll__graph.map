@@ -1,18 +1,18 @@
 <map id="MQTTAsync_struct" name="MQTTAsync_struct">
-<area shape="rect" id="node1" title=" " alt="" coords="661,471,796,497"/>
-<area shape="rect" id="node2" href="$structClients.html" title="Data related to one client." alt="" coords="287,351,349,377"/>
+<area shape="rect" id="node1" title=" " alt="" coords="661,485,796,512"/>
+<area shape="rect" id="node2" href="$structClients.html" title="Data related to one client." alt="" coords="287,365,349,392"/>
 <area shape="rect" id="node3" href="$structMQTTClient__persistence.html" title="A structure containing the function pointers to a persistence implementation and the context or state..." alt="" coords="5,231,172,257"/>
 <area shape="rect" id="node4" href="$structwillMessages.html" title="Client will message data." alt="" coords="197,231,298,257"/>
 <area shape="rect" id="node5" href="$structnetworkHandles.html" title=" " alt="" coords="323,231,439,257"/>
 <area shape="rect" id="node6" href="$structMQTTClient__nameValue.html" title="MQTTClient_libraryInfo is used to store details relating to the currently used library such as the ve..." alt="" coords="281,111,445,137"/>
 <area shape="rect" id="node7" href="$structList.html" title="Structure to hold all data for one list." alt="" coords="463,231,507,257"/>
 <area shape="rect" id="node8" href="$structListElementStruct.html" title="Structure to hold all data for one list element." alt="" coords="469,111,596,137"/>
-<area shape="rect" id="node9" href="$structMQTTAsync__command.html" title=" " alt="" coords="573,351,732,377"/>
+<area shape="rect" id="node9" href="$structMQTTAsync__command.html" title=" " alt="" coords="573,365,732,392"/>
 <area shape="rect" id="node10" href="$structMQTTSubscribe__options.html" title="The MQTT V5 subscribe options, apart from QoS which existed before V5." alt="" coords="531,231,697,257"/>
 <area shape="rect" id="node11" href="$structMQTTProperties.html" title="MQTT version 5 property list." alt="" coords="721,231,840,257"/>
 <area shape="rect" id="node12" href="$structMQTTProperty.html" title="Structure to hold an MQTT version 5 property of any type." alt="" coords="727,111,834,137"/>
 <area shape="rect" id="node13" href="$structMQTTLenString.html" title="The data for a length delimited string." alt="" coords="723,5,838,32"/>
-<area shape="rect" id="node14" href="$structMQTTAsync__createOptions.html" title="Options for the ::MQTTAsync_createWithOptions call." alt="" coords="889,351,1072,377"/>
-<area shape="rect" id="node15" href="$structMQTTPacket.html" title="Data for a packet with header only." alt="" coords="1096,351,1196,377"/>
+<area shape="rect" id="node14" href="$structMQTTAsync__createOptions.html" title="Options for the ::MQTTAsync_createWithOptions call." alt="" coords="889,365,1072,392"/>
+<area shape="rect" id="node15" href="$structMQTTPacket.html" title="Data for a packet with header only." alt="" coords="1096,365,1196,392"/>
 <area shape="rect" id="node16" href="$unionHeader.html" title="Bitfields for the MQTT header byte." alt="" coords="1114,231,1178,257"/>
 </map>

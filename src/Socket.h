@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp. and others
+ * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -26,6 +26,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #define MAXHOSTNAMELEN 256
+#define poll WSAPoll
 #if !defined(SSLSOCKET_H)
 #undef EAGAIN
 #define EAGAIN WSAEWOULDBLOCK
@@ -51,6 +52,7 @@
 #include <sys/param.h>
 #include <sys/time.h>
 #include <sys/select.h>
+#include <poll.h>
 #include <sys/uio.h>
 #else
 #include <selectLib.h>
@@ -65,6 +67,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #define ULONG size_t
+#define SOCKET int
 #endif
 
 #include "mutex_type.h" /* Needed for mutex_type */
@@ -108,38 +111,58 @@ typedef struct
  */
 typedef struct
 {
+	List* connect_pending; /**< list of sockets for which a connect is pending */
+	List* write_pending; /**< list of sockets for which a write is pending */
+
+#if defined(USE_SELECT)
 	fd_set rset, /**< socket read set (see select doc) */
 		rset_saved; /**< saved socket read set */
 	int maxfdp1; /**< max descriptor used +1 (again see select doc) */
 	List* clientsds; /**< list of client socket descriptors */
 	ListElement* cur_clientsds; /**< current client socket descriptor (iterator) */
-	List* connect_pending; /**< list of sockets for which a connect is pending */
-	List* write_pending; /**< list of sockets for which a write is pending */
 	fd_set pending_wset; /**< socket pending write set for select */
+#else
+	unsigned int nfds;         /**< no of file descriptors for poll */
+	struct pollfd* fds_read;        /**< poll read file descriptors */
+	struct pollfd* fds_write;
+
+	struct {
+		int cur_fd;            /**< index into the fds_saved array */
+		unsigned int nfds;	   /**< number of fds in the fds_saved array */
+		struct pollfd* fds_write;
+		struct pollfd* fds_read;
+	} saved;
+#endif
 } Sockets;
 
 
 void Socket_outInitialize(void);
 void Socket_outTerminate(void);
-int Socket_getReadySocket(int more_work, struct timeval *tp, mutex_type mutex, int* rc);
-int Socket_getch(int socket, char* c);
-char *Socket_getdata(int socket, size_t bytes, size_t* actual_len, int* rc);
-int Socket_putdatas(int socket, char* buf0, size_t buf0len, PacketBuffers bufs);
-void Socket_close(int socket);
+SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* rc);
+int Socket_getch(SOCKET socket, char* c);
+char *Socket_getdata(SOCKET socket, size_t bytes, size_t* actual_len, int* rc);
+int Socket_putdatas(SOCKET socket, char* buf0, size_t buf0len, PacketBuffers bufs);
+int Socket_close(SOCKET socket);
 #if defined(__GNUC__) && defined(__linux__)
 /* able to use GNU's getaddrinfo_a to make timeouts possible */
-int Socket_new(const char* addr, size_t addr_len, int port, int* socket, long timeout);
+int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* socket, long timeout);
 #else
-int Socket_new(const char* addr, size_t addr_len, int port, int* socket);
+int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* socket);
 #endif
 
-int Socket_noPendingWrites(int socket);
-char* Socket_getpeer(int sock);
+int Socket_noPendingWrites(SOCKET socket);
+char* Socket_getpeer(SOCKET sock);
 
-void Socket_addPendingWrite(int socket);
-void Socket_clearPendingWrite(int socket);
+void Socket_addPendingWrite(SOCKET socket);
+void Socket_clearPendingWrite(SOCKET socket);
 
-typedef void Socket_writeComplete(int socket, int rc);
+typedef void Socket_writeContinue(SOCKET socket);
+void Socket_setWriteContinueCallback(Socket_writeContinue*);
+
+typedef void Socket_writeComplete(SOCKET socket, int rc);
 void Socket_setWriteCompleteCallback(Socket_writeComplete*);
+
+typedef void Socket_writeAvailable(SOCKET socket);
+void Socket_setWriteAvailableCallback(Socket_writeAvailable*);
 
 #endif /* SOCKET_H */

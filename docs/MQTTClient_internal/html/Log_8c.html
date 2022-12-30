@@ -160,9 +160,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>Log_terminate</b> (vo
 <tr class="memitem:a669722e3f57811871f97c12392aba85d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Log_8c.html#a669722e3f57811871f97c12392aba85d">Log</a> (enum LOG_LEVELS log_level, int msgno, const char *format,...)</td></tr>
 <tr class="memdesc:a669722e3f57811871f97c12392aba85d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Log a message.  <a href="Log_8c.html#a669722e3f57811871f97c12392aba85d">More...</a><br /></td></tr>
 <tr class="separator:a669722e3f57811871f97c12392aba85d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1824e9ab9e5d2f2cc5f27da6e7ea3d4a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Log_8c.html#a1824e9ab9e5d2f2cc5f27da6e7ea3d4a">Log_stackTrace</a> (enum LOG_LEVELS log_level, int msgno, int thread_id, int current_depth, const char *name, int line, int *rc)</td></tr>
-<tr class="memdesc:a1824e9ab9e5d2f2cc5f27da6e7ea3d4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">The reason for this function is to make trace logging as fast as possible so that the function exit/entry history can be captured by default without unduly impacting performance.  <a href="Log_8c.html#a1824e9ab9e5d2f2cc5f27da6e7ea3d4a">More...</a><br /></td></tr>
-<tr class="separator:a1824e9ab9e5d2f2cc5f27da6e7ea3d4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb93e137086d574a96548cecca9e9217"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Log_8c.html#aeb93e137086d574a96548cecca9e9217">Log_stackTrace</a> (enum LOG_LEVELS log_level, int msgno, thread_id_type thread_id, int current_depth, const char *name, int line, int *rc)</td></tr>
+<tr class="memdesc:aeb93e137086d574a96548cecca9e9217"><td class="mdescLeft">&#160;</td><td class="mdescRight">The reason for this function is to make trace logging as fast as possible so that the function exit/entry history can be captured by default without unduly impacting performance.  <a href="Log_8c.html#aeb93e137086d574a96548cecca9e9217">More...</a><br /></td></tr>
+<tr class="separator:aeb93e137086d574a96548cecca9e9217"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
@@ -276,8 +276,8 @@ static mutex_type&#160;</td><td class="memItemRight" valign="bottom"><b>log_mute
 
 </div>
 </div>
-<a id="a1824e9ab9e5d2f2cc5f27da6e7ea3d4a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1824e9ab9e5d2f2cc5f27da6e7ea3d4a">&#9670;&nbsp;</a></span>Log_stackTrace()</h2>
+<a id="aeb93e137086d574a96548cecca9e9217"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb93e137086d574a96548cecca9e9217">&#9670;&nbsp;</a></span>Log_stackTrace()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -297,7 +297,7 @@ static mutex_type&#160;</td><td class="memItemRight" valign="bottom"><b>log_mute
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">thread_id_type&#160;</td>
           <td class="paramname"><em>thread_id</em>, </td>
         </tr>
         <tr>
@@ -373,7 +373,7 @@ static mutex_type&#160;</td><td class="memItemRight" valign="bottom"><b>log_mute
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 24 2021 18:05:54 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Sep 29 2022 11:34:46 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

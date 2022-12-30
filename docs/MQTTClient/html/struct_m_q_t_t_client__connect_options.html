@@ -130,7 +130,13 @@ Data Fields</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p><a class="el" href="struct_m_q_t_t_client__connect_options.html">MQTTClient_connectOptions</a> defines several settings that control the way the client connects to an MQTT server.</p>
-<p><b>Note:</b> Default values are not defined for members of <a class="el" href="struct_m_q_t_t_client__connect_options.html">MQTTClient_connectOptions</a> so it is good practice to specify all settings. If the <a class="el" href="struct_m_q_t_t_client__connect_options.html">MQTTClient_connectOptions</a> structure is defined as an automatic variable, all members are set to random values and thus must be set by the client application. If the <a class="el" href="struct_m_q_t_t_client__connect_options.html">MQTTClient_connectOptions</a> structure is defined as a static variable, initialization (in compliant compilers) sets all values to 0 (NULL for pointers). A <a class="el" href="struct_m_q_t_t_client__connect_options.html#ac8dd0930672a9c7d71fc645aa1f0521d">keepAliveInterval</a> setting of 0 prevents correct operation of the client and so you <b>must</b> at least set a value for <a class="el" href="struct_m_q_t_t_client__connect_options.html#ac8dd0930672a9c7d71fc645aa1f0521d">keepAliveInterval</a>. </p>
+<p><b>Note:</b> Default values are not defined for members of <a class="el" href="struct_m_q_t_t_client__connect_options.html">MQTTClient_connectOptions</a> so it is good practice to specify all settings. If the <a class="el" href="struct_m_q_t_t_client__connect_options.html">MQTTClient_connectOptions</a> structure is defined as an automatic variable, all members are set to random values and thus must be set by the client application. If the <a class="el" href="struct_m_q_t_t_client__connect_options.html">MQTTClient_connectOptions</a> structure is defined as a static variable, initialization (in compliant compilers) sets all values to 0 (NULL for pointers). A <a class="el" href="struct_m_q_t_t_client__connect_options.html#ac8dd0930672a9c7d71fc645aa1f0521d">keepAliveInterval</a> setting of 0 prevents correct operation of the client and so you <b>must</b> at least set a value for <a class="el" href="struct_m_q_t_t_client__connect_options.html#ac8dd0930672a9c7d71fc645aa1f0521d">keepAliveInterval</a>.</p>
+<p>Suitable default values are set in the following initializers:</p><ul>
+<li>MQTTClient_connectOptions_initializer: for MQTT 3.1.1 non-WebSockets</li>
+<li>MQTTClient_connectOptions_initializer5: for MQTT 5.0 non-WebSockets</li>
+<li>MQTTClient_connectOptions_initializer_ws: for MQTT 3.1.1 WebSockets</li>
+<li>MQTTClient_connectOptions_initializer5_ws: for MQTT 5.0 WebSockets </li>
+</ul>
 </div><h2 class="groupheader">Field Documentation</h2>
 <a id="aa5326df180cb23c59afbcab711a06479"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa5326df180cb23c59afbcab711a06479">&#9670;&nbsp;</a></span>struct_id</h2>
@@ -489,7 +495,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>HTTP proxy for websockets </p>
+<p>HTTP proxy </p>
 
 </div>
 </div>
@@ -504,7 +510,7 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>HTTPS proxy for websockets </p>
+<p>HTTPS proxy </p>
 
 </div>
 </div>
@@ -514,7 +520,7 @@ Data Fields</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 24 2021 18:05:54 for Paho MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Sep 29 2022 11:34:45 for Paho MQTT C Client Library by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

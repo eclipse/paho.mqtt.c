@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2020 IBM Corp.
+ * Copyright (c) 2012, 2022 IBM Corp., Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -73,12 +73,12 @@ struct Options
 	int start_port;
 } options =
 {
-	"ssl://m2m.eclipse.org:18883",
-	"ssl://m2m.eclipse.org:18884",
-	"ssl://m2m.eclipse.org:18887",
-	"ssl://m2m.eclipse.org:18885",
-	"ssl://m2m.eclipse.org:18886",
-	"ssl://m2m.eclipse.org:18888",
+	"ssl://localhost:18883",
+	"mqtts://localhost:18884",
+	"ssl://localhost:18887",
+	"mqtts://localhost:18885",
+	"ssl://localhost:18886",
+	"mqtts://localhost:18888",
 	NULL, // "../../../test/ssl/client.pem",
 	NULL,
 	NULL, // "../../../test/ssl/test-root-ca.crt",
@@ -529,6 +529,7 @@ void asyncTestOnUnsubscribe(void* context, MQTTAsync_successData* response)
 	MyLog(LOGA_DEBUG, "In asyncTestOnUnsubscribe callback, %s", tc->clientid);
 	opts.onSuccess = asyncTestOnDisconnect;
 	opts.context = tc;
+	opts.timeout = 1000;
 
 	rc = MQTTAsync_disconnect(tc->client, &opts);
 }
@@ -2177,6 +2178,7 @@ int test7MessageArrived(void* context, char* topicName, int topicLen,
 		opts.context = tc;
 
 		rc = MQTTAsync_sendMessage(tc->client, tc->topic, &pubmsg, &opts);
+		assert("Publish successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	}
 	else if (message_count < options.message_count)
 	{
@@ -2191,6 +2193,7 @@ int test7MessageArrived(void* context, char* topicName, int topicLen,
 		opts.onFailure = test7OnPublishFailure;
 		opts.context = tc;
 		rc = MQTTAsync_sendMessage(tc->client, tc->topic, &pubmsg, &opts);
+		assert("Publish successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	}
 	else
 	{
@@ -2236,6 +2239,7 @@ void test7OnSubscribe(void* context, MQTTAsync_successData* response)
 
 	rc = MQTTAsync_send(tc->client, tc->topic, pubmsg.payloadlen, pubmsg.payload,
 			pubmsg.qos, pubmsg.retained, &opts);
+	assert("Publish successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 }
 
 void test7OnConnect(void* context, MQTTAsync_successData* response)
@@ -2294,7 +2298,7 @@ int test7(struct Options options)
 	tc.subscribed = 0;
 	tc.testFinished = 0;
 
-	opts.keepAliveInterval = 20;
+	opts.keepAliveInterval = 60;
 	opts.cleansession = 1;
 	//opts.username = "testuser";
 	//opts.password = "testpassword";
@@ -2326,7 +2330,7 @@ int test7(struct Options options)
 	if (rc != MQTTASYNC_SUCCESS)
 		goto exit;
 
-	while (test7OnUnsubscribed == 0 && test7OnPublishSuccessCount < options.message_count)
+	while (tc.testFinished == 0 && test7OnUnsubscribed == 0 && test7OnPublishSuccessCount < options.message_count)
 #if defined(_WIN32)
 		Sleep(100);
 #else

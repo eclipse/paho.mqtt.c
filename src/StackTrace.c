@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2022 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -109,7 +109,7 @@ void StackTrace_entry(const char* name, int line, enum LOG_LEVELS trace_level)
 	if (!setStack(1))
 		goto exit;
 	if (trace_level != -1)
-		Log_stackTrace(trace_level, 9, (int)my_thread->id, my_thread->current_depth, name, line, NULL);
+		Log_stackTrace(trace_level, 9, my_thread->id, my_thread->current_depth, name, line, NULL);
 	strncpy(my_thread->callstack[my_thread->current_depth].name, name, sizeof(my_thread->callstack[0].name)-1);
 	my_thread->callstack[(my_thread->current_depth)++].line = line;
 	if (my_thread->current_depth > my_thread->maxdepth)
@@ -133,9 +133,9 @@ void StackTrace_exit(const char* name, int line, void* rc, enum LOG_LEVELS trace
 	if (trace_level != -1)
 	{
 		if (rc == NULL)
-			Log_stackTrace(trace_level, 10, (int)my_thread->id, my_thread->current_depth, name, line, NULL);
+			Log_stackTrace(trace_level, 10, my_thread->id, my_thread->current_depth, name, line, NULL);
 		else
-			Log_stackTrace(trace_level, 11, (int)my_thread->id, my_thread->current_depth, name, line, (int*)rc);
+			Log_stackTrace(trace_level, 11, my_thread->id, my_thread->current_depth, name, line, (int*)rc);
 	}
 exit:
 	Thread_unlock_mutex(stack_mutex);

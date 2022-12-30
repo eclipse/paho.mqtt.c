@@ -10,6 +10,6 @@
 <area shape="rect" id="node9" href="$MQTTPacket_8c.html#a3635fd8035177b20c478daea6bad9328" title="Sends an MQTT packet from multiple buffers in one system call write." alt="" coords="741,111,884,137"/>
 <area shape="rect" id="node13" href="$MQTTPacket_8c.html#a07aa0146eda3d32979142e7df8ad5fc3" title="Writes an integer as 2 bytes to an output buffer." alt="" coords="780,161,845,188"/>
 <area shape="rect" id="node10" href="$MQTTPacket_8c.html#aadd77a4fa1b2d5c7791e3542c56af856" title="Encodes the message length according to the MQTT algorithm." alt="" coords="955,60,1104,87"/>
-<area shape="rect" id="node11" href="$MQTTPersistence_8c.html#a879b91862bb099e16ca81e57ba36e3fe" title="Adds a record to the persistent store." alt="" coords="932,111,1127,137"/>
+<area shape="rect" id="node11" href="$MQTTPersistence_8c.html#a18eab666c3e6aecd92a6c8f10df808e3" title="Adds a record to the persistent store." alt="" coords="932,111,1127,137"/>
 <area shape="rect" id="node12" href="$MQTTPacket_8c.html#a132d2d5b304d37cd2348a973f7b315de" title="Calculates an integer from two bytes read from the input buffer." alt="" coords="998,161,1061,188"/>
 </map>

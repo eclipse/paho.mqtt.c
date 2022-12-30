@@ -172,16 +172,22 @@ const <a class="el" href="structMQTTClient__nameValue.html">MQTTClient_nameValue
 <tr class="separator:a843b077a0524dcc6a1ce6db12d2e7412"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c801d96d7a0013928d6a475fd48fe3c"><td class="memItemLeft" align="right" valign="top"><a id="a4c801d96d7a0013928d6a475fd48fe3c"></a>
 const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structMQTTClient__connectOptions.html#a4c801d96d7a0013928d6a475fd48fe3c">httpProxy</a></td></tr>
-<tr class="memdesc:a4c801d96d7a0013928d6a475fd48fe3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">HTTP proxy for websockets. <br /></td></tr>
+<tr class="memdesc:a4c801d96d7a0013928d6a475fd48fe3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">HTTP proxy. <br /></td></tr>
 <tr class="separator:a4c801d96d7a0013928d6a475fd48fe3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aff577bef3a72e4aa9022fda4cffd4544"><td class="memItemLeft" align="right" valign="top"><a id="aff577bef3a72e4aa9022fda4cffd4544"></a>
 const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structMQTTClient__connectOptions.html#aff577bef3a72e4aa9022fda4cffd4544">httpsProxy</a></td></tr>
-<tr class="memdesc:aff577bef3a72e4aa9022fda4cffd4544"><td class="mdescLeft">&#160;</td><td class="mdescRight">HTTPS proxy for websockets. <br /></td></tr>
+<tr class="memdesc:aff577bef3a72e4aa9022fda4cffd4544"><td class="mdescLeft">&#160;</td><td class="mdescRight">HTTPS proxy. <br /></td></tr>
 <tr class="separator:aff577bef3a72e4aa9022fda4cffd4544"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p><a class="el" href="structMQTTClient__connectOptions.html" title="MQTTClient_connectOptions defines several settings that control the way the client connects to an MQT...">MQTTClient_connectOptions</a> defines several settings that control the way the client connects to an MQTT server. </p>
-<p><b>Note:</b> Default values are not defined for members of <a class="el" href="structMQTTClient__connectOptions.html" title="MQTTClient_connectOptions defines several settings that control the way the client connects to an MQT...">MQTTClient_connectOptions</a> so it is good practice to specify all settings. If the <a class="el" href="structMQTTClient__connectOptions.html" title="MQTTClient_connectOptions defines several settings that control the way the client connects to an MQT...">MQTTClient_connectOptions</a> structure is defined as an automatic variable, all members are set to random values and thus must be set by the client application. If the <a class="el" href="structMQTTClient__connectOptions.html" title="MQTTClient_connectOptions defines several settings that control the way the client connects to an MQT...">MQTTClient_connectOptions</a> structure is defined as a static variable, initialization (in compliant compilers) sets all values to 0 (NULL for pointers). A <a class="el" href="structMQTTClient__connectOptions.html#a7de757dd172a63d699290d582aa0f798" title="The &quot;keep alive&quot; interval, measured in seconds, defines the maximum time that should pass without com...">keepAliveInterval</a> setting of 0 prevents correct operation of the client and so you <b>must</b> at least set a value for <a class="el" href="structMQTTClient__connectOptions.html#a7de757dd172a63d699290d582aa0f798" title="The &quot;keep alive&quot; interval, measured in seconds, defines the maximum time that should pass without com...">keepAliveInterval</a>. </p>
+<p><b>Note:</b> Default values are not defined for members of <a class="el" href="structMQTTClient__connectOptions.html" title="MQTTClient_connectOptions defines several settings that control the way the client connects to an MQT...">MQTTClient_connectOptions</a> so it is good practice to specify all settings. If the <a class="el" href="structMQTTClient__connectOptions.html" title="MQTTClient_connectOptions defines several settings that control the way the client connects to an MQT...">MQTTClient_connectOptions</a> structure is defined as an automatic variable, all members are set to random values and thus must be set by the client application. If the <a class="el" href="structMQTTClient__connectOptions.html" title="MQTTClient_connectOptions defines several settings that control the way the client connects to an MQT...">MQTTClient_connectOptions</a> structure is defined as a static variable, initialization (in compliant compilers) sets all values to 0 (NULL for pointers). A <a class="el" href="structMQTTClient__connectOptions.html#a7de757dd172a63d699290d582aa0f798" title="The &quot;keep alive&quot; interval, measured in seconds, defines the maximum time that should pass without com...">keepAliveInterval</a> setting of 0 prevents correct operation of the client and so you <b>must</b> at least set a value for <a class="el" href="structMQTTClient__connectOptions.html#a7de757dd172a63d699290d582aa0f798" title="The &quot;keep alive&quot; interval, measured in seconds, defines the maximum time that should pass without com...">keepAliveInterval</a>.</p>
+<p>Suitable default values are set in the following initializers:</p><ul>
+<li>MQTTClient_connectOptions_initializer: for MQTT 3.1.1 non-WebSockets</li>
+<li>MQTTClient_connectOptions_initializer5: for MQTT 5.0 non-WebSockets</li>
+<li>MQTTClient_connectOptions_initializer_ws: for MQTT 3.1.1 WebSockets</li>
+<li>MQTTClient_connectOptions_initializer5_ws: for MQTT 5.0 WebSockets </li>
+</ul>
 </div><h2 class="groupheader">Field Documentation</h2>
 <a id="acfff5a62e87b80f205a1f83fdde5653d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acfff5a62e87b80f205a1f83fdde5653d">&#9670;&nbsp;</a></span>binarypwd</h2>
@@ -429,7 +435,7 @@ const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 24 2021 18:05:54 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Sep 29 2022 11:34:46 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

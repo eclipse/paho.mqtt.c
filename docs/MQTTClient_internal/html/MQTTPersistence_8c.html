@@ -125,9 +125,9 @@ static void&#160;</td><td class="memItemRight" valign="bottom"><b>MQTTPersistenc
 <tr class="memitem:a568adcd6ad3542d6f631a7f7a2e682e5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="MQTTPersistence_8c.html#a568adcd6ad3542d6f631a7f7a2e682e5">MQTTPersistence_insertInOrder</a> (<a class="el" href="structList.html">List</a> *list, void *content, size_t size)</td></tr>
 <tr class="memdesc:a568adcd6ad3542d6f631a7f7a2e682e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inserts the specified message into the list, maintaining message ID order.  <a href="MQTTPersistence_8c.html#a568adcd6ad3542d6f631a7f7a2e682e5">More...</a><br /></td></tr>
 <tr class="separator:a568adcd6ad3542d6f631a7f7a2e682e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a879b91862bb099e16ca81e57ba36e3fe"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="MQTTPersistence_8c.html#a879b91862bb099e16ca81e57ba36e3fe">MQTTPersistence_putPacket</a> (int socket, char *buf0, size_t buf0len, int count, char **buffers, size_t *buflens, int htype, int msgId, int scr, int MQTTVersion)</td></tr>
-<tr class="memdesc:a879b91862bb099e16ca81e57ba36e3fe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a record to the persistent store.  <a href="MQTTPersistence_8c.html#a879b91862bb099e16ca81e57ba36e3fe">More...</a><br /></td></tr>
-<tr class="separator:a879b91862bb099e16ca81e57ba36e3fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18eab666c3e6aecd92a6c8f10df808e3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="MQTTPersistence_8c.html#a18eab666c3e6aecd92a6c8f10df808e3">MQTTPersistence_putPacket</a> (SOCKET socket, char *buf0, size_t buf0len, int count, char **buffers, size_t *buflens, int htype, int msgId, int scr, int MQTTVersion)</td></tr>
+<tr class="memdesc:a18eab666c3e6aecd92a6c8f10df808e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a record to the persistent store.  <a href="MQTTPersistence_8c.html#a18eab666c3e6aecd92a6c8f10df808e3">More...</a><br /></td></tr>
+<tr class="separator:a18eab666c3e6aecd92a6c8f10df808e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aba48f1a44c540fa37bca207cae3cbbd3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="MQTTPersistence_8c.html#aba48f1a44c540fa37bca207cae3cbbd3">MQTTPersistence_remove</a> (<a class="el" href="structClients.html">Clients</a> *c, char *type, int qos, int msgId)</td></tr>
 <tr class="memdesc:aba48f1a44c540fa37bca207cae3cbbd3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes a record from the persistent store.  <a href="MQTTPersistence_8c.html#aba48f1a44c540fa37bca207cae3cbbd3">More...</a><br /></td></tr>
 <tr class="separator:aba48f1a44c540fa37bca207cae3cbbd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -386,8 +386,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a879b91862bb099e16ca81e57ba36e3fe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a879b91862bb099e16ca81e57ba36e3fe">&#9670;&nbsp;</a></span>MQTTPersistence_putPacket()</h2>
+<a id="a18eab666c3e6aecd92a6c8f10df808e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18eab666c3e6aecd92a6c8f10df808e3">&#9670;&nbsp;</a></span>MQTTPersistence_putPacket()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -395,7 +395,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">int MQTTPersistence_putPacket </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
@@ -695,7 +695,7 @@ Here is the call graph for this function:</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 24 2021 18:05:54 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Sep 29 2022 11:34:46 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

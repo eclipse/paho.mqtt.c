@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp.
+ * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -148,7 +148,7 @@ void SocketBuffer_terminate(void)
  * Cleanup any buffers for a specific socket
  * @param socket the socket to clean up
  */
-void SocketBuffer_cleanup(int socket)
+void SocketBuffer_cleanup(SOCKET socket)
 {
 	FUNC_ENTRY;
 	SocketBuffer_writeComplete(socket); /* clean up write buffers */
@@ -173,7 +173,7 @@ void SocketBuffer_cleanup(int socket)
  * @param actual_len the actual length returned
  * @return the actual data
  */
-char* SocketBuffer_getQueuedData(int socket, size_t bytes, size_t* actual_len)
+char* SocketBuffer_getQueuedData(SOCKET socket, size_t bytes, size_t* actual_len)
 {
 	socket_queue* queue = NULL;
 
@@ -193,12 +193,18 @@ char* SocketBuffer_getQueuedData(int socket, size_t bytes, size_t* actual_len)
 		if (queue->datalen > 0)
 		{
 			void* newmem = malloc(bytes);
-
-			free(queue->buf);
-			queue->buf = newmem;
-			if (!newmem)
+			if (newmem)
+			{
+				memcpy(newmem, queue->buf, queue->datalen);
+				free(queue->buf);
+				queue->buf = newmem;
+			}
+			else
+			{
+				free(queue->buf);
+				queue->buf = NULL;
 				goto exit;
-			memcpy(newmem, queue->buf, queue->datalen);
+			}
 		}
 		else
 			queue->buf = realloc(queue->buf, bytes);
@@ -216,7 +222,7 @@ exit:
  * @param c the character returned if any
  * @return completion code
  */
-int SocketBuffer_getQueuedChar(int socket, char* c)
+int SocketBuffer_getQueuedChar(SOCKET socket, char* c)
 {
 	int rc = SOCKETBUFFER_INTERRUPTED;
 
@@ -249,7 +255,7 @@ exit:
  * @param socket the socket to get queued data for
  * @param actual_len the actual length of data that was read
  */
-void SocketBuffer_interrupted(int socket, size_t actual_len)
+void SocketBuffer_interrupted(SOCKET socket, size_t actual_len)
 {
 	socket_queue* queue = NULL;
 
@@ -278,7 +284,7 @@ void SocketBuffer_interrupted(int socket, size_t actual_len)
  * @param socket the socket for which the operation is now complete
  * @return pointer to the default queue data
  */
-char* SocketBuffer_complete(int socket)
+char* SocketBuffer_complete(SOCKET socket)
 {
 	FUNC_ENTRY;
 	if (ListFindItem(queues, &socket, socketcompare))
@@ -300,7 +306,7 @@ char* SocketBuffer_complete(int socket)
  * @param socket the socket for which to queue char for
  * @param c the character to queue
  */
-void SocketBuffer_queueChar(int socket, char c)
+void SocketBuffer_queueChar(SOCKET socket, char c)
 {
 	int error = 0;
 	socket_queue* curq = def_queue;
@@ -344,9 +350,9 @@ void SocketBuffer_queueChar(int socket, char c)
  * @param bytes actual data length that was written
  */
 #if defined(OPENSSL)
-int SocketBuffer_pendingWrite(int socket, SSL* ssl, int count, iobuf* iovecs, int* frees, size_t total, size_t bytes)
+int SocketBuffer_pendingWrite(SOCKET socket, SSL* ssl, int count, iobuf* iovecs, int* frees, size_t total, size_t bytes)
 #else
-int SocketBuffer_pendingWrite(int socket, int count, iobuf* iovecs, int* frees, size_t total, size_t bytes)
+int SocketBuffer_pendingWrite(SOCKET socket, int count, iobuf* iovecs, int* frees, size_t total, size_t bytes)
 #endif
 {
 	int i = 0;
@@ -396,7 +402,7 @@ int pending_socketcompare(void* a, void* b)
  * @param socket the socket to get queued data for
  * @return pointer to the queued data or NULL
  */
-pending_writes* SocketBuffer_getWrite(int socket)
+pending_writes* SocketBuffer_getWrite(SOCKET socket)
 {
 	ListElement* le = ListFindItem(&writes, &socket, pending_socketcompare);
 	return (le) ? (pending_writes*)(le->content) : NULL;
@@ -408,7 +414,7 @@ pending_writes* SocketBuffer_getWrite(int socket)
  * @param socket the socket for which the operation is now complete
  * @return completion code, boolean - was the queue removed?
  */
-int SocketBuffer_writeComplete(int socket)
+int SocketBuffer_writeComplete(SOCKET socket)
 {
 	return ListRemoveItem(&writes, &socket, pending_socketcompare);
 }
@@ -421,7 +427,7 @@ int SocketBuffer_writeComplete(int socket)
  * @param payload the payload of the QoS 0 write
  * @return pointer to the updated queued data structure, or NULL
  */
-pending_writes* SocketBuffer_updateWrite(int socket, char* topic, char* payload)
+pending_writes* SocketBuffer_updateWrite(SOCKET socket, char* topic, char* payload)
 {
 	pending_writes* pw = NULL;
 	ListElement* le = NULL;

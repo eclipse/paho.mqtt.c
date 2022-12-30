@@ -107,36 +107,36 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a90f49db5a5763c6874f27facfe9e60a3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a90f49db5a5763c6874f27facfe9e60a3">Socket_setnonblocking</a> (int sock)</td></tr>
-<tr class="memdesc:a90f49db5a5763c6874f27facfe9e60a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set a socket non-blocking, OS independently.  <a href="Socket_8c.html#a90f49db5a5763c6874f27facfe9e60a3">More...</a><br /></td></tr>
-<tr class="separator:a90f49db5a5763c6874f27facfe9e60a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a47824ad5afba267b9488150e1f7e8610"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a47824ad5afba267b9488150e1f7e8610">Socket_error</a> (char *aString, int sock)</td></tr>
-<tr class="memdesc:a47824ad5afba267b9488150e1f7e8610"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the specific error corresponding to SOCKET_ERROR.  <a href="Socket_8c.html#a47824ad5afba267b9488150e1f7e8610">More...</a><br /></td></tr>
-<tr class="separator:a47824ad5afba267b9488150e1f7e8610"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3c690a1d23a55ccf1ea52cdea9b56432"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a3c690a1d23a55ccf1ea52cdea9b56432">Socket_addSocket</a> (int newSd)</td></tr>
-<tr class="memdesc:a3c690a1d23a55ccf1ea52cdea9b56432"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a socket to the list of socket to check with select.  <a href="Socket_8c.html#a3c690a1d23a55ccf1ea52cdea9b56432">More...</a><br /></td></tr>
-<tr class="separator:a3c690a1d23a55ccf1ea52cdea9b56432"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeec7592039c180d20ef7c6e8f50d5667"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#aeec7592039c180d20ef7c6e8f50d5667">isReady</a> (int socket, fd_set *read_set, fd_set *write_set)</td></tr>
-<tr class="memdesc:aeec7592039c180d20ef7c6e8f50d5667"><td class="mdescLeft">&#160;</td><td class="mdescRight">Don't accept work from a client unless it is accepting work back, i.e.  <a href="Socket_8c.html#aeec7592039c180d20ef7c6e8f50d5667">More...</a><br /></td></tr>
-<tr class="separator:aeec7592039c180d20ef7c6e8f50d5667"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aec4ee8ecb248d29d315d2624a88ed1c3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#aec4ee8ecb248d29d315d2624a88ed1c3">Socket_writev</a> (int socket, iobuf *iovecs, int count, unsigned long *<a class="el" href="utf-8_8c.html#acce1763ab1d2658c7e6593c128565303">bytes</a>)</td></tr>
-<tr class="memdesc:aec4ee8ecb248d29d315d2624a88ed1c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attempts to write a series of iovec buffers to a socket in <em>one</em> system call so that they are sent as one packet.  <a href="Socket_8c.html#aec4ee8ecb248d29d315d2624a88ed1c3">More...</a><br /></td></tr>
-<tr class="separator:aec4ee8ecb248d29d315d2624a88ed1c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2e7c21836cd061947d6d6e28446c4a59"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a2e7c21836cd061947d6d6e28446c4a59">Socket_close_only</a> (int socket)</td></tr>
-<tr class="memdesc:a2e7c21836cd061947d6d6e28446c4a59"><td class="mdescLeft">&#160;</td><td class="mdescRight">Close a socket without removing it from the select list.  <a href="Socket_8c.html#a2e7c21836cd061947d6d6e28446c4a59">More...</a><br /></td></tr>
-<tr class="separator:a2e7c21836cd061947d6d6e28446c4a59"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5ce31969f49786ef8452e2b547527578"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a5ce31969f49786ef8452e2b547527578">Socket_continueWrite</a> (int socket)</td></tr>
-<tr class="memdesc:a5ce31969f49786ef8452e2b547527578"><td class="mdescLeft">&#160;</td><td class="mdescRight">Continue an outstanding write for a particular socket.  <a href="Socket_8c.html#a5ce31969f49786ef8452e2b547527578">More...</a><br /></td></tr>
-<tr class="separator:a5ce31969f49786ef8452e2b547527578"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a40f45b094eb70875e06f96164afc4a49"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a40f45b094eb70875e06f96164afc4a49">Socket_continueWrites</a> (fd_set *pwset, int *sock)</td></tr>
-<tr class="memdesc:a40f45b094eb70875e06f96164afc4a49"><td class="mdescLeft">&#160;</td><td class="mdescRight">Continue any outstanding writes for a socket set.  <a href="Socket_8c.html#a40f45b094eb70875e06f96164afc4a49">More...</a><br /></td></tr>
-<tr class="separator:a40f45b094eb70875e06f96164afc4a49"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a22feda106732e755b6f9e44e026bd261"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a22feda106732e755b6f9e44e026bd261">Socket_getaddrname</a> (struct sockaddr *sa, int sock)</td></tr>
-<tr class="memdesc:a22feda106732e755b6f9e44e026bd261"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert a numeric address to character string.  <a href="Socket_8c.html#a22feda106732e755b6f9e44e026bd261">More...</a><br /></td></tr>
-<tr class="separator:a22feda106732e755b6f9e44e026bd261"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad246851be3980fd316d16864a786c808"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#ad246851be3980fd316d16864a786c808">Socket_abortWrite</a> (int socket)</td></tr>
-<tr class="memdesc:ad246851be3980fd316d16864a786c808"><td class="mdescLeft">&#160;</td><td class="mdescRight">Continue an outstanding write for a particular socket.  <a href="Socket_8c.html#ad246851be3980fd316d16864a786c808">More...</a><br /></td></tr>
-<tr class="separator:ad246851be3980fd316d16864a786c808"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42a217310f6f55473525764038ac367d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a42a217310f6f55473525764038ac367d">isReady</a> (int index)</td></tr>
+<tr class="memdesc:a42a217310f6f55473525764038ac367d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Don't accept work from a client unless it is accepting work back, i.e.  <a href="Socket_8c.html#a42a217310f6f55473525764038ac367d">More...</a><br /></td></tr>
+<tr class="separator:a42a217310f6f55473525764038ac367d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac176152ef036b6cfd7330a9481a7b2ed"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#ac176152ef036b6cfd7330a9481a7b2ed">Socket_continueWrites</a> (SOCKET *sock, mutex_type mutex)</td></tr>
+<tr class="memdesc:ac176152ef036b6cfd7330a9481a7b2ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Continue any outstanding socket writes.  <a href="Socket_8c.html#ac176152ef036b6cfd7330a9481a7b2ed">More...</a><br /></td></tr>
+<tr class="separator:ac176152ef036b6cfd7330a9481a7b2ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8ff50df7c89391178aa754083d2f828"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#ab8ff50df7c89391178aa754083d2f828">Socket_setnonblocking</a> (SOCKET sock)</td></tr>
+<tr class="memdesc:ab8ff50df7c89391178aa754083d2f828"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set a socket non-blocking, OS independently.  <a href="Socket_8c.html#ab8ff50df7c89391178aa754083d2f828">More...</a><br /></td></tr>
+<tr class="separator:ab8ff50df7c89391178aa754083d2f828"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39a32a0495e5cba033f3c7fee72ae797"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797">Socket_error</a> (char *aString, SOCKET sock)</td></tr>
+<tr class="memdesc:a39a32a0495e5cba033f3c7fee72ae797"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the specific error corresponding to SOCKET_ERROR.  <a href="Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797">More...</a><br /></td></tr>
+<tr class="separator:a39a32a0495e5cba033f3c7fee72ae797"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c933d467e9ab2848b9590fe45f21f2f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a4c933d467e9ab2848b9590fe45f21f2f">Socket_addSocket</a> (SOCKET newSd)</td></tr>
+<tr class="memdesc:a4c933d467e9ab2848b9590fe45f21f2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a socket to the list of socket to check with select.  <a href="Socket_8c.html#a4c933d467e9ab2848b9590fe45f21f2f">More...</a><br /></td></tr>
+<tr class="separator:a4c933d467e9ab2848b9590fe45f21f2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a550291985042dc080825ab27b16894fb"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a550291985042dc080825ab27b16894fb">Socket_writev</a> (SOCKET socket, iobuf *iovecs, int count, unsigned long *<a class="el" href="utf-8_8c.html#abf4b7aec66b165e9a0a8e3a4ad69f863">bytes</a>)</td></tr>
+<tr class="memdesc:a550291985042dc080825ab27b16894fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attempts to write a series of iovec buffers to a socket in <em>one</em> system call so that they are sent as one packet.  <a href="Socket_8c.html#a550291985042dc080825ab27b16894fb">More...</a><br /></td></tr>
+<tr class="separator:a550291985042dc080825ab27b16894fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0e0f2981efa6caf604e8f0fc1072af90"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a0e0f2981efa6caf604e8f0fc1072af90">Socket_close_only</a> (SOCKET socket)</td></tr>
+<tr class="memdesc:a0e0f2981efa6caf604e8f0fc1072af90"><td class="mdescLeft">&#160;</td><td class="mdescRight">Close a socket without removing it from the select list.  <a href="Socket_8c.html#a0e0f2981efa6caf604e8f0fc1072af90">More...</a><br /></td></tr>
+<tr class="separator:a0e0f2981efa6caf604e8f0fc1072af90"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa77cff9e8173f9b8d35d062558d0cb57"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#aa77cff9e8173f9b8d35d062558d0cb57">Socket_continueWrite</a> (SOCKET socket)</td></tr>
+<tr class="memdesc:aa77cff9e8173f9b8d35d062558d0cb57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Continue an outstanding write for a particular socket.  <a href="Socket_8c.html#aa77cff9e8173f9b8d35d062558d0cb57">More...</a><br /></td></tr>
+<tr class="separator:aa77cff9e8173f9b8d35d062558d0cb57"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a212e51c4ce12e19be59c4d0f93cfb5d9"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a212e51c4ce12e19be59c4d0f93cfb5d9">Socket_getaddrname</a> (struct sockaddr *sa, SOCKET sock)</td></tr>
+<tr class="memdesc:a212e51c4ce12e19be59c4d0f93cfb5d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert a numeric address to character string.  <a href="Socket_8c.html#a212e51c4ce12e19be59c4d0f93cfb5d9">More...</a><br /></td></tr>
+<tr class="separator:a212e51c4ce12e19be59c4d0f93cfb5d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa24d7c85b03f09f16c78de0c1a9b3580"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#aa24d7c85b03f09f16c78de0c1a9b3580">Socket_abortWrite</a> (SOCKET socket)</td></tr>
+<tr class="memdesc:aa24d7c85b03f09f16c78de0c1a9b3580"><td class="mdescLeft">&#160;</td><td class="mdescRight">Continue an outstanding write for a particular socket.  <a href="Socket_8c.html#aa24d7c85b03f09f16c78de0c1a9b3580">More...</a><br /></td></tr>
+<tr class="separator:aa24d7c85b03f09f16c78de0c1a9b3580"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a573a6eea727016f3e8770f60e5eed958"><td class="memItemLeft" align="right" valign="top"><a id="a573a6eea727016f3e8770f60e5eed958"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a573a6eea727016f3e8770f60e5eed958">Socket_outInitialize</a> (void)</td></tr>
 <tr class="memdesc:a573a6eea727016f3e8770f60e5eed958"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the socket module. <br /></td></tr>
@@ -145,39 +145,51 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Sock
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#af365aa1d5a29ffcb83bb15edaf3401e6">Socket_outTerminate</a> (void)</td></tr>
 <tr class="memdesc:af365aa1d5a29ffcb83bb15edaf3401e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Terminate the socket module. <br /></td></tr>
 <tr class="separator:af365aa1d5a29ffcb83bb15edaf3401e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2c082b4e794c0a7835a0700f0bc7b3a1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a2c082b4e794c0a7835a0700f0bc7b3a1">Socket_getReadySocket</a> (int more_work, struct timeval *tp, mutex_type mutex, int *rc)</td></tr>
-<tr class="memdesc:a2c082b4e794c0a7835a0700f0bc7b3a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the next socket ready for communications as indicated by select.  <a href="Socket_8c.html#a2c082b4e794c0a7835a0700f0bc7b3a1">More...</a><br /></td></tr>
-<tr class="separator:a2c082b4e794c0a7835a0700f0bc7b3a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9af02601f6b5ef066ba99d9498a024b8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a9af02601f6b5ef066ba99d9498a024b8">Socket_getch</a> (int socket, char *c)</td></tr>
-<tr class="memdesc:a9af02601f6b5ef066ba99d9498a024b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reads one byte from a socket.  <a href="Socket_8c.html#a9af02601f6b5ef066ba99d9498a024b8">More...</a><br /></td></tr>
-<tr class="separator:a9af02601f6b5ef066ba99d9498a024b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6e05161f70e828e8bd06ead38e0be6c8"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a6e05161f70e828e8bd06ead38e0be6c8">Socket_getdata</a> (int socket, size_t <a class="el" href="utf-8_8c.html#acce1763ab1d2658c7e6593c128565303">bytes</a>, size_t *actual_len, int *rc)</td></tr>
-<tr class="memdesc:a6e05161f70e828e8bd06ead38e0be6c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attempts to read a number of bytes from a socket, non-blocking.  <a href="Socket_8c.html#a6e05161f70e828e8bd06ead38e0be6c8">More...</a><br /></td></tr>
-<tr class="separator:a6e05161f70e828e8bd06ead38e0be6c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae95673b434f2c489ecefe4688c80be2d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#ae95673b434f2c489ecefe4688c80be2d">Socket_noPendingWrites</a> (int socket)</td></tr>
-<tr class="memdesc:ae95673b434f2c489ecefe4688c80be2d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Indicate whether any data is pending outbound for a socket.  <a href="Socket_8c.html#ae95673b434f2c489ecefe4688c80be2d">More...</a><br /></td></tr>
-<tr class="separator:ae95673b434f2c489ecefe4688c80be2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a601ba77d9b01e908dbd0653f6efa3be0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a601ba77d9b01e908dbd0653f6efa3be0">Socket_putdatas</a> (int socket, char *buf0, size_t buf0len, <a class="el" href="structPacketBuffers.html">PacketBuffers</a> bufs)</td></tr>
-<tr class="memdesc:a601ba77d9b01e908dbd0653f6efa3be0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attempts to write a series of buffers to a socket in <em>one</em> system call so that they are sent as one packet.  <a href="Socket_8c.html#a601ba77d9b01e908dbd0653f6efa3be0">More...</a><br /></td></tr>
-<tr class="separator:a601ba77d9b01e908dbd0653f6efa3be0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8ba07ed0157d93bde9db6483b4bb4d67"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a8ba07ed0157d93bde9db6483b4bb4d67">Socket_addPendingWrite</a> (int socket)</td></tr>
-<tr class="memdesc:a8ba07ed0157d93bde9db6483b4bb4d67"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a socket to the pending write list, so that it is checked for writing in select.  <a href="Socket_8c.html#a8ba07ed0157d93bde9db6483b4bb4d67">More...</a><br /></td></tr>
-<tr class="separator:a8ba07ed0157d93bde9db6483b4bb4d67"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0cf9d34480e63e2d6eaaaff09e3fddf7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a0cf9d34480e63e2d6eaaaff09e3fddf7">Socket_clearPendingWrite</a> (int socket)</td></tr>
-<tr class="memdesc:a0cf9d34480e63e2d6eaaaff09e3fddf7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clear a socket from the pending write list - if one was added with Socket_addPendingWrite.  <a href="Socket_8c.html#a0cf9d34480e63e2d6eaaaff09e3fddf7">More...</a><br /></td></tr>
-<tr class="separator:a0cf9d34480e63e2d6eaaaff09e3fddf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6bdb051c5944e1a0fd16ba18544ab5df"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a6bdb051c5944e1a0fd16ba18544ab5df">Socket_close</a> (int socket)</td></tr>
-<tr class="memdesc:a6bdb051c5944e1a0fd16ba18544ab5df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Close a socket and remove it from the select list.  <a href="Socket_8c.html#a6bdb051c5944e1a0fd16ba18544ab5df">More...</a><br /></td></tr>
-<tr class="separator:a6bdb051c5944e1a0fd16ba18544ab5df"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acb965ef2124fa6736477c9286f7599b2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#acb965ef2124fa6736477c9286f7599b2">Socket_new</a> (const char *addr, size_t addr_len, int port, int *sock)</td></tr>
-<tr class="memdesc:acb965ef2124fa6736477c9286f7599b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new socket and TCP connect to an address/port.  <a href="Socket_8c.html#acb965ef2124fa6736477c9286f7599b2">More...</a><br /></td></tr>
-<tr class="separator:acb965ef2124fa6736477c9286f7599b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2eb3a0e4418a05dad1611519828660c1"><td class="memItemLeft" align="right" valign="top"><a id="a2eb3a0e4418a05dad1611519828660c1"></a>
+static int&#160;</td><td class="memItemRight" valign="bottom"><b>cmpfds</b> (const void *p1, const void *p2)</td></tr>
+<tr class="separator:a2eb3a0e4418a05dad1611519828660c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb8dafd08c911c50c091e816456f0750"><td class="memItemLeft" align="right" valign="top"><a id="adb8dafd08c911c50c091e816456f0750"></a>
+static int&#160;</td><td class="memItemRight" valign="bottom"><b>cmpsockfds</b> (const void *p1, const void *p2)</td></tr>
+<tr class="separator:adb8dafd08c911c50c091e816456f0750"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab33a53c9fce80d5dfeb26426b157034a"><td class="memItemLeft" align="right" valign="top">SOCKET&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#ab33a53c9fce80d5dfeb26426b157034a">Socket_getReadySocket</a> (int more_work, int timeout, mutex_type mutex, int *rc)</td></tr>
+<tr class="memdesc:ab33a53c9fce80d5dfeb26426b157034a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the next socket ready for communications as indicated by select.  <a href="Socket_8c.html#ab33a53c9fce80d5dfeb26426b157034a">More...</a><br /></td></tr>
+<tr class="separator:ab33a53c9fce80d5dfeb26426b157034a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a01e567eb0c5db3193aaa02f117fd1137"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a01e567eb0c5db3193aaa02f117fd1137">Socket_getch</a> (SOCKET socket, char *c)</td></tr>
+<tr class="memdesc:a01e567eb0c5db3193aaa02f117fd1137"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reads one byte from a socket.  <a href="Socket_8c.html#a01e567eb0c5db3193aaa02f117fd1137">More...</a><br /></td></tr>
+<tr class="separator:a01e567eb0c5db3193aaa02f117fd1137"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a12c397b0fb6187db7a66a44041055a13"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a12c397b0fb6187db7a66a44041055a13">Socket_getdata</a> (SOCKET socket, size_t <a class="el" href="utf-8_8c.html#abf4b7aec66b165e9a0a8e3a4ad69f863">bytes</a>, size_t *actual_len, int *rc)</td></tr>
+<tr class="memdesc:a12c397b0fb6187db7a66a44041055a13"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attempts to read a number of bytes from a socket, non-blocking.  <a href="Socket_8c.html#a12c397b0fb6187db7a66a44041055a13">More...</a><br /></td></tr>
+<tr class="separator:a12c397b0fb6187db7a66a44041055a13"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a457d9a6a9d8e886c46fcd0c096f45614"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a457d9a6a9d8e886c46fcd0c096f45614">Socket_noPendingWrites</a> (SOCKET socket)</td></tr>
+<tr class="memdesc:a457d9a6a9d8e886c46fcd0c096f45614"><td class="mdescLeft">&#160;</td><td class="mdescRight">Indicate whether any data is pending outbound for a socket.  <a href="Socket_8c.html#a457d9a6a9d8e886c46fcd0c096f45614">More...</a><br /></td></tr>
+<tr class="separator:a457d9a6a9d8e886c46fcd0c096f45614"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8fac284bb799c180ef68bb5c7b4b1df4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a8fac284bb799c180ef68bb5c7b4b1df4">Socket_putdatas</a> (SOCKET socket, char *buf0, size_t buf0len, <a class="el" href="structPacketBuffers.html">PacketBuffers</a> bufs)</td></tr>
+<tr class="memdesc:a8fac284bb799c180ef68bb5c7b4b1df4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attempts to write a series of buffers to a socket in <em>one</em> system call so that they are sent as one packet.  <a href="Socket_8c.html#a8fac284bb799c180ef68bb5c7b4b1df4">More...</a><br /></td></tr>
+<tr class="separator:a8fac284bb799c180ef68bb5c7b4b1df4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65be62649c8529bcafa111e37ffcb5d2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a65be62649c8529bcafa111e37ffcb5d2">Socket_addPendingWrite</a> (SOCKET socket)</td></tr>
+<tr class="memdesc:a65be62649c8529bcafa111e37ffcb5d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a socket to the pending write list, so that it is checked for writing in select.  <a href="Socket_8c.html#a65be62649c8529bcafa111e37ffcb5d2">More...</a><br /></td></tr>
+<tr class="separator:a65be62649c8529bcafa111e37ffcb5d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3274d9743dd4d1c6e9392b74164d6379"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a3274d9743dd4d1c6e9392b74164d6379">Socket_clearPendingWrite</a> (SOCKET socket)</td></tr>
+<tr class="memdesc:a3274d9743dd4d1c6e9392b74164d6379"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clear a socket from the pending write list - if one was added with Socket_addPendingWrite.  <a href="Socket_8c.html#a3274d9743dd4d1c6e9392b74164d6379">More...</a><br /></td></tr>
+<tr class="separator:a3274d9743dd4d1c6e9392b74164d6379"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9da80ce7e69ae76dee95c94a2349c462"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a9da80ce7e69ae76dee95c94a2349c462">Socket_close</a> (SOCKET socket)</td></tr>
+<tr class="memdesc:a9da80ce7e69ae76dee95c94a2349c462"><td class="mdescLeft">&#160;</td><td class="mdescRight">Close a socket and remove it from the select list.  <a href="Socket_8c.html#a9da80ce7e69ae76dee95c94a2349c462">More...</a><br /></td></tr>
+<tr class="separator:a9da80ce7e69ae76dee95c94a2349c462"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:accf7d8d1529e31b2ad8286627cb662c0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#accf7d8d1529e31b2ad8286627cb662c0">Socket_new</a> (const char *addr, size_t addr_len, int port, SOCKET *sock)</td></tr>
+<tr class="memdesc:accf7d8d1529e31b2ad8286627cb662c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new socket and TCP connect to an address/port.  <a href="Socket_8c.html#accf7d8d1529e31b2ad8286627cb662c0">More...</a><br /></td></tr>
+<tr class="separator:accf7d8d1529e31b2ad8286627cb662c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5ea447d063056eac101f5193b4fbd17"><td class="memItemLeft" align="right" valign="top"><a id="ad5ea447d063056eac101f5193b4fbd17"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>Socket_setWriteContinueCallback</b> (Socket_writeContinue *mywritecontinue)</td></tr>
+<tr class="separator:ad5ea447d063056eac101f5193b4fbd17"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab053509afada9798dcaf8adaf16e1a59"><td class="memItemLeft" align="right" valign="top"><a id="ab053509afada9798dcaf8adaf16e1a59"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>Socket_setWriteCompleteCallback</b> (Socket_writeComplete *mywritecomplete)</td></tr>
 <tr class="separator:ab053509afada9798dcaf8adaf16e1a59"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a27952bf5cd133a873da9a218c7207059"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a27952bf5cd133a873da9a218c7207059">Socket_getpeer</a> (int sock)</td></tr>
-<tr class="memdesc:a27952bf5cd133a873da9a218c7207059"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get information about the other end connected to a socket.  <a href="Socket_8c.html#a27952bf5cd133a873da9a218c7207059">More...</a><br /></td></tr>
-<tr class="separator:a27952bf5cd133a873da9a218c7207059"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad05750388858ab33ed77a8432064592"><td class="memItemLeft" align="right" valign="top"><a id="aad05750388858ab33ed77a8432064592"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>Socket_setWriteAvailableCallback</b> (Socket_writeAvailable *mywriteavailable)</td></tr>
+<tr class="separator:aad05750388858ab33ed77a8432064592"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af10088907080a5c517ee23ac022f6538"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#af10088907080a5c517ee23ac022f6538">Socket_getpeer</a> (SOCKET sock)</td></tr>
+<tr class="memdesc:af10088907080a5c517ee23ac022f6538"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get information about the other end connected to a socket.  <a href="Socket_8c.html#af10088907080a5c517ee23ac022f6538">More...</a><br /></td></tr>
+<tr class="separator:af10088907080a5c517ee23ac022f6538"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
@@ -185,19 +197,22 @@ Variables</h2></td></tr>
 <a class="el" href="structSockets.html">Sockets</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8c.html#a6caeed4a8d4f884c57a815034cee275e">mod_s</a></td></tr>
 <tr class="memdesc:a6caeed4a8d4f884c57a815034cee275e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure to hold all socket data for this module. <br /></td></tr>
 <tr class="separator:a6caeed4a8d4f884c57a815034cee275e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5ffa4dbe0f377731d9f86fffd6ea4555"><td class="memItemLeft" align="right" valign="top"><a id="a5ffa4dbe0f377731d9f86fffd6ea4555"></a>
-static fd_set&#160;</td><td class="memItemRight" valign="bottom"><b>wset</b></td></tr>
-<tr class="separator:a5ffa4dbe0f377731d9f86fffd6ea4555"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a520de5164419be36582ed8cb3f618bd2"><td class="memItemLeft" align="right" valign="top"><a id="a520de5164419be36582ed8cb3f618bd2"></a>
+static Socket_writeContinue *&#160;</td><td class="memItemRight" valign="bottom"><b>writecontinue</b> = NULL</td></tr>
+<tr class="separator:a520de5164419be36582ed8cb3f618bd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a98a7c7aa7a0e8abdf3141bf829bab8de"><td class="memItemLeft" align="right" valign="top"><a id="a98a7c7aa7a0e8abdf3141bf829bab8de"></a>
 static Socket_writeComplete *&#160;</td><td class="memItemRight" valign="bottom"><b>writecomplete</b> = NULL</td></tr>
 <tr class="separator:a98a7c7aa7a0e8abdf3141bf829bab8de"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3cab777f9e4c6f250f9993501ba33ae6"><td class="memItemLeft" align="right" valign="top"><a id="a3cab777f9e4c6f250f9993501ba33ae6"></a>
+static Socket_writeAvailable *&#160;</td><td class="memItemRight" valign="bottom"><b>writeAvailable</b> = NULL</td></tr>
+<tr class="separator:a3cab777f9e4c6f250f9993501ba33ae6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Socket related functions. </p>
 <p>Some other related functions are in the SocketBuffer module </p>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="aeec7592039c180d20ef7c6e8f50d5667"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeec7592039c180d20ef7c6e8f50d5667">&#9670;&nbsp;</a></span>isReady()</h2>
+<a id="a42a217310f6f55473525764038ac367d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a42a217310f6f55473525764038ac367d">&#9670;&nbsp;</a></span>isReady()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -206,24 +221,8 @@ static Socket_writeComplete *&#160;</td><td class="memItemRight" valign="bottom"
           <td class="memname">int isReady </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
+          <td class="paramname"><em>index</em></td><td>)</td>
           <td></td>
-          <td class="paramtype">fd_set *&#160;</td>
-          <td class="paramname"><em>read_set</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">fd_set *&#160;</td>
-          <td class="paramname"><em>write_set</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -231,9 +230,7 @@ static Socket_writeComplete *&#160;</td><td class="memItemRight" valign="bottom"
 <p>Don't accept work from a client unless it is accepting work back, i.e. </p>
 <p>its socket is writeable this seems like a reasonable form of flow control, and practically, seems to work. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">socket</td><td>the socket to check </td></tr>
-    <tr><td class="paramname">read_set</td><td>the socket read set (see select doc) </td></tr>
-    <tr><td class="paramname">write_set</td><td>the socket write set (see select doc) </td></tr>
+    <tr><td class="paramname">index</td><td>the socket index to check </td></tr>
   </table>
   </dd>
 </dl>
@@ -241,13 +238,13 @@ static Socket_writeComplete *&#160;</td><td class="memItemRight" valign="bottom"
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="Socket_8c_aeec7592039c180d20ef7c6e8f50d5667_cgraph.png" border="0" usemap="#Socket_8c_aeec7592039c180d20ef7c6e8f50d5667_cgraph" alt=""/></div>
-<map name="Socket_8c_aeec7592039c180d20ef7c6e8f50d5667_cgraph" id="Socket_8c_aeec7592039c180d20ef7c6e8f50d5667_cgraph">
+<div class="center"><img src="Socket_8c_a42a217310f6f55473525764038ac367d_cgraph.png" border="0" usemap="#Socket_8c_a42a217310f6f55473525764038ac367d_cgraph" alt=""/></div>
+<map name="Socket_8c_a42a217310f6f55473525764038ac367d_cgraph" id="Socket_8c_a42a217310f6f55473525764038ac367d_cgraph">
 <area shape="rect" title="Don&#39;t accept work from a client unless it is accepting work back, i.e." alt="" coords="5,81,73,108"/>
 <area shape="rect" href="LinkedList_8c.html#a1738915a6d6f10022e9ee1481c0ae452" title="List callback function for comparing integers." alt="" coords="337,56,424,83"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="472,107,567,133"/>
 <area shape="rect" href="LinkedList_8c.html#a4bb7c34fe9a5832d65f530091e0fad0d" title="Removes and frees an element in a list by comparing the content." alt="" coords="146,157,265,184"/>
-<area shape="rect" href="Socket_8c.html#ae95673b434f2c489ecefe4688c80be2d" title="Indicate whether any data is pending outbound for a socket." alt="" coords="121,5,289,32"/>
+<area shape="rect" href="Socket_8c.html#a457d9a6a9d8e886c46fcd0c096f45614" title="Indicate whether any data is pending outbound for a socket." alt="" coords="121,5,289,32"/>
 <area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="615,107,733,133"/>
 <area shape="rect" href="LinkedList_8c.html#ab82181e0c1d96954f82dee67cee41296" title="Removes and optionally frees an element in a list by comparing the content." alt="" coords="340,157,421,184"/>
 </map>
@@ -255,8 +252,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="ad246851be3980fd316d16864a786c808"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad246851be3980fd316d16864a786c808">&#9670;&nbsp;</a></span>Socket_abortWrite()</h2>
+<a id="aa24d7c85b03f09f16c78de0c1a9b3580"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa24d7c85b03f09f16c78de0c1a9b3580">&#9670;&nbsp;</a></span>Socket_abortWrite()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -264,7 +261,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">int Socket_abortWrite </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em></td><td>)</td>
           <td></td>
         </tr>
@@ -282,11 +279,11 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="Socket_8c_ad246851be3980fd316d16864a786c808_cgraph.png" border="0" usemap="#Socket_8c_ad246851be3980fd316d16864a786c808_cgraph" alt=""/></div>
-<map name="Socket_8c_ad246851be3980fd316d16864a786c808_cgraph" id="Socket_8c_ad246851be3980fd316d16864a786c808_cgraph">
+<div class="center"><img src="Socket_8c_aa24d7c85b03f09f16c78de0c1a9b3580_cgraph.png" border="0" usemap="#Socket_8c_aa24d7c85b03f09f16c78de0c1a9b3580_cgraph" alt=""/></div>
+<map name="Socket_8c_aa24d7c85b03f09f16c78de0c1a9b3580_cgraph" id="Socket_8c_aa24d7c85b03f09f16c78de0c1a9b3580_cgraph">
 <area shape="rect" title="Continue an outstanding write for a particular socket." alt="" coords="5,31,135,57"/>
 <area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="237,5,281,32"/>
-<area shape="rect" href="SocketBuffer_8c.html#a5f22a1ac450cb1805e2ab8f2ae3da80e" title="Get any queued write data for a specific socket." alt="" coords="183,56,335,83"/>
+<area shape="rect" href="SocketBuffer_8c.html#a524311e577a7225a09fb944904c17886" title="Get any queued write data for a specific socket." alt="" coords="183,56,335,83"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="417,31,511,57"/>
 <area shape="rect" href="SocketBuffer_8c.html#a39f1ee9c98bc12a7be4d7a40b03550d5" title="List callback function for comparing pending_writes by socket." alt="" coords="383,81,545,108"/>
 <area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="593,31,712,57"/>
@@ -295,8 +292,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a8ba07ed0157d93bde9db6483b4bb4d67"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8ba07ed0157d93bde9db6483b4bb4d67">&#9670;&nbsp;</a></span>Socket_addPendingWrite()</h2>
+<a id="a65be62649c8529bcafa111e37ffcb5d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a65be62649c8529bcafa111e37ffcb5d2">&#9670;&nbsp;</a></span>Socket_addPendingWrite()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -304,7 +301,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">void Socket_addPendingWrite </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em></td><td>)</td>
           <td></td>
         </tr>
@@ -321,8 +318,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a3c690a1d23a55ccf1ea52cdea9b56432"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3c690a1d23a55ccf1ea52cdea9b56432">&#9670;&nbsp;</a></span>Socket_addSocket()</h2>
+<a id="a4c933d467e9ab2848b9590fe45f21f2f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4c933d467e9ab2848b9590fe45f21f2f">&#9670;&nbsp;</a></span>Socket_addSocket()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -330,7 +327,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">int Socket_addSocket </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>newSd</em></td><td>)</td>
           <td></td>
         </tr>
@@ -344,25 +341,11 @@ Here is the call graph for this function:</div>
   </table>
   </dd>
 </dl>
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="Socket_8c_a3c690a1d23a55ccf1ea52cdea9b56432_cgraph.png" border="0" usemap="#Socket_8c_a3c690a1d23a55ccf1ea52cdea9b56432_cgraph" alt=""/></div>
-<map name="Socket_8c_a3c690a1d23a55ccf1ea52cdea9b56432_cgraph" id="Socket_8c_a3c690a1d23a55ccf1ea52cdea9b56432_cgraph">
-<area shape="rect" title="Add a socket to the list of socket to check with select." alt="" coords="5,81,137,108"/>
-<area shape="rect" href="LinkedList_8c.html#a1738915a6d6f10022e9ee1481c0ae452" title="List callback function for comparing integers." alt="" coords="189,5,276,32"/>
-<area shape="rect" href="LinkedList_8c.html#abc7a28449893dfa775c2f709349968b4" title="Append an item to a list." alt="" coords="189,56,277,83"/>
-<area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="185,107,280,133"/>
-<area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="211,157,255,184"/>
-<area shape="rect" href="LinkedList_8c.html#a321a3598d6979c7af3f995b77ea2cec3" title="Append an already allocated ListElement and content to a list." alt="" coords="328,56,471,83"/>
-<area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="340,107,459,133"/>
-</map>
-</div>
 
 </div>
 </div>
-<a id="a0cf9d34480e63e2d6eaaaff09e3fddf7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0cf9d34480e63e2d6eaaaff09e3fddf7">&#9670;&nbsp;</a></span>Socket_clearPendingWrite()</h2>
+<a id="a3274d9743dd4d1c6e9392b74164d6379"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3274d9743dd4d1c6e9392b74164d6379">&#9670;&nbsp;</a></span>Socket_clearPendingWrite()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -370,7 +353,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">void Socket_clearPendingWrite </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em></td><td>)</td>
           <td></td>
         </tr>
@@ -387,16 +370,16 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a6bdb051c5944e1a0fd16ba18544ab5df"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6bdb051c5944e1a0fd16ba18544ab5df">&#9670;&nbsp;</a></span>Socket_close()</h2>
+<a id="a9da80ce7e69ae76dee95c94a2349c462"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9da80ce7e69ae76dee95c94a2349c462">&#9670;&nbsp;</a></span>Socket_close()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void Socket_close </td>
+          <td class="memname">int Socket_close </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em></td><td>)</td>
           <td></td>
         </tr>
@@ -414,31 +397,31 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="Socket_8c_a6bdb051c5944e1a0fd16ba18544ab5df_cgraph.png" border="0" usemap="#Socket_8c_a6bdb051c5944e1a0fd16ba18544ab5df_cgraph" alt=""/></div>
-<map name="Socket_8c_a6bdb051c5944e1a0fd16ba18544ab5df_cgraph" id="Socket_8c_a6bdb051c5944e1a0fd16ba18544ab5df_cgraph">
-<area shape="rect" title="Close a socket and remove it from the select list." alt="" coords="5,233,107,260"/>
+<div class="center"><img src="Socket_8c_a9da80ce7e69ae76dee95c94a2349c462_cgraph.png" border="0" usemap="#Socket_8c_a9da80ce7e69ae76dee95c94a2349c462_cgraph" alt=""/></div>
+<map name="Socket_8c_a9da80ce7e69ae76dee95c94a2349c462_cgraph" id="Socket_8c_a9da80ce7e69ae76dee95c94a2349c462_cgraph">
+<area shape="rect" title="Close a socket and remove it from the select list." alt="" coords="5,183,107,209"/>
 <area shape="rect" href="LinkedList_8c.html#a1738915a6d6f10022e9ee1481c0ae452" title="List callback function for comparing integers." alt="" coords="186,5,273,32"/>
-<area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="1069,107,1188,133"/>
-<area shape="rect" href="LinkedList_8c.html#a4bb7c34fe9a5832d65f530091e0fad0d" title="Removes and frees an element in a list by comparing the content." alt="" coords="609,233,727,260"/>
-<area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="646,461,690,488"/>
-<area shape="rect" href="Socket_8c.html#ad246851be3980fd316d16864a786c808" title="Continue an outstanding write for a particular socket." alt="" coords="165,360,294,387"/>
-<area shape="rect" href="Socket_8c.html#a2e7c21836cd061947d6d6e28446c4a59" title="Close a socket without removing it from the select list." alt="" coords="164,436,295,463"/>
-<area shape="rect" href="SocketBuffer_8c.html#a0601e12cab5b7c4777df10ca6d38a41b" title="Cleanup any buffers for a specific socket." alt="" coords="155,233,304,260"/>
-<area shape="rect" href="LinkedList_8c.html#ab82181e0c1d96954f82dee67cee41296" title="Removes and optionally frees an element in a list by comparing the content." alt="" coords="797,183,879,209"/>
-<area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="927,132,1021,159"/>
-<area shape="rect" href="SocketBuffer_8c.html#a5f22a1ac450cb1805e2ab8f2ae3da80e" title="Get any queued write data for a specific socket." alt="" coords="369,360,521,387"/>
-<area shape="rect" href="SocketBuffer_8c.html#a39f1ee9c98bc12a7be4d7a40b03550d5" title="List callback function for comparing pending_writes by socket." alt="" coords="587,309,749,336"/>
-<area shape="rect" href="Socket_8c.html#a47824ad5afba267b9488150e1f7e8610" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="397,461,493,488"/>
-<area shape="rect" href="LinkedList_8c.html#a8430370b2b15c56ec95bb8e7e36753a5" title="Removes and frees an item in a list by comparing the pointer to the content." alt="" coords="622,183,714,209"/>
-<area shape="rect" href="SocketBuffer_8c.html#a893ce45cf77f7d66c3f27c831ccf8124" title="A socket write has now completed so we can get rid of the queue." alt="" coords="352,309,539,336"/>
-<area shape="rect" href="SocketBuffer_8c.html#acebc1cbb93be4588f33b04ed404f6dbf" title="List callback function for comparing socket_queues by socket." alt="" coords="390,208,501,235"/>
+<area shape="rect" href="LinkedList_8c.html#a4bb7c34fe9a5832d65f530091e0fad0d" title="Removes and frees an element in a list by comparing the content." alt="" coords="609,56,727,83"/>
+<area shape="rect" href="Socket_8c.html#aa24d7c85b03f09f16c78de0c1a9b3580" title="Continue an outstanding write for a particular socket." alt="" coords="165,309,294,336"/>
+<area shape="rect" href="Socket_8c.html#a0e0f2981efa6caf604e8f0fc1072af90" title="Close a socket without removing it from the select list." alt="" coords="164,385,295,412"/>
+<area shape="rect" href="SocketBuffer_8c.html#abb5eae96f4c62d1e6fefed8d078ecba8" title="Cleanup any buffers for a specific socket." alt="" coords="155,183,304,209"/>
+<area shape="rect" href="LinkedList_8c.html#ab82181e0c1d96954f82dee67cee41296" title="Removes and optionally frees an element in a list by comparing the content." alt="" coords="797,107,879,133"/>
+<area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="927,208,1021,235"/>
+<area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="1069,208,1188,235"/>
+<area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="646,385,690,412"/>
+<area shape="rect" href="SocketBuffer_8c.html#a524311e577a7225a09fb944904c17886" title="Get any queued write data for a specific socket." alt="" coords="369,309,521,336"/>
+<area shape="rect" href="SocketBuffer_8c.html#a39f1ee9c98bc12a7be4d7a40b03550d5" title="List callback function for comparing pending_writes by socket." alt="" coords="587,157,749,184"/>
+<area shape="rect" href="Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="397,411,493,437"/>
+<area shape="rect" href="LinkedList_8c.html#a8430370b2b15c56ec95bb8e7e36753a5" title="Removes and frees an item in a list by comparing the pointer to the content." alt="" coords="622,107,714,133"/>
+<area shape="rect" href="SocketBuffer_8c.html#ae8667990c5933c3af9b90a163bba34dc" title="A socket write has now completed so we can get rid of the queue." alt="" coords="352,157,539,184"/>
+<area shape="rect" href="SocketBuffer_8c.html#acebc1cbb93be4588f33b04ed404f6dbf" title="List callback function for comparing socket_queues by socket." alt="" coords="390,259,501,285"/>
 </map>
 </div>
 
 </div>
 </div>
-<a id="a2e7c21836cd061947d6d6e28446c4a59"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2e7c21836cd061947d6d6e28446c4a59">&#9670;&nbsp;</a></span>Socket_close_only()</h2>
+<a id="a0e0f2981efa6caf604e8f0fc1072af90"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0e0f2981efa6caf604e8f0fc1072af90">&#9670;&nbsp;</a></span>Socket_close_only()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -446,7 +429,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">int Socket_close_only </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em></td><td>)</td>
           <td></td>
         </tr>
@@ -464,18 +447,18 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="Socket_8c_a2e7c21836cd061947d6d6e28446c4a59_cgraph.png" border="0" usemap="#Socket_8c_a2e7c21836cd061947d6d6e28446c4a59_cgraph" alt=""/></div>
-<map name="Socket_8c_a2e7c21836cd061947d6d6e28446c4a59_cgraph" id="Socket_8c_a2e7c21836cd061947d6d6e28446c4a59_cgraph">
+<div class="center"><img src="Socket_8c_a0e0f2981efa6caf604e8f0fc1072af90_cgraph.png" border="0" usemap="#Socket_8c_a0e0f2981efa6caf604e8f0fc1072af90_cgraph" alt=""/></div>
+<map name="Socket_8c_a0e0f2981efa6caf604e8f0fc1072af90_cgraph" id="Socket_8c_a0e0f2981efa6caf604e8f0fc1072af90_cgraph">
 <area shape="rect" title="Close a socket without removing it from the select list." alt="" coords="5,5,136,32"/>
-<area shape="rect" href="Socket_8c.html#a47824ad5afba267b9488150e1f7e8610" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="184,5,280,32"/>
+<area shape="rect" href="Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="184,5,280,32"/>
 <area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="328,5,372,32"/>
 </map>
 </div>
 
 </div>
 </div>
-<a id="a5ce31969f49786ef8452e2b547527578"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5ce31969f49786ef8452e2b547527578">&#9670;&nbsp;</a></span>Socket_continueWrite()</h2>
+<a id="aa77cff9e8173f9b8d35d062558d0cb57"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa77cff9e8173f9b8d35d062558d0cb57">&#9670;&nbsp;</a></span>Socket_continueWrite()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -483,7 +466,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">int Socket_continueWrite </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em></td><td>)</td>
           <td></td>
         </tr>
@@ -501,13 +484,13 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="Socket_8c_a5ce31969f49786ef8452e2b547527578_cgraph.png" border="0" usemap="#Socket_8c_a5ce31969f49786ef8452e2b547527578_cgraph" alt=""/></div>
-<map name="Socket_8c_a5ce31969f49786ef8452e2b547527578_cgraph" id="Socket_8c_a5ce31969f49786ef8452e2b547527578_cgraph">
+<div class="center"><img src="Socket_8c_aa77cff9e8173f9b8d35d062558d0cb57_cgraph.png" border="0" usemap="#Socket_8c_aa77cff9e8173f9b8d35d062558d0cb57_cgraph" alt=""/></div>
+<map name="Socket_8c_aa77cff9e8173f9b8d35d062558d0cb57_cgraph" id="Socket_8c_aa77cff9e8173f9b8d35d062558d0cb57_cgraph">
 <area shape="rect" title="Continue an outstanding write for a particular socket." alt="" coords="5,31,155,57"/>
 <area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="651,5,695,32"/>
-<area shape="rect" href="Socket_8c.html#aec4ee8ecb248d29d315d2624a88ed1c3" title="Attempts to write a series of iovec buffers to a socket in one system call so that they are sent as o..." alt="" coords="226,31,331,57"/>
-<area shape="rect" href="SocketBuffer_8c.html#a5f22a1ac450cb1805e2ab8f2ae3da80e" title="Get any queued write data for a specific socket." alt="" coords="203,81,355,108"/>
-<area shape="rect" href="Socket_8c.html#a47824ad5afba267b9488150e1f7e8610" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="436,31,532,57"/>
+<area shape="rect" href="Socket_8c.html#a550291985042dc080825ab27b16894fb" title="Attempts to write a series of iovec buffers to a socket in one system call so that they are sent as o..." alt="" coords="226,31,331,57"/>
+<area shape="rect" href="SocketBuffer_8c.html#a524311e577a7225a09fb944904c17886" title="Get any queued write data for a specific socket." alt="" coords="203,81,355,108"/>
+<area shape="rect" href="Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="436,31,532,57"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="437,81,531,108"/>
 <area shape="rect" href="SocketBuffer_8c.html#a39f1ee9c98bc12a7be4d7a40b03550d5" title="List callback function for comparing pending_writes by socket." alt="" coords="403,132,565,159"/>
 <area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="613,81,732,108"/>
@@ -516,8 +499,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a40f45b094eb70875e06f96164afc4a49"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a40f45b094eb70875e06f96164afc4a49">&#9670;&nbsp;</a></span>Socket_continueWrites()</h2>
+<a id="ac176152ef036b6cfd7330a9481a7b2ed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac176152ef036b6cfd7330a9481a7b2ed">&#9670;&nbsp;</a></span>Socket_continueWrites()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -525,14 +508,14 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">int Socket_continueWrites </td>
           <td>(</td>
-          <td class="paramtype">fd_set *&#160;</td>
-          <td class="paramname"><em>pwset</em>, </td>
+          <td class="paramtype">SOCKET *&#160;</td>
+          <td class="paramname"><em>sock</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int *&#160;</td>
-          <td class="paramname"><em>sock</em>&#160;</td>
+          <td class="paramtype">mutex_type&#160;</td>
+          <td class="paramname"><em>mutex</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -542,10 +525,9 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p>Continue any outstanding writes for a socket set. </p>
+<p>Continue any outstanding socket writes. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">pwset</td><td>the set of sockets </td></tr>
     <tr><td class="paramname">sock</td><td>in case of a socket error contains the affected socket </td></tr>
   </table>
   </dd>
@@ -554,28 +536,24 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="Socket_8c_a40f45b094eb70875e06f96164afc4a49_cgraph.png" border="0" usemap="#Socket_8c_a40f45b094eb70875e06f96164afc4a49_cgraph" alt=""/></div>
-<map name="Socket_8c_a40f45b094eb70875e06f96164afc4a49_cgraph" id="Socket_8c_a40f45b094eb70875e06f96164afc4a49_cgraph">
-<area shape="rect" title="Continue any outstanding writes for a socket set." alt="" coords="5,183,161,209"/>
-<area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="997,233,1116,260"/>
-<area shape="rect" href="LinkedList_8c.html#a8430370b2b15c56ec95bb8e7e36753a5" title="Removes and frees an item in a list by comparing the pointer to the content." alt="" coords="257,5,349,32"/>
-<area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="880,233,924,260"/>
-<area shape="rect" href="Socket_8c.html#a5ce31969f49786ef8452e2b547527578" title="Continue an outstanding write for a particular socket." alt="" coords="228,183,377,209"/>
-<area shape="rect" href="SocketBuffer_8c.html#a893ce45cf77f7d66c3f27c831ccf8124" title="A socket write has now completed so we can get rid of the queue." alt="" coords="209,81,396,108"/>
-<area shape="rect" href="LinkedList_8c.html#ab82181e0c1d96954f82dee67cee41296" title="Removes and optionally frees an element in a list by comparing the content." alt="" coords="685,31,766,57"/>
-<area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="855,132,949,159"/>
-<area shape="rect" href="Socket_8c.html#aec4ee8ecb248d29d315d2624a88ed1c3" title="Attempts to write a series of iovec buffers to a socket in one system call so that they are sent as o..." alt="" coords="467,183,573,209"/>
-<area shape="rect" href="SocketBuffer_8c.html#a5f22a1ac450cb1805e2ab8f2ae3da80e" title="Get any queued write data for a specific socket." alt="" coords="444,132,596,159"/>
-<area shape="rect" href="Socket_8c.html#a47824ad5afba267b9488150e1f7e8610" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="677,183,773,209"/>
-<area shape="rect" href="SocketBuffer_8c.html#a39f1ee9c98bc12a7be4d7a40b03550d5" title="List callback function for comparing pending_writes by socket." alt="" coords="644,81,807,108"/>
-<area shape="rect" href="LinkedList_8c.html#a4bb7c34fe9a5832d65f530091e0fad0d" title="Removes and frees an element in a list by comparing the content." alt="" coords="461,31,579,57"/>
+<div class="center"><img src="Socket_8c_ac176152ef036b6cfd7330a9481a7b2ed_cgraph.png" border="0" usemap="#Socket_8c_ac176152ef036b6cfd7330a9481a7b2ed_cgraph" alt=""/></div>
+<map name="Socket_8c_ac176152ef036b6cfd7330a9481a7b2ed_cgraph" id="Socket_8c_ac176152ef036b6cfd7330a9481a7b2ed_cgraph">
+<area shape="rect" title="Continue any outstanding socket writes." alt="" coords="5,31,161,57"/>
+<area shape="rect" href="Socket_8c.html#aa77cff9e8173f9b8d35d062558d0cb57" title="Continue an outstanding write for a particular socket." alt="" coords="209,31,359,57"/>
+<area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="855,5,899,32"/>
+<area shape="rect" href="Socket_8c.html#a550291985042dc080825ab27b16894fb" title="Attempts to write a series of iovec buffers to a socket in one system call so that they are sent as o..." alt="" coords="430,31,535,57"/>
+<area shape="rect" href="SocketBuffer_8c.html#a524311e577a7225a09fb944904c17886" title="Get any queued write data for a specific socket." alt="" coords="407,81,559,108"/>
+<area shape="rect" href="Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="640,31,736,57"/>
+<area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="641,81,735,108"/>
+<area shape="rect" href="SocketBuffer_8c.html#a39f1ee9c98bc12a7be4d7a40b03550d5" title="List callback function for comparing pending_writes by socket." alt="" coords="607,132,769,159"/>
+<area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="817,81,936,108"/>
 </map>
 </div>
 
 </div>
 </div>
-<a id="a47824ad5afba267b9488150e1f7e8610"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a47824ad5afba267b9488150e1f7e8610">&#9670;&nbsp;</a></span>Socket_error()</h2>
+<a id="a39a32a0495e5cba033f3c7fee72ae797"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a39a32a0495e5cba033f3c7fee72ae797">&#9670;&nbsp;</a></span>Socket_error()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -589,7 +567,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>sock</em>&#160;</td>
         </tr>
         <tr>
@@ -612,8 +590,8 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="Socket_8c_a47824ad5afba267b9488150e1f7e8610_cgraph.png" border="0" usemap="#Socket_8c_a47824ad5afba267b9488150e1f7e8610_cgraph" alt=""/></div>
-<map name="Socket_8c_a47824ad5afba267b9488150e1f7e8610_cgraph" id="Socket_8c_a47824ad5afba267b9488150e1f7e8610_cgraph">
+<div class="center"><img src="Socket_8c_a39a32a0495e5cba033f3c7fee72ae797_cgraph.png" border="0" usemap="#Socket_8c_a39a32a0495e5cba033f3c7fee72ae797_cgraph" alt=""/></div>
+<map name="Socket_8c_a39a32a0495e5cba033f3c7fee72ae797_cgraph" id="Socket_8c_a39a32a0495e5cba033f3c7fee72ae797_cgraph">
 <area shape="rect" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="5,5,101,32"/>
 <area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="149,5,193,32"/>
 </map>
@@ -621,8 +599,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a22feda106732e755b6f9e44e026bd261"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a22feda106732e755b6f9e44e026bd261">&#9670;&nbsp;</a></span>Socket_getaddrname()</h2>
+<a id="a212e51c4ce12e19be59c4d0f93cfb5d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a212e51c4ce12e19be59c4d0f93cfb5d9">&#9670;&nbsp;</a></span>Socket_getaddrname()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -636,7 +614,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>sock</em>&#160;</td>
         </tr>
         <tr>
@@ -661,8 +639,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a9af02601f6b5ef066ba99d9498a024b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9af02601f6b5ef066ba99d9498a024b8">&#9670;&nbsp;</a></span>Socket_getch()</h2>
+<a id="a01e567eb0c5db3193aaa02f117fd1137"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a01e567eb0c5db3193aaa02f117fd1137">&#9670;&nbsp;</a></span>Socket_getch()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -670,7 +648,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">int Socket_getch </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
@@ -699,13 +677,13 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="Socket_8c_a9af02601f6b5ef066ba99d9498a024b8_cgraph.png" border="0" usemap="#Socket_8c_a9af02601f6b5ef066ba99d9498a024b8_cgraph" alt=""/></div>
-<map name="Socket_8c_a9af02601f6b5ef066ba99d9498a024b8_cgraph" id="Socket_8c_a9af02601f6b5ef066ba99d9498a024b8_cgraph">
+<div class="center"><img src="Socket_8c_a01e567eb0c5db3193aaa02f117fd1137_cgraph.png" border="0" usemap="#Socket_8c_a01e567eb0c5db3193aaa02f117fd1137_cgraph" alt=""/></div>
+<map name="Socket_8c_a01e567eb0c5db3193aaa02f117fd1137_cgraph" id="Socket_8c_a01e567eb0c5db3193aaa02f117fd1137_cgraph">
 <area shape="rect" title="Reads one byte from a socket." alt="" coords="5,81,108,108"/>
-<area shape="rect" href="Socket_8c.html#a47824ad5afba267b9488150e1f7e8610" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="205,5,301,32"/>
-<area shape="rect" href="SocketBuffer_8c.html#a08102e2e43746ccd1ab26739b5841a7c" title="Get any queued character for a specific socket." alt="" coords="156,56,351,83"/>
-<area shape="rect" href="SocketBuffer_8c.html#aaac8b43c1ab5d20eb8e6b95de6e80671" title="A socket read was interrupted so we need to queue data." alt="" coords="171,157,336,184"/>
-<area shape="rect" href="SocketBuffer_8c.html#a8a94cbb0db8ba0834a7f1c6e2eb938b4" title="Queued a Charactor to a specific socket." alt="" coords="170,107,337,133"/>
+<area shape="rect" href="Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="205,5,301,32"/>
+<area shape="rect" href="SocketBuffer_8c.html#a999ec229faa4b2e2c0f7db87693bc1f8" title="Get any queued character for a specific socket." alt="" coords="156,56,351,83"/>
+<area shape="rect" href="SocketBuffer_8c.html#a412a40b44b12901e63e662ac0e5be0af" title="A socket read was interrupted so we need to queue data." alt="" coords="171,157,336,184"/>
+<area shape="rect" href="SocketBuffer_8c.html#a2f6bac9a46fd116e58071ff49152d716" title="Queued a Charactor to a specific socket." alt="" coords="170,107,337,133"/>
 <area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="456,5,500,32"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="431,107,525,133"/>
 <area shape="rect" href="SocketBuffer_8c.html#acebc1cbb93be4588f33b04ed404f6dbf" title="List callback function for comparing socket_queues by socket." alt="" coords="423,56,533,83"/>
@@ -718,8 +696,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a6e05161f70e828e8bd06ead38e0be6c8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6e05161f70e828e8bd06ead38e0be6c8">&#9670;&nbsp;</a></span>Socket_getdata()</h2>
+<a id="a12c397b0fb6187db7a66a44041055a13"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a12c397b0fb6187db7a66a44041055a13">&#9670;&nbsp;</a></span>Socket_getdata()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -727,7 +705,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">char* Socket_getdata </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
@@ -769,14 +747,14 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="Socket_8c_a6e05161f70e828e8bd06ead38e0be6c8_cgraph.png" border="0" usemap="#Socket_8c_a6e05161f70e828e8bd06ead38e0be6c8_cgraph" alt=""/></div>
-<map name="Socket_8c_a6e05161f70e828e8bd06ead38e0be6c8_cgraph" id="Socket_8c_a6e05161f70e828e8bd06ead38e0be6c8_cgraph">
+<div class="center"><img src="Socket_8c_a12c397b0fb6187db7a66a44041055a13_cgraph.png" border="0" usemap="#Socket_8c_a12c397b0fb6187db7a66a44041055a13_cgraph" alt=""/></div>
+<map name="Socket_8c_a12c397b0fb6187db7a66a44041055a13_cgraph" id="Socket_8c_a12c397b0fb6187db7a66a44041055a13_cgraph">
 <area shape="rect" title="Attempts to read a number of bytes from a socket, non&#45;blocking." alt="" coords="5,132,119,159"/>
 <area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="467,5,511,32"/>
-<area shape="rect" href="Socket_8c.html#a47824ad5afba267b9488150e1f7e8610" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="216,12,312,39"/>
-<area shape="rect" href="SocketBuffer_8c.html#a0d007b15408ae802c78bc69f115cf91e" title="A socket read has now completed so we can get rid of the queue." alt="" coords="185,132,343,159"/>
-<area shape="rect" href="SocketBuffer_8c.html#a8a2e0c916232521098ff734d556c3b68" title="Get any queued data for a specific socket." alt="" coords="167,208,361,235"/>
-<area shape="rect" href="SocketBuffer_8c.html#aaac8b43c1ab5d20eb8e6b95de6e80671" title="A socket read was interrupted so we need to queue data." alt="" coords="181,309,347,336"/>
+<area shape="rect" href="Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="216,12,312,39"/>
+<area shape="rect" href="SocketBuffer_8c.html#a8b7b6acbf2ec65796c32da7fd55c3ee8" title="A socket read has now completed so we can get rid of the queue." alt="" coords="185,132,343,159"/>
+<area shape="rect" href="SocketBuffer_8c.html#afcc9b9b6bd255b0a6e4c7e4f5a36bb37" title="Get any queued data for a specific socket." alt="" coords="167,208,361,235"/>
+<area shape="rect" href="SocketBuffer_8c.html#a412a40b44b12901e63e662ac0e5be0af" title="A socket read was interrupted so we need to queue data." alt="" coords="181,309,347,336"/>
 <area shape="rect" href="LinkedList_8c.html#ab2bcc1897abf1d98490ea81c474dba52" title="Removes but does not free an item in a list by comparing the pointer to the content." alt="" coords="446,157,531,184"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="807,221,901,248"/>
 <area shape="rect" href="SocketBuffer_8c.html#acb4511a3a4767187a2607027aff718b8" title="Free the default queue memory." alt="" coords="411,56,567,83"/>
@@ -791,8 +769,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a27952bf5cd133a873da9a218c7207059"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a27952bf5cd133a873da9a218c7207059">&#9670;&nbsp;</a></span>Socket_getpeer()</h2>
+<a id="af10088907080a5c517ee23ac022f6538"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af10088907080a5c517ee23ac022f6538">&#9670;&nbsp;</a></span>Socket_getpeer()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -800,7 +778,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">char* Socket_getpeer </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>sock</em></td><td>)</td>
           <td></td>
         </tr>
@@ -818,25 +796,25 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="Socket_8c_a27952bf5cd133a873da9a218c7207059_cgraph.png" border="0" usemap="#Socket_8c_a27952bf5cd133a873da9a218c7207059_cgraph" alt=""/></div>
-<map name="Socket_8c_a27952bf5cd133a873da9a218c7207059_cgraph" id="Socket_8c_a27952bf5cd133a873da9a218c7207059_cgraph">
+<div class="center"><img src="Socket_8c_af10088907080a5c517ee23ac022f6538_cgraph.png" border="0" usemap="#Socket_8c_af10088907080a5c517ee23ac022f6538_cgraph" alt=""/></div>
+<map name="Socket_8c_af10088907080a5c517ee23ac022f6538_cgraph" id="Socket_8c_af10088907080a5c517ee23ac022f6538_cgraph">
 <area shape="rect" title="Get information about the other end connected to a socket." alt="" coords="5,31,119,57"/>
-<area shape="rect" href="Socket_8c.html#a47824ad5afba267b9488150e1f7e8610" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="191,5,287,32"/>
-<area shape="rect" href="Socket_8c.html#a22feda106732e755b6f9e44e026bd261" title="Convert a numeric address to character string." alt="" coords="167,56,312,83"/>
+<area shape="rect" href="Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="191,5,287,32"/>
+<area shape="rect" href="Socket_8c.html#a212e51c4ce12e19be59c4d0f93cfb5d9" title="Convert a numeric address to character string." alt="" coords="167,56,312,83"/>
 <area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="360,5,404,32"/>
 </map>
 </div>
 
 </div>
 </div>
-<a id="a2c082b4e794c0a7835a0700f0bc7b3a1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2c082b4e794c0a7835a0700f0bc7b3a1">&#9670;&nbsp;</a></span>Socket_getReadySocket()</h2>
+<a id="ab33a53c9fce80d5dfeb26426b157034a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab33a53c9fce80d5dfeb26426b157034a">&#9670;&nbsp;</a></span>Socket_getReadySocket()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int Socket_getReadySocket </td>
+          <td class="memname">SOCKET Socket_getReadySocket </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>more_work</em>, </td>
@@ -844,8 +822,8 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">struct timeval *&#160;</td>
-          <td class="paramname"><em>tp</em>, </td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>timeout</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -871,7 +849,7 @@ Here is the call graph for this function:</div>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">more_work</td><td>flag to indicate more work is waiting, and thus a timeout value of 0 should be used for the select </td></tr>
-    <tr><td class="paramname">tp</td><td>the timeout to be used for the select, unless overridden </td></tr>
+    <tr><td class="paramname">timeout</td><td>the timeout to be used in ms </td></tr>
     <tr><td class="paramname">rc</td><td>a value other than 0 indicates an error of the returned socket </td></tr>
   </table>
   </dd>
@@ -880,24 +858,32 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="Socket_8c_a2c082b4e794c0a7835a0700f0bc7b3a1_cgraph.png" border="0" usemap="#Socket_8c_a2c082b4e794c0a7835a0700f0bc7b3a1_cgraph" alt=""/></div>
-<map name="Socket_8c_a2c082b4e794c0a7835a0700f0bc7b3a1_cgraph" id="Socket_8c_a2c082b4e794c0a7835a0700f0bc7b3a1_cgraph">
-<area shape="rect" title="Returns the next socket ready for communications as indicated by select." alt="" coords="5,107,171,133"/>
-<area shape="rect" href="Socket_8c.html#aeec7592039c180d20ef7c6e8f50d5667" title="Don&#39;t accept work from a client unless it is accepting work back, i.e." alt="" coords="252,81,320,108"/>
-<area shape="rect" href="Thread_8c.html#a7e92185eb22775c76e1b6b8865468f17" title="Lock a mutex which has alrea." alt="" coords="219,132,353,159"/>
-<area shape="rect" href="LinkedList_8c.html#a1738915a6d6f10022e9ee1481c0ae452" title="List callback function for comparing integers." alt="" coords="617,56,704,83"/>
-<area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="752,107,847,133"/>
-<area shape="rect" href="LinkedList_8c.html#a4bb7c34fe9a5832d65f530091e0fad0d" title="Removes and frees an element in a list by comparing the content." alt="" coords="426,157,545,184"/>
-<area shape="rect" href="Socket_8c.html#ae95673b434f2c489ecefe4688c80be2d" title="Indicate whether any data is pending outbound for a socket." alt="" coords="401,5,569,32"/>
-<area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="895,107,1013,133"/>
-<area shape="rect" href="LinkedList_8c.html#ab82181e0c1d96954f82dee67cee41296" title="Removes and optionally frees an element in a list by comparing the content." alt="" coords="620,157,701,184"/>
+<div class="center"><img src="Socket_8c_ab33a53c9fce80d5dfeb26426b157034a_cgraph.png" border="0" usemap="#Socket_8c_ab33a53c9fce80d5dfeb26426b157034a_cgraph" alt=""/></div>
+<map name="Socket_8c_ab33a53c9fce80d5dfeb26426b157034a_cgraph" id="Socket_8c_ab33a53c9fce80d5dfeb26426b157034a_cgraph">
+<area shape="rect" title="Returns the next socket ready for communications as indicated by select." alt="" coords="5,376,171,402"/>
+<area shape="rect" href="Socket_8c.html#a42a217310f6f55473525764038ac367d" title="Don&#39;t accept work from a client unless it is accepting work back, i.e." alt="" coords="263,97,331,124"/>
+<area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="1087,325,1131,352"/>
+<area shape="rect" href="Socket_8c.html#ac176152ef036b6cfd7330a9481a7b2ed" title="Continue any outstanding socket writes." alt="" coords="219,288,375,314"/>
+<area shape="rect" href="Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="872,325,968,352"/>
+<area shape="rect" href="Thread_8c.html#a7e92185eb22775c76e1b6b8865468f17" title="Lock a mutex which has alrea." alt="" coords="229,452,364,478"/>
+<area shape="rect" href="Thread_8c.html#a5faf758226199e7cf93f6b489aca07f7" title="Unlock a mutex which has already been locked." alt="" coords="222,502,371,529"/>
+<area shape="rect" href="LinkedList_8c.html#a1738915a6d6f10022e9ee1481c0ae452" title="List callback function for comparing integers." alt="" coords="671,148,758,174"/>
+<area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="873,72,967,98"/>
+<area shape="rect" href="LinkedList_8c.html#a4bb7c34fe9a5832d65f530091e0fad0d" title="Removes and frees an element in a list by comparing the content." alt="" coords="447,46,566,73"/>
+<area shape="rect" href="Socket_8c.html#a457d9a6a9d8e886c46fcd0c096f45614" title="Indicate whether any data is pending outbound for a socket." alt="" coords="423,97,591,124"/>
+<area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="1049,72,1168,98"/>
+<area shape="rect" href="LinkedList_8c.html#ab82181e0c1d96954f82dee67cee41296" title="Removes and optionally frees an element in a list by comparing the content." alt="" coords="674,46,755,73"/>
+<area shape="rect" href="Socket_8c.html#aa77cff9e8173f9b8d35d062558d0cb57" title="Continue an outstanding write for a particular socket." alt="" coords="432,274,581,301"/>
+<area shape="rect" href="Socket_8c.html#a550291985042dc080825ab27b16894fb" title="Attempts to write a series of iovec buffers to a socket in one system call so that they are sent as o..." alt="" coords="662,300,767,326"/>
+<area shape="rect" href="SocketBuffer_8c.html#a524311e577a7225a09fb944904c17886" title="Get any queued write data for a specific socket." alt="" coords="639,198,791,225"/>
+<area shape="rect" href="SocketBuffer_8c.html#a39f1ee9c98bc12a7be4d7a40b03550d5" title="List callback function for comparing pending_writes by socket." alt="" coords="839,198,1001,225"/>
 </map>
 </div>
 
 </div>
 </div>
-<a id="acb965ef2124fa6736477c9286f7599b2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acb965ef2124fa6736477c9286f7599b2">&#9670;&nbsp;</a></span>Socket_new()</h2>
+<a id="accf7d8d1529e31b2ad8286627cb662c0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#accf7d8d1529e31b2ad8286627cb662c0">&#9670;&nbsp;</a></span>Socket_new()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -923,7 +909,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int *&#160;</td>
+          <td class="paramtype">SOCKET *&#160;</td>
           <td class="paramname"><em>sock</em>&#160;</td>
         </tr>
         <tr>
@@ -944,39 +930,39 @@ Here is the call graph for this function:</div>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>completion code </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>completion code 0=good, SOCKET_ERROR=fail </dd></dl>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="Socket_8c_acb965ef2124fa6736477c9286f7599b2_cgraph.png" border="0" usemap="#Socket_8c_acb965ef2124fa6736477c9286f7599b2_cgraph" alt=""/></div>
-<map name="Socket_8c_acb965ef2124fa6736477c9286f7599b2_cgraph" id="Socket_8c_acb965ef2124fa6736477c9286f7599b2_cgraph">
-<area shape="rect" title="Create a new socket and TCP connect to an address/port." alt="" coords="5,208,100,235"/>
-<area shape="rect" href="LinkedList_8c.html#abc7a28449893dfa775c2f709349968b4" title="Append an item to a list." alt="" coords="359,5,447,32"/>
-<area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="819,259,863,285"/>
-<area shape="rect" href="Socket_8c.html#a3c690a1d23a55ccf1ea52cdea9b56432" title="Add a socket to the list of socket to check with select." alt="" coords="148,107,280,133"/>
-<area shape="rect" href="Socket_8c.html#a6bdb051c5944e1a0fd16ba18544ab5df" title="Close a socket and remove it from the select list." alt="" coords="163,385,265,412"/>
-<area shape="rect" href="Socket_8c.html#a47824ad5afba267b9488150e1f7e8610" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="571,259,667,285"/>
-<area shape="rect" href="LinkedList_8c.html#a321a3598d6979c7af3f995b77ea2cec3" title="Append an already allocated ListElement and content to a list." alt="" coords="547,5,690,32"/>
-<area shape="rect" href="LinkedList_8c.html#a1738915a6d6f10022e9ee1481c0ae452" title="List callback function for comparing integers." alt="" coords="359,157,446,184"/>
-<area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="1100,537,1195,564"/>
-<area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="1243,639,1361,665"/>
-<area shape="rect" href="LinkedList_8c.html#a4bb7c34fe9a5832d65f530091e0fad0d" title="Removes and frees an element in a list by comparing the content." alt="" coords="782,512,901,539"/>
-<area shape="rect" href="Socket_8c.html#ad246851be3980fd316d16864a786c808" title="Continue an outstanding write for a particular socket." alt="" coords="338,411,467,437"/>
-<area shape="rect" href="Socket_8c.html#a2e7c21836cd061947d6d6e28446c4a59" title="Close a socket without removing it from the select list." alt="" coords="337,309,468,336"/>
-<area shape="rect" href="SocketBuffer_8c.html#a0601e12cab5b7c4777df10ca6d38a41b" title="Cleanup any buffers for a specific socket." alt="" coords="328,563,477,589"/>
-<area shape="rect" href="LinkedList_8c.html#ab82181e0c1d96954f82dee67cee41296" title="Removes and optionally frees an element in a list by comparing the content." alt="" coords="971,537,1052,564"/>
-<area shape="rect" href="SocketBuffer_8c.html#a5f22a1ac450cb1805e2ab8f2ae3da80e" title="Get any queued write data for a specific socket." alt="" coords="543,411,695,437"/>
-<area shape="rect" href="SocketBuffer_8c.html#a39f1ee9c98bc12a7be4d7a40b03550d5" title="List callback function for comparing pending_writes by socket." alt="" coords="760,461,923,488"/>
-<area shape="rect" href="LinkedList_8c.html#a8430370b2b15c56ec95bb8e7e36753a5" title="Removes and frees an item in a list by comparing the pointer to the content." alt="" coords="795,563,887,589"/>
-<area shape="rect" href="SocketBuffer_8c.html#a893ce45cf77f7d66c3f27c831ccf8124" title="A socket write has now completed so we can get rid of the queue." alt="" coords="525,512,712,539"/>
-<area shape="rect" href="SocketBuffer_8c.html#acebc1cbb93be4588f33b04ed404f6dbf" title="List callback function for comparing socket_queues by socket." alt="" coords="563,613,674,640"/>
+<div class="center"><img src="Socket_8c_accf7d8d1529e31b2ad8286627cb662c0_cgraph.png" border="0" usemap="#Socket_8c_accf7d8d1529e31b2ad8286627cb662c0_cgraph" alt=""/></div>
+<map name="Socket_8c_accf7d8d1529e31b2ad8286627cb662c0_cgraph" id="Socket_8c_accf7d8d1529e31b2ad8286627cb662c0_cgraph">
+<area shape="rect" title="Create a new socket and TCP connect to an address/port." alt="" coords="5,454,100,481"/>
+<area shape="rect" href="LinkedList_8c.html#abc7a28449893dfa775c2f709349968b4" title="Append an item to a list." alt="" coords="170,175,258,202"/>
+<area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="819,403,863,430"/>
+<area shape="rect" href="Socket_8c.html#a4c933d467e9ab2848b9590fe45f21f2f" title="Add a socket to the list of socket to check with select." alt="" coords="148,555,280,582"/>
+<area shape="rect" href="Socket_8c.html#a9da80ce7e69ae76dee95c94a2349c462" title="Close a socket and remove it from the select list." alt="" coords="163,327,265,354"/>
+<area shape="rect" href="Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="571,403,667,430"/>
+<area shape="rect" href="LinkedList_8c.html#a321a3598d6979c7af3f995b77ea2cec3" title="Append an already allocated ListElement and content to a list." alt="" coords="331,74,474,101"/>
+<area shape="rect" href="LinkedList_8c.html#a1738915a6d6f10022e9ee1481c0ae452" title="List callback function for comparing integers." alt="" coords="359,403,446,430"/>
+<area shape="rect" href="LinkedList_8c.html#a4bb7c34fe9a5832d65f530091e0fad0d" title="Removes and frees an element in a list by comparing the content." alt="" coords="782,150,901,177"/>
+<area shape="rect" href="Socket_8c.html#aa24d7c85b03f09f16c78de0c1a9b3580" title="Continue an outstanding write for a particular socket." alt="" coords="338,251,467,278"/>
+<area shape="rect" href="Socket_8c.html#a0e0f2981efa6caf604e8f0fc1072af90" title="Close a socket without removing it from the select list." alt="" coords="337,353,468,379"/>
+<area shape="rect" href="SocketBuffer_8c.html#abb5eae96f4c62d1e6fefed8d078ecba8" title="Cleanup any buffers for a specific socket." alt="" coords="328,125,477,151"/>
+<area shape="rect" href="LinkedList_8c.html#ab82181e0c1d96954f82dee67cee41296" title="Removes and optionally frees an element in a list by comparing the content." alt="" coords="971,99,1052,126"/>
+<area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="1100,99,1195,126"/>
+<area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="1243,99,1361,126"/>
+<area shape="rect" href="SocketBuffer_8c.html#a524311e577a7225a09fb944904c17886" title="Get any queued write data for a specific socket." alt="" coords="543,201,695,227"/>
+<area shape="rect" href="SocketBuffer_8c.html#a39f1ee9c98bc12a7be4d7a40b03550d5" title="List callback function for comparing pending_writes by socket." alt="" coords="760,99,923,126"/>
+<area shape="rect" href="LinkedList_8c.html#a8430370b2b15c56ec95bb8e7e36753a5" title="Removes and frees an item in a list by comparing the pointer to the content." alt="" coords="795,49,887,75"/>
+<area shape="rect" href="SocketBuffer_8c.html#ae8667990c5933c3af9b90a163bba34dc" title="A socket write has now completed so we can get rid of the queue." alt="" coords="525,99,712,126"/>
+<area shape="rect" href="SocketBuffer_8c.html#acebc1cbb93be4588f33b04ed404f6dbf" title="List callback function for comparing socket_queues by socket." alt="" coords="563,150,674,177"/>
 </map>
 </div>
 
 </div>
 </div>
-<a id="ae95673b434f2c489ecefe4688c80be2d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae95673b434f2c489ecefe4688c80be2d">&#9670;&nbsp;</a></span>Socket_noPendingWrites()</h2>
+<a id="a457d9a6a9d8e886c46fcd0c096f45614"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a457d9a6a9d8e886c46fcd0c096f45614">&#9670;&nbsp;</a></span>Socket_noPendingWrites()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -984,7 +970,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">int Socket_noPendingWrites </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em></td><td>)</td>
           <td></td>
         </tr>
@@ -992,12 +978,12 @@ Here is the call graph for this function:</div>
 </div><div class="memdoc">
 
 <p>Indicate whether any data is pending outbound for a socket. </p>
-<dl class="section return"><dt>Returns</dt><dd>boolean - true == data pending. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>boolean - true == no pending data. </dd></dl>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="Socket_8c_ae95673b434f2c489ecefe4688c80be2d_cgraph.png" border="0" usemap="#Socket_8c_ae95673b434f2c489ecefe4688c80be2d_cgraph" alt=""/></div>
-<map name="Socket_8c_ae95673b434f2c489ecefe4688c80be2d_cgraph" id="Socket_8c_ae95673b434f2c489ecefe4688c80be2d_cgraph">
+<div class="center"><img src="Socket_8c_a457d9a6a9d8e886c46fcd0c096f45614_cgraph.png" border="0" usemap="#Socket_8c_a457d9a6a9d8e886c46fcd0c096f45614_cgraph" alt=""/></div>
+<map name="Socket_8c_a457d9a6a9d8e886c46fcd0c096f45614_cgraph" id="Socket_8c_a457d9a6a9d8e886c46fcd0c096f45614_cgraph">
 <area shape="rect" title="Indicate whether any data is pending outbound for a socket." alt="" coords="5,31,173,57"/>
 <area shape="rect" href="LinkedList_8c.html#a1738915a6d6f10022e9ee1481c0ae452" title="List callback function for comparing integers." alt="" coords="225,5,312,32"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="221,56,316,83"/>
@@ -1007,8 +993,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a601ba77d9b01e908dbd0653f6efa3be0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a601ba77d9b01e908dbd0653f6efa3be0">&#9670;&nbsp;</a></span>Socket_putdatas()</h2>
+<a id="a8fac284bb799c180ef68bb5c7b4b1df4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8fac284bb799c180ef68bb5c7b4b1df4">&#9670;&nbsp;</a></span>Socket_putdatas()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1016,7 +1002,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">int Socket_putdatas </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
@@ -1061,26 +1047,26 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="Socket_8c_a601ba77d9b01e908dbd0653f6efa3be0_cgraph.png" border="0" usemap="#Socket_8c_a601ba77d9b01e908dbd0653f6efa3be0_cgraph" alt=""/></div>
-<map name="Socket_8c_a601ba77d9b01e908dbd0653f6efa3be0_cgraph" id="Socket_8c_a601ba77d9b01e908dbd0653f6efa3be0_cgraph">
+<div class="center"><img src="Socket_8c_a8fac284bb799c180ef68bb5c7b4b1df4_cgraph.png" border="0" usemap="#Socket_8c_a8fac284bb799c180ef68bb5c7b4b1df4_cgraph" alt=""/></div>
+<map name="Socket_8c_a8fac284bb799c180ef68bb5c7b4b1df4_cgraph" id="Socket_8c_a8fac284bb799c180ef68bb5c7b4b1df4_cgraph">
 <area shape="rect" title="Attempts to write a series of buffers to a socket in one system call so that they are sent as one pac..." alt="" coords="5,107,125,133"/>
 <area shape="rect" href="LinkedList_8c.html#abc7a28449893dfa775c2f709349968b4" title="Append an item to a list." alt="" coords="404,5,492,32"/>
 <area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="593,183,637,209"/>
-<area shape="rect" href="Socket_8c.html#ae95673b434f2c489ecefe4688c80be2d" title="Indicate whether any data is pending outbound for a socket." alt="" coords="179,107,347,133"/>
-<area shape="rect" href="Socket_8c.html#aec4ee8ecb248d29d315d2624a88ed1c3" title="Attempts to write a series of iovec buffers to a socket in one system call so that they are sent as o..." alt="" coords="210,208,315,235"/>
-<area shape="rect" href="SocketBuffer_8c.html#a9a92acaaec423c44227e3dd978223529" title="A socket write was interrupted so store the remaining data." alt="" coords="173,5,352,32"/>
+<area shape="rect" href="Socket_8c.html#a457d9a6a9d8e886c46fcd0c096f45614" title="Indicate whether any data is pending outbound for a socket." alt="" coords="179,107,347,133"/>
+<area shape="rect" href="Socket_8c.html#a550291985042dc080825ab27b16894fb" title="Attempts to write a series of iovec buffers to a socket in one system call so that they are sent as o..." alt="" coords="210,208,315,235"/>
+<area shape="rect" href="SocketBuffer_8c.html#aa61a564b814b06d9cfd3fe9ce7ab1cf7" title="A socket write was interrupted so store the remaining data." alt="" coords="173,5,352,32"/>
 <area shape="rect" href="LinkedList_8c.html#a321a3598d6979c7af3f995b77ea2cec3" title="Append an already allocated ListElement and content to a list." alt="" coords="544,5,687,32"/>
 <area shape="rect" href="LinkedList_8c.html#a1738915a6d6f10022e9ee1481c0ae452" title="List callback function for comparing integers." alt="" coords="405,107,491,133"/>
 <area shape="rect" href="LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="401,56,495,83"/>
 <area shape="rect" href="LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="556,56,675,83"/>
-<area shape="rect" href="Socket_8c.html#a47824ad5afba267b9488150e1f7e8610" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="400,208,496,235"/>
+<area shape="rect" href="Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="400,208,496,235"/>
 </map>
 </div>
 
 </div>
 </div>
-<a id="a90f49db5a5763c6874f27facfe9e60a3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a90f49db5a5763c6874f27facfe9e60a3">&#9670;&nbsp;</a></span>Socket_setnonblocking()</h2>
+<a id="ab8ff50df7c89391178aa754083d2f828"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8ff50df7c89391178aa754083d2f828">&#9670;&nbsp;</a></span>Socket_setnonblocking()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1088,7 +1074,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">int Socket_setnonblocking </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>sock</em></td><td>)</td>
           <td></td>
         </tr>
@@ -1106,8 +1092,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="aec4ee8ecb248d29d315d2624a88ed1c3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aec4ee8ecb248d29d315d2624a88ed1c3">&#9670;&nbsp;</a></span>Socket_writev()</h2>
+<a id="a550291985042dc080825ab27b16894fb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a550291985042dc080825ab27b16894fb">&#9670;&nbsp;</a></span>Socket_writev()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1115,7 +1101,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">int Socket_writev </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">SOCKET&#160;</td>
           <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
@@ -1158,10 +1144,10 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="Socket_8c_aec4ee8ecb248d29d315d2624a88ed1c3_cgraph.png" border="0" usemap="#Socket_8c_aec4ee8ecb248d29d315d2624a88ed1c3_cgraph" alt=""/></div>
-<map name="Socket_8c_aec4ee8ecb248d29d315d2624a88ed1c3_cgraph" id="Socket_8c_aec4ee8ecb248d29d315d2624a88ed1c3_cgraph">
+<div class="center"><img src="Socket_8c_a550291985042dc080825ab27b16894fb_cgraph.png" border="0" usemap="#Socket_8c_a550291985042dc080825ab27b16894fb_cgraph" alt=""/></div>
+<map name="Socket_8c_a550291985042dc080825ab27b16894fb_cgraph" id="Socket_8c_a550291985042dc080825ab27b16894fb_cgraph">
 <area shape="rect" title="Attempts to write a series of iovec buffers to a socket in one system call so that they are sent as o..." alt="" coords="5,5,111,32"/>
-<area shape="rect" href="Socket_8c.html#a47824ad5afba267b9488150e1f7e8610" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="159,5,255,32"/>
+<area shape="rect" href="Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="159,5,255,32"/>
 <area shape="rect" href="Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="303,5,347,32"/>
 </map>
 </div>
@@ -1171,7 +1157,7 @@ Here is the call graph for this function:</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 24 2021 18:05:54 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Sep 29 2022 11:34:46 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

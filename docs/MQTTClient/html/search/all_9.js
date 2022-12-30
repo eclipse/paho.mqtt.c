@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['mqtt_20client_20library_20for_20c_29',['MQTT Client library for C',['../index.html',1,'']]],
+  ['mqtt_20client_20library_20for_20c_20_28mqttclient_29_29',['MQTT Client library for C (MQTTClient)',['../index.html',1,'']]],
   ['max_5fcount_30',['max_count',['../struct_m_q_t_t_properties.html#a8de324382d8fd2f5939bf3372e059383',1,'MQTTProperties']]],
   ['maxinflightmessages_31',['maxInflightMessages',['../struct_m_q_t_t_client__connect_options.html#ae3f99bf4663ab7b9e9259feeba41fab2',1,'MQTTClient_connectOptions']]],
   ['message_32',['message',['../struct_m_q_t_t_client__will_options.html#a254bf0858da09c96a48daf64404eb4f8',1,'MQTTClient_willOptions']]],

@@ -50,7 +50,7 @@
 
 /**
  * redefines free to use "myfree" so that heap allocation can be tracked
- * @param x the size of the item to be freed
+ * @param x the pointer to the item to be freed
  */
 #define free(x) myfree(__FILE__, __LINE__, x)
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2021 IBM Corp. and Ian Craggs
+ * Copyright (c) 2009, 2022 IBM Corp. and Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -24,15 +24,16 @@
 
 #include <stdint.h>
 #include "MQTTTime.h"
-#if defined(OPENSSL)
 #if defined(_WIN32) || defined(_WIN64)
 #include <winsock2.h>
 #endif
+#if defined(OPENSSL)
 #include <openssl/ssl.h>
 #endif
 #include "MQTTClient.h"
 #include "LinkedList.h"
 #include "MQTTClientPersistence.h"
+#include "Socket.h"
 
 /**
  * Stored publication data to minimize copying
@@ -77,7 +78,7 @@ typedef struct
 
 typedef struct
 {
-	int socket;
+	SOCKET socket;
 	START_TIME_TYPE lastSent;
 	START_TIME_TYPE lastReceived;
 	START_TIME_TYPE lastPing;
@@ -131,12 +132,15 @@ typedef struct
 	networkHandles net;             /**< network info for this client */
 	int msgID;                      /**< the MQTT message id */
 	int keepAliveInterval;          /**< the MQTT keep alive interval */
-	int retryInterval;
+	int retryInterval;              /**< the MQTT retry interval for QoS > 0 */
 	int maxInflightMessages;        /**< the max number of inflight outbound messages we allow */
 	willMessages* will;             /**< the MQTT will message, if any */
 	List* inboundMsgs;              /**< inbound in flight messages */
 	List* outboundMsgs;				/**< outbound in flight messages */
+	int connect_count;              /**< the number of outbound messages on reconnect - to ensure we send them all */
+	int connect_sent;               /**< the current number of outbound messages on reconnect that we've sent */
 	List* messageQueue;             /**< inbound complete but undelivered messages */
+	List* outboundQueue;            /**< outbound queued messages */
 	unsigned int qentry_seqno;
 	void* phandle;                  /**< the persistence handle */
 	MQTTClient_persistence* persistence; /**< a persistence implementation */
@@ -147,8 +151,8 @@ typedef struct
 	void* context;                  /**< calling context - used when calling disconnect_internal */
 	int MQTTVersion;                /**< the version of MQTT being used, 3, 4 or 5 */
 	int sessionExpiry;              /**< MQTT 5 session expiry */
-	char* httpProxy;                /**< HTTP proxy for websockets */
-	char* httpsProxy;               /**< HTTPS proxy for websockets */
+	char* httpProxy;                /**< HTTP proxy */
+	char* httpsProxy;               /**< HTTPS proxy */
 #if defined(OPENSSL)
 	MQTTClient_SSLOptions *sslopts; /**< the SSL/TLS connect options */
 	SSL_SESSION* session;           /**< SSL session pointer for fast handhake */

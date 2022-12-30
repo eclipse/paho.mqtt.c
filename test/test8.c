@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2020 IBM Corp. and others
+ * Copyright (c) 2012, 2021 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -21,14 +21,16 @@
 
 
 #include "MQTTAsync.h"
+#include "Thread.h"
 #include <string.h>
 #include <stdlib.h>
 
 #if !defined(_WINDOWS)
 	#include <sys/time.h>
-  #include <sys/socket.h>
+	#include <sys/socket.h>
 	#include <unistd.h>
-  #include <errno.h>
+	#include <errno.h>
+	#define WINAPI
 #else
 	#include <windows.h>
 #endif
@@ -45,7 +47,7 @@ struct Options
 {
 	char* connection;         /**< connection to system under test. */
 	int verbose;
-  int test_no;
+	int test_no;
 	int size;									/**< size of big message */
 } options =
 {
@@ -240,6 +242,7 @@ void test1_onUnsubscribe(void* context, MQTTAsync_successData* response)
 	MyLog(LOGA_DEBUG, "In onUnsubscribe onSuccess callback %p", c);
 	opts.onSuccess = test1_onDisconnect;
 	opts.context = c;
+	opts.timeout = 1000;
 
 	rc = MQTTAsync_disconnect(c, &opts);
 	assert("Disconnect successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -523,6 +526,7 @@ void test3_onUnsubscribe(void* context, MQTTAsync_successData* response)
 	MyLog(LOGA_DEBUG, "In onUnsubscribe onSuccess callback \"%s\"", cd->clientid);
 	opts.onSuccess = test3_onDisconnect;
 	opts.context = cd;
+	opts.timeout = 1000;
 
 	rc = MQTTAsync_disconnect(cd->c, &opts);
 	assert("Disconnect successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
@@ -916,7 +920,7 @@ int test5a(struct Options options)
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
 	int rc = 0;
 	char* test_topic = "C client test5a";
-	char* serverURIs[3] = {"tcp://localhost:1880", "tcp://localhost:1881", "tcp://localhost:1882"};
+	char* serverURIs[3] = {"tcp://localhost:1880", "mqtt://localhost:1881", "tcp://localhost:1882"};
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 5a - All HA connections out of service");
@@ -978,7 +982,7 @@ int test5b(struct Options options)
 	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
 	int rc = 0;
 	char* test_topic = "C client test5b";
-	char* serverURIs[3] = {"tcp://localhost:1880", "tcp://localhost:1881", options.connection};
+	char* serverURIs[3] = {"tcp://localhost:1880", "mqtt://localhost:1881", options.connection};
 
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 5b - All HA connections out of service except the last one");
@@ -1092,9 +1096,302 @@ exit:
 }
 
 
+/*********************************************************************
+
+Test6: Acks blocked due to sending messages
+
+*********************************************************************/
+char* test6_topic = "test6_topic";
+char* test6_payload = NULL;
+int test6_connected = 0;
+int test6_payloadlen = 0;
+int test6_message_count = 0;
+int test6_disconnected = 0;
+
+
+void test6_onDisconnect(void* context, MQTTAsync_successData* response)
+{
+	MyLog(LOGA_DEBUG, "In onDisconnect callback");
+	test6_disconnected = 1;
+}
+
+
+int test6_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync_message* message)
+{
+	MQTTAsync c = (MQTTAsync)context;
+
+	MyLog(LOGA_DEBUG, "In messageArrived callback %p", c);
+
+	assert("Message size correct", message->payloadlen == test6_payloadlen,
+				 "message size was %d", message->payloadlen);
+
+	MQTTAsync_freeMessage(&message);
+	MQTTAsync_free(topicName);
+
+	return 1;
+}
+
+
+void test6_onPublishFailure(void* context, MQTTAsync_failureData* response)
+{
+	MyLog(LOGA_INFO, "In publish onFailure callback, context %p", context);
+	failures++;
+	test_finished = 1;
+}
+
+
+void test6_onPublish(void* context, MQTTAsync_successData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	int rc;
+	static int publish_count = 0;
+
+	if (++publish_count > 100)
+	{
+		test_finished = 1;
+		goto exit;
+	}
+
+	MyLog(LOGA_INFO, "In publish onSuccess callback, count %d", publish_count);
+
+	if (test6_payload == NULL) {
+		test6_payload = malloc(options.size);
+		memset(test6_payload, ' ', options.size);
+	}
+
+	MyLog(LOGA_DEBUG, "In publish onSuccess callback, context %p", context);
+	pubmsg.payload = test6_payload;
+	pubmsg.payloadlen = options.size;
+	pubmsg.qos = 0;
+	pubmsg.retained = 0;
+
+	opts.onSuccess = test6_onPublish;
+	opts.onFailure = test6_onPublishFailure;
+	opts.context = c;
+
+	MyLog(LOGA_INFO, "Calling sendMessage, count %d", publish_count);
+	rc = MQTTAsync_sendMessage(c, "test6_big_messages", &pubmsg, &opts);
+	MyLog(LOGA_INFO, "Called sendMessage, count %d rc %d", publish_count, rc);
+	assert("Good rc from publish", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+exit:
+	MyLog(LOGA_DEBUG, "Leaving publish onSuccess callback, count %d, context %p", publish_count, context);
+}
+
+
+void test6_onSubscribeFailure(void* context, MQTTAsync_failureData* response)
+{
+	MyLog(LOGA_INFO, "In subscribe onFailure callback, context %p", context);
+	failures++;
+	test_finished = 1;
+}
+
+
+void test6_onSubscribe(void* context, MQTTAsync_successData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	int rc;
+
+	if (test6_payload == NULL) {
+		test6_payload = malloc(options.size);
+		memset(test6_payload, ' ', options.size);
+	}
+
+	MyLog(LOGA_INFO, "In subscribe onSuccess callback, context %p", context);
+	pubmsg.payload = test6_payload;
+	pubmsg.payloadlen = options.size;
+	pubmsg.qos = 0;
+	pubmsg.retained = 0;
+
+	opts.onSuccess = test6_onPublish;
+	opts.onFailure = test6_onPublishFailure;
+	opts.context = c;
+
+	rc = MQTTAsync_sendMessage(c, "test6_big_messages", &pubmsg, &opts);
+	assert("Good rc from publish", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+}
+
+
+void test6_onConnectFailure(void* context, MQTTAsync_failureData* response)
+{
+	MyLog(LOGA_INFO, "In connect onFailure callback, context %p", context);
+	failures++;
+	test_finished = 1;
+}
+
+
+void test6_onConnect(void* context, MQTTAsync_successData* response)
+{
+	MQTTAsync c = (MQTTAsync)context;
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	int rc;
+
+	MyLog(LOGA_INFO, "In connect onSuccess callback, context %p", context);
+	opts.onSuccess = test6_onSubscribe;
+	opts.onFailure = test6_onSubscribeFailure;
+	opts.context = c;
+
+	rc = MQTTAsync_subscribe(c, test6_topic, 2, &opts);
+	assert("Good rc from subscribe", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		test_finished = 1;
+}
+
+
+void test6_onConnected(void* context, MQTTAsync_successData* response)
+{
+	MQTTAsync d = (MQTTAsync)context;
+
+	MyLog(LOGA_DEBUG, "In connect onSuccess callback, context %p", context);
+	test6_connected = 1;
+}
+
+
+void test6_connectionLost(void* context, char* cause) {
+	MyLog(LOGA_INFO, "Connection lost");
+	test_finished = 1;
+}
+
+
+int test6(struct Options options)
+{
+	MQTTAsync c, d;
+	MQTTAsync_connectOptions opts = MQTTAsync_connectOptions_initializer;
+	MQTTAsync_disconnectOptions dopts = MQTTAsync_disconnectOptions_initializer;
+	MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+	int rc = 0;
+	char* test_topic = "C client test8 - test6";
+	int messages_sent = 0;
+	int count = 0;
+
+	failures = 0;
+	test_finished = 0;
+	MyLog(LOGA_INFO, "Starting test 6 - acks blocked due to sending messages");
+	global_start_time = start_clock();
+
+	rc = MQTTAsync_create(&c, options.connection, "acks blocked",
+			MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&c);
+		goto exit;
+	}
+
+	rc = MQTTAsync_setCallbacks(c, c, test6_connectionLost, test6_messageArrived, NULL);
+	assert("Good rc from setCallbacks", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+
+	opts.keepAliveInterval = 20;
+	opts.cleansession = 1;
+	opts.username = "testuser";
+	opts.password = "testpassword";
+
+	opts.onSuccess = test6_onConnect;
+	opts.onFailure = test6_onConnectFailure;
+	opts.context = c;
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(c, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	rc = MQTTAsync_create(&d, options.connection, "acks blocked - send loop",
+			MQTTCLIENT_PERSISTENCE_NONE, NULL);
+	assert("good rc from create",  rc == MQTTASYNC_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+	{
+		MQTTAsync_destroy(&d);
+		goto exit;
+	}
+
+	opts.onSuccess = test6_onConnected;
+	opts.context = d;
+
+	MyLog(LOGA_DEBUG, "Connecting");
+	rc = MQTTAsync_connect(d, &opts);
+	assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	if (rc != MQTTASYNC_SUCCESS)
+		goto exit;
+
+	while (test6_connected == 0 && test_finished == 0 && failures == 0)
+	{
+		#if defined(_WIN32)
+			Sleep(100);
+		#else
+			usleep(10000L);
+		#endif
+	}
+
+	pubmsg.payload = "small payload in loop";
+	pubmsg.payloadlen = test6_payloadlen = strlen(pubmsg.payload)+1;
+	pubmsg.qos = 1;
+	pubmsg.retained = 0;
+
+	while (test_finished == 0 && failures == 0)
+	{
+		rc = MQTTAsync_sendMessage(d, test6_topic, &pubmsg, NULL);
+		assert("Good rc from publish", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+		if (rc != MQTTASYNC_SUCCESS)
+			break;
+		messages_sent++;
+
+		#if defined(_WIN32)
+			Sleep(1000);
+		#else
+			usleep(100000L);
+		#endif
+	}
+
+	dopts.onSuccess = test6_onDisconnect;
+	dopts.timeout = 1000;
+
+	dopts.context = d;
+	test6_disconnected = 0;
+	rc = MQTTAsync_disconnect(d, &dopts);
+	assert("Disconnect start successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	while (test6_disconnected == 0 && ++count < 5)
+	{
+		#if defined(_WIN32)
+			Sleep(1000);
+		#else
+			usleep(100000L);
+		#endif
+	}
+
+	dopts.context = c;
+	test6_disconnected = 0;
+	rc = MQTTAsync_disconnect(c, &dopts);
+	assert("Disconnect start successful", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
+	count = 0;
+	while (test6_disconnected == 0 && ++count < 5)
+	{
+		#if defined(_WIN32)
+			Sleep(1000);
+		#else
+			usleep(100000L);
+		#endif
+	}
+
+	MQTTAsync_destroy(&c);
+	MQTTAsync_destroy(&d);
+
+exit:
+	if (test6_payload)
+		free(test6_payload);
+	MyLog(LOGA_INFO, "TEST6: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	return failures;
+}
+
+
+
 void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 {
-	if (strstr(message, "onnect") && !strstr(message, "isconnect"))
+	//if ((strstr(message, "onnect") && !strstr(message, "isconnect")) || level == MQTTASYNC_TRACE_ERROR)
 		printf("Trace : %d, %s\n", level, message);
 }
 
@@ -1102,7 +1399,7 @@ void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 int main(int argc, char** argv)
 {
 	int rc = 0;
-	int (*tests[])() = {NULL, test1, test2, test3, test4, test5a, test5b, test5c}; /* indexed starting from 1 */
+	int (*tests[])() = {NULL, test1, test2, test3, test4, test5a, test5b, test5c, test6}; /* indexed starting from 1 */
 	MQTTAsync_nameValue* info;
 
 	getopts(argc, argv);

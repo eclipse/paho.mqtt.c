@@ -1035,12 +1035,12 @@ IF (PAHO_WITH_SSL)
 		
 		ADD_TEST(
 			NAME test5-7-big-messages-static
-			COMMAND test5-static "--test_no" "10" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+			COMMAND test5-static "--test_no" "10" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt" 
 		)
 		
 		ADD_TEST(
 			NAME test5-7-ws-big-messages-static
-			COMMAND test5-static "--test_no" "10" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+			COMMAND test5-static "--test_no" "10" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt" 
 		)
 		
 		ADD_TEST(
@@ -1221,12 +1221,12 @@ IF (PAHO_WITH_SSL)
 		
 		ADD_TEST(
 			NAME test5-7-big-messages
-			COMMAND test5 "--test_no" "10" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+			COMMAND test5 "--test_no" "10" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt" 
 		)
 		
 		ADD_TEST(
 			NAME test5-7-ws-big-messages
-			COMMAND test5 "--test_no" "10" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt"
+			COMMAND test5 "--test_no" "10" "--ws" "--hostname" ${MQTT_SSL_HOSTNAME} "--client_key"	 "${CERTDIR}/client.pem" "--server_key"	"${CERTDIR}/test-root-ca.crt" 
 		)
 		
 		ADD_TEST(
@@ -1397,6 +1397,11 @@ IF (PAHO_BUILD_STATIC)
 		COMMAND test8-static "--test_no" "7" "--connection" ${MQTT_TEST_BROKER}
 	)
 	
+	ADD_TEST(
+		NAME test8-6-blocked-acks-static
+		COMMAND test8-static "--test_no" "8" "--connection" ${MQTT_TEST_BROKER} "--size" "500000" 
+	)
+	
 	SET_TESTS_PROPERTIES(
 		test8-1-basic-connect-subscribe-receive-static
 		test8-2-connect-timeout-static
@@ -1405,6 +1410,7 @@ IF (PAHO_BUILD_STATIC)
 		test8-5a-all-ha-connections-out-of-service-static
 		test8-5b-all-ha-connections-out-of-service-except-the-last-one-static
 		test8-5c-all-ha-connections-out-of-service-except-the-first-one-static
+		test8-6-blocked-acks-static
 		PROPERTIES TIMEOUT 540
 	)
 ENDIF()
@@ -1455,6 +1461,11 @@ IF (PAHO_BUILD_SHARED)
 		COMMAND test8 "--test_no" "7" "--connection" ${MQTT_TEST_BROKER}
 	)
 	
+	ADD_TEST(
+		NAME test8-6-blocked-acks
+		COMMAND test8 "--test_no" "8" "--connection" ${MQTT_TEST_BROKER} "--size" "500000" 
+	)
+	
 	SET_TESTS_PROPERTIES(
 		test8-1-basic-connect-subscribe-receive
 		test8-2-connect-timeout
@@ -1463,6 +1474,7 @@ IF (PAHO_BUILD_SHARED)
 		test8-5a-all-ha-connections-out-of-service
 		test8-5b-all-ha-connections-out-of-service-except-the-last-one
 		test8-5c-all-ha-connections-out-of-service-except-the-first-one
+		test8-6-blocked-acks
 		PROPERTIES TIMEOUT 540
 	)
 ENDIF()
@@ -1537,7 +1549,7 @@ IF (PAHO_BUILD_STATIC)
     
     ADD_TEST(
         NAME test9-2ws-offline-buffering-send-disconnected-serverURIs-static
-        COMMAND test9-static "--test_no" "2" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY} --verbose
+        COMMAND test9-static "--test_no" "2" "--connection" ${MQTT_WS_TEST_BROKER} "--proxy_connection" ${MQTT_WS_TEST_PROXY} 
     )
     
     ADD_TEST(

@@ -69,7 +69,7 @@ struct pubsub_opts
 		char *name;
 		char *value;
 	} user_property;
-	/* websocket HTTP proxies */
+	/* HTTP proxies */
 	char* http_proxy;
 	char* https_proxy;
 };

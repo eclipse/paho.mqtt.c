@@ -1,4 +1,4 @@
-.TH "MQTTClient_connectOptions" 3 "Mon May 24 2021" "Paho MQTT C Client Library" \" -*- nroff -*-
+.TH "MQTTClient_connectOptions" 3 "Thu Sep 29 2022" "Paho MQTT C Client Library" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -100,7 +100,19 @@ MQTTClient_connectOptions
 .PP 
 \fBMQTTClient_connectOptions\fP defines several settings that control the way the client connects to an MQTT server\&.
 .PP
-\fBNote:\fP Default values are not defined for members of \fBMQTTClient_connectOptions\fP so it is good practice to specify all settings\&. If the \fBMQTTClient_connectOptions\fP structure is defined as an automatic variable, all members are set to random values and thus must be set by the client application\&. If the \fBMQTTClient_connectOptions\fP structure is defined as a static variable, initialization (in compliant compilers) sets all values to 0 (NULL for pointers)\&. A \fBkeepAliveInterval\fP setting of 0 prevents correct operation of the client and so you \fBmust\fP at least set a value for \fBkeepAliveInterval\fP\&. 
+\fBNote:\fP Default values are not defined for members of \fBMQTTClient_connectOptions\fP so it is good practice to specify all settings\&. If the \fBMQTTClient_connectOptions\fP structure is defined as an automatic variable, all members are set to random values and thus must be set by the client application\&. If the \fBMQTTClient_connectOptions\fP structure is defined as a static variable, initialization (in compliant compilers) sets all values to 0 (NULL for pointers)\&. A \fBkeepAliveInterval\fP setting of 0 prevents correct operation of the client and so you \fBmust\fP at least set a value for \fBkeepAliveInterval\fP\&.
+.PP
+Suitable default values are set in the following initializers:
+.IP "\(bu" 2
+MQTTClient_connectOptions_initializer: for MQTT 3\&.1\&.1 non-WebSockets
+.IP "\(bu" 2
+MQTTClient_connectOptions_initializer5: for MQTT 5\&.0 non-WebSockets
+.IP "\(bu" 2
+MQTTClient_connectOptions_initializer_ws: for MQTT 3\&.1\&.1 WebSockets
+.IP "\(bu" 2
+MQTTClient_connectOptions_initializer5_ws: for MQTT 5\&.0 WebSockets 
+.PP
+
 .SH "Field Documentation"
 .PP 
 .SS "char struct_id[4]"
@@ -154,9 +166,9 @@ The maximum number of messages in flight
 .SS "const \fBMQTTClient_nameValue\fP* httpHeaders"
 HTTP headers for websockets 
 .SS "const char* httpProxy"
-HTTP proxy for websockets 
+HTTP proxy 
 .SS "const char* httpsProxy"
-HTTPS proxy for websockets 
+HTTPS proxy 
 
 .SH "Author"
 .PP 

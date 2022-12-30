@@ -106,6 +106,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a25288643d5e1a2ab1369132a80c58ce4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Thread_8c.html#a25288643d5e1a2ab1369132a80c58ce4">Thread_start</a> (thread_fn fn, void *parameter)</td></tr>
 <tr class="memdesc:a25288643d5e1a2ab1369132a80c58ce4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start a new thread.  <a href="Thread_8c.html#a25288643d5e1a2ab1369132a80c58ce4">More...</a><br /></td></tr>
 <tr class="separator:a25288643d5e1a2ab1369132a80c58ce4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4bd33fc4aeea77c32f7145bc8582b535"><td class="memItemLeft" align="right" valign="top"><a id="a4bd33fc4aeea77c32f7145bc8582b535"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>Thread_set_name</b> (const char *thread_name)</td></tr>
+<tr class="separator:a4bd33fc4aeea77c32f7145bc8582b535"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c1b6aaeb2f7e1d5b4a4936f0568b868"><td class="memItemLeft" align="right" valign="top">mutex_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Thread_8c.html#a6c1b6aaeb2f7e1d5b4a4936f0568b868">Thread_create_mutex</a> (int *rc)</td></tr>
 <tr class="memdesc:a6c1b6aaeb2f7e1d5b4a4936f0568b868"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new mutex.  <a href="Thread_8c.html#a6c1b6aaeb2f7e1d5b4a4936f0568b868">More...</a><br /></td></tr>
 <tr class="separator:a6c1b6aaeb2f7e1d5b4a4936f0568b868"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -142,9 +145,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a7b0d40dc1603a6e93db0ee970bb6750f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Thread_8c.html#a7b0d40dc1603a6e93db0ee970bb6750f">Thread_signal_cond</a> (<a class="el" href="structcond__type__struct.html">cond_type</a> condvar)</td></tr>
 <tr class="memdesc:a7b0d40dc1603a6e93db0ee970bb6750f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Signal a condition variable.  <a href="Thread_8c.html#a7b0d40dc1603a6e93db0ee970bb6750f">More...</a><br /></td></tr>
 <tr class="separator:a7b0d40dc1603a6e93db0ee970bb6750f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae8209c766c45f3c150db2c6735378936"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Thread_8c.html#ae8209c766c45f3c150db2c6735378936">Thread_wait_cond</a> (<a class="el" href="structcond__type__struct.html">cond_type</a> condvar, int timeout)</td></tr>
-<tr class="memdesc:ae8209c766c45f3c150db2c6735378936"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wait with a timeout (seconds) for condition variable.  <a href="Thread_8c.html#ae8209c766c45f3c150db2c6735378936">More...</a><br /></td></tr>
-<tr class="separator:ae8209c766c45f3c150db2c6735378936"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd23266878de6faaee0a972ef74c4db6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Thread_8c.html#acd23266878de6faaee0a972ef74c4db6">Thread_wait_cond</a> (<a class="el" href="structcond__type__struct.html">cond_type</a> condvar, int timeout_ms)</td></tr>
+<tr class="memdesc:acd23266878de6faaee0a972ef74c4db6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wait with a timeout (ms) for condition variable.  <a href="Thread_8c.html#acd23266878de6faaee0a972ef74c4db6">More...</a><br /></td></tr>
+<tr class="separator:acd23266878de6faaee0a972ef74c4db6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a95309628f2c15de1f3ea8047b086a707"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Thread_8c.html#a95309628f2c15de1f3ea8047b086a707">Thread_destroy_cond</a> (<a class="el" href="structcond__type__struct.html">cond_type</a> condvar)</td></tr>
 <tr class="memdesc:a95309628f2c15de1f3ea8047b086a707"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destroy a condition variable.  <a href="Thread_8c.html#a95309628f2c15de1f3ea8047b086a707">More...</a><br /></td></tr>
 <tr class="separator:a95309628f2c15de1f3ea8047b086a707"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -491,8 +494,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="ae8209c766c45f3c150db2c6735378936"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae8209c766c45f3c150db2c6735378936">&#9670;&nbsp;</a></span>Thread_wait_cond()</h2>
+<a id="acd23266878de6faaee0a972ef74c4db6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd23266878de6faaee0a972ef74c4db6">&#9670;&nbsp;</a></span>Thread_wait_cond()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -507,7 +510,7 @@ Here is the call graph for this function:</div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>timeout</em>&#160;</td>
+          <td class="paramname"><em>timeout_ms</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -517,7 +520,7 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p>Wait with a timeout (seconds) for condition variable. </p>
+<p>Wait with a timeout (ms) for condition variable. </p>
 <dl class="section return"><dt>Returns</dt><dd>0 for success, ETIMEDOUT otherwise </dd></dl>
 
 </div>
@@ -563,7 +566,7 @@ Here is the call graph for this function:</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 24 2021 18:05:54 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Sep 29 2022 11:34:46 for MQTT C Client Libraries Internals by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

@@ -1,4 +1,4 @@
-.TH "MQTTAsync_responseOptions" 3 "Mon May 24 2021" "Paho Asynchronous MQTT C Client Library" \" -*- nroff -*-
+.TH "MQTTAsync_responseOptions" 3 "Thu Sep 29 2022" "Paho Asynchronous MQTT C Client Library" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -64,7 +64,7 @@ A pointer to a callback function to be called if the API call fails\&. Can be se
 .SS "void* context"
 A pointer to any application-specific context\&. The the \fIcontext\fP pointer is passed to success or failure callback functions to provide access to the context information in the callback\&. 
 .SS "\fBMQTTAsync_token\fP token"
-A token is returned from the call\&. It can be used to track the state of this request, both in the callbacks and in future calls such as \fBMQTTAsync_waitForCompletion\fP\&. 
+A token is returned from the call\&. It can be used to track the state of this request, both in the callbacks and in future calls such as \fBMQTTAsync_waitForCompletion\fP\&. This is output only - any change by the application will be ignored\&. 
 .SS "\fBMQTTAsync_onSuccess5\fP* onSuccess5"
 A pointer to a callback function to be called if the API call successfully completes\&. Can be set to NULL, in which case no indication of successful completion will be received\&. 
 .SS "\fBMQTTAsync_onFailure5\fP* onFailure5"

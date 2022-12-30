@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2018 IBM Corp.
+ * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -56,9 +56,9 @@ struct Options
 	int iterations;
 } options =
 {
-	"tcp://mqtt.eclipse.org:1883",
-	NULL,
 	"tcp://localhost:1883",
+	NULL,
+	"tcp://localhost:1884",
 	0,
 	0,
 	0,
@@ -805,7 +805,14 @@ int test4_run(int qos)
 		}
 	}
 
-	MQTTClient_yield();  /* allow any unfinished protocol exchanges to finish */
+	/* call yield a few times until unfinished protocol exchanges are finished */
+	count = 0;
+	do
+	{
+		MQTTClient_yield();
+		rc = MQTTClient_getPendingDeliveryTokens(c, &tokens);
+		assert("getPendingDeliveryTokens rc == 0", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+	} while (tokens != NULL && ++count < 10);
 
 	rc = MQTTClient_getPendingDeliveryTokens(c, &tokens);
 	assert("getPendingDeliveryTokens rc == 0", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);

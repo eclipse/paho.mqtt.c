@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018, 2020 Wind River Systems, Inc. and others. All Rights Reserved.
+ * Copyright (c) 2018, 2022 Wind River Systems, Inc. and others. All Rights Reserved.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Keith Holman - initial implementation and documentation
+ *    Sven Gambel - move WebSocket proxy support to generic proxy support
  *******************************************************************************/
 
 #if !defined(WEBSOCKET_H)
@@ -54,7 +55,7 @@
 void WebSocket_close(networkHandles *net, int status_code, const char *reason);
 
 /* sends upgrade request */
-int WebSocket_connect(networkHandles *net, const char *uri);
+int WebSocket_connect(networkHandles *net, int ssl, const char *uri);
 
 /* obtain data from network socket */
 int WebSocket_getch(networkHandles *net, char* c);
@@ -70,8 +71,5 @@ void WebSocket_terminate(void);
 
 /* handles websocket upgrade request */
 int WebSocket_upgrade(networkHandles *net);
-
-/* Notify the IP address and port of the endpoint to proxy, and wait connection to endpoint */
-int WebSocket_proxy_connect( networkHandles *net, int ssl, const char *hostname);
 
 #endif /* WEBSOCKET_H */

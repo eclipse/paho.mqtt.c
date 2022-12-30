@@ -23,6 +23,7 @@ environment:
     
 configuration: Debug
 install:
+  - cmd: ver
   - cmd: openssl version
   - cmd: C:\Python36\python --version
   - cmd: netsh advfirewall firewall add rule name="Python 3.6" dir=in action=allow program="C:\Python36\python.exe" enable=yes
@@ -52,7 +53,7 @@ build_script:
 
     nmake
 
-    ctest -T test -VV
+    ctest -T test -VV 
 
     cd ..
 

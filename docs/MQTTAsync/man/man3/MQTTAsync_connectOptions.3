@@ -1,4 +1,4 @@
-.TH "MQTTAsync_connectOptions" 3 "Mon May 24 2021" "Paho Asynchronous MQTT C Client Library" \" -*- nroff -*-
+.TH "MQTTAsync_connectOptions" 3 "Thu Sep 29 2022" "Paho Asynchronous MQTT C Client Library" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -110,7 +110,19 @@ MQTTAsync_connectOptions
 .in -1c
 .SH "Detailed Description"
 .PP 
-\fBMQTTAsync_connectOptions\fP defines several settings that control the way the client connects to an MQTT server\&. Default values are set in MQTTAsync_connectOptions_initializer\&. 
+\fBMQTTAsync_connectOptions\fP defines several settings that control the way the client connects to an MQTT server\&.
+.PP
+Suitable default values are set in the following initializers:
+.IP "\(bu" 2
+MQTTAsync_connectOptions_initializer: for MQTT 3\&.1\&.1 non-WebSockets
+.IP "\(bu" 2
+MQTTAsync_connectOptions_initializer5: for MQTT 5\&.0 non-WebSockets
+.IP "\(bu" 2
+MQTTAsync_connectOptions_initializer_ws: for MQTT 3\&.1\&.1 WebSockets
+.IP "\(bu" 2
+MQTTAsync_connectOptions_initializer5_ws: for MQTT 5\&.0 WebSockets 
+.PP
+
 .SH "Field Documentation"
 .PP 
 .SS "char struct_id[4]"
@@ -164,11 +176,11 @@ An array of null-terminated strings specifying the servers to
 .SS "int MQTTVersion"
 Sets the version of MQTT to be used on the connect\&. MQTTVERSION_DEFAULT (0) = default: start with 3\&.1\&.1, and if that fails, fall back to 3\&.1 MQTTVERSION_3_1 (3) = only try version 3\&.1 MQTTVERSION_3_1_1 (4) = only try version 3\&.1\&.1 
 .SS "int automaticReconnect"
-Reconnect automatically in the case of a connection being lost? 
+Reconnect automatically in the case of a connection being lost\&. 0=false, 1=true 
 .SS "int minRetryInterval"
-Minimum retry interval in seconds\&. Doubled on each failed retry\&. 
+The minimum automatic reconnect retry interval in seconds\&. Doubled on each failed retry\&. 
 .SS "int maxRetryInterval"
-Maximum retry interval in seconds\&. The doubling stops here on failed retries\&. 
+The maximum automatic reconnect retry interval in seconds\&. The doubling stops here on failed retries\&. 
 .SS "int len"
 binary password length 
 .SS "const void* data"
@@ -188,9 +200,9 @@ A pointer to a callback function to be called if the connect fails\&. Can be set
 .SS "const \fBMQTTAsync_nameValue\fP* httpHeaders"
 HTTP headers for websockets 
 .SS "const char* httpProxy"
-HTTP proxy for websockets 
+HTTP proxy 
 .SS "const char* httpsProxy"
-HTTPS proxy for websockets 
+HTTPS proxy 
 
 .SH "Author"
 .PP 

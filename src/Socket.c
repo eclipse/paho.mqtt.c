@@ -1843,7 +1843,7 @@ exit:
  * @return 0 if successful, otherwise an error code
  */
 int Socket_setInterface(SOCKET sock, char* interface_name, int family) {
-	int rc = 0;
+	int rc = SOCKET_ERROR;
 #if defined(OSX)
 	int index = 0;
 #endif
@@ -1880,9 +1880,16 @@ int Socket_setInterface(SOCKET sock, char* interface_name, int family) {
 }
 
 
+/*
+ * Bind a socket to an address
+ * @param sock the socket to bind
+ * @param bind_address the address string
+ * @param address family AF_INET or AF_INET6
+ * @return 0 if successful, otherwise an error code
+ */
 int Socket_bind(SOCKET sock, char* bind_address, int family)
 {
-	int rc = 0;
+	int rc = SOCKET_ERROR;
 
 	FUNC_ENTRY;
 	if (family == AF_INET)
@@ -1900,8 +1907,11 @@ int Socket_bind(SOCKET sock, char* bind_address, int family)
 		else
 		{
 			if (rc == 0)
+			{
 				Log(LOG_ERROR, -1, "bind address does not contain valid address");
-			else if (rc == -1)
+				rc = SOCKET_ERROR;
+			}
+			else if (rc == SOCKET_ERROR)
 				rc = Socket_error("inet_pton", sock);
 		}
 	}
@@ -1920,8 +1930,11 @@ int Socket_bind(SOCKET sock, char* bind_address, int family)
 		else
 		{
 			if (rc == 0)
+			{
 				Log(LOG_ERROR, -1, "bind address does not contain valid address");
-			else if (rc == -1)
+				rc = SOCKET_ERROR;
+			}
+			else if (rc == SOCKET_ERROR)
 				rc = Socket_error("inet_pton", sock);
 		}
 	}

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs and others
+ * Copyright (c) 2009, 2023 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -1053,7 +1053,7 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 	short interface_family = AF_INET;
 	short family = AF_INET;
 #else
-	sa_family_t interface_family = AF_INET;
+	sa_family_t interface_family = AF_UNSPEC;
 	sa_family_t family = AF_INET;
 #endif
 	struct addrinfo *result = NULL;
@@ -1095,6 +1095,9 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 		--addr_len;
 		family = AF_INET6;
 	}
+
+	if (interface_family != AF_UNSPEC)
+		family = interface_family;
 
 	if ((addr_mem = malloc( addr_len + 1u )) == NULL)
 	{
@@ -1890,7 +1893,7 @@ int Socket_bind(SOCKET sock, char* bind_address, int family)
 		if ((rc = inet_pton(AF_INET, bind_address, &sockaddr.sin_addr)) == 1)
 		{
 			sockaddr.sin_family = AF_INET;
-			rc = bind(sock, &sockaddr, sizeof(sockaddr));
+			rc = bind(sock, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
 			if (rc != 0)
 				rc = Socket_error("bind", sock);
 		}

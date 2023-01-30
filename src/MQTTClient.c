@@ -2875,15 +2875,14 @@ int MQTTClient_waitForCompletion(MQTTClient handle, MQTTClient_deliveryToken mdt
 	FUNC_ENTRY;
 	Thread_lock_mutex(mqttclient_mutex);
 
-	if (m == NULL || m->c == NULL)
-	{
-		rc = MQTTCLIENT_FAILURE;
-		goto exit;
-	}
-
 	elapsed = MQTTTime_elapsed(start);
 	while (elapsed < timeout)
 	{
+		if (m == NULL || m->c == NULL)
+		{
+			rc = MQTTCLIENT_FAILURE;
+			goto exit;
+		}
 		if (m->c->connected == 0)
 		{
 			rc = MQTTCLIENT_DISCONNECTED;

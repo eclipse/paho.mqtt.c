@@ -361,10 +361,10 @@ exit:
  */
 int readInt(char** pptr)
 {
-	char* ptr = *pptr;
-	int len = 256*((unsigned char)(*ptr)) + (unsigned char)(*(ptr+1));
+	char *ptr = *pptr;
+	int val = ((((uint32_t)ptr[0]) << 8) | ((uint32_t)ptr[1]));
 	*pptr += 2;
-	return len;
+	return val;
 }
 
 
@@ -452,10 +452,10 @@ void writeChar(char** pptr, char c)
  */
 void writeInt(char** pptr, int anInt)
 {
-	**pptr = (char)(anInt / 256);
-	(*pptr)++;
-	**pptr = (char)(anInt % 256);
-	(*pptr)++;
+	char* ptr = *pptr;	
+	ptr[0] = (uint8_t) ((anInt >> 8) & 0xFF);
+	ptr[1] = (uint8_t) (anInt & 0xFF);	
+	*pptr += 2;
 }
 
 
@@ -944,16 +944,12 @@ void MQTTPacket_free_packet(MQTTPacket* pack)
  */
 void writeInt4(char** pptr, int anInt)
 {
-  **pptr = (char)(anInt / 16777216);
-  (*pptr)++;
-  anInt %= 16777216;
-  **pptr = (char)(anInt / 65536);
-  (*pptr)++;
-  anInt %= 65536;
-	**pptr = (char)(anInt / 256);
-	(*pptr)++;
-	**pptr = (char)(anInt % 256);
-	(*pptr)++;
+	unsigned char* ptr = (unsigned char*)*pptr;
+	ptr[0] = (uint8_t) ((anInt >> 24) & 0xFF);
+	ptr[1] = (uint8_t) ((anInt >> 16) & 0xFF);
+	ptr[2] = (uint8_t) ((anInt >> 8) & 0xFF);
+	ptr[3] = (uint8_t) (anInt & 0xFF);  
+	*pptr += 4;
 }
 
 
@@ -964,10 +960,13 @@ void writeInt4(char** pptr, int anInt)
  */
 int readInt4(char** pptr)
 {
-	unsigned char* ptr = (unsigned char*)*pptr;
-	int value = 16777216*(*ptr) + 65536*(*(ptr+1)) + 256*(*(ptr+2)) + (*(ptr+3));
+	unsigned char *ptr = (unsigned char *)*pptr;
+	int val = ((((uint32_t)ptr[0]) << 24) | 
+	          (((uint32_t)ptr[1]) << 16) |
+			  (((uint32_t)ptr[2]) << 8) | 
+			  ((uint32_t)ptr[3]));
 	*pptr += 4;
-	return value;
+	return val;
 }
 
 

@@ -981,6 +981,15 @@ void MQTTProtocol_freeClient(Clients* client)
 			if (client->sslopts->protos)
 				free((void*)client->sslopts->protos);
 		}
+		if (client->sslopts->struct_version >= 6)
+		{
+			if (client->sslopts->pemRootCerts)
+				free((void*)client->sslopts->pemRootCerts);
+			if (client->sslopts->pemCertChain)
+				free((void*)client->sslopts->pemCertChain);
+			if (client->sslopts->pemPrivateKey)
+				free((void*)client->sslopts->pemPrivateKey);
+		}
 		free(client->sslopts);
 			client->sslopts = NULL;
 	}

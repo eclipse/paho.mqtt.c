@@ -1601,6 +1601,15 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 			if (m->c->sslopts->CApath)
 				free((void*)m->c->sslopts->CApath);
 		}
+		if (m->c->sslopts->struct_version >= 6)
+		{
+			if (m->c->sslopts->pemRootCerts)
+				free((void*)m->c->sslopts->pemRootCerts);
+			if (m->c->sslopts->pemCertChain)
+				free((void*)m->c->sslopts->pemCertChain);
+			if (m->c->sslopts->pemPrivateKey)
+				free((void*)m->c->sslopts->pemPrivateKey);
+		}	
 		free(m->c->sslopts);
 		m->c->sslopts = NULL;
 	}
@@ -1649,6 +1658,15 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 		    m->c->sslopts->protos = options->ssl->protos;
 		    m->c->sslopts->protos_len = options->ssl->protos_len;
 		}
+		if (m->c->sslopts->struct_version >= 6)
+		{
+			if (options->ssl->pemRootCerts)
+				m->c->sslopts->pemRootCerts = MQTTStrdup(options->ssl->pemRootCerts);
+			if (options->ssl->pemCertChain)
+				m->c->sslopts->pemCertChain = MQTTStrdup(options->ssl->pemCertChain);
+			if (options->ssl->pemPrivateKey)
+				m->c->sslopts->pemPrivateKey = MQTTStrdup(options->ssl->pemPrivateKey);
+		}		
 	}
 #endif
 

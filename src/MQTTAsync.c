@@ -750,13 +750,22 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		if (m->c->sslopts->privateKey)
 			free((void*)m->c->sslopts->privateKey);
 		if (m->c->sslopts->privateKeyPassword)
-			free((void*)m->c->sslopts->privateKeyPassword);
+			free((void*)m->c->sslopts->privateKeyPassword);			
 		if (m->c->sslopts->enabledCipherSuites)
 			free((void*)m->c->sslopts->enabledCipherSuites);
 		if (m->c->sslopts->struct_version >= 2)
 		{
 			if (m->c->sslopts->CApath)
 				free((void*)m->c->sslopts->CApath);
+		}
+		if (m->c->sslopts->struct_version >= 6)
+		{
+			if (m->c->sslopts->pemRootCerts)
+				free((void*)m->c->sslopts->pemRootCerts);
+			if (m->c->sslopts->pemCertChain)
+				free((void*)m->c->sslopts->pemCertChain);
+			if (m->c->sslopts->pemPrivateKey)
+				free((void*)m->c->sslopts->pemPrivateKey);
 		}
 		free((void*)m->c->sslopts);
 		m->c->sslopts = NULL;
@@ -806,6 +815,15 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 			if (options->ssl->protos)
 				m->c->sslopts->protos = (const unsigned char*)MQTTStrdup((const char*)options->ssl->protos);
 			m->c->sslopts->protos_len = options->ssl->protos_len;
+		}
+		if (m->c->sslopts->struct_version >= 6)
+		{
+			if (options->ssl->pemRootCerts)
+				m->c->sslopts->pemRootCerts = MQTTStrdup(options->ssl->pemRootCerts);
+			if (options->ssl->pemCertChain)
+				m->c->sslopts->pemCertChain = MQTTStrdup(options->ssl->pemCertChain);
+			if (options->ssl->pemPrivateKey)
+				m->c->sslopts->pemPrivateKey = MQTTStrdup(options->ssl->pemPrivateKey);
 		}
 	}
 #else

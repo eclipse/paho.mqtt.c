@@ -44,6 +44,7 @@ ENDIF()
 
 ## build options
 SET(PAHO_WITH_SSL FALSE CACHE BOOL "Flag that defines whether to build ssl-enabled binaries too. ")
+SET(PAHO_WITH_LIBUUID TRUE CACHE BOOL "Flag that defines whether libuuid or a custom uuid implementation should be used")
 SET(PAHO_BUILD_SHARED TRUE CACHE BOOL "Build shared library")
 SET(PAHO_BUILD_STATIC FALSE CACHE BOOL "Build static library")
 SET(PAHO_BUILD_DOCUMENTATION FALSE CACHE BOOL "Create and install the HTML based API documentation (requires Doxygen)")
@@ -60,6 +61,10 @@ ENDIF()
 
 IF (PAHO_USE_SELECT)
   ADD_DEFINITIONS(-DUSE_SELECT=1)
+ENDIF()
+
+IF (PAHO_WITH_LIBUUID)
+  ADD_DEFINITIONS(-DUSE_LIBUUID=1)
 ENDIF()
 
 IF (NOT PAHO_BUILD_SHARED AND NOT PAHO_BUILD_STATIC)

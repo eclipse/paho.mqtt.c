@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs and others
+ * Copyright (c) 2009, 2023 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -1700,11 +1700,6 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 	if (!more_to_try)
 	{
 		MQTTAsync_closeSession(m->c, MQTTREASONCODE_SUCCESS, NULL);
-		if (connectionLost_called == 0 && m->cl && was_connected)
-		{
-			Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
-				(*(m->cl))(m->clContext, NULL);
-		}
 		if (m->connect.onFailure)
 		{
 			MQTTAsync_failureData data;
@@ -1730,6 +1725,11 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 			/* Null out callback pointers so they aren't accidentally called again */
 			m->connect.onFailure5 = NULL;
 			m->connect.onSuccess5 = NULL;
+		}
+		if (connectionLost_called == 0 && m->cl && was_connected)
+		{
+			Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
+				(*(m->cl))(m->clContext, NULL);
 		}
 		MQTTAsync_startConnectRetry(m);
 	}

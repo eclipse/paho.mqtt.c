@@ -62,6 +62,10 @@ static int cmdMessageIDCompare(void* a, void* b);
 static void MQTTAsync_retry(void);
 static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc);
 static int MQTTAsync_connecting(MQTTAsyncs* m);
+static enum MQTTReasonCodes MQTTAsync_processAuth(MQTTAsync_authHandle *func, void *context,
+		MQTTAsync_authHandleData *data);
+static int MQTTAsync_verifyAuthMethod(const char* authMethod,
+		const char* data, int dataLen);
 
 extern MQTTProtocol state; /* defined in MQTTAsync.c */
 extern ClientStates* bstate; /* defined in MQTTAsync.c */
@@ -2133,6 +2137,44 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 					int sessionPresent = connack->flags.bits.sessionPresent;
 
 					rc = MQTTAsync_completeConnection(m, connack);
+					if (rc == MQTTASYNC_SUCCESS && m->c->authMethod)
+					{
+						MQTTAsync_authHandleData authHandleData = MQTTAsync_authHandleData_initializer;
+						MQTTProperty *authMethodProp = NULL;
+						char *authMethod = NULL;
+						int authMethodLen = 0;
+						MQTTProperty *authData = NULL;
+
+						authMethodProp = MQTTProperties_getProperty(&connack->properties,
+																	MQTTPROPERTY_CODE_AUTHENTICATION_METHOD);
+						if (authMethodProp)
+						{
+							authMethod = authMethodProp->value.data.data;
+							authMethodLen = authMethodProp->value.data.len;
+						}
+
+						if ((connack->rc == 0 && authMethodProp == NULL) ||
+								MQTTAsync_verifyAuthMethod(m->c->authMethod, authMethod,
+														   authMethodLen) == 0)
+						{
+							authData = MQTTProperties_getProperty(&connack->properties,
+																  MQTTPROPERTY_CODE_AUTHENTICATION_DATA);
+
+							authHandleData.reasonCode = connack->rc;
+							if (authData && authMethod)
+							{
+								authHandleData.authDataIn.data = authData->value.data.data;
+								authHandleData.authDataIn.len = authData->value.data.len;
+							}
+
+							rc = MQTTAsync_processAuth(m->auth_handle,
+													   m->auth_handle_context,
+													   &authHandleData);
+						}
+						else
+							rc = MQTTREASONCODE_BAD_AUTHENTICATION_METHOD;
+					}
+
 					if (rc == MQTTASYNC_SUCCESS)
 					{
 						int onSuccess = 0;
@@ -2365,6 +2407,58 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 					rc = MQTTProtocol_handleDisconnects(pack, m->c->net.socket);
 					m->c->connected = 0; /* don't send disconnect packet back */
 					nextOrClose(m, discrc, "Received disconnect");
+				}
+				else if (pack->header.bits.type == AUTH)
+				{
+					Auth *auth = (Auth *)pack;
+					enum MQTTReasonCodes authrc = MQTTREASONCODE_SUCCESS;
+					MQTTProperty *authMethodProp = NULL;
+					MQTTProperty *authData = NULL;
+					char* authMethod = NULL;
+					int authMethodLen = 0;
+					MQTTAsync_authHandleData authHandleData = MQTTAsync_authHandleData_initializer;
+
+					if (m->c->authMethod)
+					{
+						authMethodProp = MQTTProperties_getProperty(&auth->properties,
+																	MQTTPROPERTY_CODE_AUTHENTICATION_METHOD);
+						if (authMethodProp)
+						{
+							authMethod = authMethodProp->value.data.data;
+							authMethodLen = authMethodProp->value.data.len;
+						}
+
+						if ((auth->rc == 0 && authMethodProp == NULL) ||
+								MQTTAsync_verifyAuthMethod(m->c->authMethod, authMethod,
+														   authMethodLen) == 0)
+						{
+							authData = MQTTProperties_getProperty(&auth->properties,
+																  MQTTPROPERTY_CODE_AUTHENTICATION_DATA);
+
+							authHandleData.reasonCode = auth->rc;
+							if (authData && authMethod)
+							{
+								authHandleData.authDataIn.data = authData->value.data.data;
+								authHandleData.authDataIn.len = authData->value.data.len;
+							}
+
+							authrc = MQTTAsync_processAuth(m->auth_handle,
+														   m->auth_handle_context,
+														   &authHandleData);
+						}
+						else
+							authrc = MQTTREASONCODE_BAD_AUTHENTICATION_METHOD;
+					}
+					else
+						authrc = MQTTREASONCODE_PROTOCOL_ERROR;
+
+					rc = MQTTProtocol_handleAuth(pack, m->c->net.socket, authrc,
+												 authHandleData.authDataOut.data,
+												 authHandleData.authDataOut.len);
+					free(authHandleData.authDataOut.data);
+					if (authrc != MQTTREASONCODE_SUCCESS &&
+							authrc != MQTTREASONCODE_CONTINUE_AUTHENTICATION)
+						nextOrClose(m, authrc, "Authentication failed");
 				}
 			}
 		}
@@ -3223,4 +3317,37 @@ int MQTTAsync_getNoBufferedMessages(MQTTAsyncs* m)
 	count = m->noBufferedMessages;
 	MQTTAsync_unlock_mutex(mqttcommand_mutex);
 	return count;
+}
+
+
+enum MQTTReasonCodes MQTTAsync_processAuth(MQTTAsync_authHandle *func, void *context,
+		MQTTAsync_authHandleData *data)
+{
+	int rc;
+
+	if (func == NULL)
+		return MQTTREASONCODE_NOT_AUTHORIZED;
+
+	rc = (*(func))(context, data);
+	if (rc < 0)
+		return MQTTREASONCODE_NOT_AUTHORIZED;
+
+	if (rc > 0)
+		return MQTTREASONCODE_CONTINUE_AUTHENTICATION;
+
+	return MQTTREASONCODE_SUCCESS;
+}
+
+
+int MQTTAsync_verifyAuthMethod(const char *authMethod, const char *data, int dataLen)
+{
+	if (authMethod && data && dataLen > 0)
+	{
+		if (strlen(authMethod) == dataLen && memcmp(authMethod, data, dataLen) == 0)
+		{
+			return 0;
+		}
+	}
+
+	return -1;
 }

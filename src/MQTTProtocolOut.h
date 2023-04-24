@@ -62,5 +62,6 @@ int MQTTProtocol_handleSubacks(void* pack, SOCKET sock);
 int MQTTProtocol_unsubscribe(Clients* client, List* topics, int msgID, MQTTProperties* props);
 int MQTTProtocol_handleUnsubacks(void* pack, SOCKET sock);
 int MQTTProtocol_handleDisconnects(void* pack, SOCKET sock);
+int MQTTProtocol_handleAuth(void* pack, SOCKET sock, enum MQTTReasonCodes reason, void *data, int dataLen);
 
 #endif

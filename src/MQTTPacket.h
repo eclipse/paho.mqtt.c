@@ -225,6 +225,17 @@ typedef Ack Pubrec;
 typedef Ack Pubrel;
 typedef Ack Pubcomp;
 
+/**
+ * Data for the authentication packet.
+ */
+typedef struct
+{
+	Header header;			/**< MQTT header byte */
+	unsigned char rc;		/**< MQTT 5 reason code */
+	int MQTTVersion;		/**< the version of MQTT */
+	MQTTProperties properties;	/**< MQTT 5.0 properties */
+} Auth;
+
 int MQTTPacket_encode(char* buf, size_t length);
 int MQTTPacket_decode(networkHandles* net, size_t* value);
 int readInt(char** pptr);
@@ -249,10 +260,12 @@ void MQTTPacket_freePublish(Publish* pack);
 int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, networkHandles* net, const char* clientID);
 int MQTTPacket_send_puback(int MQTTVersion, int msgid, networkHandles* net, const char* clientID);
 void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen);
+void* MQTTPacket_auth(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen);
 
 void MQTTPacket_freeAck(Ack* pack);
 void MQTTPacket_freeSuback(Suback* pack);
 void MQTTPacket_freeUnsuback(Unsuback* pack);
+void MQTTPacket_freeAuth(Auth* pack);
 int MQTTPacket_send_pubrec(int MQTTVersion, int msgid, networkHandles* net, const char* clientID);
 int MQTTPacket_send_pubrel(int MQTTVersion, int msgid, int dup, networkHandles* net, const char* clientID);
 int MQTTPacket_send_pubcomp(int MQTTVersion, int msgid, networkHandles* net, const char* clientID);

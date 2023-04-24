@@ -489,6 +489,63 @@ typedef void MQTTClient_published(void* context, int dt, int packet_type, MQTTPr
 
 LIBMQTT_API int MQTTClient_setPublished(MQTTClient handle, void* context, MQTTClient_published* co);
 
+/** The authentication data that is populated when MQTTv5 enhanced authentication
+ * is requested by an operation. */
+typedef struct
+{
+	/** The eyecatcher for this structure.  Will be MQAD. */
+	char struct_id[4];
+	/** The version number of this structure.  Will be 0 */
+	int struct_version;
+	/** The MQTT reason code received from the AUTH packet. */
+	enum MQTTReasonCodes reasonCode;
+	/**
+	 * The data received from the MQTTv5 AUTH packet AUTHENTICATION_DATA property.
+	 * Data is NULL if no AUTHENTICATION_DATA was received.
+	 */
+	struct {
+		int len;           /**< binary input AUTHENTICATION_DATA length */
+		const void* data;  /**< binary input AUTHENTICATION_DATA data */
+	} authDataIn;
+	/**
+	 * The data to populate the MQTTv5 AUTH packet AUTHENTICATION_DATA property.
+	 * Set data to NULL to remove.  To change, allocate new
+	 * storage with ::MQTTClient_malloc - this will then be freed later by the library.
+	 */
+	struct {
+		int len;           /**< binary output AUTHENTICATION_DATA length */
+		void* data;        /**< binary output AUTHENTICATION_DATA data */
+	} authDataOut;
+} MQTTClient_handleAuthData;
+
+#define MQTTClient_handleAuthData_initializer {{'M', 'Q', 'A', 'D'}, 0, 0, {0, NULL}, {0, NULL}}
+
+/**
+ * This is a callback function, which will be called when a MQTTv5 enhanced
+ * authentication packet is either received from the server or needs to be
+ * populated by the client.  This applies to MQTT V5 and above only.
+ * @param context A pointer to the <i>context</i> value originally passed to
+ * ::MQTTClient_setHandleAuth(), which contains any application-specific context.
+ * @param data The MQTTClient_handleAuthData.
+ */
+typedef int MQTTClient_handleAuth(void* context, MQTTClient_handleAuthData* data);
+
+/**
+ * Sets the MQTTClient_setHandleAuth() callback function for a client.  This will be called
+ * if an authentication packet is either received from the server or needs to be
+ * populated by the client. Only valid for MQTT V5 and above.
+ * @param handle A valid client handle from a successful call to
+ * MQTTClient_create().
+ * @param context A pointer to any application-specific context. The
+ * the <i>context</i> pointer is passed to each of the callback functions to
+ * provide access to the context information in the callback.
+ * @param auth_handle A pointer to an MQTTClient_handleAuth() callback
+ * function.  NULL removes the callback setting.
+ * @return ::MQTTCLIENT_SUCCESS if the callbacks were correctly set,
+ * ::MQTTCLIENT_FAILURE if an error occurred.
+ */
+LIBMQTT_API int MQTTClient_setHandleAuth(MQTTClient handle, void* context, MQTTClient_handleAuth* auth_handle);
+
 /**
  * This function creates an MQTT client ready for connection to the
  * specified server and using the specified persistent storage (see
@@ -834,6 +891,7 @@ typedef struct
 	 * 5 signifies no maxInflightMessages and cleanstart
 	 * 6 signifies no HTTP headers option
 	 * 7 signifies no HTTP proxy and HTTPS proxy options
+	 * 8 signifies no MQTTv5 enhanced authentication method option
 	 */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -976,27 +1034,31 @@ typedef struct
 	 * HTTPS proxy
 	 */
 	const char* httpsProxy;
+	/**
+	 * MQTTv5 enhanced authentication method
+	 */
+	const char* authMethod;
 } MQTTClient_connectOptions;
 
 /** Initializer for connect options for MQTT 3.1.1 non-WebSocket connections */
-#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 8, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
-0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL}
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 9, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
+0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL, NULL}
 
 /** Initializer for connect options for MQTT 5.0 non-WebSocket connections */
 #define MQTTClient_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 8, 60, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
-0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL, NULL, NULL}
+0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL, NULL, NULL, NULL}
 
 /** Initializer for connect options for MQTT 3.1.1 WebSockets connections.
   * The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts.
   */
 #define MQTTClient_connectOptions_initializer_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
-0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL}
+0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL, NULL}
 
 /** Initializer for connect options for MQTT 5.0 WebSockets connections.
   * The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts.
   */
 #define MQTTClient_connectOptions_initializer5_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
-0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL, NULL, NULL}
+0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL, NULL, NULL, NULL}
 
 /**
   * This function attempts to connect a previously-created client (see
@@ -1390,6 +1452,15 @@ LIBMQTT_API int MQTTClient_receive(MQTTClient handle, char** topicName, int* top
   * to be freed.
   */
 LIBMQTT_API void MQTTClient_freeMessage(MQTTClient_message** msg);
+
+/**
+  * This function is used to allocate memory to be used or freed by the MQTT C client library,
+  * especially the data in the ::MQTTPersistence_afterRead and ::MQTTPersistence_beforeWrite
+  * callbacks. This is needed on Windows when the client library and application
+  * program have been compiled with different versions of the C compiler.
+  * @param size The size of the memory to be allocated.
+  */
+LIBMQTT_API void* MQTTClient_malloc(size_t size);
 
 /**
   * This function frees memory allocated by the MQTT C client library, especially the

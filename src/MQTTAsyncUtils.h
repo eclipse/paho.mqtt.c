@@ -113,6 +113,9 @@ typedef struct MQTTAsync_struct
 	MQTTAsync_selectInterface* selectInterface;
 	void* selectInterface_context;
 
+	MQTTAsync_authHandle* auth_handle;
+	void* auth_handle_context;
+
 	/* Each time connect is called, we store the options that were used.  These are reused in
 	   any call to reconnect, or an automatic reconnect attempt */
 	MQTTAsync_command connect;		/* Connect operation properties */

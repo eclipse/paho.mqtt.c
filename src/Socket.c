@@ -1869,7 +1869,8 @@ int Socket_setInterface(SOCKET sock, char* interface_name, int family) {
 		}
 	}
 #else
-	if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, (void*)interface_name, strlen(interface_name) + 1) == -1)
+	rc = setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, (void*)interface_name, strlen(interface_name) + 1);
+	if (rc == -1)
 	{
 		rc = Socket_error("SO_BINDTODEVICE", 0);
 		Log(LOG_ERROR, -1, "Could not set SO_BINDTODEVICE for socket %d %d\n", sock, rc);

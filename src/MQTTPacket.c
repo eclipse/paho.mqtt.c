@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2022 IBM Corp. and Ian Craggs
+ * Copyright (c) 2009, 2023 IBM Corp. and Ian Craggs
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -942,7 +942,7 @@ void MQTTPacket_free_packet(MQTTPacket* pack)
  * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
  * @param anInt the integer to write
  */
-void writeInt4(char** pptr, int anInt)
+void writeInt4(char** pptr, unsigned int anInt)
 {
 	unsigned char* ptr = (unsigned char*)*pptr;
 	ptr[0] = (uint8_t) ((anInt >> 24) & 0xFF);
@@ -958,10 +958,10 @@ void writeInt4(char** pptr, int anInt)
  * used & returned
  * @return the integer value calculated
  */
-int readInt4(char** pptr)
+unsigned int readInt4(char** pptr)
 {
 	unsigned char *ptr = (unsigned char *)*pptr;
-	int val = ((((uint32_t)ptr[0]) << 24) | (((uint32_t)ptr[1]) << 16) | (((uint32_t)ptr[2]) << 8) |  ((uint32_t)ptr[3]));
+	unsigned int val = ((((uint32_t)ptr[0]) << 24) | (((uint32_t)ptr[1]) << 16) | (((uint32_t)ptr[2]) << 8) |  ((uint32_t)ptr[3]));
 	*pptr += 4;
 	return val;
 }

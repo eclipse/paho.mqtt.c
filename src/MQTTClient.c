@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs and others
+ * Copyright (c) 2009, 2023 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
@@ -117,7 +117,6 @@ MQTTProtocol state;
 static mutex_type mqttclient_mutex = NULL;
 mutex_type socket_mutex = NULL;
 static mutex_type subscribe_mutex = NULL;
-static mutex_type unsubscribe_mutex = NULL;
 static mutex_type connect_mutex = NULL;
 #if !defined(NO_HEAP_TRACKING)
 extern mutex_type stack_mutex;
@@ -141,12 +140,6 @@ int MQTTClient_init(void)
 		{
 			rc = GetLastError();
 			printf("subscribe_mutex error %d\n", rc);
-			goto exit;
-		}
-		if ((unsubscribe_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
-		{
-			rc = GetLastError();
-			printf("unsubscribe_mutex error %d\n", rc);
 			goto exit;
 		}
 		if ((connect_mutex = CreateMutex(NULL, 0, NULL)) == NULL)
@@ -192,8 +185,6 @@ void MQTTClient_cleanup(void)
 		CloseHandle(connect_mutex);
 	if (subscribe_mutex)
 		CloseHandle(subscribe_mutex);
-	if (unsubscribe_mutex)
-		CloseHandle(unsubscribe_mutex);
 #if !defined(NO_HEAP_TRACKING)
 	if (stack_mutex)
 		CloseHandle(stack_mutex);
@@ -255,9 +246,6 @@ mutex_type socket_mutex = &socket_mutex_store;
 static pthread_mutex_t subscribe_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 static mutex_type subscribe_mutex = &subscribe_mutex_store;
 
-static pthread_mutex_t unsubscribe_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-static mutex_type unsubscribe_mutex = &unsubscribe_mutex_store;
-
 static pthread_mutex_t connect_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 static mutex_type connect_mutex = &connect_mutex_store;
 
@@ -278,8 +266,6 @@ int MQTTClient_init(void)
 		printf("MQTTClient: error %d initializing socket_mutex\n", rc);
 	else if ((rc = pthread_mutex_init(subscribe_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing subscribe_mutex\n", rc);
-	else if ((rc = pthread_mutex_init(unsubscribe_mutex, &attr)) != 0)
-		printf("MQTTClient: error %d initializing unsubscribe_mutex\n", rc);
 	else if ((rc = pthread_mutex_init(connect_mutex, &attr)) != 0)
 		printf("MQTTClient: error %d initializing connect_mutex\n", rc);
 
@@ -2227,7 +2213,7 @@ MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count, char* con
 	int msgid = 0;
 
 	FUNC_ENTRY;
-	Thread_lock_mutex(unsubscribe_mutex);
+	Thread_lock_mutex(subscribe_mutex);
 	Thread_lock_mutex(mqttclient_mutex);
 
 	resp.reasonCode = MQTTCLIENT_FAILURE;
@@ -2315,7 +2301,7 @@ exit:
 	if (rc < 0)
 		resp.reasonCode = rc;
 	Thread_unlock_mutex(mqttclient_mutex);
-	Thread_unlock_mutex(unsubscribe_mutex);
+	Thread_unlock_mutex(subscribe_mutex);
 	FUNC_EXIT_RC(resp.reasonCode);
 	return resp;
 }

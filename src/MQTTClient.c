@@ -1601,6 +1601,15 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 			if (m->c->sslopts->CApath)
 				free((void*)m->c->sslopts->CApath);
 		}
+		if (m->c->sslopts->struct_version >= 6)
+		{
+			if (m->c->sslopts->pemRootCerts)
+				free((void*)m->c->sslopts->pemRootCerts);
+			if (m->c->sslopts->pemCertChain)
+				free((void*)m->c->sslopts->pemCertChain);
+			if (m->c->sslopts->pemPrivateKey)
+				free((void*)m->c->sslopts->pemPrivateKey);
+		}	
 		free(m->c->sslopts);
 		m->c->sslopts = NULL;
 	}
@@ -1649,6 +1658,15 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 		    m->c->sslopts->protos = options->ssl->protos;
 		    m->c->sslopts->protos_len = options->ssl->protos_len;
 		}
+		if (m->c->sslopts->struct_version >= 6)
+		{
+			if (options->ssl->pemRootCerts)
+				m->c->sslopts->pemRootCerts = MQTTStrdup(options->ssl->pemRootCerts);
+			if (options->ssl->pemCertChain)
+				m->c->sslopts->pemCertChain = MQTTStrdup(options->ssl->pemCertChain);
+			if (options->ssl->pemPrivateKey)
+				m->c->sslopts->pemPrivateKey = MQTTStrdup(options->ssl->pemPrivateKey);
+		}		
 	}
 #endif
 
@@ -1801,7 +1819,7 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions*
 #if defined(OPENSSL)
 	if (options->struct_version != 0 && options->ssl) /* check validity of SSL options structure */
 	{
-		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version < 0 || options->ssl->struct_version > 5)
+		if (strncmp(options->ssl->struct_id, "MQTS", 4) != 0 || options->ssl->struct_version < 0 || options->ssl->struct_version > 6)
 		{
 			rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
 			goto exit;

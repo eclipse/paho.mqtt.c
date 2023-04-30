@@ -122,6 +122,170 @@ static int SSLSocket_error(char* aString, SSL* ssl, SOCKET sock, int rc, int (*c
     return error;
 }
 
+/* Loads an in-memory PEM certificate chain into the SSL context. */
+static int SSLSocket_use_certificate_chain(SSL_CTX* context, const char* pem_cert_chain, size_t pem_cert_chain_size) 
+{
+	int rc = 0;
+	
+	X509* certificate;
+	BIO* pem;
+
+	pem = BIO_new_mem_buf(pem_cert_chain, (int)pem_cert_chain_size);
+	if (!pem) 
+		goto exit;
+
+    certificate = PEM_read_bio_X509_AUX(pem, NULL, NULL, "");
+    if (!certificate) 
+		goto exit;
+		
+
+    if (!SSL_CTX_use_certificate(context, certificate)) 
+		goto exit;
+	
+	for (;;) 
+	{
+		X509* certificate_authority = PEM_read_bio_X509(pem, NULL, NULL, "");
+		if (!certificate_authority) 
+		{
+			ERR_clear_error();
+			rc = 1;
+			goto exit;
+		}
+		
+		if (!SSL_CTX_add_extra_chain_cert(context, certificate_authority)) 
+		{
+			X509_free(certificate_authority);
+			goto exit;
+		}
+	}
+	
+exit:
+	if (certificate)
+		X509_free(certificate);
+	BIO_free(pem);
+
+	return rc;
+}
+
+static int SSLSocket_use_pem_private_key(SSL_CTX* context, const char* pem_key, size_t pem_key_size) 
+{
+	int rc = 0;
+	EVP_PKEY* private_key = NULL;
+	BIO* pem;
+	pem = BIO_new_mem_buf(pem_key, (int)pem_key_size);
+
+	if (pem == NULL)
+		goto exit;
+
+	private_key = PEM_read_bio_PrivateKey(pem, NULL, NULL, "");
+	if (private_key == NULL)
+		goto exit;
+	if (!SSL_CTX_use_PrivateKey(context, private_key))
+		goto exit;
+
+	rc = 1;
+	
+exit:
+	if (private_key != NULL)
+	EVP_PKEY_free(private_key);
+
+	BIO_free(pem);
+	return rc;
+}
+
+
+/* Loads in-memory PEM verification certs into the SSL context and optionally
+   returns the verification cert names (root_names can be NULL). */
+static int SSLSocket_x509_store_load_certs(X509_STORE* cert_store, const char* pem_roots, size_t pem_roots_size, STACK_OF(X509_NAME) **root_names) {
+	int result = 1;
+	size_t num_roots = 0;
+	X509* root = NULL;
+	X509_NAME* root_name = NULL;
+	BIO* pem;
+
+	pem = BIO_new_mem_buf(pem_roots, (int)pem_roots_size);
+	if (pem == NULL)
+		return 0;
+
+	if (root_names != NULL) 
+	{
+		*root_names = sk_X509_NAME_new_null();
+		if (*root_names == NULL)
+			return 0;
+	}
+
+	for (;;) 
+	{
+		root = PEM_read_bio_X509_AUX(pem, NULL, NULL, "");
+		if (root == NULL) 
+		{
+			ERR_clear_error();
+			break; /* We're at the end of stream. */
+		}
+		if (root_names != NULL) 
+		{
+			root_name = X509_get_subject_name(root);
+			if (root_name == NULL) 
+			{
+				result = 0;
+				break;
+			}
+
+			root_name = X509_NAME_dup(root_name);
+			if (root_name == NULL) 
+			{
+				result = 0;
+				break;
+			}
+				sk_X509_NAME_push(*root_names, root_name);
+				root_name = NULL;
+		}
+
+		ERR_clear_error();
+
+		if (!X509_STORE_add_cert(cert_store, root)) 
+		{
+			unsigned long error = ERR_get_error();
+			if (ERR_GET_LIB(error) != ERR_LIB_X509 || ERR_GET_REASON(error) != X509_R_CERT_ALREADY_IN_HASH_TABLE) 
+			{
+				result = 0;
+				break;
+			}
+		}
+		X509_free(root);
+		num_roots++;
+	}
+
+	if (num_roots == 0) 
+	{
+		result = 0;
+	}
+
+	if (result != 0) 
+	{
+		if (root != NULL)
+			X509_free(root);
+		if (root_names != NULL) 
+		{
+			sk_X509_NAME_pop_free(*root_names, X509_NAME_free);
+			*root_names = NULL;
+			if (root_name != NULL)
+			X509_NAME_free(root_name);
+		}
+	}
+
+	BIO_free(pem);
+	return result;
+}
+
+static int SSLSocket_load_verification_certs(SSL_CTX* context, const char* pem_roots, size_t pem_roots_size, STACK_OF(X509_NAME) * *root_name) 
+{
+	X509_STORE* cert_store = SSL_CTX_get_cert_store(context);
+	X509_STORE_set_flags(cert_store, X509_V_FLAG_PARTIAL_CHAIN | X509_V_FLAG_TRUSTED_FIRST);
+
+	return SSLSocket_x509_store_load_certs(cert_store, pem_roots, pem_roots_size, root_name);
+}
+
 static struct
 {
 	int code;
@@ -598,6 +762,45 @@ int SSLSocket_createContext(networkHandles* net, MQTTClient_SSLOptions* opts)
 	SSL_CTX_set_security_level(net->ctx, 1);
 #endif
 */
+
+    if (opts->pemRootCerts)
+	{  
+
+		STACK_OF(X509_NAME)* root_names = NULL;
+		if ((rc = SSLSocket_load_verification_certs(net->ctx, opts->pemRootCerts, strlen(opts->pemRootCerts), &root_names)) != 1)
+		{
+			if (opts->struct_version >= 3)
+				SSLSocket_error("SSLSocket_load_verification_certs", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
+			else
+				SSLSocket_error("SSLSocket_load_verification_certs", NULL, net->socket, rc, NULL, NULL);
+			goto exit;				
+		}
+		SSL_CTX_set_client_CA_list(net->ctx, root_names);
+	}
+
+	if (opts->pemCertChain)
+	{
+		if ((rc = SSLSocket_use_certificate_chain(net->ctx, opts->pemCertChain, strlen(opts->pemCertChain))) != 1) 
+		{
+			if (opts->struct_version >= 3)
+				SSLSocket_error("SSLSocket_use_certificate_chain", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
+			else
+				SSLSocket_error("SSLSocket_use_certificate_chain", NULL, net->socket, rc, NULL, NULL);
+			goto exit;			
+		}
+	}
+
+	if (opts->pemPrivateKey)
+	{
+		if ((rc = SSLSocket_use_pem_private_key(net->ctx, opts->pemPrivateKey, strlen(opts->pemPrivateKey))) != 1 || !SSL_CTX_check_private_key(net->ctx))
+		{
+			if (opts->struct_version >= 3)
+				SSLSocket_error("SSLSocket_use_pem_private_key", NULL, net->socket, rc, opts->ssl_error_cb, opts->ssl_error_context);
+			else
+				SSLSocket_error("SSLSocket_use_pem_private_key", NULL, net->socket, rc, NULL, NULL);
+			goto exit;			
+		}
+	}
 
 	if (opts->keyStore)
 	{

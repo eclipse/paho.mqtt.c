@@ -38,7 +38,7 @@
 #include "Proxy.h"
 
 static int clientSockCompare(void* a, void* b);
-static int MQTTAsync_checkConn(MQTTAsync_command* command, MQTTAsyncs* client);
+static int MQTTAsync_checkConn(MQTTAsync_command* command, MQTTAsyncs* client, int was_connected);
 #if !defined(NO_PERSISTENCE)
 static int MQTTAsync_unpersistCommand(MQTTAsync_queuedCommand* qcmd);
 static int MQTTAsync_persistCommand(MQTTAsync_queuedCommand* qcmd);
@@ -182,14 +182,15 @@ void MQTTAsync_unlock_mutex(mutex_type amutex)
 /*
   Check whether there are any more connect options.  If not then we are finished
   with connect attempts.
+  return 1 if more connect options left
 */
-static int MQTTAsync_checkConn(MQTTAsync_command* command, MQTTAsyncs* client)
+static int MQTTAsync_checkConn(MQTTAsync_command* command, MQTTAsyncs* client, int was_connected)
 {
 	int rc;
 
 	FUNC_ENTRY;
 	rc = command->details.conn.currentURI + 1 < client->serverURIcount ||
-		(command->details.conn.MQTTVersion == 4 && client->c->MQTTVersion == MQTTVERSION_DEFAULT);
+		(was_connected == 0 && command->details.conn.MQTTVersion == MQTTVERSION_3_1 && client->c->MQTTVersion == MQTTVERSION_DEFAULT);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -1599,7 +1600,7 @@ static int MQTTAsync_processCommand(void)
 			MQTTAsync_disconnect_internal(command->client, 0);
 
 		if (command->command.type == CONNECT
-				&& MQTTAsync_checkConn(&command->command, command->client))
+				&& MQTTAsync_checkConn(&command->command, command->client, 0))
 		{
 			Log(TRACE_MIN, -1, "Connect failed, more to try");
 
@@ -1662,7 +1663,7 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 	int connectionLost_called = 0;
 	FUNC_ENTRY;
 
-	more_to_try = MQTTAsync_checkConn(&m->connect, m);
+	more_to_try = MQTTAsync_checkConn(&m->connect, m, was_connected);
 	if (more_to_try)
 	{
 		MQTTAsync_queuedCommand* conn;
@@ -1684,7 +1685,8 @@ static void nextOrClose(MQTTAsyncs* m, int rc, char* message)
 
 		if (conn->client->c->MQTTVersion == MQTTVERSION_DEFAULT)
 		{
-			if (conn->command.details.conn.MQTTVersion == MQTTVERSION_3_1)
+			/* if last attempt successfully connected and we are using the DEFAULT option, don't fallback to MQTT 3.1 */
+			if (was_connected == 0 || conn->command.details.conn.MQTTVersion == MQTTVERSION_3_1)
 			{
 				conn->command.details.conn.currentURI++;
 				conn->command.details.conn.MQTTVersion = MQTTVERSION_DEFAULT;

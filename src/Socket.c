@@ -529,17 +529,40 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 		if (mod_s.nfds != mod_s.saved.nfds)
 		{
 			mod_s.saved.nfds = mod_s.nfds;
-			if (mod_s.saved.fds_read)
+			if (mod_s.nfds == 0)
+			{
+				if (mod_s.saved.fds_read)
+				{
+					free(mod_s.saved.fds_read);
+					mod_s.saved.fds_read = NULL;
+				}
+			}
+			else if (mod_s.saved.fds_read)
 				mod_s.saved.fds_read = realloc(mod_s.saved.fds_read, mod_s.nfds * sizeof(struct pollfd));
 			else
 				mod_s.saved.fds_read = malloc(mod_s.nfds * sizeof(struct pollfd));
-			if (mod_s.saved.fds_write)
+
+			if (mod_s.nfds == 0)
+			{
+				if (mod_s.saved.fds_write)
+				{
+					free(mod_s.saved.fds_write);
+					mod_s.saved.fds_write = NULL;
+				}
+			}
+			else if (mod_s.saved.fds_write)
 				mod_s.saved.fds_write = realloc(mod_s.saved.fds_write, mod_s.nfds * sizeof(struct pollfd));
 			else
 				mod_s.saved.fds_write = malloc(mod_s.nfds * sizeof(struct pollfd));
 		}
-		memcpy(mod_s.saved.fds_read, mod_s.fds_read, mod_s.nfds * sizeof(struct pollfd));
-		memcpy(mod_s.saved.fds_write, mod_s.fds_write, mod_s.nfds * sizeof(struct pollfd));
+		if (mod_s.fds_read == NULL)
+			mod_s.saved.fds_read = NULL;
+		else
+			memcpy(mod_s.saved.fds_read, mod_s.fds_read, mod_s.nfds * sizeof(struct pollfd));
+		if (mod_s.fds_write == NULL)
+			mod_s.saved.fds_write = NULL;
+		else
+			memcpy(mod_s.saved.fds_write, mod_s.fds_write, mod_s.nfds * sizeof(struct pollfd));
 
 		if (mod_s.saved.nfds == 0)
 		{

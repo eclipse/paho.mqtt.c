@@ -1111,8 +1111,8 @@ static void MQTTClient_closeSession(Clients* client, enum MQTTReasonCodes reason
 		client->session = NULL; /* show the session has been freed */
 		SSLSocket_close(&client->net);
 #endif
-		Socket_close(client->net.socket);
 		Thread_unlock_mutex(socket_mutex);
+		Socket_close(client->net.socket);
 		client->net.socket = 0;
 #if defined(OPENSSL)
 		client->net.ssl = NULL;

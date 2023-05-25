@@ -965,6 +965,7 @@ int Socket_close(SOCKET socket)
 	int rc = 0;
 
 	FUNC_ENTRY;
+	Thread_lock_mutex(socket_mutex);
 	Socket_close_only(socket);
 	Socket_abortWrite(socket);
 	SocketBuffer_cleanup(socket);
@@ -1032,6 +1033,7 @@ int Socket_close(SOCKET socket)
 	else
 		Log(LOG_ERROR, -1, "Failed to remove socket %d", socket);
 exit:
+	Thread_unlock_mutex(socket_mutex);
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -1220,9 +1222,7 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
                as reported in https://github.com/eclipse/paho.mqtt.c/issues/135 */
             if (rc != 0 && (rc != EINPROGRESS) && (rc != EWOULDBLOCK))
             {
-				Thread_lock_mutex(socket_mutex);
             	Socket_close(*sock); /* close socket and remove from our list of sockets */
-				Thread_unlock_mutex(socket_mutex);
                 *sock = SOCKET_ERROR; /* as initialized before */
             }
 		}

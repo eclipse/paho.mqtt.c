@@ -2390,12 +2390,12 @@ static void MQTTAsync_closeOnly(Clients* client, enum MQTTReasonCodes reasonCode
 		client->session = NULL; /* show the session has been freed */
 		SSLSocket_close(&client->net);
 #endif
-		Socket_close(client->net.socket);
+		MQTTAsync_unlock_mutex(socket_mutex);
+		Socket_close(client->net.socket); /* Socket_close locks socket mutex itself */
 		client->net.socket = 0;
 #if defined(OPENSSL)
 		client->net.ssl = NULL;
 #endif
-		MQTTAsync_unlock_mutex(socket_mutex);
 	}
 	client->connected = 0;
 	client->connect_state = NOT_IN_PROGRESS;

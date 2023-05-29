@@ -952,7 +952,8 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 			property.value.data.data = authData.authDataOut.data;
 			property.value.data.len = authData.authDataOut.len;
 			rc = MQTTProperties_add(m->connectProps, &property);
-			free(authData.authDataOut.data);
+			if(authData.authDataOut.data)
+				free(authData.authDataOut.data);
 			if (rc)
 				goto exit;
 		}

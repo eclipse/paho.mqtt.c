@@ -565,7 +565,8 @@ typedef struct
  * This is a callback function which will allow the client application to update the
  * connection data.
  * @param data The connection data which can be modified by the application.
- * @return Return a zero or positive value to indicate sucess, a negative value on failure.
+ * @return a negative value to indicate not-authorized, a value of 0 to indicate success,
+ * a positive value to indicate continue.
  */
 typedef int MQTTAsync_authHandle(void* context, MQTTAsync_authHandleData* data);
 

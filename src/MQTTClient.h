@@ -523,10 +523,14 @@ typedef struct
 /**
  * This is a callback function, which will be called when a MQTTv5 enhanced
  * authentication packet is either received from the server or needs to be
- * populated by the client.  This applies to MQTT V5 and above only.
+ * populated by the client, it applies to MQTT V5 and above only.
+ * The callback is not executed on a dedicated thread, do not call other MQTTClient
+ * functions inside of it.
  * @param context A pointer to the <i>context</i> value originally passed to
  * ::MQTTClient_setHandleAuth(), which contains any application-specific context.
  * @param data The MQTTClient_handleAuthData.
+ * @return a negative value to indicate not-authorized, a value of 0 to indicate success,
+ * a positive value to indicate continue.
  */
 typedef int MQTTClient_handleAuth(void* context, MQTTClient_handleAuthData* data);
 
@@ -1045,19 +1049,19 @@ typedef struct
 0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL, NULL}
 
 /** Initializer for connect options for MQTT 5.0 non-WebSocket connections */
-#define MQTTClient_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 8, 60, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
+#define MQTTClient_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 9, 60, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
 0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL, NULL, NULL, NULL}
 
 /** Initializer for connect options for MQTT 3.1.1 WebSockets connections.
   * The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts.
   */
-#define MQTTClient_connectOptions_initializer_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
+#define MQTTClient_connectOptions_initializer_ws { {'M', 'Q', 'T', 'C'}, 9, 45, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
 0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL, NULL}
 
 /** Initializer for connect options for MQTT 5.0 WebSockets connections.
   * The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts.
   */
-#define MQTTClient_connectOptions_initializer5_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
+#define MQTTClient_connectOptions_initializer5_ws { {'M', 'Q', 'T', 'C'}, 9, 45, 0, 1, NULL, NULL, NULL, 30, 0, NULL,\
 0, NULL, MQTTVERSION_5, {NULL, 0, 0}, {0, NULL}, -1, 1, NULL, NULL, NULL, NULL}
 
 /**
@@ -1452,15 +1456,6 @@ LIBMQTT_API int MQTTClient_receive(MQTTClient handle, char** topicName, int* top
   * to be freed.
   */
 LIBMQTT_API void MQTTClient_freeMessage(MQTTClient_message** msg);
-
-/**
-  * This function is used to allocate memory to be used or freed by the MQTT C client library,
-  * especially the data in the ::MQTTPersistence_afterRead and ::MQTTPersistence_beforeWrite
-  * callbacks. This is needed on Windows when the client library and application
-  * program have been compiled with different versions of the C compiler.
-  * @param size The size of the memory to be allocated.
-  */
-LIBMQTT_API void* MQTTClient_malloc(size_t size);
 
 /**
   * This function frees memory allocated by the MQTT C client library, especially the

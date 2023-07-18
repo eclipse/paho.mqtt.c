@@ -750,9 +750,9 @@ int test4_run(int qos)
 
 		while (tokens[i] != -1)
 			MyLog(LOGA_DEBUG, "Pending delivery token %d", tokens[i++]);
-		MQTTClient_free(tokens);
 		assert1("no of tokens should be count", i == count, "no of tokens %d count %d", i, count);
 		mytoken = tokens[0];
+		MQTTClient_free(tokens);
 	}
 
 	MQTTClient_destroy(&c); /* force re-reading persistence on create */

@@ -3024,12 +3024,12 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 		if (pack)
 		{
 			int freed = 1;
-
+			unsigned int packetType = pack->header.bits.type;
 			/* Note that these handle... functions free the packet structure that they are dealing with */
-			if (pack->header.bits.type == PUBLISH)
+			if (packetType == PUBLISH)
 				*rc = MQTTProtocol_handlePublishes(pack, *sock);
-			else if (pack->header.bits.type == PUBACK || pack->header.bits.type == PUBCOMP ||
-					pack->header.bits.type == PUBREC)
+			else if (packetType == PUBACK || packetType == PUBCOMP ||
+					packetType == PUBREC)
 			{
 				int msgid = 0,
 					msgtype = 0,
@@ -3044,7 +3044,7 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 					ack = *(Ack*)pack;
 					/* these values are stored because the packet structure is freed in the handle functions */
 					msgid = ack.msgId;
-					msgtype = pack->header.bits.type;
+					msgtype = packetType;
 					if (ack.MQTTVersion >= MQTTVERSION_5)
 					{
 						ackrc = ack.rc;
@@ -3053,11 +3053,11 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 					}
 				}
 
-				if (pack->header.bits.type == PUBCOMP)
+				if (packetType == PUBCOMP)
 					*rc = MQTTProtocol_handlePubcomps(pack, *sock, &pubToRemove);
-				else if (pack->header.bits.type == PUBREC)
+				else if (packetType == PUBREC)
 					*rc = MQTTProtocol_handlePubrecs(pack, *sock, &pubToRemove);
-				else if (pack->header.bits.type == PUBACK)
+				else if (packetType == PUBACK)
 					*rc = MQTTProtocol_handlePubacks(pack, *sock, &pubToRemove);
 				if (!m)
 					Log(LOG_ERROR, -1, "PUBCOMP, PUBACK or PUBREC received for no client, msgid %d", msgid);
@@ -3112,7 +3112,7 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 								data.token = command->command.token;
 								data.reasonCode = ackrc;
 								data.properties = msgprops;
-								data.packet_type = pack->header.bits.type;
+								data.packet_type = packetType;
 								Log(TRACE_MIN, -1, "Calling publish failure for client %s", m->c->clientID);
 								(*(command->command.onFailure5))(command->command.context, &data);
 							}
@@ -3136,9 +3136,9 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 				if (pubToRemove != NULL)
 					MQTTProtocol_removePublication(pubToRemove);
 			}
-			else if (pack->header.bits.type == PUBREL)
+			else if (packetType == PUBREL)
 				*rc = MQTTProtocol_handlePubrels(pack, *sock);
-			else if (pack->header.bits.type == PINGRESP)
+			else if (packetType == PINGRESP)
 				*rc = MQTTProtocol_handlePingresps(pack, *sock);
 			else
 				freed = 0;

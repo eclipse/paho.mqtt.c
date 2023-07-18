@@ -338,7 +338,7 @@ int test1_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 
 	MyLog(LOGA_DEBUG, "Message received on topic %s, \"%.*s\"", topicName, message->payloadlen, message->payload);
 
-	if (memcmp(message->payload, "will message", message->payloadlen) == 0)
+	if (memcmp(message->payload, "will message", sizeof("will message")) == 0)
 	  test1_will_message_received = 1;
 	else
 	  test1_messages_received++;
@@ -599,7 +599,7 @@ int test2_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 
 	MyLog(LOGA_DEBUG, "Message received on topic %s, \"%.*s\"", topicName, message->payloadlen, message->payload);
 
-	if (memcmp(message->payload, "will message", message->payloadlen) == 0)
+	if (memcmp(message->payload, "will message", sizeof("will message")) == 0)
 	  test2_will_message_received = 1;
 	else
 	  test2_messages_received++;
@@ -870,7 +870,7 @@ int test3_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 
 	MyLog(LOGA_DEBUG, "Message received on topic %s, \"%.*s\"", topicName, message->payloadlen, message->payload);
 
-	if (memcmp(message->payload, "will message", message->payloadlen) == 0)
+	if (memcmp(message->payload, "will message", sizeof("will message")) == 0)
 	  test3_will_message_received = 1;
 	else
 	  test3_messages_received++;
@@ -1129,7 +1129,7 @@ int test4_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 
 	MyLog(LOGA_DEBUG, "Message received on topic %s, \"%.*s\"", topicName, message->payloadlen, message->payload);
 
-	if (memcmp(message->payload, "will message", message->payloadlen) == 0)
+	if (memcmp(message->payload, "will message", sizeof("will message")) == 0)
 	  test4_will_message_received = 1;
 	else
 	  test4_messages_received++;
@@ -1393,7 +1393,7 @@ int test5_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 
 	MyLog(LOGA_DEBUG, "Message received on topic %s, \"%.*s\"", topicName, message->payloadlen, message->payload);
 
-	if (memcmp(message->payload, "will message", message->payloadlen) == 0)
+	if (memcmp(message->payload, "will message", sizeof("will message")) == 0)
 	  test5_will_message_received = 1;
 	else
 	  test5_messages_received++;
@@ -1814,7 +1814,7 @@ int test7_messageArrived(void* context, char* topicName, int topicLen, MQTTAsync
 
 	MyLog(LOGA_DEBUG, "Message received on topic %s, \"%.*s\"", topicName, message->payloadlen, message->payload);
 
-	if (memcmp(message->payload, "will message", message->payloadlen) == 0)
+	if (memcmp(message->payload, "will message", sizeof("will message")) == 0)
 	  test7_will_message_received = 1;
 	else
 	  test7_messages_received++;

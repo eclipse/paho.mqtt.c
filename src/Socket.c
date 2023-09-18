@@ -145,7 +145,7 @@ void Socket_outInitialize(void)
 	SocketBuffer_initialize();
 	mod_s.connect_pending = ListInitialize();
 	mod_s.write_pending = ListInitialize();
-	
+
 #if defined(USE_SELECT)
 	mod_s.clientsds = ListInitialize();
 	mod_s.cur_clientsds = NULL;
@@ -387,7 +387,7 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 	Thread_lock_mutex(mutex);
 	if (mod_s.clientsds->count == 0)
 		goto exit;
-		
+
 	if (more_work)
 		timeout_ms = 0;
 	else if (timeout >= 0)
@@ -416,7 +416,7 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 		memcpy((void*)&(mod_s.rset), (void*)&(mod_s.rset_saved), sizeof(mod_s.rset));
 		memcpy((void*)&(pwset), (void*)&(mod_s.pending_wset), sizeof(pwset));
 		maxfdp1_saved = mod_s.maxfdp1;
-		
+
 		if (maxfdp1_saved == 0)
 		{
 			sock = 0;
@@ -484,11 +484,11 @@ exit:
  *  be used for the select
  *  @param timeout the timeout to be used in ms
  *  @param rc a value other than 0 indicates an error of the returned socket
- *  @return the socket next ready, or 0 if none is ready
+ *  @return the socket next ready, or -1 if none is ready
  */
 SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* rc)
 {
-	SOCKET sock = 0;
+	SOCKET sock = -1;
 	*rc = 0;
 	int timeout_ms = 1000;
 
@@ -553,7 +553,7 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 
 		if (mod_s.saved.nfds == 0)
 		{
-			sock = 0;
+			sock = -1;
 			goto exit; /* no work to do */
 		}
 
@@ -578,7 +578,7 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 
 		if (rc1 == 0 && *rc == 0)
 		{
-			sock = 0;
+			sock = -1;
 			goto exit; /* no work to do */
 		}
 
@@ -593,7 +593,7 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* 
 
 	*rc = 0;
 	if (mod_s.saved.cur_fd == -1)
-		sock = 0;
+		sock = -1;
 	else
 	{
 		sock = mod_s.saved.fds_read[mod_s.saved.cur_fd].fd;
@@ -1389,7 +1389,7 @@ int Socket_continueWrites(fd_set* pwset, SOCKET* sock, mutex_type mutex)
 #else
 /**
  *  Continue any outstanding socket writes
- 
+
  *  @param sock in case of a socket error contains the affected socket
  *  @return completion code, 0 or SOCKET_ERROR
  */

@@ -285,7 +285,7 @@ int Socket_addSocket(SOCKET newSd)
 		mod_s.fds_write = realloc(mod_s.fds_write, mod_s.nfds * sizeof(mod_s.fds_write[0]));
 	else
 		mod_s.fds_write = malloc(mod_s.nfds * sizeof(mod_s.fds_write[0]));
-	if (!mod_s.fds_read)
+	if (!mod_s.fds_write)
 	{
 		rc = PAHO_MEMORY_ERROR;
 		goto exit;

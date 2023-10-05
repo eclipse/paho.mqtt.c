@@ -1819,6 +1819,15 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 	sendThread_state = STOPPED;
 	sendThread_id = 0;
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
+
+#if defined(OPENSSL)
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
+	ERR_remove_state(0);
+#else
+	OPENSSL_thread_stop();
+#endif
+#endif
+
 	FUNC_EXIT;
 #if defined(_WIN32) || defined(_WIN64)
 	ExitThread(0);
@@ -2319,6 +2328,15 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 	if (sendThread_state != STOPPED)
 		Thread_post_sem(send_sem);
 #endif
+
+#if defined(OPENSSL)
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
+	ERR_remove_state(0);
+#else
+	OPENSSL_thread_stop();
+#endif
+#endif
+
 	FUNC_EXIT;
 #if defined(_WIN32) || defined(_WIN64)
 	ExitThread(0);

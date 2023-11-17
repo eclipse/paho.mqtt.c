@@ -86,7 +86,7 @@ int MQTTProperty_getType(enum MQTTPropertyCodes value)
 }
 
 
-int MQTTProperties_len(MQTTProperties* props)
+int MQTTProperties_len(const MQTTProperties* props)
 {
   /* properties length is an mbi */
   return (props == NULL) ? 1 : props->length + MQTTPacket_VBIlen(props->length);
@@ -103,6 +103,11 @@ int MQTTProperties_add(MQTTProperties* props, const MQTTProperty* prop)
 {
   int rc = 0, type;
 
+  if (props == NULL)
+  {
+    rc = PAHO_MEMORY_ERROR;
+    goto exit;
+  }
   if ((type = MQTTProperty_getType(prop->identifier)) < 0)
   {
 	/*StackTrace_printStack(stdout);*/
@@ -431,7 +436,7 @@ MQTTProperties MQTTProperties_copy(const MQTTProperties* props)
   MQTTProperties result = MQTTProperties_initializer;
 
   FUNC_ENTRY;
-  for (i = 0; i < props->count; ++i)
+  for (i = 0; props != NULL && i < props->count; ++i)
   {
 	int rc = 0;
 
@@ -444,12 +449,12 @@ MQTTProperties MQTTProperties_copy(const MQTTProperties* props)
 }
 
 
-int MQTTProperties_hasProperty(MQTTProperties *props, enum MQTTPropertyCodes propid)
+int MQTTProperties_hasProperty(const MQTTProperties *props, enum MQTTPropertyCodes propid)
 {
 	int i = 0;
 	int found = 0;
 
-	for (i = 0; i < props->count; ++i)
+	for (i = 0; props != NULL && i < props->count; ++i)
 	{
 		if (propid == props->array[i].identifier)
 		{
@@ -461,12 +466,12 @@ int MQTTProperties_hasProperty(MQTTProperties *props, enum MQTTPropertyCodes pro
 }
 
 
-int MQTTProperties_propertyCount(MQTTProperties *props, enum MQTTPropertyCodes propid)
+int MQTTProperties_propertyCount(const MQTTProperties *props, enum MQTTPropertyCodes propid)
 {
 	int i = 0;
 	int count = 0;
 
-	for (i = 0; i < props->count; ++i)
+	for (i = 0; props != NULL && i < props->count; ++i)
 	{
 		if (propid == props->array[i].identifier)
 			count++;
@@ -475,13 +480,13 @@ int MQTTProperties_propertyCount(MQTTProperties *props, enum MQTTPropertyCodes p
 }
 
 
-int MQTTProperties_getNumericValueAt(MQTTProperties *props, enum MQTTPropertyCodes propid, int index)
+int MQTTProperties_getNumericValueAt(const MQTTProperties *props, enum MQTTPropertyCodes propid, int index)
 {
 	int i = 0;
 	int rc = -9999999;
 	int cur_index = 0;
 
-	for (i = 0; i < props->count; ++i)
+	for (i = 0; props != NULL && i < props->count; ++i)
 	{
 		int id = props->array[i].identifier;
 
@@ -515,19 +520,19 @@ int MQTTProperties_getNumericValueAt(MQTTProperties *props, enum MQTTPropertyCod
 }
 
 
-int MQTTProperties_getNumericValue(MQTTProperties *props, enum MQTTPropertyCodes propid)
+int MQTTProperties_getNumericValue(const MQTTProperties *props, enum MQTTPropertyCodes propid)
 {
 	return MQTTProperties_getNumericValueAt(props, propid, 0);
 }
 
 
-MQTTProperty* MQTTProperties_getPropertyAt(MQTTProperties *props, enum MQTTPropertyCodes propid, int index)
+MQTTProperty* MQTTProperties_getPropertyAt(const MQTTProperties *props, enum MQTTPropertyCodes propid, int index)
 {
 	int i = 0;
 	MQTTProperty* result = NULL;
 	int cur_index = 0;
 
-	for (i = 0; i < props->count; ++i)
+	for (i = 0; props != 0 && i < props->count; ++i)
 	{
 		int id = props->array[i].identifier;
 
@@ -546,7 +551,7 @@ MQTTProperty* MQTTProperties_getPropertyAt(MQTTProperties *props, enum MQTTPrope
 }
 
 
-MQTTProperty* MQTTProperties_getProperty(MQTTProperties *props, enum MQTTPropertyCodes propid)
+MQTTProperty* MQTTProperties_getProperty(const MQTTProperties *props, enum MQTTPropertyCodes propid)
 {
 	return MQTTProperties_getPropertyAt(props, propid, 0);
 }

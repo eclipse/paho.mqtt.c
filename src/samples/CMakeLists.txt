@@ -29,18 +29,32 @@ endif()
 # sample files c
 
 if(PAHO_BUILD_SHARED)
-  foreach(TARGET paho_c_pub paho_c_sub paho_cs_pub paho_cs_sub)
-    add_executable(${TARGET} ${TARGET}.c pubsub_opts.c)
-    set_target_properties(${TARGET} PROPERTIES
-      COMPILE_DEFINITIONS "PAHO_MQTT_IMPORTS=1"
+  if(PAHO_WITH_SSL)
+    foreach(TARGET paho_c_pub paho_c_sub paho_cs_pub paho_cs_sub)
+      add_executable(${TARGET} ${TARGET}.c pubsub_opts.c)
+      set_target_properties(${TARGET} PROPERTIES
+        COMPILE_DEFINITIONS "PAHO_MQTT_IMPORTS=1"
+      )
+    endforeach()
+
+    target_link_libraries(paho_c_pub paho-mqtt3as)
+    target_link_libraries(paho_c_sub paho-mqtt3as)
+
+    target_link_libraries(paho_cs_pub paho-mqtt3cs)
+    target_link_libraries(paho_cs_sub paho-mqtt3cs)
+
+    install(
+      TARGETS
+        paho_c_sub
+        paho_c_pub
+        paho_cs_sub
+        paho_cs_pub
+
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
-  endforeach()
 
-  target_link_libraries(paho_c_pub paho-mqtt3as)
-  target_link_libraries(paho_c_sub paho-mqtt3as)
-
-  target_link_libraries(paho_cs_pub paho-mqtt3cs)
-  target_link_libraries(paho_cs_sub paho-mqtt3cs)
+  endif()
 
   foreach(TARGET MQTTAsync_subscribe MQTTAsync_publish MQTTAsync_publish_time
       MQTTClient_subscribe MQTTClient_publish MQTTClient_publish_async)
@@ -60,10 +74,6 @@ if(PAHO_BUILD_SHARED)
 
   install(
     TARGETS
-      paho_c_sub
-      paho_c_pub
-      paho_cs_sub
-      paho_cs_pub
       MQTTAsync_subscribe
       MQTTAsync_publish
       MQTTAsync_publish_time
@@ -76,7 +86,7 @@ if(PAHO_BUILD_SHARED)
   )
 endif()
 
-if(PAHO_BUILD_STATIC)
+if(PAHO_BUILD_STATIC AND PAHO_WITH_SSL)
   foreach(TARGET paho_c_pub paho_c_sub paho_cs_pub paho_cs_sub)
     add_executable(${TARGET}_static ${TARGET}.c pubsub_opts.c)
   endforeach()

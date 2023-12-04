@@ -83,7 +83,7 @@ if(NOT PAHO_BUILD_SHARED AND NOT PAHO_BUILD_STATIC)
 endif()
 
 if(PAHO_BUILD_SAMPLES AND NOT PAHO_WITH_SSL)
-  message(FATAL_ERROR "You must build with SSL to build the samples")
+  message(WARNING "You must build with SSL to build the full set of samples")
 endif()
 
 if(PAHO_BUILD_DEB_PACKAGE)

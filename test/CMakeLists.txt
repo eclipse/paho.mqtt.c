@@ -2004,7 +2004,7 @@ if(NOT PAHO_HIGH_PERFORMANCE)
   endif()
 
   if(PAHO_BUILD_SHARED)
-    add_executable(test_issue373test_issue373.c)
+    add_executable(test_issue373 test_issue373.c)
     target_link_libraries(test_issue373 paho-mqtt3a)
   endif()
 endif()

@@ -83,23 +83,17 @@ endif()
 if(PAHO_BUILD_SHARED)
   # common compilation for libpaho-mqtt3c and libpaho-mqtt3a
   add_library(common_obj OBJECT ${common_src})
-  set_target_properties(common_obj PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-    COMPILE_DEFINITIONS "PAHO_MQTT_EXPORTS=1"
-  )
+  set_target_properties(common_obj PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  target_compile_definitions(common_obj PRIVATE PAHO_MQTT_EXPORTS=1)
+
   add_executable(MQTTVersion MQTTVersion.c)
-  set_target_properties(MQTTVersion PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-    COMPILE_DEFINITIONS "PAHO_MQTT_IMPORTS=1"
-  )
+  target_compile_definitions(MQTTVersion PUBLIC PAHO_MQTT_IMPORTS=1)
 endif()
 
-if(PAHO_BUILD_STATIC)    
+if(PAHO_BUILD_STATIC)
   add_library(common_obj_static OBJECT ${common_src})
-  set_target_properties(common_obj_static PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-    COMPILE_DEFINITIONS "PAHO_MQTT_STATIC=1"
-  )
+  set_target_properties(common_obj_static PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  target_compile_definitions(common_obj_static PRIVATE PAHO_MQTT_STATIC=1)
 endif()
 
 if(PAHO_BUILD_SHARED)
@@ -112,6 +106,9 @@ if(PAHO_BUILD_SHARED)
     MQTTAsync.c
     MQTTAsyncUtils.c
   )
+
+  add_library(eclipse-paho-mqtt-c::paho-mqtt3c ALIAS paho-mqtt3c)
+  add_library(eclipse-paho-mqtt-c::paho-mqtt3a ALIAS paho-mqtt3a)
     
   target_link_libraries(paho-mqtt3c ${LIBS_SYSTEM})
   target_link_libraries(paho-mqtt3a ${LIBS_SYSTEM})
@@ -171,6 +168,9 @@ if(PAHO_BUILD_STATIC)
     MQTTAsync.c
     MQTTAsyncUtils.c
   )
+
+  add_library(eclipse-paho-mqtt-c::paho-mqtt3c-static ALIAS paho-mqtt3c-static)
+  add_library(eclipse-paho-mqtt-c::paho-mqtt3a-static ALIAS paho-mqtt3a-static)
 
   target_link_libraries(paho-mqtt3c-static ${LIBS_SYSTEM})
   target_link_libraries(paho-mqtt3a-static ${LIBS_SYSTEM})
@@ -232,12 +232,8 @@ if(PAHO_WITH_SSL)
     add_library(common_ssl_obj OBJECT ${common_src})
     target_include_directories(common_ssl_obj PUBLIC ${OPENSSL_INCLUDE_DIR})
 
-    set_property(TARGET common_ssl_obj PROPERTY
-      POSITION_INDEPENDENT_CODE ON
-    )
-    set_property(TARGET common_ssl_obj PROPERTY
-      COMPILE_DEFINITIONS "OPENSSL=1;PAHO_MQTT_EXPORTS=1"
-    )
+    set_property(TARGET common_ssl_obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+    target_compile_definitions(common_ssl_obj PRIVATE OPENSSL=1 PAHO_MQTT_EXPORTS=1)
     
     add_library(paho-mqtt3cs SHARED
       $<TARGET_OBJECTS:common_ssl_obj>
@@ -250,6 +246,9 @@ if(PAHO_WITH_SSL)
       MQTTAsyncUtils.c
       SSLSocket.c
     )
+
+    add_library(eclipse-paho-mqtt-c::paho-mqtt3cs ALIAS paho-mqtt3cs)
+    add_library(eclipse-paho-mqtt-c::paho-mqtt3as ALIAS paho-mqtt3as)
 
     set_target_properties(paho-mqtt3cs paho-mqtt3as PROPERTIES
       VERSION ${PROJECT_VERSION}
@@ -289,9 +288,9 @@ if(PAHO_WITH_SSL)
 
     install(TARGETS paho-mqtt3cs paho-mqtt3as
       EXPORT eclipse-paho-mqtt-cTargets
-      ARCHIVE DESTINATION  ${CMAKE_INSTALL_LIBDIR}
-      LIBRARY DESTINATION  ${CMAKE_INSTALL_LIBDIR}
-      RUNTIME DESTINATION  ${CMAKE_INSTALL_BINDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
   endif()
 
@@ -301,12 +300,8 @@ if(PAHO_WITH_SSL)
     add_library(common_ssl_obj_static OBJECT ${common_src})
     target_include_directories(common_ssl_obj_static PUBLIC ${OPENSSL_INCLUDE_DIR})
 
-    set_property(TARGET common_ssl_obj_static PROPERTY
-      POSITION_INDEPENDENT_CODE ON
-    )
-    set_property(TARGET common_ssl_obj_static PROPERTY
-      COMPILE_DEFINITIONS "OPENSSL=1;PAHO_MQTT_STATIC=1"
-    )
+    set_property(TARGET common_ssl_obj_static PROPERTY POSITION_INDEPENDENT_CODE ON)
+    target_compile_definitions(common_ssl_obj_static PRIVATE OPENSSL=1 PAHO_MQTT_STATIC=1)
     
     add_library(paho-mqtt3cs-static STATIC
       $<TARGET_OBJECTS:common_ssl_obj_static>
@@ -319,6 +314,9 @@ if(PAHO_WITH_SSL)
       MQTTAsyncUtils.c
       SSLSocket.c
     )
+
+    add_library(eclipse-paho-mqtt-c::paho-mqtt3cs-static ALIAS paho-mqtt3cs-static)
+    add_library(eclipse-paho-mqtt-c::paho-mqtt3as-static ALIAS paho-mqtt3as-static)
 
     set_target_properties(paho-mqtt3cs-static paho-mqtt3as-static PROPERTIES
       VERSION ${PROJECT_VERSION}
@@ -400,20 +398,20 @@ install(
 
 # Base64 test
 add_executable(Base64Test EXCLUDE_FROM_ALL Base64.c Base64.h)
-target_compile_definitions(Base64Test PUBLIC "-DBASE64_TEST")
+target_compile_definitions(Base64Test PUBLIC BASE64_TEST)
 
 if(PAHO_WITH_SSL)
   add_executable(Base64TestOpenSSL EXCLUDE_FROM_ALL Base64.c Base64.h )
   target_link_libraries(Base64TestOpenSSL OpenSSL::SSL OpenSSL::Crypto)
-  target_compile_definitions(Base64TestOpenSSL PUBLIC "-DBASE64_TEST -DOPENSSL=1" )
+  target_compile_definitions(Base64TestOpenSSL PUBLIC BASE64_TEST OPENSSL=1)
 endif()
 
 # SHA1 test
 add_executable(Sha1Test EXCLUDE_FROM_ALL SHA1.c SHA1.h)
-target_compile_definitions(Sha1Test PUBLIC "-DSHA1_TEST")
+target_compile_definitions(Sha1Test PUBLIC SHA1_TEST)
 
 if(PAHO_WITH_SSL)
 	add_executable(Sha1TestOpenSSL EXCLUDE_FROM_ALL SHA1.c SHA1.h)
 	target_link_libraries(Sha1TestOpenSSL OpenSSL::SSL OpenSSL::Crypto)
-	target_compile_definitions(Sha1TestOpenSSL PUBLIC "-DSHA1_TEST -DOPENSSL=1" )
+	target_compile_definitions(Sha1TestOpenSSL PUBLIC SHA1_TEST OPENSSL=1)
 endif()

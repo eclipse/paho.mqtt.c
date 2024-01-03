@@ -165,7 +165,7 @@ static int clientSockCompare(void* a, void* b)
 
 void MQTTAsync_lock_mutex(mutex_type amutex)
 {
-	int rc = Thread_lock_mutex(amutex);
+	int rc = Paho_thread_lock_mutex(amutex);
 	if (rc != 0)
 		Log(LOG_ERROR, 0, "Error %s locking mutex", strerror(rc));
 }
@@ -173,7 +173,7 @@ void MQTTAsync_lock_mutex(mutex_type amutex)
 
 void MQTTAsync_unlock_mutex(mutex_type amutex)
 {
-	int rc = Thread_unlock_mutex(amutex);
+	int rc = Paho_thread_unlock_mutex(amutex);
 	if (rc != 0)
 		Log(LOG_ERROR, 0, "Error %s unlocking mutex", strerror(rc));
 }
@@ -1786,7 +1786,7 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 	Thread_set_name("MQTTAsync_send");
 	MQTTAsync_lock_mutex(mqttasync_mutex);
 	sendThread_state = RUNNING;
-	sendThread_id = Thread_getid();
+	sendThread_id = Paho_thread_getid();
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
 	while (!MQTTAsync_tostop)
 	{
@@ -1819,6 +1819,15 @@ thread_return_type WINAPI MQTTAsync_sendThread(void* n)
 	sendThread_state = STOPPED;
 	sendThread_id = 0;
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
+
+#if defined(OPENSSL)
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
+	ERR_remove_state(0);
+#else
+	OPENSSL_thread_stop();
+#endif
+#endif
+
 	FUNC_EXIT;
 #if defined(_WIN32) || defined(_WIN64)
 	ExitThread(0);
@@ -2006,7 +2015,7 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 	Thread_set_name("MQTTAsync_rcv");
 	MQTTAsync_lock_mutex(mqttasync_mutex);
 	receiveThread_state = RUNNING;
-	receiveThread_id = Thread_getid();
+	receiveThread_id = Paho_thread_getid();
 	while (!MQTTAsync_tostop)
 	{
 		int rc = SOCKET_ERROR;
@@ -2319,6 +2328,15 @@ thread_return_type WINAPI MQTTAsync_receiveThread(void* n)
 	if (sendThread_state != STOPPED)
 		Thread_post_sem(send_sem);
 #endif
+
+#if defined(OPENSSL)
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
+	ERR_remove_state(0);
+#else
+	OPENSSL_thread_stop();
+#endif
+#endif
+
 	FUNC_EXIT;
 #if defined(_WIN32) || defined(_WIN64)
 	ExitThread(0);
@@ -2717,7 +2735,7 @@ int MQTTAsync_assignMsgId(MQTTAsyncs* m)
 	/* need to check: commands list and response list for a client */
 	FUNC_ENTRY;
 	/* We might be called in a callback. In which case, this mutex will be already locked. */
-	thread_id = Thread_getid();
+	thread_id = Paho_thread_getid();
 	if (thread_id != sendThread_id && thread_id != receiveThread_id)
 	{
 		MQTTAsync_lock_mutex(mqttasync_mutex);

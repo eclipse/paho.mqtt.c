@@ -1428,7 +1428,7 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 				m->c->connected = 1;
 				m->c->good = 1;
 				m->c->connect_state = NOT_IN_PROGRESS;
-				if (MQTTVersion == 4)
+				if (MQTTVersion >= MQTTVERSION_3_1_1)
 					sessionPresent = connack->flags.bits.sessionPresent;
 				if (m->c->cleansession || m->c->cleanstart)
 					rc = MQTTClient_cleanSession(m->c);

@@ -29,7 +29,7 @@ install:
   - cmd: ver
   - cmd: openssl version
   - cmd: C:\%PYTHON_VERSION%\python --version
-  - cmd: netsh advfirewall firewall add rule name="Python 3" dir=in action=allow program="C:\%PYTHON_VERSION%\python.exe" enable=yes
+  - cmd: netsh advfirewall firewall add rule name="Python 3" dir=in action=allow program=C:\%PYTHON_VERSION%\python.exe enable=yes
   - cmd: netsh advfirewall firewall add rule name="Open Port 1883" dir=in action=allow protocol=TCP localport=1883
   - cmd: netsh advfirewall set allprofiles state off
   - ps: Start-Process C:\%PYTHON_VERSION%\python -ArgumentList 'test\mqttsas.py'

@@ -8,31 +8,34 @@ environment:
       PAHO_BUILD_STATIC: FALSE
       PAHO_BUILD_SHARED: TRUE
       PAHO_HIGH_PERFORMANCE: FALSE
+      PYTHON_VERSION: Python36
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       PAHO_WINDOWS_BUILD_BIT: x64
       OPENSSL_ROOT_DIR: "C:/OpenSSL-Win64"
       PAHO_BUILD_STATIC: TRUE
       PAHO_BUILD_SHARED: FALSE
       PAHO_HIGH_PERFORMANCE: TRUE
+      PYTHON_VERSION: Python36
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       PAHO_WINDOWS_BUILD_BIT: x86
       OPENSSL_ROOT_DIR: "C:/OpenSSL-Win32"
       PAHO_BUILD_STATIC: FALSE
       PAHO_BUILD_SHARED: TRUE
       PAHO_HIGH_PERFORMANCE: TRUE
+      PYTHON_VERSION: Python37
     
 configuration: Debug
 install:
   - cmd: ver
   - cmd: openssl version
-  - cmd: C:\Python36\python --version
-  - cmd: netsh advfirewall firewall add rule name="Python 3.6" dir=in action=allow program="C:\Python36\python.exe" enable=yes
+  - cmd: C:\%PYTHON_VERSION%\python --version
+  - cmd: netsh advfirewall firewall add rule name="Python 3" dir=in action=allow program="C:\%PYTHON_VERSION%\python.exe" enable=yes
   - cmd: netsh advfirewall firewall add rule name="Open Port 1883" dir=in action=allow protocol=TCP localport=1883
   - cmd: netsh advfirewall set allprofiles state off
-  - ps: Start-Process C:\Python36\python -ArgumentList 'test\mqttsas.py'
+  - ps: Start-Process C:\$Env:PYTHON_VERSION\python -ArgumentList 'test\mqttsas.py'
   - cmd: git clone https://github.com/eclipse/paho.mqtt.testing.git
   - cmd: cd paho.mqtt.testing\interoperability
-  - ps: Start-Process C:\Python36\python -ArgumentList 'startbroker.py -c localhost_testing.conf'
+  - ps: Start-Process C:\$Env:PYTHON_VERSION\python -ArgumentList 'startbroker.py -c localhost_testing.conf'
   - cmd: cd ..\..
 
 build_script:

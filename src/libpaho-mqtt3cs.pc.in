@@ -1,0 +1,12 @@
+prefix="@CMAKE_INSTALL_PREFIX@"
+exec_prefix="${prefix}"
+libdir="${prefix}/lib"
+includedir="${prefix}/include"
+
+Name: @PROJECT_NAME@
+Description: paho mqtt client synchronous library 
+Version: @CLIENT_VERSION@
+Requires: @pc_req_public@
+Requires.private: @pc_req_private@
+Cflags: -I"${includedir}"
+Libs: -L"${libdir}" -lpaho-mqtt3cs

@@ -153,6 +153,7 @@ typedef struct
 	int sessionExpiry;              /**< MQTT 5 session expiry */
 	char* httpProxy;                /**< HTTP proxy */
 	char* httpsProxy;               /**< HTTPS proxy */
+	char* authMethod;               /**< MQTT 5 enhanced authentication method */
 #if defined(OPENSSL)
 	MQTTClient_SSLOptions *sslopts; /**< the SSL/TLS connect options */
 	SSL_SESSION* session;           /**< SSL session pointer for fast handhake */

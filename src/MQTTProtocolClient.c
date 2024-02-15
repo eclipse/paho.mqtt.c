@@ -694,6 +694,64 @@ int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock, Publications** pubToRem
 
 
 /**
+ * Process an incoming authentication packet for a socket
+ * @param pack pointer to the auth packet
+ * @param sock the socket on which the packet was received
+ * @return completion code
+ */
+int MQTTProtocol_handleAuth(void *pack, SOCKET sock, enum MQTTReasonCodes reason,
+		void *data, int dataLen)
+{
+	Auth *auth = (Auth *)pack;
+	Clients *client = NULL;
+	int rc = TCPSOCKET_COMPLETE;
+	MQTTProperties props = MQTTProperties_initializer;
+	MQTTProperty prop;
+
+	FUNC_ENTRY;
+	client = (Clients *)(ListFindItem(bstate->clients, &sock,
+									  clientSocketCompare)->content);
+	Log(LOG_PROTOCOL, 30, NULL, sock, client->clientID, auth->rc);
+
+	switch(reason)
+	{
+		case MQTTREASONCODE_SUCCESS:
+			rc = MQTTPacket_send_auth(client, reason, NULL);
+			break;
+		case MQTTREASONCODE_CONTINUE_AUTHENTICATION:
+			prop.identifier = MQTTPROPERTY_CODE_AUTHENTICATION_METHOD;
+			prop.value.data.data = client->authMethod;
+			prop.value.data.len = (int)strlen(client->authMethod);
+			if (MQTTProperties_add(&props, &prop))
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
+
+			prop.identifier = MQTTPROPERTY_CODE_AUTHENTICATION_DATA;
+			prop.value.data.data = data;
+			prop.value.data.len = dataLen;
+			if (MQTTProperties_add(&props, &prop))
+			{
+				rc = PAHO_MEMORY_ERROR;
+				goto exit;
+			}
+
+			rc = MQTTPacket_send_auth(client, reason, &props);
+			break;
+		default:
+			break;
+	}
+
+	exit:
+	MQTTProperties_free(&props);
+	MQTTPacket_freeAuth(auth);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+/**
  * MQTT protocol keepAlive processing.  Sends PINGREQ packets as required.
  * @param now current time
  */
@@ -956,6 +1014,8 @@ void MQTTProtocol_freeClient(Clients* client)
 		free(client->httpsProxy);
 	if (client->net.http_proxy_auth)
 		free(client->net.http_proxy_auth);
+	if (client->authMethod)
+		free(client->authMethod);
 #if defined(OPENSSL)
 	if (client->net.https_proxy_auth)
 		free(client->net.https_proxy_auth);

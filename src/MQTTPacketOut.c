@@ -132,6 +132,51 @@ exit_nofree:
 
 
 /**
+ * Send an MQTT AUTH packet down a socket for V5 or later
+ * @param client a structure from which to get all the required values
+ * @param MQTTVersion the MQTT version to connect with
+ * @param properties MQTT V5 properties for the authentication packet
+ * @return the completion code (e.g. TCPSOCKET_COMPLETE)
+ */
+int MQTTPacket_send_auth(Clients *client, enum MQTTReasonCodes reason,
+		MQTTProperties *props)
+{
+	Header header;
+	int rc = 0;
+
+	FUNC_ENTRY;
+	header.byte = 0;
+	header.bits.type = AUTH;
+
+	if (client->MQTTVersion >= 5 && (props || reason != MQTTREASONCODE_SUCCESS))
+	{
+		size_t buflen = 1 + ((props == NULL) ? 0 : MQTTProperties_len(props));
+		char *buf = NULL;
+		char *ptr = NULL;
+
+		if ((buf = malloc(buflen)) == NULL)
+		{
+			rc = SOCKET_ERROR;
+			goto exit;
+		}
+		ptr = buf;
+		writeChar(&ptr, reason);
+		if (props)
+			MQTTProperties_write(&ptr, props);
+		if ((rc = MQTTPacket_send(&client->net, header, buf, buflen, 1,
+								  client->MQTTVersion)) != TCPSOCKET_INTERRUPTED)
+			free(buf);
+	}
+	else
+		rc = MQTTPacket_send(&client->net, header, NULL, 0, 0, client->MQTTVersion);
+	exit:
+	Log(LOG_PROTOCOL, 28, NULL, client->net.socket, client->clientID, rc);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+/**
  * Function used in the new packets table to create connack packets.
  * @param MQTTVersion MQTT 5 or less?
  * @param aHeader the MQTT header byte

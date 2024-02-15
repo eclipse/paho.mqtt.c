@@ -313,10 +313,8 @@ typedef struct
 	MQTTClient_selectInterface* selectInterface;
 	void* selectInterface_context;
 
-#if 0
-	MQTTClient_authHandle* auth_handle;
+	MQTTClient_handleAuth* auth_handle;
 	void* auth_handle_context; /* the context to be associated with the authHandle callback*/
-#endif
 
 	sem_type connect_sem;
 	int rc; /* getsockopt return code in connect */
@@ -363,6 +361,8 @@ static MQTTPacket* MQTTClient_waitfor(MQTTClient handle, int packet_type, int* r
 static void MQTTProtocol_checkPendingWrites(void);
 static void MQTTClient_writeComplete(SOCKET socket, int rc);
 static void MQTTClient_writeContinue(SOCKET socket);
+static enum MQTTReasonCodes MQTTClient_processAuth(MQTTClients *m, int rc,
+		MQTTProperties *props, MQTTClient_handleAuthData *out);
 
 
 int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, const char* clientId,
@@ -781,7 +781,6 @@ int MQTTClient_setPublished(MQTTClient handle, void* context, MQTTClient_publish
 }
 
 
-#if 0
 int MQTTClient_setHandleAuth(MQTTClient handle, void* context, MQTTClient_handleAuth* auth_handle)
 {
 	int rc = MQTTCLIENT_SUCCESS;
@@ -802,25 +801,6 @@ int MQTTClient_setHandleAuth(MQTTClient handle, void* context, MQTTClient_handle
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
-
-
-/**
- * Wrapper function to call authHandle on a separate thread.  A separate thread is needed to allow the
- * disconnected function to make API calls (e.g. MQTTClient_auth)
- * @param context a pointer to the relevant client
- * @return thread_return_type standard thread return value - not used here
- */
-static thread_return_type WINAPI call_auth_handle(void* context)
-{
-	struct props_rc_parms* pr = (struct props_rc_parms*)context;
-
-	(*(pr->m->auth_handle))(pr->m->auth_handle_context, pr->properties, pr->reasonCode);
-	MQTTProperties_free(pr->properties);
-	free(pr->properties);
-	free(pr);
-	return 0;
-}
-#endif
 
 
 /* This is the thread function that handles the calling of callback functions if set */
@@ -956,20 +936,24 @@ static thread_return_type WINAPI MQTTClient_run(void* n)
 						}
 						free(disc);
 					}
-#if 0
-					if (pack->header.bits.type == AUTH && m->auth_handle)
+					else if (pack->header.bits.type == AUTH)
 					{
-						struct props_rc_parms dp;
-						Ack* disc = (Ack*)pack;
+						Auth *auth = (Auth *)pack;
+						enum MQTTReasonCodes authrc = MQTTREASONCODE_SUCCESS;
+						MQTTClient_handleAuthData authHandleData = MQTTClient_handleAuthData_initializer;
 
-						dp.m = m;
-						dp.properties = &disc->properties;
-						dp.reasonCode = disc->rc;
-						free(pack);
-						Log(TRACE_MIN, -1, "Calling auth_handle for client %s", m->c->clientID);
-						Thread_start(call_auth_handle, &dp);
+						authrc = MQTTClient_processAuth(m, auth->rc, &auth->properties,
+													   &authHandleData);
+
+						rc = MQTTProtocol_handleAuth(pack, m->c->net.socket, authrc,
+													 authHandleData.authDataOut.data,
+													 authHandleData.authDataOut.len);
+						if (authHandleData.authDataOut.data)
+							free(authHandleData.authDataOut.data);
+						if (authrc != MQTTREASONCODE_SUCCESS &&
+								authrc != MQTTREASONCODE_CONTINUE_AUTHENTICATION)
+							MQTTClient_disconnect_internal(m, 0);
 					}
-#endif
 				}
 			}
 			else if (m->c->connect_state == TCP_IN_PROGRESS)
@@ -1426,7 +1410,18 @@ static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_c
 		{
 			Connack* connack = (Connack*)pack;
 			Log(TRACE_PROTOCOL, 1, NULL, m->c->net.socket, m->c->clientID, connack->rc);
-			if ((rc = connack->rc) == MQTTCLIENT_SUCCESS)
+			rc = connack->rc;
+
+			if (rc == MQTTCLIENT_SUCCESS && m->c->authMethod)
+			{
+				MQTTClient_handleAuthData authHandleData = MQTTClient_handleAuthData_initializer;
+				rc = MQTTClient_processAuth(m, connack->rc, &connack->properties,
+											&authHandleData);
+				if (authHandleData.authDataOut.data)
+					free(authHandleData.authDataOut.data);
+			}
+
+			if (rc == MQTTCLIENT_SUCCESS)
 			{
 				m->c->connected = 1;
 				m->c->good = 1;
@@ -1503,6 +1498,7 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 	ELAPSED_TIME_TYPE millisecsTimeout = 30000L;
 	MQTTResponse rc = MQTTResponse_initializer;
 	int MQTTVersion = 0;
+	int freeConnectProperties = 0;
 
 	FUNC_ENTRY;
 	rc.reasonCode = SOCKET_ERROR;
@@ -1536,6 +1532,11 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 			m->c->httpProxy = MQTTStrdup(options->httpProxy);
 		if (options->httpsProxy)
 			m->c->httpsProxy = MQTTStrdup(options->httpsProxy);
+	}
+	if (options->MQTTVersion >= MQTTVERSION_5 && options->struct_version >= 9)
+	{
+		if (options->authMethod)
+			m->c->authMethod = MQTTStrdup(options->authMethod);
 	}
 
 	if (m->c->will)
@@ -1681,6 +1682,54 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 		}
 		memcpy((void*)m->c->password, options->binarypwd.data, m->c->passwordlen);
 	}
+	if (options->struct_version >= 9)
+	{
+		if (m->c->authMethod)
+		{
+			MQTTClient_handleAuthData authData = MQTTClient_handleAuthData_initializer;
+			MQTTProperty property;
+			int authrc = 0;
+
+			if (!connectProperties)
+			{
+				/* free connectProperties if we allocated it */
+				freeConnectProperties = 1;
+
+				MQTTProperties initialized = MQTTProperties_initializer;
+
+				if ((connectProperties = malloc(sizeof(MQTTProperties))) == NULL)
+				{
+					rc.reasonCode = PAHO_MEMORY_ERROR;
+					goto exit;
+				}
+
+				*connectProperties = initialized;
+			}
+
+			property.identifier = MQTTPROPERTY_CODE_AUTHENTICATION_METHOD;
+			property.value.data.data = m->c->authMethod;
+			property.value.data.len = (int)strlen(m->c->authMethod);
+			rc.reasonCode = MQTTProperties_add(connectProperties, &property);
+			if (rc.reasonCode)
+				goto exit;
+
+			if (m->auth_handle)
+			{
+				authrc = (*(m->auth_handle))(m->auth_handle_context, &authData);
+				if (authrc < 0)
+					goto exit;
+			}
+
+			property.identifier = MQTTPROPERTY_CODE_AUTHENTICATION_DATA;
+			property.value.data.data = authData.authDataOut.data;
+			property.value.data.len = authData.authDataOut.len;
+			rc.reasonCode = MQTTProperties_add(connectProperties, &property);
+			if (authData.authDataOut.data)
+				free(authData.authDataOut.data);
+			if (rc.reasonCode)
+				goto exit;
+		}
+	}
 
 	if (options->struct_version >= 3)
 		MQTTVersion = options->MQTTVersion;
@@ -1702,6 +1751,12 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 				connectProperties, willProperties);
 
 exit:
+	if (freeConnectProperties)
+	{
+		MQTTProperties_free(connectProperties);
+		free(connectProperties);
+	}
+
 	FUNC_EXIT_RC(rc.reasonCode);
 	return rc;
 }
@@ -1762,7 +1817,7 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions*
 		goto exit;
 	}
 
-	if (strncmp(options->struct_id, "MQTC", 4) != 0 || options->struct_version < 0 || options->struct_version > 8)
+	if (strncmp(options->struct_id, "MQTC", 4) != 0 || options->struct_version < 0 || options->struct_version > 9)
 	{
 		rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
 		goto exit;
@@ -3204,6 +3259,54 @@ int MQTTClient_setSelectInterface(MQTTClient handle, void* context, MQTTClient_s
 	return rc;
 }
 
+enum MQTTReasonCodes MQTTClient_processAuth(MQTTClients *m, int rc, MQTTProperties *props,
+		MQTTClient_handleAuthData *out)
+{
+	MQTTProperty *authMethodProp = NULL;
+	char *authMethodIn = NULL;
+	int authMethodInLen = 0;
+	MQTTProperty *authData = NULL;
 
+	if (!m->c->authMethod)
+	{
+		return MQTTREASONCODE_PROTOCOL_ERROR;
+	}
 
+	authMethodProp = MQTTProperties_getProperty(props,
+												MQTTPROPERTY_CODE_AUTHENTICATION_METHOD);
+	if (authMethodProp)
+	{
+		authMethodIn = authMethodProp->value.data.data;
+		authMethodInLen = authMethodProp->value.data.len;
+	}
 
+	if ((rc == 0 && authMethodProp == NULL) ||
+			(m->c->authMethod && authMethodIn && authMethodInLen > 0 &&
+					strlen(m->c->authMethod) == authMethodInLen &&
+					memcmp(m->c->authMethod, authMethodIn, authMethodInLen) == 0))
+	{
+		if (m->auth_handle == NULL)
+			return MQTTREASONCODE_NOT_AUTHORIZED;
+
+		authData = MQTTProperties_getProperty(props,
+											  MQTTPROPERTY_CODE_AUTHENTICATION_DATA);
+
+		out->reasonCode = rc;
+		if (authData && authMethodIn)
+		{
+			out->authDataIn.data = authData->value.data.data;
+			out->authDataIn.len = authData->value.data.len;
+		}
+
+		rc = (*(m->auth_handle))(m->auth_handle_context, out);
+		if (rc < 0)
+			return MQTTREASONCODE_NOT_AUTHORIZED;
+
+		if (rc > 0)
+			return MQTTREASONCODE_CONTINUE_AUTHENTICATION;
+
+		return MQTTREASONCODE_SUCCESS;
+	}
+
+	return MQTTREASONCODE_BAD_AUTHENTICATION_METHOD;
+}

@@ -562,7 +562,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		goto exit;
 	}
 
-	if (strncmp(options->struct_id, "MQTC", 4) != 0 || options->struct_version < 0 || options->struct_version > 8)
+	if (strncmp(options->struct_id, "MQTC", 4) != 0 || options->struct_version < 0 || options->struct_version > 9)
 	{
 		rc = MQTTASYNC_BAD_STRUCTURE;
 		goto exit;
@@ -692,6 +692,11 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 			m->c->httpProxy = MQTTStrdup(options->httpProxy);
 		if (options->httpsProxy)
 			m->c->httpsProxy = MQTTStrdup(options->httpsProxy);
+	}
+	if (options->MQTTVersion >= MQTTVERSION_5 && options->struct_version >= 9)
+	{
+		if (options->authMethod)
+			m->c->authMethod = MQTTStrdup(options->authMethod);
 	}
 
 	if (m->c->will)
@@ -893,7 +898,6 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 			if (MQTTProperties_hasProperty(options->connectProperties, MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL))
 				m->c->sessionExpiry = MQTTProperties_getNumericValue(options->connectProperties,
 						MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL);
-
 		}
 		if (options->willProperties)
 		{
@@ -908,6 +912,51 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 			*m->willProps = MQTTProperties_copy(options->willProperties);
 		}
 		m->c->cleanstart = options->cleanstart;
+	}
+	if (options->struct_version >= 9)
+	{
+		if (m->c->authMethod)
+		{
+			MQTTAsync_authHandleData authData = MQTTAsync_authHandleData_initializer;
+			MQTTProperty property;
+			int authrc = 0;
+
+			if (!m->connectProps)
+			{
+				MQTTProperties initialized = MQTTProperties_initializer;
+
+				if ((m->connectProps = malloc(sizeof(MQTTProperties))) == NULL)
+				{
+					rc = PAHO_MEMORY_ERROR;
+					goto exit;
+				}
+
+				*m->connectProps = initialized;
+			}
+
+			property.identifier = MQTTPROPERTY_CODE_AUTHENTICATION_METHOD;
+			property.value.data.data = m->c->authMethod;
+			property.value.data.len = (int)strlen(m->c->authMethod);
+			rc = MQTTProperties_add(m->connectProps, &property);
+			if (rc)
+				goto exit;
+
+			if (m->auth_handle)
+			{
+				authrc = (*(m->auth_handle))(m->auth_handle_context, &authData);
+				if (authrc < 0)
+					goto exit;
+			}
+
+			property.identifier = MQTTPROPERTY_CODE_AUTHENTICATION_DATA;
+			property.value.data.data = authData.authDataOut.data;
+			property.value.data.len = authData.authDataOut.len;
+			rc = MQTTProperties_add(m->connectProps, &property);
+			if(authData.authDataOut.data)
+				free(authData.authDataOut.data);
+			if (rc)
+				goto exit;
+		}
 	}
 
 	/* Add connect request to operation queue */
@@ -1703,6 +1752,29 @@ int MQTTAsync_setAfterPersistenceRead(MQTTAsync handle, void* context, MQTTPersi
 	{
 		m->c->afterRead = co;
 		m->c->afterRead_context = context;
+	}
+
+	MQTTAsync_unlock_mutex(mqttasync_mutex);
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+int MQTTAsync_setHandleAuth(MQTTAsync handle, void *context,
+		MQTTAsync_authHandle *authenticate)
+{
+	int rc = MQTTASYNC_SUCCESS;
+	MQTTAsyncs *m = handle;
+
+	FUNC_ENTRY;
+	MQTTAsync_lock_mutex(mqttasync_mutex);
+
+	if (m == NULL || m->c->connect_state != NOT_IN_PROGRESS)
+		rc = MQTTASYNC_FAILURE;
+	else
+	{
+		m->auth_handle_context = context;
+		m->auth_handle = authenticate;
 	}
 
 	MQTTAsync_unlock_mutex(mqttasync_mutex);

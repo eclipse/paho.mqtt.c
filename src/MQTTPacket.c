@@ -87,7 +87,7 @@ pf new_packets[] =
 	MQTTPacket_header_only, /**< PINGREQ */
 	MQTTPacket_header_only, /**< PINGRESP */
 	MQTTPacket_ack,  /**< DISCONNECT */
-	MQTTPacket_ack   /**< AUTH */
+	MQTTPacket_auth   /**< AUTH */
 };
 
 
@@ -636,6 +636,20 @@ void MQTTPacket_freeAck(Ack* pack)
 
 
 /**
+ * Free allocated storage for an auth packet.
+ * @param pack pointer to the publish packet structure
+ */
+void MQTTPacket_freeAuth(Auth* pack)
+{
+	FUNC_ENTRY;
+	if (pack->MQTTVersion >= MQTTVERSION_5)
+		MQTTProperties_free(&pack->properties);
+	free(pack);
+	FUNC_EXIT;
+}
+
+
+/**
  * Send an MQTT acknowledgement packet down a socket.
  * @param MQTTVersion the version of MQTT being used
  * @param type the MQTT packet type e.g. SUBACK
@@ -836,6 +850,54 @@ void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t 
 			}
 		}
 	}
+exit:
+	FUNC_EXIT;
+	return pack;
+}
+
+/**
+ * Function used in the new packets table to create authentication packets.
+ * @param MQTTVersion the version of MQTT being used
+ * @param aHeader the MQTT header byte
+ * @param data the rest of the packet
+ * @param datalen the length of the rest of the packet
+ * @return pointer to the packet structure
+ */
+void* MQTTPacket_auth(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
+{
+	Auth* pack = NULL;
+	char* curdata = data;
+	char* enddata = &data[datalen];
+
+	FUNC_ENTRY;
+	if ((pack = malloc(sizeof(Auth))) == NULL)
+		goto exit;
+	pack->MQTTVersion = MQTTVersion;
+	pack->header.byte = aHeader;
+	if (MQTTVersion < MQTTVERSION_5)
+		goto exit;
+
+	MQTTProperties props = MQTTProperties_initializer;
+
+	pack->rc = MQTTREASONCODE_SUCCESS;
+	pack->properties = props;
+
+	/* AUTH has no msgid, if datalen is 0 then reason code is 0, if not we read it */
+	if (datalen > 0)
+		pack->rc = readChar(&curdata); /* reason code */
+
+	if (datalen > 1)
+	{
+		if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
+		{
+			if (pack->properties.array)
+				free(pack->properties.array);
+			free(pack);
+			pack = NULL; /* signal protocol error */
+			goto exit;
+		}
+	}
+
 exit:
 	FUNC_EXIT;
 	return pack;

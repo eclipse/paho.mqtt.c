@@ -530,6 +530,57 @@ LIBMQTT_API int MQTTAsync_setBeforePersistenceWrite(MQTTAsync handle, void* cont
  */
 LIBMQTT_API int MQTTAsync_setAfterPersistenceRead(MQTTAsync handle, void* context, MQTTPersistence_afterRead* co);
 
+/** The authentication data that is populated when MQTTv5 enhanced authentication
+ * is requested by an operation. */
+typedef struct
+{
+	/** The eyecatcher for this structure.  Will be MQAD. */
+	char struct_id[4];
+	/** The version number of this structure.  Will be 0 */
+	int struct_version;
+	/** The MQTT reason code received from the AUTH packet. */
+	enum MQTTReasonCodes reasonCode;
+	/**
+	 * The data received from the MQTTv5 AUTH packet AUTHENTICATION_DATA property.
+	 * Data is NULL if no AUTHENTICATION_DATA was received.
+	 */
+	struct {
+		int len;           /**< binary input AUTHENTICATION_DATA length */
+		const void* data;  /**< binary input AUTHENTICATION_DATA data */
+	} authDataIn;
+	/**
+	 * The data to populate the MQTTv5 AUTH packet AUTHENTICATION_DATA property.
+	 * Set data to NULL to remove.  To change, allocate new
+	 * storage with ::MQTTAsync_malloc - this will then be freed later by the library.
+	 */
+	struct {
+		int len;           /**< binary output AUTHENTICATION_DATA length */
+		void* data;        /**< binary output AUTHENTICATION_DATA data */
+	} authDataOut;
+} MQTTAsync_authHandleData;
+
+#define MQTTAsync_authHandleData_initializer {{'M', 'Q', 'A', 'D'}, 0, 0, {0, NULL}, {0, NULL}}
+
+/**
+ * This is a callback function which will allow the client application to update the
+ * connection data.
+ * @param data The connection data which can be modified by the application.
+ * @return a negative value to indicate not-authorized, a value of 0 to indicate success,
+ * a positive value to indicate continue.
+ */
+typedef int MQTTAsync_authHandle(void* context, MQTTAsync_authHandleData* data);
+
+/**
+ * Sets the MQTTAsync_authenticate() callback function for a client.
+ * @param handle A valid client handle from a successful call to MQTTAsync_create().
+ * @param context A pointer to any application-specific context. The
+ * the <i>context</i> pointer is passed to the callback function to
+ * provide access to the context information in the callback.
+ * @param co A pointer to an MQTTAsync_authHandle() callback
+ * function.  NULL removes the callback setting.
+ */
+LIBMQTT_API int MQTTAsync_setHandleAuth(MQTTAsync handle, void* context, MQTTAsync_authHandle* authenticate);
+
 
 /** The data returned on completion of an unsuccessful API call in the response callback onFailure. */
 typedef struct
@@ -1208,6 +1259,7 @@ typedef struct
       * 5 signifies no MQTTV5 properties
       * 6 signifies no HTTP headers option
       * 7 signifies no HTTP proxy and HTTPS proxy options
+      * 8 signifies no MQTTV5 enhanced authentication option
 	  */
 	int struct_version;
 	/** The "keep alive" interval, measured in seconds, defines the maximum time
@@ -1378,27 +1430,31 @@ typedef struct
 	 * HTTPS proxy
 	 */
 	const char* httpsProxy;
+	/**
+	 * MQTTv5  authentication method
+	 */
+	const char* authMethod;
 } MQTTAsync_connectOptions;
 
 /** Initializer for connect options for MQTT 3.1.1 non-WebSocket connections */
-#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 8, 60, 1, 65535, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
+#define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 9, 60, 1, 65535, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 
 /** Initializer for connect options for MQTT 5.0 non-WebSocket connections */
-#define MQTTAsync_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 8, 60, 0, 65535, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
+#define MQTTAsync_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 9, 60, 0, 65535, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 
 /** Initializer for connect options for MQTT 3.1.1 WebSockets connections.
   * The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts.
   */
-#define MQTTAsync_connectOptions_initializer_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 1, 65535, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
+#define MQTTAsync_connectOptions_initializer_ws { {'M', 'Q', 'T', 'C'}, 9, 45, 1, 65535, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 
 /** Initializer for connect options for MQTT 5.0 WebSockets connections.
   * The keepalive interval is set to 45 seconds to avoid webserver 60 second inactivity timeouts.
   */
-#define MQTTAsync_connectOptions_initializer5_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 0, 65535, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
+#define MQTTAsync_connectOptions_initializer5_ws { {'M', 'Q', 'T', 'C'}, 9, 45, 0, 65535, NULL, NULL, NULL, 30, 0,\
+NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 
 
 /**

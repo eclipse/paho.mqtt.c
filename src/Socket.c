@@ -41,6 +41,9 @@
 #include <string.h>
 #include <signal.h>
 #include <ctype.h>
+#if !defined(_WIN32) && !defined(_WIN64)
+#include <net/if.h>
+#endif
 
 #include "Heap.h"
 
@@ -1055,7 +1058,8 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 #endif
 {
 	int type = SOCK_STREAM;
-	char *addr_mem;
+	char *addr_mem, *ifname = NULL, *p;
+	size_t ifname_len = 0;
 	struct sockaddr_in address;
 #if defined(AF_INET6)
 	struct sockaddr_in6 address6;
@@ -1077,6 +1081,13 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 	{
 		++addr;
 		--addr_len;
+#if !defined(_WIN32) && !defined(_WIN64)
+		if ((p = strchr(addr, (int)'%'))) {
+			ifname_len = addr_len - (p - addr) - 1;
+			addr_len = p - addr;
+			p++;
+		}
+#endif
 	}
 
 	if ((addr_mem = malloc( addr_len + 1u )) == NULL)
@@ -1086,6 +1097,12 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 	}
 	memcpy( addr_mem, addr, addr_len );
 	addr_mem[addr_len] = '\0';
+
+	if (ifname_len) {
+		ifname = malloc( ifname_len + 1u );
+		memcpy( ifname, p, ifname_len );
+		ifname[ifname_len] = '\0';
+	}
 
 #if 0 /*defined(__GNUC__) && defined(__linux__)*/
 	/* Commented out because the CI tests get intermittent ECONNABORTED return values
@@ -1132,6 +1149,14 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 			address6.sin6_port = htons(port);
 			address6.sin6_family = family = AF_INET6;
 			memcpy(&address6.sin6_addr, &((struct sockaddr_in6*)(res->ai_addr))->sin6_addr, sizeof(address6.sin6_addr));
+#if !defined(_WIN32) && !defined(_WIN64)
+			if (ifname) {
+				if ((address6.sin6_scope_id = if_nametoindex(ifname)) == 0) {
+					Log(LOG_ERROR, -1, "Could not maps the interface index for %s", ifname);
+					rc = -1;
+				}
+			}
+#endif
 		}
 		else
 #endif
@@ -1231,6 +1256,8 @@ int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* sock)
 exit:
 	if (addr_mem)
 		free(addr_mem);
+	if (ifname)
+		free(ifname);
 
 	FUNC_EXIT_RC(rc);
 	return rc;

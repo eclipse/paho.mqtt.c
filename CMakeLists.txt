@@ -44,6 +44,7 @@ ENDIF()
 
 ## build options
 SET(PAHO_WITH_SSL FALSE CACHE BOOL "Flag that defines whether to build ssl-enabled binaries too. ")
+SET(PAHO_WITH_LIBRESSL FALSE CACHE BOOL "Flag that defines whether to build ssl-enabled binaries with LibreSSL instead of OpenSSL. ")
 SET(PAHO_WITH_LIBUUID FALSE CACHE BOOL "Flag that defines whether libuuid or a custom uuid implementation should be used")
 SET(PAHO_BUILD_SHARED TRUE CACHE BOOL "Build shared library")
 SET(PAHO_BUILD_STATIC FALSE CACHE BOOL "Build static library")

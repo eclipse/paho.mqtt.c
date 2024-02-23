@@ -1,0 +1,4 @@
+<map id="readUTFlen" name="readUTFlen">
+<area shape="rect" id="node1" title="Reads a &quot;UTF&quot; string from the input buffer." alt="" coords="5,5,96,32"/>
+<area shape="rect" id="node2" href="$MQTTPacket_8c.html#a132d2d5b304d37cd2348a973f7b315de" title="Calculates an integer from two bytes read from the input buffer." alt="" coords="144,5,207,32"/>
+</map>

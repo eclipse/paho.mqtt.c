@@ -1,0 +1,9 @@
+<map id="SocketBuffer_complete" name="SocketBuffer_complete">
+<area shape="rect" id="node1" title="A socket read has now completed so we can get rid of the queue." alt="" coords="5,81,163,108"/>
+<area shape="rect" id="node2" href="$LinkedList_8c.html#ab2bcc1897abf1d98490ea81c474dba52" title="Removes but does not free an item in a list by comparing the pointer to the content." alt="" coords="246,5,331,32"/>
+<area shape="rect" id="node4" href="$LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="544,31,639,57"/>
+<area shape="rect" id="node6" href="$SocketBuffer_8c.html#acb4511a3a4767187a2607027aff718b8" title="Free the default queue memory." alt="" coords="211,107,367,133"/>
+<area shape="rect" id="node7" href="$SocketBuffer_8c.html#acebc1cbb93be4588f33b04ed404f6dbf" title="List callback function for comparing socket_queues by socket." alt="" coords="233,157,344,184"/>
+<area shape="rect" id="node3" href="$LinkedList_8c.html#ab82181e0c1d96954f82dee67cee41296" title="Removes and optionally frees an element in a list by comparing the content." alt="" coords="415,5,496,32"/>
+<area shape="rect" id="node5" href="$LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="687,31,805,57"/>
+</map>

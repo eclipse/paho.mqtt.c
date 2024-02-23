@@ -1,0 +1,4 @@
+<map id="List" name="List">
+<area shape="rect" id="node1" title="Structure to hold all data for one list." alt="" coords="47,127,91,153"/>
+<area shape="rect" id="node2" href="$structListElementStruct.html" title="Structure to hold all data for one list element." alt="" coords="5,7,132,33"/>
+</map>

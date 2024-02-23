@@ -1,0 +1,5 @@
+<map id="MQTTPacket_ack" name="MQTTPacket_ack">
+<area shape="rect" id="node1" title="Function used in the new packets table to create acknowledgement packets." alt="" coords="5,31,133,57"/>
+<area shape="rect" id="node2" href="$MQTTPacket_8c.html#aff1d10b221f5b4ce421b4c2588cbe511" title="Reads one character from the input buffer." alt="" coords="181,5,256,32"/>
+<area shape="rect" id="node3" href="$MQTTPacket_8c.html#a132d2d5b304d37cd2348a973f7b315de" title="Calculates an integer from two bytes read from the input buffer." alt="" coords="187,56,250,83"/>
+</map>

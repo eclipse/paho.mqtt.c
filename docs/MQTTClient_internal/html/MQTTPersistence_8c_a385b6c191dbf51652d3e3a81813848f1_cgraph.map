@@ -1,0 +1,5 @@
+<map id="MQTTPersistence_close" name="MQTTPersistence_close">
+<area shape="rect" id="node1" title="Close persistent store." alt="" coords="5,5,172,32"/>
+<area shape="rect" id="node2" href="$MQTTPersistenceDefault_8c.html#a919cf4710a1f7d7ce0878599e9aa4700" title="Create persistence directory for the client: context/clientID&#45;serverURI." alt="" coords="220,5,288,32"/>
+<area shape="rect" id="node3" href="$MQTTPersistenceDefault_8c.html#aecfbfa761dfca1b551d9ade325f480b1" title="Function to create a directory." alt="" coords="336,5,408,32"/>
+</map>

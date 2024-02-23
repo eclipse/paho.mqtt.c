@@ -1,0 +1,5 @@
+<map id="UTF8_validateString" name="UTF8_validateString">
+<area shape="rect" id="node1" title="Validate a null&#45;terminated string has only UTF&#45;8 characters." alt="" coords="5,5,147,32"/>
+<area shape="rect" id="node2" href="$utf-8_8c.html#ad2012627fca4b4bdd9f67bde49b0d1cb" title="Validate a length&#45;delimited string has only UTF&#45;8 characters." alt="" coords="195,5,301,32"/>
+<area shape="rect" id="node3" href="$utf-8_8c.html#a9727caa7417e6bed8cfad4121a22628d" title="Validate a single UTF&#45;8 character." alt="" coords="349,5,488,32"/>
+</map>

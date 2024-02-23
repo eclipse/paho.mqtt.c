@@ -1,0 +1,4 @@
+<map id="ListInitialize" name="ListInitialize">
+<area shape="rect" id="node1" title="Allocates and initializes a new list structure." alt="" coords="5,5,96,32"/>
+<area shape="rect" id="node2" href="$LinkedList_8c.html#aa254fb1eab8e30d0e03859b333dc22ed" title="Sets a list structure to empty &#45; all null values." alt="" coords="144,5,215,32"/>
+</map>

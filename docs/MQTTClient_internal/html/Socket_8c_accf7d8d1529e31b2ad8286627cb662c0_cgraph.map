@@ -1,0 +1,7 @@
+<map id="Socket_new" name="Socket_new">
+<area shape="rect" id="node1" title="Create a new socket and TCP connect to an address/port." alt="" coords="5,53,100,80"/>
+<area shape="rect" id="node2" href="$Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="390,16,434,42"/>
+<area shape="rect" id="node3" href="$Thread_8c.html#a1c9cd0a1556e72719a5ed3f9cdf6686f" title="Lock a mutex which has alrea." alt="" coords="328,92,496,118"/>
+<area shape="rect" id="node4" href="$Socket_8c.html#a4c933d467e9ab2848b9590fe45f21f2f" title="Add a socket to the list of socket to check with select." alt="" coords="148,129,280,156"/>
+<area shape="rect" id="node5" href="$Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="166,28,262,54"/>
+</map>

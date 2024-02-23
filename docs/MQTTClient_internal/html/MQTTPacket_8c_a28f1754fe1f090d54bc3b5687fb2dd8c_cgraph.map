@@ -1,0 +1,4 @@
+<map id="MQTTPacket_free_packet" name="MQTTPacket_free_packet">
+<area shape="rect" id="node1" title="Free allocated storage for a various packet tyoes." alt="" coords="5,5,180,32"/>
+<area shape="rect" id="node2" href="$MQTTPacket_8c.html#a642e5f62d21f14e81f8fc70b491d89c8" title="Free allocated storage for a publish packet." alt="" coords="228,5,400,32"/>
+</map>

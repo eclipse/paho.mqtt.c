@@ -1,0 +1,4 @@
+<map id="writeData" name="writeData">
+<area shape="rect" id="node1" title="Writes length delimited data to an output buffer." alt="" coords="5,5,83,32"/>
+<area shape="rect" id="node2" href="$MQTTPacket_8c.html#a07aa0146eda3d32979142e7df8ad5fc3" title="Writes an integer as 2 bytes to an output buffer." alt="" coords="131,5,196,32"/>
+</map>

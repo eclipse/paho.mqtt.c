@@ -1,0 +1,10 @@
+<map id="Socket_continueWrite" name="Socket_continueWrite">
+<area shape="rect" id="node1" title="Continue an outstanding write for a particular socket." alt="" coords="5,31,155,57"/>
+<area shape="rect" id="node2" href="$Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="651,5,695,32"/>
+<area shape="rect" id="node3" href="$Socket_8c.html#a550291985042dc080825ab27b16894fb" title="Attempts to write a series of iovec buffers to a socket in one system call so that they are sent as o..." alt="" coords="226,31,331,57"/>
+<area shape="rect" id="node5" href="$SocketBuffer_8c.html#a524311e577a7225a09fb944904c17886" title="Get any queued write data for a specific socket." alt="" coords="203,81,355,108"/>
+<area shape="rect" id="node4" href="$Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="436,31,532,57"/>
+<area shape="rect" id="node6" href="$LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="437,81,531,108"/>
+<area shape="rect" id="node8" href="$SocketBuffer_8c.html#a39f1ee9c98bc12a7be4d7a40b03550d5" title="List callback function for comparing pending_writes by socket." alt="" coords="403,132,565,159"/>
+<area shape="rect" id="node7" href="$LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="613,81,732,108"/>
+</map>

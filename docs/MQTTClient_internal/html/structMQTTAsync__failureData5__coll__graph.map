@@ -1,0 +1,6 @@
+<map id="MQTTAsync_failureData5" name="MQTTAsync_failureData5">
+<area shape="rect" id="node1" title="The data returned on completion of an unsuccessful API call in the response callback onFailure." alt="" coords="5,288,176,315"/>
+<area shape="rect" id="node2" href="$structMQTTProperties.html" title="MQTT version 5 property list." alt="" coords="31,199,150,225"/>
+<area shape="rect" id="node3" href="$structMQTTProperty.html" title="Structure to hold an MQTT version 5 property of any type." alt="" coords="37,109,144,136"/>
+<area shape="rect" id="node4" href="$structMQTTLenString.html" title="The data for a length delimited string." alt="" coords="33,5,148,32"/>
+</map>

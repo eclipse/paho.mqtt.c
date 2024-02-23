@@ -7,7 +7,7 @@ team.
 
 ## Supported Versions
 
-Eclipse Paho provides security updates for the two most recent version only.
+Eclipse Paho provides security updates for the most recent version only.
 
 ## Reporting a Vulnerability
 

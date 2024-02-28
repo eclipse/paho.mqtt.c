@@ -1,0 +1,12 @@
+<map id="MQTTPersistence_create" name="MQTTPersistence_create">
+<area shape="rect" id="node1" title="Creates a MQTTClient_persistence structure representing a persistence implementation." alt="" coords="5,183,176,209"/>
+<area shape="rect" id="node2" href="$MQTTPersistenceDefault_8c.html#a15b1457f7fd20dde1fd51ed434321e1a" title="Delete all the persisted message in the client persistence directory." alt="" coords="245,5,313,32"/>
+<area shape="rect" id="node3" href="$MQTTPersistenceDefault_8c.html#a24f38d19ff3db61292d7b463e59174ef" title="Delete client persistence directory (if empty)." alt="" coords="243,56,314,83"/>
+<area shape="rect" id="node4" href="$MQTTPersistenceDefault_8c.html#a2a55461def3359a2b0aff6b3bb0644ad" title="Returns whether if a wire message is persisted in the client persistence directory." alt="" coords="224,107,333,133"/>
+<area shape="rect" id="node5" href="$MQTTPersistenceDefault_8c.html#a3aef9f9af29882fac9e76984e4c2954c" title="Retrieve a wire message from the client persistence directory." alt="" coords="249,157,308,184"/>
+<area shape="rect" id="node6" href="$MQTTPersistenceDefault_8c.html#a9f358375b8e254983d00f8b057e97dd6" title="Returns the keys (file names w/o the extension) in the client persistence directory." alt="" coords="245,208,312,235"/>
+<area shape="rect" id="node7" href="$MQTTPersistenceDefault_8c.html#a919cf4710a1f7d7ce0878599e9aa4700" title="Create persistence directory for the client: context/clientID&#45;serverURI." alt="" coords="245,259,313,285"/>
+<area shape="rect" id="node9" href="$MQTTPersistenceDefault_8c.html#a64e0c1a2fd06375b975d6643175572d8" title="Write wire message to the client persistence directory." alt="" coords="249,309,308,336"/>
+<area shape="rect" id="node10" href="$MQTTPersistenceDefault_8c.html#a64b106b9a2778f97d271af7c9a7940f2" title="Delete a persisted message from the client persistence directory." alt="" coords="381,335,464,361"/>
+<area shape="rect" id="node8" href="$MQTTPersistenceDefault_8c.html#aecfbfa761dfca1b551d9ade325f480b1" title="Function to create a directory." alt="" coords="387,259,459,285"/>
+</map>

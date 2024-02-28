@@ -1,0 +1,9 @@
+<map id="SocketBuffer_interrupted" name="SocketBuffer_interrupted">
+<area shape="rect" id="node1" title="A socket read was interrupted so we need to queue data." alt="" coords="5,81,171,108"/>
+<area shape="rect" id="node2" href="$LinkedList_8c.html#abc7a28449893dfa775c2f709349968b4" title="Append an item to a list." alt="" coords="254,5,342,32"/>
+<area shape="rect" id="node4" href="$LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="251,56,345,83"/>
+<area shape="rect" id="node6" href="$SocketBuffer_8c.html#a9293d4ef45aa2a51baab9be4eb73091b" title="Create a new default queue when one has just been used." alt="" coords="219,107,377,133"/>
+<area shape="rect" id="node7" href="$SocketBuffer_8c.html#acebc1cbb93be4588f33b04ed404f6dbf" title="List callback function for comparing socket_queues by socket." alt="" coords="243,157,353,184"/>
+<area shape="rect" id="node3" href="$LinkedList_8c.html#a321a3598d6979c7af3f995b77ea2cec3" title="Append an already allocated ListElement and content to a list." alt="" coords="425,5,568,32"/>
+<area shape="rect" id="node5" href="$LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="437,56,556,83"/>
+</map>

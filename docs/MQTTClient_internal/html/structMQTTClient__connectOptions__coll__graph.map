@@ -1,0 +1,6 @@
+<map id="MQTTClient_connectOptions" name="MQTTClient_connectOptions">
+<area shape="rect" id="node1" title="MQTTClient_connectOptions defines several settings that control the way the client connects to an MQT..." alt="" coords="179,95,370,121"/>
+<area shape="rect" id="node2" href="$structMQTTClient__willOptions.html" title="MQTTClient_willOptions defines the MQTT &quot;Last Will and Testament&quot; (LWT) settings for the client." alt="" coords="5,5,168,32"/>
+<area shape="rect" id="node3" href="$structMQTTClient__nameValue.html" title="MQTTClient_libraryInfo is used to store details relating to the currently used library such as the ve..." alt="" coords="193,5,357,32"/>
+<area shape="rect" id="node4" href="$structMQTTClient__SSLOptions.html" title="MQTTClient_sslProperties defines the settings to establish an SSL/TLS connection using the OpenSSL li..." alt="" coords="381,5,552,32"/>
+</map>

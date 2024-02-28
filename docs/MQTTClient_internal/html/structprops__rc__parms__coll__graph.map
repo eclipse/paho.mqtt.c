@@ -1,0 +1,16 @@
+<map id="props_rc_parms" name="props_rc_parms">
+<area shape="rect" id="node1" title=" " alt="" coords="284,439,399,465"/>
+<area shape="rect" id="node2" href="$structMQTTProperties.html" title="MQTT version 5 property list." alt="" coords="217,349,335,376"/>
+<area shape="rect" id="node3" href="$structMQTTProperty.html" title="Structure to hold an MQTT version 5 property of any type." alt="" coords="80,260,187,287"/>
+<area shape="rect" id="node4" href="$structMQTTLenString.html" title="The data for a length delimited string." alt="" coords="5,127,120,153"/>
+<area shape="rect" id="node5" href="$structMQTTClients.html" title=" " alt="" coords="384,349,483,376"/>
+<area shape="rect" id="node6" href="$structClients.html" title="Data related to one client." alt="" coords="402,260,465,287"/>
+<area shape="rect" id="node7" href="$structMQTTClient__persistence.html" title="A structure containing the function pointers to a persistence implementation and the context or state..." alt="" coords="145,127,311,153"/>
+<area shape="rect" id="node8" href="$structwillMessages.html" title="Client will message data." alt="" coords="336,127,437,153"/>
+<area shape="rect" id="node9" href="$structnetworkHandles.html" title=" " alt="" coords="462,127,578,153"/>
+<area shape="rect" id="node10" href="$structMQTTClient__nameValue.html" title="MQTTClient_libraryInfo is used to store details relating to the currently used library such as the ve..." alt="" coords="421,7,585,33"/>
+<area shape="rect" id="node11" href="$structList.html" title="Structure to hold all data for one list." alt="" coords="602,127,646,153"/>
+<area shape="rect" id="node12" href="$structListElementStruct.html" title="Structure to hold all data for one list element." alt="" coords="609,7,735,33"/>
+<area shape="rect" id="node13" href="$structMQTTPacket.html" title="Data for a packet with header only." alt="" coords="594,260,694,287"/>
+<area shape="rect" id="node14" href="$unionHeader.html" title="Bitfields for the MQTT header byte." alt="" coords="671,127,735,153"/>
+</map>

@@ -1,0 +1,14 @@
+<map id="Socket_getch" name="Socket_getch">
+<area shape="rect" id="node1" title="Reads one byte from a socket." alt="" coords="5,81,108,108"/>
+<area shape="rect" id="node2" href="$Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="205,5,301,32"/>
+<area shape="rect" id="node4" href="$SocketBuffer_8c.html#a999ec229faa4b2e2c0f7db87693bc1f8" title="Get any queued character for a specific socket." alt="" coords="156,56,351,83"/>
+<area shape="rect" id="node8" href="$SocketBuffer_8c.html#a412a40b44b12901e63e662ac0e5be0af" title="A socket read was interrupted so we need to queue data." alt="" coords="171,157,336,184"/>
+<area shape="rect" id="node12" href="$SocketBuffer_8c.html#a2f6bac9a46fd116e58071ff49152d716" title="Queued a Charactor to a specific socket." alt="" coords="170,107,337,133"/>
+<area shape="rect" id="node3" href="$Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="456,5,500,32"/>
+<area shape="rect" id="node5" href="$LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="431,107,525,133"/>
+<area shape="rect" id="node7" href="$SocketBuffer_8c.html#acebc1cbb93be4588f33b04ed404f6dbf" title="List callback function for comparing socket_queues by socket." alt="" coords="423,56,533,83"/>
+<area shape="rect" id="node6" href="$LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="617,107,736,133"/>
+<area shape="rect" id="node9" href="$LinkedList_8c.html#abc7a28449893dfa775c2f709349968b4" title="Append an item to a list." alt="" coords="434,208,522,235"/>
+<area shape="rect" id="node11" href="$SocketBuffer_8c.html#a9293d4ef45aa2a51baab9be4eb73091b" title="Create a new default queue when one has just been used." alt="" coords="399,157,557,184"/>
+<area shape="rect" id="node10" href="$LinkedList_8c.html#a321a3598d6979c7af3f995b77ea2cec3" title="Append an already allocated ListElement and content to a list." alt="" coords="605,208,748,235"/>
+</map>

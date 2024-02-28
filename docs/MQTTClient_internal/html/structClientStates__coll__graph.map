@@ -1,0 +1,5 @@
+<map id="ClientStates" name="ClientStates">
+<area shape="rect" id="node1" title="Configuration data related to all clients." alt="" coords="22,216,115,243"/>
+<area shape="rect" id="node2" href="$structList.html" title="Structure to hold all data for one list." alt="" coords="47,127,91,153"/>
+<area shape="rect" id="node3" href="$structListElementStruct.html" title="Structure to hold all data for one list element." alt="" coords="5,7,132,33"/>
+</map>

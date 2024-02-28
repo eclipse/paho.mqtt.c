@@ -1,0 +1,17 @@
+<map id="Socket_getdata" name="Socket_getdata">
+<area shape="rect" id="node1" title="Attempts to read a number of bytes from a socket, non&#45;blocking." alt="" coords="5,132,119,159"/>
+<area shape="rect" id="node2" href="$Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="467,5,511,32"/>
+<area shape="rect" id="node3" href="$Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="216,12,312,39"/>
+<area shape="rect" id="node4" href="$SocketBuffer_8c.html#a8b7b6acbf2ec65796c32da7fd55c3ee8" title="A socket read has now completed so we can get rid of the queue." alt="" coords="185,132,343,159"/>
+<area shape="rect" id="node11" href="$SocketBuffer_8c.html#afcc9b9b6bd255b0a6e4c7e4f5a36bb37" title="Get any queued data for a specific socket." alt="" coords="167,208,361,235"/>
+<area shape="rect" id="node12" href="$SocketBuffer_8c.html#a412a40b44b12901e63e662ac0e5be0af" title="A socket read was interrupted so we need to queue data." alt="" coords="181,309,347,336"/>
+<area shape="rect" id="node5" href="$LinkedList_8c.html#ab2bcc1897abf1d98490ea81c474dba52" title="Removes but does not free an item in a list by comparing the pointer to the content." alt="" coords="446,157,531,184"/>
+<area shape="rect" id="node7" href="$LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="807,221,901,248"/>
+<area shape="rect" id="node9" href="$SocketBuffer_8c.html#acb4511a3a4767187a2607027aff718b8" title="Free the default queue memory." alt="" coords="411,56,567,83"/>
+<area shape="rect" id="node10" href="$SocketBuffer_8c.html#acebc1cbb93be4588f33b04ed404f6dbf" title="List callback function for comparing socket_queues by socket." alt="" coords="433,208,544,235"/>
+<area shape="rect" id="node6" href="$LinkedList_8c.html#ab82181e0c1d96954f82dee67cee41296" title="Removes and optionally frees an element in a list by comparing the content." alt="" coords="647,183,728,209"/>
+<area shape="rect" id="node8" href="$LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="949,221,1068,248"/>
+<area shape="rect" id="node13" href="$LinkedList_8c.html#abc7a28449893dfa775c2f709349968b4" title="Append an item to a list." alt="" coords="445,360,533,387"/>
+<area shape="rect" id="node15" href="$SocketBuffer_8c.html#a9293d4ef45aa2a51baab9be4eb73091b" title="Create a new default queue when one has just been used." alt="" coords="409,411,568,437"/>
+<area shape="rect" id="node14" href="$LinkedList_8c.html#a321a3598d6979c7af3f995b77ea2cec3" title="Append an already allocated ListElement and content to a list." alt="" coords="616,360,759,387"/>
+</map>

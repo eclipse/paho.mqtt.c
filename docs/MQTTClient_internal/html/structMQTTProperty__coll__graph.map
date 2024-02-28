@@ -1,0 +1,4 @@
+<map id="MQTTProperty" name="MQTTProperty">
+<area shape="rect" id="node1" title="Structure to hold an MQTT version 5 property of any type." alt="" coords="9,109,116,136"/>
+<area shape="rect" id="node2" href="$structMQTTLenString.html" title="The data for a length delimited string." alt="" coords="5,5,120,32"/>
+</map>

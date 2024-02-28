@@ -1,0 +1,5 @@
+<map id="Socket_close_only" name="Socket_close_only">
+<area shape="rect" id="node1" title="Close a socket without removing it from the select list." alt="" coords="5,5,136,32"/>
+<area shape="rect" id="node2" href="$Socket_8c.html#a39a32a0495e5cba033f3c7fee72ae797" title="Gets the specific error corresponding to SOCKET_ERROR." alt="" coords="184,5,280,32"/>
+<area shape="rect" id="node3" href="$Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="328,5,372,32"/>
+</map>

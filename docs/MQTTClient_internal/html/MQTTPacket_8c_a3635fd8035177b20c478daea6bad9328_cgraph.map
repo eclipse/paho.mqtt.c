@@ -1,0 +1,6 @@
+<map id="MQTTPacket_sends" name="MQTTPacket_sends">
+<area shape="rect" id="node1" title="Sends an MQTT packet from multiple buffers in one system call write." alt="" coords="5,56,148,83"/>
+<area shape="rect" id="node2" href="$MQTTPacket_8c.html#aadd77a4fa1b2d5c7791e3542c56af856" title="Encodes the message length according to the MQTT algorithm." alt="" coords="219,5,368,32"/>
+<area shape="rect" id="node3" href="$MQTTPersistence_8c.html#a18eab666c3e6aecd92a6c8f10df808e3" title="Adds a record to the persistent store." alt="" coords="196,56,391,83"/>
+<area shape="rect" id="node4" href="$MQTTPacket_8c.html#a132d2d5b304d37cd2348a973f7b315de" title="Calculates an integer from two bytes read from the input buffer." alt="" coords="262,107,325,133"/>
+</map>

@@ -1,0 +1,7 @@
+<map id="MQTTProtocol_retries" name="MQTTProtocol_retries">
+<area shape="rect" id="node1" title="MQTT retry processing per client." alt="" coords="5,5,156,32"/>
+<area shape="rect" id="node2" href="$LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="563,31,681,57"/>
+<area shape="rect" id="node3" href="$Socket_8c.html#a457d9a6a9d8e886c46fcd0c096f45614" title="Indicate whether any data is pending outbound for a socket." alt="" coords="204,31,372,57"/>
+<area shape="rect" id="node4" href="$LinkedList_8c.html#a1738915a6d6f10022e9ee1481c0ae452" title="List callback function for comparing integers." alt="" coords="424,31,511,57"/>
+<area shape="rect" id="node5" href="$LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="420,81,515,108"/>
+</map>

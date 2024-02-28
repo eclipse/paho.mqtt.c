@@ -1,0 +1,6 @@
+<map id="MQTTPersistence_message" name="MQTTPersistence_message">
+<area shape="rect" id="node1" title=" " alt="" coords="5,288,193,315"/>
+<area shape="rect" id="node2" href="$structMQTTProperties.html" title="MQTT version 5 property list." alt="" coords="40,199,159,225"/>
+<area shape="rect" id="node3" href="$structMQTTProperty.html" title="Structure to hold an MQTT version 5 property of any type." alt="" coords="46,109,153,136"/>
+<area shape="rect" id="node4" href="$structMQTTLenString.html" title="The data for a length delimited string." alt="" coords="42,5,157,32"/>
+</map>

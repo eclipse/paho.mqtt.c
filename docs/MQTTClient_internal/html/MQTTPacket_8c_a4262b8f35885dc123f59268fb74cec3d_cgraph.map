@@ -1,0 +1,5 @@
+<map id="MQTTPacket_freeSuback" name="MQTTPacket_freeSuback">
+<area shape="rect" id="node1" title="Free allocated storage for a suback packet." alt="" coords="5,5,179,32"/>
+<area shape="rect" id="node2" href="$LinkedList_8c.html#a276950531b3f54e0dda27d597572c192" title="Removes and frees all items in a list, and frees the list itself." alt="" coords="227,5,297,32"/>
+<area shape="rect" id="node3" href="$LinkedList_8c.html#a3cf8578dba23f97dd0411e85fe3b7ff2" title="Removes and frees all items in a list, leaving the list ready for new items." alt="" coords="345,5,425,32"/>
+</map>

@@ -1,0 +1,5 @@
+<map id="MQTTStrdup" name="MQTTStrdup">
+<area shape="rect" id="node1" title="Duplicate a string, safely, allocating space on the heap." alt="" coords="5,5,103,32"/>
+<area shape="rect" id="node2" href="$Log_8c.html#a669722e3f57811871f97c12392aba85d" title="Log a message." alt="" coords="301,5,345,32"/>
+<area shape="rect" id="node3" href="$MQTTProtocolClient_8c.html#a447b65c664ebedef8fecb70e29dc1767" title="Copy no more than dest_size &#45;1 characters from the string pointed to by src to the array pointed to b..." alt="" coords="151,31,253,57"/>
+</map>

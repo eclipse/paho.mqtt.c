@@ -1,0 +1,9 @@
+<map id="Clients" name="Clients">
+<area shape="rect" id="node1" title="Data related to one client." alt="" coords="263,260,325,287"/>
+<area shape="rect" id="node2" href="$structMQTTClient__persistence.html" title="A structure containing the function pointers to a persistence implementation and the context or state..." alt="" coords="5,127,172,153"/>
+<area shape="rect" id="node3" href="$structwillMessages.html" title="Client will message data." alt="" coords="197,127,298,153"/>
+<area shape="rect" id="node4" href="$structnetworkHandles.html" title=" " alt="" coords="323,127,439,153"/>
+<area shape="rect" id="node5" href="$structMQTTClient__nameValue.html" title="MQTTClient_libraryInfo is used to store details relating to the currently used library such as the ve..." alt="" coords="281,7,445,33"/>
+<area shape="rect" id="node6" href="$structList.html" title="Structure to hold all data for one list." alt="" coords="463,127,507,153"/>
+<area shape="rect" id="node7" href="$structListElementStruct.html" title="Structure to hold all data for one list element." alt="" coords="469,7,596,33"/>
+</map>

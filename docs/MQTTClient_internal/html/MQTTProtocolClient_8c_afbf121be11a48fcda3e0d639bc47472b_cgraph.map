@@ -1,0 +1,6 @@
+<map id="MQTTProtocol_createMessage" name="MQTTProtocol_createMessage">
+<area shape="rect" id="node1" title="Copy and store message data for retries." alt="" coords="5,5,208,32"/>
+<area shape="rect" id="node2" href="$MQTTProtocolClient_8c.html#ac753a3ad12292a0a9c2f4343bd33817e" title="Store message data for possible retry." alt="" coords="256,5,463,32"/>
+<area shape="rect" id="node3" href="$LinkedList_8c.html#abc7a28449893dfa775c2f709349968b4" title="Append an item to a list." alt="" coords="511,5,599,32"/>
+<area shape="rect" id="node4" href="$LinkedList_8c.html#a321a3598d6979c7af3f995b77ea2cec3" title="Append an already allocated ListElement and content to a list." alt="" coords="647,5,789,32"/>
+</map>

@@ -1,0 +1,11 @@
+<map id="MQTTProtocol_freeMessageList" name="MQTTProtocol_freeMessageList">
+<area shape="rect" id="node1" title="Empty and free up all storage used by a message list." alt="" coords="5,31,216,57"/>
+<area shape="rect" id="node2" href="$LinkedList_8c.html#a276950531b3f54e0dda27d597572c192" title="Removes and frees all items in a list, and frees the list itself." alt="" coords="341,5,411,32"/>
+<area shape="rect" id="node4" href="$MQTTProtocolClient_8c.html#ab9c5a22f0cbd4fa648663de7ae7118ab" title="Empty a message list, leaving it able to accept new messages." alt="" coords="264,56,488,83"/>
+<area shape="rect" id="node3" href="$LinkedList_8c.html#a3cf8578dba23f97dd0411e85fe3b7ff2" title="Removes and frees all items in a list, leaving the list ready for new items." alt="" coords="607,5,687,32"/>
+<area shape="rect" id="node5" href="$LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="1217,81,1336,108"/>
+<area shape="rect" id="node6" href="$MQTTProtocolClient_8c.html#a900fa28a8774ad6f5535104bb62e7abf" title="Remove stored message data." alt="" coords="536,107,757,133"/>
+<area shape="rect" id="node7" href="$LinkedList_8c.html#a8430370b2b15c56ec95bb8e7e36753a5" title="Removes and frees an item in a list by comparing the pointer to the content." alt="" coords="805,107,897,133"/>
+<area shape="rect" id="node8" href="$LinkedList_8c.html#ab82181e0c1d96954f82dee67cee41296" title="Removes and optionally frees an element in a list by comparing the content." alt="" coords="945,107,1027,133"/>
+<area shape="rect" id="node9" href="$LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="1075,107,1169,133"/>
+</map>

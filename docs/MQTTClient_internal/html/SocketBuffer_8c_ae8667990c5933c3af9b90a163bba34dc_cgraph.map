@@ -1,0 +1,8 @@
+<map id="SocketBuffer_writeComplete" name="SocketBuffer_writeComplete">
+<area shape="rect" id="node1" title="A socket write has now completed so we can get rid of the queue." alt="" coords="5,31,192,57"/>
+<area shape="rect" id="node2" href="$LinkedList_8c.html#a4bb7c34fe9a5832d65f530091e0fad0d" title="Removes and frees an element in a list by comparing the content." alt="" coords="262,5,381,32"/>
+<area shape="rect" id="node6" href="$SocketBuffer_8c.html#a39f1ee9c98bc12a7be4d7a40b03550d5" title="List callback function for comparing pending_writes by socket." alt="" coords="240,56,403,83"/>
+<area shape="rect" id="node3" href="$LinkedList_8c.html#ab82181e0c1d96954f82dee67cee41296" title="Removes and optionally frees an element in a list by comparing the content." alt="" coords="451,5,532,32"/>
+<area shape="rect" id="node4" href="$LinkedList_8c.html#acad319e9ce896ff1fff30ddbeb06d22d" title="Finds an element in a list by comparing the content or pointer to the content." alt="" coords="580,5,675,32"/>
+<area shape="rect" id="node5" href="$LinkedList_8c.html#a7c6fba7f4b569c69829676bed2852ee9" title="Forward iteration through a list." alt="" coords="723,5,841,32"/>
+</map>

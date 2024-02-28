@@ -1,0 +1,4 @@
+<map id="ListFree" name="ListFree">
+<area shape="rect" id="node1" title="Removes and frees all items in a list, and frees the list itself." alt="" coords="5,5,76,32"/>
+<area shape="rect" id="node2" href="$LinkedList_8c.html#a3cf8578dba23f97dd0411e85fe3b7ff2" title="Removes and frees all items in a list, leaving the list ready for new items." alt="" coords="124,5,204,32"/>
+</map>

@@ -444,9 +444,9 @@ typedef void MQTTAsync_connected(void* context, char* cause);
  * the <i>context</i> pointer is passed to each of the callback functions to
  * provide access to the context information in the callback.
  * @param code A numeric code identifying the error.
- * @param message Optional text explaining the error. Can be NULL.
+ * @param cause Optional text explaining the error. Can be NULL.
  */
-typedef void MQTTAsync_connectionError(void* context, int code, const char *message);
+typedef void MQTTAsync_connectionError(void* context, int code, char *cause);
 
 /**
  * This is a callback function, which will be called when the client

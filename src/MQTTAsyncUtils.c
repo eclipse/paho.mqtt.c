@@ -3074,7 +3074,15 @@ static MQTTPacket* MQTTAsync_cycle(SOCKET* sock, unsigned long timeout, int* rc)
 				}
 
 				if (msgtype == PUBCOMP)
+				{
 					*rc = MQTTProtocol_handlePubcomps(pack, *sock, &pubToRemove);
+					if (sendThread_state != STOPPED)
+#if !defined(_WIN32) && !defined(_WIN64)
+						Thread_signal_cond(send_cond);
+#else
+						Thread_post_sem(send_sem);
+#endif
+				}
 				else if (msgtype == PUBREC)
 					*rc = MQTTProtocol_handlePubrecs(pack, *sock, &pubToRemove);
 				else if (msgtype == PUBACK)

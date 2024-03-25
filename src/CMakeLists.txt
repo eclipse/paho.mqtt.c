@@ -58,7 +58,11 @@ IF (NOT PAHO_HIGH_PERFORMANCE)
 ENDIF()
 
 IF (WIN32)
-    SET(LIBS_SYSTEM ws2_32 crypt32 RpcRT4)
+    IF (PAHO_WITH_LIBRESSL)
+        SET(LIBS_SYSTEM ws2_32 crypt32 RpcRT4 bcrypt)
+    ELSE()
+        SET(LIBS_SYSTEM ws2_32 crypt32 RpcRT4)
+    ENDIF()
 ELSEIF (UNIX)
     IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
         SET(LIBS_SYSTEM c dl pthread rt)
@@ -189,15 +193,28 @@ ENDIF()
 INSTALL(FILES MQTTAsync.h MQTTClient.h MQTTClientPersistence.h MQTTProperties.h MQTTReasonCodes.h MQTTSubscribeOpts.h MQTTExportDeclarations.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-IF (PAHO_WITH_SSL)
-    SET(OPENSSL_ROOT_DIR "" CACHE PATH "Directory containing OpenSSL libraries and includes")
-    find_package(OpenSSL REQUIRED)
+IF (PAHO_WITH_SSL OR PAHO_WITH_LIBRESSL)
+    
+    IF (PAHO_WITH_LIBRESSL)
+        SET(OPENSSL_ROOT_DIR "" CACHE PATH "Directory containing LibreSSL libraries and includes")
+        find_package(LibreSSL REQUIRED)
+        SET(SSL_INCLUDE_DIR ${LIBRESSL_INCLUDE_DIR} CACHE PATH "Directory containing SSL includes")
+        SET(SSL_LIBRARY_NAME LibreSSL CACHE STRING "Name of the used SSL library")
+    ELSE()
+        SET(LIBRESSL_ROOT_DIR "" CACHE PATH "Directory containing OpenSSL libraries and includes")
+        find_package(OpenSSL REQUIRED)
+        SET(SSL_INCLUDE_DIR ${OPENSSL_INCLUDE_DIR} CACHE PATH "Directory containing SSL includes")
+        SET(SSL_LIBRARY_NAME OpenSSL CACHE STRING "Name of the used SSL library")
+    ENDIF()
+    message("Use ${SSL_LIBRARY_NAME} at ${LIBRESSL_ROOT_DIR}")
+    message("SSL_INCLUDE_DIR: ${SSL_INCLUDE_DIR} ${LIBRESSL_SSL_LIBRARY} ${LIBRESSL_CRYPTO_LIBRARY}")
+    
 
     IF (PAHO_BUILD_SHARED)
         ## common compilation for libpaho-mqtt3cs and libpaho-mqtt3as
     	## Note: SSL libraries must be recompiled due ifdefs
     	ADD_LIBRARY(common_ssl_obj OBJECT ${common_src})
-    	TARGET_INCLUDE_DIRECTORIES(common_ssl_obj PUBLIC ${OPENSSL_INCLUDE_DIR})
+    	TARGET_INCLUDE_DIRECTORIES(common_ssl_obj PUBLIC ${SSL_INCLUDE_DIR})
     	SET_PROPERTY(TARGET common_ssl_obj PROPERTY	POSITION_INDEPENDENT_CODE ON)
     	SET_PROPERTY(TARGET common_ssl_obj PROPERTY COMPILE_DEFINITIONS "OPENSSL=1;PAHO_MQTT_EXPORTS=1")
     
@@ -236,7 +253,7 @@ IF (PAHO_WITH_SSL)
                     ${CMAKE_BINARY_DIR})
             TARGET_LINK_LIBRARIES(${TARGET}
                 PUBLIC
-                    OpenSSL::SSL OpenSSL::Crypto ${LIBS_SYSTEM})
+                    ${SSL_LIBRARY_NAME}::SSL ${SSL_LIBRARY_NAME}::Crypto ${LIBS_SYSTEM})
         ENDFOREACH()
         INSTALL(TARGETS paho-mqtt3cs paho-mqtt3as
             EXPORT eclipse-paho-mqtt-cTargets
@@ -249,7 +266,7 @@ IF (PAHO_WITH_SSL)
         ## common compilation for libpaho-mqtt3cs and libpaho-mqtt3as
     	## Note: SSL libraries must be recompiled due ifdefs
     	ADD_LIBRARY(common_ssl_obj_static OBJECT ${common_src})
-    	TARGET_INCLUDE_DIRECTORIES(common_ssl_obj_static PUBLIC ${OPENSSL_INCLUDE_DIR})
+    	TARGET_INCLUDE_DIRECTORIES(common_ssl_obj_static PUBLIC ${SSL_INCLUDE_DIR})
     	SET_PROPERTY(TARGET common_ssl_obj_static PROPERTY POSITION_INDEPENDENT_CODE ON)
     	SET_PROPERTY(TARGET common_ssl_obj_static PROPERTY COMPILE_DEFINITIONS "OPENSSL=1;PAHO_MQTT_STATIC=1")
     
@@ -302,7 +319,7 @@ IF (PAHO_WITH_SSL)
                     ${CMAKE_BINARY_DIR})
             TARGET_LINK_LIBRARIES(${TARGET}
                 PUBLIC
-                    OpenSSL::SSL OpenSSL::Crypto ${LIBS_SYSTEM})
+                    ${SSL_LIBRARY_NAME}::SSL ${SSL_LIBRARY_NAME}::Crypto ${LIBS_SYSTEM})
         ENDFOREACH()
     ENDIF()
 ENDIF()
@@ -323,17 +340,17 @@ INSTALL(FILES
 # Base64 test
 ADD_EXECUTABLE( Base64Test EXCLUDE_FROM_ALL Base64.c Base64.h )
 TARGET_COMPILE_DEFINITIONS( Base64Test PUBLIC "-DBASE64_TEST" )
-IF (PAHO_WITH_SSL)
+IF (PAHO_WITH_SSL OR PAHO_WITH_LIBRESSL)
 	ADD_EXECUTABLE( Base64TestOpenSSL EXCLUDE_FROM_ALL Base64.c Base64.h )
-	TARGET_LINK_LIBRARIES( Base64TestOpenSSL OpenSSL::SSL OpenSSL::Crypto)
+	TARGET_LINK_LIBRARIES( Base64TestOpenSSL ${SSL_LIBRARY_NAME}::SSL ${SSL_LIBRARY_NAME}::Crypto)
 	TARGET_COMPILE_DEFINITIONS( Base64TestOpenSSL PUBLIC "-DBASE64_TEST -DOPENSSL=1" )
-ENDIF (PAHO_WITH_SSL)
+ENDIF ()
 
 # SHA1 test
 ADD_EXECUTABLE( Sha1Test EXCLUDE_FROM_ALL SHA1.c SHA1.h )
 TARGET_COMPILE_DEFINITIONS( Sha1Test PUBLIC "-DSHA1_TEST" )
-IF (PAHO_WITH_SSL)
+IF (PAHO_WITH_SSL OR PAHO_WITH_LIBRESSL)
 	ADD_EXECUTABLE( Sha1TestOpenSSL EXCLUDE_FROM_ALL SHA1.c SHA1.h )
-	TARGET_LINK_LIBRARIES( Sha1TestOpenSSL OpenSSL::SSL OpenSSL::Crypto)
+	TARGET_LINK_LIBRARIES( Sha1TestOpenSSL ${SSL_LIBRARY_NAME}::SSL ${SSL_LIBRARY_NAME}::Crypto)
 	TARGET_COMPILE_DEFINITIONS( Sha1TestOpenSSL PUBLIC "-DSHA1_TEST -DOPENSSL=1" )
-ENDIF (PAHO_WITH_SSL)
+ENDIF ()
